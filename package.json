@@ -1,0 +1,28 @@
+{
+  "name": "workshop-platform",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web \"npm run dev --workspace @workshop/api\" \"npm run dev --workspace @workshop/web\"",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "eslint . && prettier --check apps packages scripts package.json eslint.config.mjs .github/workflows/ci.yml",
+    "test": "npm run test --workspaces --if-present",
+    "migrate": "tsx scripts/migrate-placeholder.ts",
+    "migrate:test": "tsx scripts/assert-safe-test-db.ts && tsx scripts/migrate-placeholder.ts --test"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "concurrently": "10.0.6",
+    "dotenv": "18.0.8",
+    "eslint": "10.12.0",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.2"
+  }
+}

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "w-001",
+    "title": "Làm vòng tay hạt cho người mới",
+    "description": "Chọn hạt, xỏ và hoàn thiện một chiếc vòng tay ngay trong buổi học. Giáo viên hướng dẫn từng bước, không cần kinh nghiệm.",
+    "category": "trang sức thủ công",
+    "level": "beginner",
+    "audience": ["một mình", "cặp đôi", "nhóm bạn"],
+    "takeaway": "Mang về ngay vòng tay hoàn chỉnh cuối buổi",
+    "duration_minutes": 90,
+    "price_hint": 250000,
+    "requirements": "Không cần kinh nghiệm",
+    "district": "Thủ Đức"
+  },
+  {
+    "id": "w-002",
+    "title": "Làm gốm trên bàn xoay",
+    "description": "Tạo hình một chiếc cốc trên bàn xoay. Sản phẩm cần phơi và nung trước khi nhận.",
+    "category": "gốm",
+    "level": "beginner",
+    "audience": ["một mình", "cặp đôi"],
+    "takeaway": "Nhận sản phẩm sau khi nung, khoảng 2 tuần",
+    "duration_minutes": 120,
+    "price_hint": 450000,
+    "requirements": "Không cần kinh nghiệm",
+    "district": "Quận 1"
+  },
+  {
+    "id": "w-003",
+    "title": "Nến thơm theo cặp",
+    "description": "Hai người cùng pha mùi hương, rót và trang trí nến. Không khí nhẹ nhàng, thích hợp trò chuyện.",
+    "category": "nến",
+    "level": "beginner",
+    "audience": ["cặp đôi", "bạn bè"],
+    "takeaway": "Mang về ngay nến sau khi nguội, cuối buổi",
+    "duration_minutes": 90,
+    "price_hint": 350000,
+    "requirements": "Không cần kinh nghiệm",
+    "district": "Thủ Đức"
+  }
+]

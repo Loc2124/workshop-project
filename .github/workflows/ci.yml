@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: workshop
+          POSTGRES_PASSWORD: workshop_local_only
+          POSTGRES_DB: workshop_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U workshop -d workshop_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      API_PORT: 4000
+      ALLOW_DESTRUCTIVE_TESTS: 'true'
+      DATABASE_URL: postgres://workshop:workshop_local_only@localhost:5432/workshop_dev
+      DATABASE_URL_TEST: postgres://workshop:workshop_local_only@localhost:5432/workshop_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - name: Create isolated test database role
+        env:
+          PGPASSWORD: workshop_local_only
+        run: |
+          psql -h localhost -U workshop -d postgres -v ON_ERROR_STOP=1 \
+            -c "CREATE ROLE workshop_test LOGIN PASSWORD 'workshop_test_only';" \
+            -c "CREATE DATABASE workshop_test OWNER workshop_test;"
+      - run: npm test
+        env:
+          DATABASE_URL_TEST: postgresql://workshop_test:workshop_test_only@localhost:5432/workshop_test

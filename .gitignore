@@ -1,0 +1,28 @@
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+.next/
+out/
+dist/
+coverage/
+npm-debug.log*
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Model artifacts
+*.pt
+*.safetensors
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
