@@ -47,6 +47,16 @@ docs/                         đặc tả
 
 Đây là quy ước, không phải danh sách thư mục phải tạo sẵn: chỉ thêm module, feature hoặc thư mục khi bước tương ứng cần. Trong API, routes gọi service rồi repository; SQL nghiệp vụ nằm trong repository. Trong web, `src/app` chỉ dành cho routing/layout Next.js.
 
+### Quy ước module API
+- Dùng `apps/api/src/modules/<feature>/` cho `auth`, `organizers`, `workshops`, `sessions`, `catalog`, `search`, `bookings`, `payments`, `tickets` và `admin`; chỉ thêm `reviews`/`revenue` khi làm mức 2.
+- Mỗi module chỉ tạo các file cần dùng: `<feature>.routes.ts`, `<feature>.schemas.ts`, `<feature>.service.ts`, `<feature>.repository.ts`.
+- Chiều phụ thuộc là routes → service → repository → `db`; SQL nghiệp vụ chỉ nằm trong repository.
+- Đặt `PaymentProvider`, `MockProvider` và `PayOSProvider` trong `payments/providers/`; dùng chung hàm xử lý thanh toán idempotent cho webhook và thanh toán muộn.
+- Các thao tác giữ chỗ và xử lý thanh toán cần nhận transaction hiện tại để có thể gọi trong cùng transaction và kiểm thử trực tiếp.
+
+### Triển khai
+Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL công khai sớm; Bước 18 hoàn thiện triển khai, dữ liệu demo và checklist trước buổi bảo vệ.
+
 ## Quy tắc BẮT BUỘC (không được phá, kể cả khi "cho nhanh")
 1. **Điều kiện cứng do database lọc** (ngày, giá, khu vực, chỗ trống). Mô hình AI chỉ xếp hạng tập ứng viên đã qua lọc.
 2. **Giữ chỗ phải nguyên tử**: một câu `UPDATE ... WHERE seats_held + seats_sold + $qty <= capacity RETURNING ...` trong transaction. Cấm đọc số chỗ rồi ghi lại ở tầng ứng dụng. Mẫu SQL ở `docs/02-architecture.md`. Không chỉ dựa vào job định kỳ để giải phóng chỗ hết hạn: ngoài job, phải giải phóng chỗ hết hạn của buổi liên quan ở đầu `POST /bookings` trong cùng transaction, trước câu UPDATE giữ chỗ, và trước khi trả danh sách buổi còn chỗ; xem `docs/02-architecture.md`.

@@ -12,7 +12,7 @@
 | Gọi API từ web | Next.js `rewrites`: `/api/*` → API | Cùng origin, cookie httpOnly hoạt động không cần cấu hình CORS phức tạp |
 | Test API | **Vitest** + `supertest` + PostgreSQL thật; test đồng thời dùng nhiều kết nối song song | Bằng chứng kiểm thử cho báo cáo |
 | Test web | Mức tối thiểu: một vài test e2e luồng chính bằng Playwright (mức 2) | Khớp định hướng automation test của bạn |
-| Tác vụ nền | Hàm `releaseExpiredHolds()` gọi định kỳ trong tiến trình API, có advisory lock chống chạy chồng | Dễ test trực tiếp, không phụ thuộc pg_cron |
+| Tác vụ nền | Hàm `releaseExpiredHolds()` gọi định kỳ trong tiến trình API, có advisory lock chống chạy chồng; cũng gọi theo buổi khi đặt chỗ và trước khi trả số chỗ còn ở trang chi tiết | Dễ test trực tiếp, không phụ thuộc pg_cron; không lệ thuộc job khi host tạm ngủ |
 | Thanh toán | **PayOS** qua interface `PaymentProvider`; `MockProvider` cho test/demo | Đã có tài khoản; đổi nhà cung cấp chỉ sửa một chỗ |
 | AI huấn luyện | **Python 3.11**, PyTorch, `sentence-transformers`, `rank_bm25`, `scikit-learn`; huấn luyện trên Colab | Chạy được không cần GPU cá nhân |
 | AI phục vụ | **FastAPI** trong `services/ranker`, cache vector workshop | Hợp đồng `/rank` ở `docs/05-ranking-spec.md` |
@@ -35,7 +35,7 @@
 ## Quy ước phiên bản
 Dùng phiên bản ổn định/LTS mới nhất tại thời điểm dựng dự án, ghi cố định trong `package.json` và `requirements.txt`. Với thư viện bảo mật và thanh toán, ưu tiên bản đã phát hành ít nhất vài tuần.
 
-## Hosting (chốt ở Bước 18, kiểm tra điều kiện hiện hành của từng nhà cung cấp)
+## Hosting (triển khai ban đầu ở Bước 5B, hoàn thiện ở Bước 18; kiểm tra điều kiện hiện hành)
 - Web: nền tảng host Next.js.
 - API: nơi chạy Node.js có URL công khai (cần cho webhook PayOS).
 - Ranker: nơi chạy Python có đủ RAM cho mô hình; chọn mô hình nhỏ và luôn có dự phòng BM25 trong API.

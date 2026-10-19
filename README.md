@@ -28,9 +28,9 @@ Test và script thao tác dữ liệu test dùng chung guard tại `scripts/asse
 | `docs/01-prd.md` | Chức năng theo vai, mức ưu tiên, tiêu chí chấp nhận |
 | `docs/02-architecture.md` | Luồng, trạng thái booking, SQL giữ chỗ, webhook idempotent, thanh toán muộn, phân quyền |
 | `docs/03-api-spec.md` | Danh sách endpoint |
-| `docs/04-roadmap-prompts.md` | 19 bước vibe coding kèm prompt, tiêu chí hoàn thành, lỗi hay gặp |
+| `docs/04-roadmap-prompts.md` | 19 bước chính và Bước 5B triển khai sớm, kèm prompt, tiêu chí hoàn thành, lỗi hay gặp |
 | `docs/05-ranking-spec.md` | Bài toán xếp hạng, dữ liệu, chia tập, mô hình, chỉ số, hợp đồng /rank |
-| `docs/06-test-plan.md` | 20 ca kiểm thử làm bằng chứng bảo vệ |
+| `docs/06-test-plan.md` | 21 ca kiểm thử làm bằng chứng bảo vệ, gồm T03b |
 | `db/migrations/001_init.sql` | Schema PostgreSQL |
 | `db/migrations/002_rls_lockdown.sql` | Bật RLS không policy cho mọi bảng, thu quyền vai công khai |
 | `data/labeling-guideline.md` | Quy tắc gán nhãn thang 0-3 kèm ví dụ |
@@ -38,7 +38,7 @@ Test và script thao tác dữ liệu test dùng chung guard tại `scripts/asse
 | `.github/workflows/ci.yml` | CI chạy lint và test trên PostgreSQL service |
 
 ## Lưu ý
-- Hai file SQL đã được kiểm tra cú pháp bằng trình phân tích PostgreSQL nhưng CHƯA chạy trên PostgreSQL thật; Bước 0B sẽ chạy lần đầu. Nếu lỗi, tạo migration mới để sửa, không sửa file đã chạy lên DB thật.
+- Hai migration `001_init.sql` và `002_rls_lockdown.sql` đã được áp dụng và kiểm tra trên database test PostgreSQL riêng. Chưa xác nhận migration trên database dev/demo; trước khi chạy migrate vào đó, kiểm tra lại URL đích. Migration đã chạy không được sửa; nếu cần thay đổi, tạo migration mới.
 - Phần chữ ký webhook PayOS không được viết sẵn: Bước 9 yêu cầu dán tài liệu chính thức của PayOS cho AI.
 - Dữ liệu mẫu chỉ có vài dòng; cần mở rộng lên 100-200 workshop và hàng trăm câu nhu cầu.
-- Hosting (web, API, ranker) và phiên bản thư viện chốt ở Bước 18, sau khi kiểm tra điều kiện hiện hành.
+- Chọn nơi host và triển khai ban đầu API/web ở Bước 5B; hoàn thiện cấu hình ranker, dữ liệu demo và checklist ở Bước 18. Kiểm tra điều kiện hiện hành trước khi chọn nhà cung cấp.

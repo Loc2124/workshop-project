@@ -374,7 +374,7 @@ Cập nhật docs/deploy.md đã tạo ở Bước 5B với toàn bộ dịch v�
 ### Bước 19 — Gom bằng chứng và hỗ trợ báo cáo (tuần 11-12)
 
 ```text
-1. Chạy toàn bộ docs/06-test-plan.md; xuất log và bảng kết quả (T01-T20: đạt/không, ngày chạy, lệnh chạy); liệt kê test nào chưa tự động hóa và vì sao.
+1. Chạy toàn bộ docs/06-test-plan.md; xuất log và bảng kết quả (T01-T20 và T03b: đạt/không, ngày chạy, lệnh chạy); liệt kê test nào chưa tự động hóa và vì sao.
 2. Xuất bảng so sánh mô hình (BM25, embedding chưa fine-tune, fine-tune) kèm khoảng tin cậy, kappa, và thống kê dữ liệu thành các file CSV/Markdown để dán vào báo cáo.
 3. Gom ảnh chụp giao diện của luồng chính và nhật ký giao dịch thật.
 4. Soạn danh sách "hạn chế đã biết" trung thực (dữ liệu mô phỏng, quy mô nhỏ, hoàn tiền thủ công, chia tiền ngoài phạm vi).
