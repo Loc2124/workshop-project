@@ -85,7 +85,7 @@ Viết test (Vitest, chạy trên DB test):
 Đọc 001_init.sql trước; nếu thấy chỗ nào có vấn đề thì báo tôi, KHÔNG tự sửa file đã có.
 ```
 
-**Kiểm tra:** bật ALLOW_DESTRUCTIVE_TESTS=true trong terminal hiện tại; `npm run migrate:test` hai lần liên tiếp OK; test xanh. Xác nhận guard từ chối khi biến không đúng "true" hoặc URL test dùng cùng host và username với URL dev.
+**Kiểm tra:** bật ALLOW_DESTRUCTIVE_TESTS=true trong terminal hiện tại; `npm run migrate:test` hai lần liên tiếp OK; test xanh trên PostgreSQL test riêng (`DATABASE_URL_TEST`). Xác nhận guard từ chối khi biến không đúng "true" hoặc URL test dùng cùng host và username với URL dev. CI dùng PostgreSQL service container, không dùng Supabase project cá nhân.
 **Lỗi hay gặp:** `security_invoker` cần PostgreSQL 15+; Supabase dùng PostgreSQL được host. Nếu gặp lỗi SQL trong 001, dán lỗi cho AI và tạo migration 003 sửa, đừng sửa 001 sau khi đã chạy lên DB thật.
 
 ### Bước 1 — Lõi API: lỗi, validate, log, khung test (tuần 2)
@@ -344,7 +344,7 @@ Sau khi tôi duyệt danh sách, sửa từng mục kèm test.
 ### Bước 18 — Triển khai và dữ liệu demo (tuần 10-11)
 
 ```text
-Chuẩn bị triển khai: (1) Supabase: chạy migrate bằng chuỗi kết nối TRỰC TIẾP, xác nhận mọi bảng bật RLS không policy; (2) API ở nơi có URL công khai, cấu hình PAYOS_WEBHOOK_URL và đăng ký URL webhook ở PayOS; (3) web trỏ rewrites tới API triển khai; (4) ranker triển khai với mô hình nhỏ và dự phòng BM25 trong API; (5) script seed dữ liệu demo (ghi rõ mô phỏng) và tài khoản demo cho ba vai; (6) chế độ MockProvider có thể bật bằng biến môi trường để demo khi mạng/PayOS lỗi; (7) checklist trước buổi demo: dự án Supabase còn chạy, webhook còn hoạt động, thanh toán thật số tiền nhỏ chạy được.
+Chuẩn bị triển khai: (1) Supabase: chạy migrate với chuỗi Direct hoặc Session pooler (cổng 5432), xác nhận mọi bảng bật RLS không policy; không dùng Transaction pooler (cổng 6543) cho API hoặc migration; (2) API ở nơi có URL công khai, cấu hình PAYOS_WEBHOOK_URL và đăng ký URL webhook ở PayOS; (3) web trỏ rewrites tới API triển khai; (4) ranker triển khai với mô hình nhỏ và dự phòng BM25 trong API; (5) script seed dữ liệu demo (ghi rõ mô phỏng) và tài khoản demo cho ba vai; (6) chế độ MockProvider có thể bật bằng biến môi trường để demo khi mạng/PayOS lỗi; (7) checklist trước buổi demo: dự án Supabase còn chạy, webhook còn hoạt động, thanh toán thật số tiền nhỏ chạy được.
 Viết docs/deploy.md với từng bước và biến môi trường cần có.
 ```
 

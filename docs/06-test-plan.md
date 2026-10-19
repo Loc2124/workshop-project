@@ -26,6 +26,7 @@ Mỗi mục có test tự động nếu có thể; chạy và lưu log kết qu�
 | T20 | Người dùng | 5-10 người thử tìm, đặt, xem vé | Ghi tỷ lệ hoàn thành, lỗi, phản hồi |
 
 ## Ghi chú
-- Test đồng thời chạy trên PostgreSQL thật (không giả lập), dùng nhiều kết nối song song.
+- Test tích hợp và đồng thời chạy trên PostgreSQL thật (không giả lập), dùng nhiều kết nối song song. Khi chạy ở máy phát triển, chỉ dùng Supabase project riêng dành cho test qua `DATABASE_URL_TEST`; không cài PostgreSQL/Docker local và tuyệt đối không dùng project dev/demo làm DB test.
+- Trước khi chạy test hoặc reset dữ liệu, phải bật `ALLOW_DESTRUCTIVE_TESTS="true"` và qua guard `scripts/assert-safe-test-db.ts`. Guard từ chối nếu URL test trùng host và username với URL dev/demo. CI dùng PostgreSQL service container riêng, không kết nối hai Supabase project cá nhân.
 - Webhook test dùng `MockProvider` và một vài lần thử thật với số tiền nhỏ qua PayOS.
 - Đánh giá người dùng là đánh giá bản thử nghiệm, không phải chứng minh thành công ngoài thị trường.

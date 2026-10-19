@@ -38,7 +38,7 @@ docs              đặc tả
 6. **Nhà cung cấp thanh toán nằm sau interface** `PaymentProvider`.
 7. **Có dự phòng cho xếp hạng**: ranker lỗi/chậm quá ngưỡng → xếp hạng BM25/văn bản trong API, ghi `search_logs.fallback_used=true`.
 8. **Số sao đánh giá KHÔNG dùng làm nhãn huấn luyện**; nhãn theo `data/labeling-guideline.md`.
-9. **Mọi bảng public phải bật RLS và không có policy** (migration 002 + test). Truy cập DB chỉ từ API qua `DATABASE_URL`.
+9. **Mọi bảng public phải bật RLS và không có policy** (migration 002 + test). API dùng `DATABASE_URL`; chỉ test và migration test dùng `DATABASE_URL_TEST` sau khi safety guard cho phép. Không kết nối PostgreSQL trực tiếp từ trình duyệt.
 10. Secret chỉ ở `.env`, không commit; `.env.example` luôn được cập nhật.
 11. Mọi câu SQL dùng tham số (`$1`, `$2`), không nối chuỗi.
 12. Không thêm tính năng ngoài phạm vi khi chưa hỏi.
@@ -66,7 +66,7 @@ npm run lint
 npm run test             # test API trên DB test
 ```
 
-Test và mọi script reset dữ liệu phải gọi `assertSafeTestDatabase()` trong `scripts/assert-safe-test-db.ts` trước khi thao tác. Guard từ chối nếu `ALLOW_DESTRUCTIVE_TESTS` không đúng chính xác `"true"`, thiếu/không hợp lệ URL DB, hoặc `DATABASE_URL_TEST` có cùng host và username với `DATABASE_URL`. Chỉ dùng Direct hoặc Session pooler (cổng 5432); không dùng Transaction pooler (cổng 6543) cho API/migration. CI dùng PostgreSQL service container riêng.
+Trước khi chạy test hoặc migration test, và trước mọi thao tác reset dữ liệu test, phải gọi `assertSafeTestDatabase()` trong `scripts/assert-safe-test-db.ts`. Guard từ chối nếu `ALLOW_DESTRUCTIVE_TESTS` không đúng chính xác `"true"`, thiếu/không hợp lệ URL DB, hoặc `DATABASE_URL_TEST` có cùng host và username với `DATABASE_URL`. `DATABASE_URL` là Supabase project dev/demo; `DATABASE_URL_TEST` là project Supabase riêng chỉ dành cho test. Chỉ dùng Direct hoặc Session pooler (cổng 5432); không dùng Transaction pooler (cổng 6543) cho API hoặc migration. Máy Windows không cần cài PostgreSQL/Docker; CI dùng PostgreSQL service container riêng.
 
 ## Định nghĩa "xong" cho một bước
 Chạy được; có test tự động cho nhánh chính và nhánh lỗi; không vi phạm quy tắc bắt buộc; `.env.example`, tài liệu và `CLAUDE.md` đã cập nhật nếu thay đổi.

@@ -25,6 +25,13 @@
 - ORM (Prisma, TypeORM...), GraphQL, Redis, message queue, microservice ngoài `ranker`.
 - Mô hình ngôn ngữ tự train từ đầu.
 
+## Kết nối cơ sở dữ liệu và an toàn test
+- API dùng `DATABASE_URL` của Supabase project dev/demo. Test và migration dành cho test chỉ dùng `DATABASE_URL_TEST` của Supabase project riêng chỉ dành cho test.
+- Lấy chuỗi Direct hoặc Session pooler trong Supabase Dashboard > Connect. Cả hai dùng cổng `5432`; Session pooler là lựa chọn khi máy/mạng không truy cập được host Direct.
+- Không dùng Transaction pooler (cổng `6543`) cho API hoặc migration.
+- Trước khi test, migration test hoặc reset dữ liệu test, gọi `assertSafeTestDatabase()` từ `scripts/assert-safe-test-db.ts`. Thao tác bị từ chối trừ khi `ALLOW_DESTRUCTIVE_TESTS` đúng chính xác `"true"`, hai URL hợp lệ, và host hoặc username của URL test khác URL dev/demo.
+- Máy phát triển không cần cài PostgreSQL hoặc Docker. CI dùng PostgreSQL service container riêng; không dùng Supabase project cá nhân trong workflow CI.
+
 ## Quy ước phiên bản
 Dùng phiên bản ổn định/LTS mới nhất tại thời điểm dựng dự án, ghi cố định trong `package.json` và `requirements.txt`. Với thư viện bảo mật và thanh toán, ưu tiên bản đã phát hành ít nhất vài tuần.
 

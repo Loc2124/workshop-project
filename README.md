@@ -6,7 +6,7 @@
 3. Chạy `npm install`, sau đó `npm run dev` để khởi động API và web.
 4. Chạy `npm run lint` và `npm run build` để kiểm tra workspace.
 5. Trước khi chạy test hoặc thao tác trên database test, bật opt-in trong PowerShell: `$env:ALLOW_DESTRUCTIVE_TESTS = "true"`. Sau đó chạy `npm test` hoặc `npm run migrate:test`. Guard sẽ từ chối nếu biến khác `"true"`, thiếu URL, URL sai định dạng, hoặc host và username của hai URL trùng nhau.
-6. `npm run migrate` và `npm run migrate:test` hiện chưa áp migration; migration runner sẽ được triển khai ở Bước 0B.
+6. `npm run migrate` áp các file SQL trong `db/migrations` lên project dev/demo; `npm run migrate:test` áp chúng lên project test sau khi guard an toàn thông qua. Runner ghi checksum, từ chối migration đã bị sửa và bật RLS cho bảng `schema_migrations`.
 
 API mặc định ở `http://localhost:4000` (`GET /health`); web ở `http://localhost:3000`.
 
