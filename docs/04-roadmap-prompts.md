@@ -156,6 +156,27 @@ Seed: script nạp data/workshops.sample.json vào DB (đánh dấu is_simulated
 Test: từng bộ lọc; workshop pending/rejected không hiện; buổi hết chỗ, quá khứ, bị hủy không hiện; không có kết quả thì trả danh sách rỗng.
 ```
 
+### Bước 5B — Triển khai sớm API và web (tuần 4, sau Bước 5)
+
+**Mục tiêu:** có URL HTTPS sớm để phát hiện lỗi cấu hình khi hệ thống còn nhỏ và dùng URL API cho webhook PayOS ở Bước 9.
+
+**Việc của bạn trước khi prompt:** tạo tài khoản ở nơi host API và web. Điều kiện gói miễn phí thay đổi; kiểm tra giá và giới hạn hiện hành trước khi chọn.
+
+```text
+Triển khai bản đầu (chưa có thanh toán thật), không thêm tính năng:
+1. Tạo docs/deploy.md, ghi các bước triển khai và biến môi trường cho từng dịch vụ.
+2. API: cấu hình build/start, đọc PORT, giữ GET /health, dùng DATABASE_URL; nếu host chỉ có IPv4 thì dùng Session pooler cổng 5432; giới hạn kích thước pool phù hợp gói DB; đặt COOKIE_SECURE=true, WEB_ORIGIN đúng và cấu hình trust proxy khi cần. Giải thích các lựa chọn.
+3. Web: build Next.js; NEXT_PUBLIC_* chỉ chứa thông tin công khai; rewrites /api/* trỏ tới URL API đã triển khai.
+4. Monorepo: ghi rõ root directory và lệnh build cho từng dịch vụ; bảo đảm packages/shared được build trước khi API/web phụ thuộc vào nó.
+5. Chạy migrate thủ công vào DATABASE_URL (dev/demo), rồi xác nhận mọi bảng bật RLS.
+6. Smoke test: /health; kiểm tra đăng ký/đăng nhập qua web, cookie Secure và danh sách workshop khi các endpoint tương ứng đã sẵn sàng. Ghi rõ phần nào chưa thể kiểm tra ở bước này.
+Liệt kê rõ thao tác tôi phải tự làm trên dashboard của nhà cung cấp. Không đưa secret vào Git.
+```
+
+**Kiểm tra:** có URL HTTPS công khai; `/health` hoạt động; ghi nhận rõ hạng mục smoke test chưa sẵn sàng nếu endpoint tương ứng chưa được triển khai.
+
+**Lỗi hay gặp:** host chỉ hỗ trợ IPv4 nên không kết nối được Direct; cần chuyển sang Session pooler. Monorepo có thể cần cấu hình root/build riêng. Cookie có thể không được gửi nếu Secure/SameSite hoặc rewrites cấu hình sai. Gói miễn phí có thể ngủ, nên phải kiểm tra API còn thức trước demo.
+
 ---
 
 ## C. Giao diện web
@@ -205,12 +226,13 @@ Cài POST /bookings (chỉ customer) theo ĐÚNG mẫu SQL trong docs/02-archite
 - Trong một transaction: UPDATE sessions có điều kiện để giành chỗ (0 dòng bị ảnh hưởng = hết chỗ, trả 409 với mã lỗi riêng), rồi INSERT booking với giá lấy từ dòng vừa trả về. KHÔNG đọc số chỗ rồi ghi lại ở tầng ứng dụng. KHÔNG nhận giá hay tổng tiền từ client.
 - order_code: số nguyên không trùng; kiểm tra giới hạn kích thước mà PayOS cho phép trong tài liệu chính thức (tôi sẽ dán nếu cần); sinh mã rồi thử lại khi vi phạm UNIQUE.
 - Giới hạn quantity theo MAX_TICKETS_PER_BOOKING; mỗi khách tối đa N booking pending cùng lúc (đề xuất N và giải thích).
-- Hàm releaseExpiredHolds() theo mẫu SQL trong tài liệu, gọi định kỳ trong tiến trình API (khoảng EXPIRY_JOB_INTERVAL_SECONDS) có pg_try_advisory_lock để không chạy chồng; hàm này phải test được trực tiếp.
+- Hàm releaseExpiredHolds({ sessionId? }) theo mẫu SQL trong tài liệu, gọi định kỳ trong tiến trình API (khoảng EXPIRY_JOB_INTERVAL_SECONDS) có pg_try_advisory_lock để không chạy chồng; hàm này phải test được trực tiếp. BẮT BUỘC gọi thêm theo buổi (a) ở đầu POST /bookings, trong cùng transaction và trước câu UPDATE giữ chỗ, (b) trong GET /workshops/:id trước khi trả danh sách buổi còn chỗ; không dựa riêng vào job vì host có thể ngủ (xem docs/02-architecture.md).
 - Cài interface PaymentProvider và MockProvider (createPayment trả checkoutUrl giả; bước 9 mới có PayOS). Tạm thời POST /bookings gọi provider và lưu một dòng payments trạng thái created.
 Test (Vitest, PostgreSQL thật, NHIỀU kết nối song song bằng pool riêng, không giả lập):
 - T01: buổi capacity 5, bắn 50 yêu cầu đặt 1 chỗ cùng lúc => đúng 5 thành công, 45 nhận hết chỗ, seats_held = 5, không vượt capacity. Lặp lại ít nhất 20 lần để lộ lỗi chạy đua.
 - T02: hai khách tranh chỗ cuối.
 - T03: booking pending quá hạn => expired và trả đúng seats_held; chạy job hai lần liên tiếp không trả chỗ hai lần; chạy hai job song song cũng không trả hai lần.
+- T03b: không chạy job định kỳ; booking pending hết hạn giữ chỗ cuối của buổi, khách khác đặt thì vẫn thành công; job chạy chồng không trả chỗ hai lần.
 - T10: client gửi giá/tổng tiền khác => bị bỏ qua.
 Báo cáo kết quả test kèm số lần chạy.
 ```
@@ -220,7 +242,7 @@ Báo cáo kết quả test kèm số lần chạy.
 
 ### Bước 9 — PayOS và webhook idempotent (tuần 5) ⚠ phần quan trọng thứ hai
 
-**Việc của bạn trước khi prompt:** mở tài liệu chính thức của PayOS (tạo link thanh toán, webhook, xác thực chữ ký), lấy Client ID/API Key/Checksum Key bỏ vào `.env`, cài tunnel để có URL công khai. Dán nội dung tài liệu liên quan cho AI.
+**Việc của bạn trước khi prompt:** mở tài liệu chính thức của PayOS (tạo link thanh toán, webhook, xác thực chữ ký), lấy Client ID/API Key/Checksum Key bỏ vào `.env`, dùng URL API đã triển khai ở Bước 5B làm URL webhook. Chỉ dùng tunnel nếu triển khai chưa hoạt động. Dán nội dung tài liệu liên quan cho AI.
 
 ```text
 Dưới đây là tài liệu chính thức của PayOS về tạo thanh toán, webhook và xác thực chữ ký: [dán].
@@ -235,8 +257,9 @@ Cài:
 4. Một helper chỉ dùng trong test để tạo webhook giả có chữ ký đúng bằng PAYOS_CHECKSUM_KEY_TEST và chạy qua CÙNG đường xử lý.
 Test: T04 gửi cùng webhook hợp lệ 2 lần (và 10 lần song song) => 1 booking paid, 1 bộ vé, seats_sold tăng đúng một lần, các lần sau là duplicate; T05 chữ ký sai; T06 số tiền sai; T07 thanh toán thất bại/hủy.
 ```
+Trước khi bổ sung tác vụ đối soát thanh toán pending/expired bằng API PayOS, phải đọc tài liệu chính thức và hỏi tôi duyệt phạm vi; nếu được duyệt, dùng cùng đường xử lý idempotent của webhook.
 
-**Kiểm tra thật (bằng tay, ghi vào nhật ký bằng chứng):** chạy API + tunnel, đặt chỗ, thanh toán một khoản nhỏ thật, xác nhận webhook đến, booking chuyển `paid`, vé được cấp; chụp màn hình và lưu log.
+**Kiểm tra thật (bằng tay, ghi vào nhật ký bằng chứng):** dùng API đã triển khai (tunnel chỉ khi cần dự phòng), đặt chỗ, thanh toán một khoản nhỏ thật, xác nhận webhook đến, booking chuyển `paid`, vé được cấp; chụp màn hình và lưu log.
 **Lỗi hay gặp:** AI tin trường `success` trong URL return; xử lý webhook ngoài transaction; trả lỗi 500 làm PayOS gọi lại vô hạn.
 
 ### Bước 10 — Thanh toán muộn, hủy buổi, vé (tuần 6)
@@ -345,7 +368,7 @@ Sau khi tôi duyệt danh sách, sửa từng mục kèm test.
 
 ```text
 Chuẩn bị triển khai: (1) Supabase: chạy migrate với chuỗi Direct hoặc Session pooler (cổng 5432), xác nhận mọi bảng bật RLS không policy; không dùng Transaction pooler (cổng 6543) cho API hoặc migration; (2) API ở nơi có URL công khai, cấu hình PAYOS_WEBHOOK_URL và đăng ký URL webhook ở PayOS; (3) web trỏ rewrites tới API triển khai; (4) ranker triển khai với mô hình nhỏ và dự phòng BM25 trong API; (5) script seed dữ liệu demo (ghi rõ mô phỏng) và tài khoản demo cho ba vai; (6) chế độ MockProvider có thể bật bằng biến môi trường để demo khi mạng/PayOS lỗi; (7) checklist trước buổi demo: dự án Supabase còn chạy, webhook còn hoạt động, thanh toán thật số tiền nhỏ chạy được.
-Viết docs/deploy.md với từng bước và biến môi trường cần có.
+Cập nhật docs/deploy.md đã tạo ở Bước 5B với toàn bộ dịch vụ, biến môi trường và checklist demo.
 ```
 
 ### Bước 19 — Gom bằng chứng và hỗ trợ báo cáo (tuần 11-12)
@@ -372,17 +395,17 @@ Không bịa số liệu: chỉ dùng kết quả có file log kèm theo.
 
 ## H. Bảng đối chiếu bước ↔ tuần ↔ test
 
-| Bước       | Tuần  | Test liên quan            |
-| ---------- | ----- | ------------------------- |
-| 0A, 0B, 1  | 2     | schema, RLS, hạ tầng      |
-| 2, 3, 4    | 2-3   | T11, T12                  |
-| 5, 6, 7A-C | 3-4   | lọc, hiển thị             |
-| 8          | 4-5   | T01, T02, T03, T10        |
-| 9          | 5     | T04-T07 + thanh toán thật |
-| 10, 11     | 6-7   | T08, T09, T13, T14        |
-| 12         | 1-5   | dữ liệu, baseline         |
-| 13         | 6-7   | đánh giá mô hình          |
-| 14         | 8     | T17-T19                   |
-| 15, 16     | 9-10  | T15, T16 (mức 2, 3)       |
-| 17, 18     | 10-11 | rà soát, triển khai       |
-| 19         | 11-12 | T20, gom bằng chứng       |
+| Bước | Tuần | Test liên quan |
+|---|---|---|
+| 0A, 0B, 1 | 2 | schema, RLS, hạ tầng |
+| 2, 3, 4 | 2-3 | T11, T12 |
+| 5, 5B, 6, 7A-C | 3-4 | lọc, hiển thị, smoke test triển khai |
+| 8 | 4-5 | T01, T02, T03, T03b, T10 |
+| 9 | 5 | T04-T07 + thanh toán thật |
+| 10, 11 | 6-7 | T08, T09, T13, T14 |
+| 12 | 1-5 | dữ liệu, baseline |
+| 13 | 6-7 | đánh giá mô hình |
+| 14 | 8 | T17-T19 |
+| 15, 16 | 9-10 | T15, T16 (mức 2, 3) |
+| 17, 18 | 10-11 | rà soát, triển khai |
+| 19 | 11-12 | T20, gom bằng chứng |

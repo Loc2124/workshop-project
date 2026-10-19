@@ -19,25 +19,37 @@
 
 ## Cấu trúc thư mục
 ```
-apps/web          Next.js
-apps/api          Express API
-  src/app.ts, server.ts  app composition and process entry point
-  src/db, errors, middleware  shared API infrastructure
-  src/modules/<feature>  feature routes, schemas, services, repositories (add as needed)
-  tests/unit, integration, helpers  tests grouped by scope and reusable fixtures
-packages/shared   kiểu và schema zod dùng chung
-services/ranker   Python: dữ liệu, baseline, fine-tune, dịch vụ /rank
-db/migrations     SQL đánh số: 001_init.sql, 002_rls_lockdown.sql, 003_...
-scripts           migrate.ts, seed
-data              dữ liệu mẫu, nhãn, quy tắc gán nhãn
-docs              đặc tả
+apps/
+  api/                       Express API
+    src/
+      server.ts, app.ts      process entry point và createApp()
+      config.ts              validate cấu hình
+      db/                    pool PostgreSQL, query, transaction
+      errors/                AppError và định dạng lỗi
+      middleware/            validate, auth, logging và middleware dùng chung
+      modules/<feature>/     routes, schemas, services, repositories theo nghiệp vụ
+    tests/
+      unit/                  logic cô lập và kiểm tra HTTP không cần DB
+      integration/           test với PostgreSQL thật
+      helpers/               fixtures và helper dùng chung cho test
+  web/                       Next.js App Router
+    src/app/                 routing và layout
+    src/features/            giao diện theo nghiệp vụ, thêm khi cần
+    src/components/          thành phần UI dùng chung
+    src/lib/                 API client và tiện ích dùng chung
+packages/shared/src/         kiểu và schema zod dùng chung
+services/ranker/             Python: dữ liệu, baseline, fine-tune, dịch vụ /rank
+db/migrations/               SQL đánh số: 001_init.sql, 002_rls_lockdown.sql, 003_...
+scripts/                      migrate.ts, guard và seed
+data/                         dữ liệu mẫu, nhãn, quy tắc gán nhãn
+docs/                         đặc tả
 ```
 
-Trong web, `src/app` dành cho routing/layout của Next.js; thêm `features`, `components` hoặc `lib` khi có nghiệp vụ cần dùng, không tạo thư mục rỗng trước.
+Đây là quy ước, không phải danh sách thư mục phải tạo sẵn: chỉ thêm module, feature hoặc thư mục khi bước tương ứng cần. Trong API, routes gọi service rồi repository; SQL nghiệp vụ nằm trong repository. Trong web, `src/app` chỉ dành cho routing/layout Next.js.
 
 ## Quy tắc BẮT BUỘC (không được phá, kể cả khi "cho nhanh")
 1. **Điều kiện cứng do database lọc** (ngày, giá, khu vực, chỗ trống). Mô hình AI chỉ xếp hạng tập ứng viên đã qua lọc.
-2. **Giữ chỗ phải nguyên tử**: một câu `UPDATE ... WHERE seats_held + seats_sold + $qty <= capacity RETURNING ...` trong transaction. Cấm đọc số chỗ rồi ghi lại ở tầng ứng dụng. Mẫu SQL ở `docs/02-architecture.md`.
+2. **Giữ chỗ phải nguyên tử**: một câu `UPDATE ... WHERE seats_held + seats_sold + $qty <= capacity RETURNING ...` trong transaction. Cấm đọc số chỗ rồi ghi lại ở tầng ứng dụng. Mẫu SQL ở `docs/02-architecture.md`. Không chỉ dựa vào job định kỳ để giải phóng chỗ hết hạn: ngoài job, phải giải phóng chỗ hết hạn của buổi liên quan ở đầu `POST /bookings` trong cùng transaction, trước câu UPDATE giữ chỗ, và trước khi trả danh sách buổi còn chỗ; xem `docs/02-architecture.md`.
 3. **Webhook thanh toán idempotent**: xác thực chữ ký, ghi mọi sự kiện vào `webhook_events` (unique theo khóa chống trùng), nhận lặp không tạo vé hay cộng doanh thu hai lần. Đọc tài liệu chính thức PayOS trước khi code phần chữ ký, không đoán.
 4. **Không tin dữ liệu tiền từ client**: giá, tổng tiền tính lại ở server từ `sessions`.
 5. **Phân quyền theo đơn vị**: mọi truy vấn của organizer lọc theo `organizer_id` của người đăng nhập, truyền như tham số bắt buộc. Mỗi endpoint organizer có test "đơn vị B không truy cập dữ liệu đơn vị A".

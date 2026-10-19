@@ -61,6 +61,28 @@ WHERE s.id = agg.session_id;
 ```
 Job phải an toàn khi chạy chồng (không giải phóng một booking hai lần: điều kiện `status = 'pending'` đảm bảo điều này).
 
+### Giải phóng khi truy cập (bắt buộc, không chỉ dựa vào job)
+Dịch vụ host miễn phí có thể ngủ nên job định kỳ không chạy. Vì vậy, cùng hàm `releaseExpiredHolds({ sessionId? })` phải được gọi thêm:
+1. Ở đầu `POST /bookings`, cho buổi được đặt, **trong cùng transaction và trước** câu UPDATE giữ chỗ.
+2. Trong `GET /workshops/:id`, trước khi trả danh sách buổi còn chỗ.
+
+Khi chỉ xử lý một buổi, giới hạn cập nhật booking hết hạn theo `session_id`:
+```sql
+WITH expired AS (
+  UPDATE bookings
+  SET status = 'expired'
+  WHERE status = 'pending'
+    AND hold_expires_at < now()
+    AND session_id = $1
+  RETURNING session_id, quantity
+)
+UPDATE sessions s
+SET seats_held = s.seats_held - agg.qty
+FROM (SELECT session_id, sum(quantity) AS qty FROM expired GROUP BY session_id) agg
+WHERE s.id = agg.session_id;
+```
+Điều kiện `status = 'pending'` bảo đảm job và request có thể chạy chồng mà không giải phóng một booking hai lần.
+
 ## Xử lý webhook (idempotent)
 1. Đọc body thô, **xác thực chữ ký** theo tài liệu chính thức PayOS. Sai chữ ký → lưu `webhook_events` với `signature_valid=false`, trả lỗi, không xử lý.
 2. `INSERT INTO webhook_events ... ON CONFLICT (provider, dedupe_key) DO NOTHING`. Nếu không chèn được (đã nhận trước đó) → trả thành công, không làm gì thêm (`outcome='duplicate'`).

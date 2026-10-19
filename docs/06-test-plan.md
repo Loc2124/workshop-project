@@ -7,6 +7,7 @@ Mỗi mục có test tự động nếu có thể; chạy và lưu log kết qu�
 | T01 | Đồng thời | N yêu cầu (ví dụ 50) cùng đặt những chỗ cuối của một buổi | Tổng chỗ giữ + bán không vượt sức chứa; số booking thành công bằng số chỗ còn |
 | T02 | Đồng thời | Hai khách cùng đặt chỗ cuối | Đúng một người thành công, người kia nhận lỗi hết chỗ |
 | T03 | Giữ chỗ | Booking `pending` quá `hold_expires_at` | Job chuyển `expired` và trả đúng `seats_held`; chạy job hai lần không trả chỗ hai lần |
+| T03b | Giữ chỗ | Job định kỳ không chạy; booking `pending` hết hạn đang giữ chỗ cuối của buổi, khách khác đặt | Chỗ hết hạn được giải phóng khi truy cập nên đặt thành công; job chạy chồng không trả chỗ hai lần |
 | T04 | Webhook | Gửi cùng một webhook hợp lệ hai lần | Một booking `paid`, một bộ vé, `seats_sold` tăng một lần, sự kiện thứ hai là `duplicate` |
 | T05 | Webhook | Chữ ký sai | Bị từ chối, lưu `signature_valid=false`, booking không đổi |
 | T06 | Webhook | Số tiền không khớp `total_amount` | Không xác nhận, ghi nhận để kiểm tra |
