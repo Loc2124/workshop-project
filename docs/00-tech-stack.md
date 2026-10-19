@@ -32,6 +32,12 @@
 - Trước khi test, migration test hoặc reset dữ liệu test, gọi `assertSafeTestDatabase()` từ `scripts/assert-safe-test-db.ts`. Thao tác bị từ chối trừ khi `ALLOW_DESTRUCTIVE_TESTS` đúng chính xác `"true"`, hai URL hợp lệ, và host hoặc username của URL test khác URL dev/demo.
 - Máy phát triển không cần cài PostgreSQL hoặc Docker. CI dùng PostgreSQL service container riêng; không dùng Supabase project cá nhân trong workflow CI.
 
+## Múi giờ
+- Múi giờ nghiệp vụ là `Asia/Ho_Chi_Minh` (UTC+7); lưu thời điểm bằng PostgreSQL `timestamptz`.
+- API chỉ nhận thời điểm ISO 8601 có độ lệch múi giờ khi tạo hoặc sửa buổi.
+- Bộ lọc ngày dùng khoảng nửa mở `[date_from 00:00, date_to + 1 ngày 00:00)` theo giờ Việt Nam, chuyển bằng `AT TIME ZONE 'Asia/Ho_Chi_Minh'` và không phụ thuộc múi giờ phiên DB.
+- Web định dạng ngày giờ qua helper dùng chung với `timeZone: 'Asia/Ho_Chi_Minh'`.
+
 ## Quy ước phiên bản
 Dùng phiên bản ổn định/LTS mới nhất tại thời điểm dựng dự án, ghi cố định trong `package.json` và `requirements.txt`. Với thư viện bảo mật và thanh toán, ưu tiên bản đã phát hành ít nhất vài tuần.
 

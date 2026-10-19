@@ -14,13 +14,46 @@ describe('API foundation', () => {
     expect(response.body).toEqual({ ok: true });
   });
 
-  it('rejects a missing or invalid API port with a clear error', () => {
-    expect(() => loadConfig({ NODE_ENV: 'test' })).toThrow(
-      'Invalid API configuration: API_PORT',
-    );
+  it('uses PORT, falls back to API_PORT, and defaults to the local port', () => {
+    expect(loadConfig({ PORT: '8080' }).API_PORT).toBe(8080);
+    expect(loadConfig({ API_PORT: '4001' }).API_PORT).toBe(4001);
+    expect(loadConfig({}).API_PORT).toBe(4000);
+  });
+
+  it('rejects invalid ports and requires secure cookies in production', () => {
     expect(() => loadConfig({ API_PORT: 'not-a-port' })).toThrow(
       'Invalid API configuration: API_PORT',
     );
+    expect(() => loadConfig({ NODE_ENV: 'production' })).toThrow(
+      'COOKIE_SECURE must be true in production.',
+    );
+    expect(
+      loadConfig({ NODE_ENV: 'production', COOKIE_SECURE: 'true' })
+        .COOKIE_SECURE,
+    ).toBe('true');
+  });
+
+  it('validates the web origin, trusted proxy hops, and database pool size', () => {
+    expect(() => loadConfig({ WEB_ORIGIN: 'not a URL' })).toThrow(
+      'Invalid API configuration: WEB_ORIGIN',
+    );
+    expect(() => loadConfig({ TRUST_PROXY_HOPS: '-1' })).toThrow(
+      'Invalid API configuration: TRUST_PROXY_HOPS',
+    );
+    expect(() => loadConfig({ DB_POOL_MAX: '21' })).toThrow(
+      'Invalid API configuration: DB_POOL_MAX',
+    );
+    expect(
+      loadConfig({
+        WEB_ORIGIN: 'https://demo.example.com',
+        TRUST_PROXY_HOPS: '1',
+        DB_POOL_MAX: '3',
+      }),
+    ).toMatchObject({
+      WEB_ORIGIN: 'https://demo.example.com',
+      TRUST_PROXY_HOPS: 1,
+      DB_POOL_MAX: 3,
+    });
   });
 
   it('rejects destructive tests unless explicitly enabled', () => {

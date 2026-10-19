@@ -13,6 +13,7 @@ import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { getCurrentUser } from './modules/auth/auth.service.js';
 import { AppError } from './errors/app-error.js';
+import catalogRoutes from './modules/catalog/catalog.routes.js';
 
 export function createApp() {
   const app = express();
@@ -47,6 +48,7 @@ export function createApp() {
   });
 
   app.use('/auth', authRoutes);
+  app.use('/', catalogRoutes);
   app.use('/organizer', organizerRoutes);
   app.use('/organizer', workshopRoutes);
   app.use('/organizer', sessionRoutes);

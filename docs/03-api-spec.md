@@ -12,9 +12,9 @@ Tiền: VND số nguyên. Thời gian: ISO 8601. Lỗi trả dạng `{ "error": 
 ## Khách hàng
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
-| GET | /workshops | Lọc: `date_from`, `date_to`, `price_min`, `price_max`, `district`, `category`. Chỉ `approved` |
+| GET | /workshops | Lọc: `date_from`, `date_to`, `price_min`, `price_max`, `district`, `category`; phân trang `page`, `page_size` (mặc định 1, 20; tối đa 100). Trả `{ items, pagination: { page, pageSize, total } }` |
 | POST | /search | Body: `{ filters, need_text }` → danh sách đã lọc cứng rồi xếp hạng; ghi `search_logs` |
-| GET | /workshops/:id | Chi tiết + các buổi còn chỗ |
+| GET | /workshops/:id | Chi tiết workshop đã duyệt của organizer đã duyệt + các buổi `scheduled` tương lai còn chỗ |
 | POST | /bookings | Body: `{ session_id, quantity }` → giữ chỗ + tạo thanh toán; trả `{ booking, checkout_url }` |
 | GET | /bookings/:id | Chỉ chủ đơn |
 | GET | /me/bookings | Lịch sử |
@@ -52,3 +52,7 @@ Các endpoint organizer trả `404` nếu workshop/buổi không tồn tại ho�
 
 ## Dịch vụ ranker (nội bộ)
 `POST {RANKER_URL}/rank` — xem `docs/05-ranking-spec.md`.
+
+### Quy ước thời gian
+- `date_from` và `date_to` nhận ngày lịch `YYYY-MM-DD`, tính theo `Asia/Ho_Chi_Minh` (UTC+7); khoảng lọc là nửa mở `[date_from 00:00, date_to + 1 ngày 00:00)`.
+- API tạo/sửa buổi chỉ nhận thời điểm ISO 8601 có độ lệch múi giờ. DB lưu `timestamptz`; web định dạng qua helper dùng chung đặt `timeZone: 'Asia/Ho_Chi_Minh'`.

@@ -6,6 +6,7 @@
 Đồ án tốt nghiệp: website để các đơn vị tổ chức đăng workshop thủ công (gốm, nến, vẽ, cắm hoa...) tại một thành phố; khách tìm, đặt chỗ, thanh toán. **Phần AI trọng tâm: mô hình xếp hạng workshop theo nhu cầu bằng ngôn ngữ tự nhiên, do sinh viên tự fine-tune** (xem `docs/05-ranking-spec.md`). Đặt chỗ + thanh toán là môi trường để triển khai và kiểm chứng.
 
 - Giao diện và thông báo: tiếng Việt. Tiền: VND, **số nguyên**, không dùng float.
+- Múi giờ nghiệp vụ: `Asia/Ho_Chi_Minh` (UTC+7); DB lưu thời điểm bằng `timestamptz`, API chỉ nhận ISO 8601 có độ lệch múi giờ, ngày lọc dùng khoảng nửa mở theo giờ Việt Nam, web định dạng qua helper chung.
 - Dữ liệu mẫu là MÔ PHỎNG, luôn ghi rõ như vậy trong báo cáo và UI demo.
 
 ## Tech stack (đã chốt — xem `docs/00-tech-stack.md`)
@@ -55,7 +56,7 @@ docs/                         đặc tả
 - Các thao tác giữ chỗ và xử lý thanh toán cần nhận transaction hiện tại để có thể gọi trong cùng transaction và kiểm thử trực tiếp.
 
 ### Triển khai
-Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL công khai sớm; Bước 18 hoàn thiện triển khai, dữ liệu demo và checklist trước buổi bảo vệ.
+Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL công khai sớm (hướng dẫn chuẩn bị tại `docs/deploy.md`); Bước 18 hoàn thiện triển khai, dữ liệu demo và checklist trước buổi bảo vệ.
 
 ## Quy tắc BẮT BUỘC (không được phá, kể cả khi "cho nhanh")
 1. **Điều kiện cứng do database lọc** (ngày, giá, khu vực, chỗ trống). Mô hình AI chỉ xếp hạng tập ứng viên đã qua lọc.

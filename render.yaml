@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: workshop-api
+    runtime: node
+    region: singapore
+    plan: free
+    buildCommand: npm ci && npm run build --workspace @workshop/api
+    startCommand: npm run start --workspace @workshop/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_NAME
+        value: workshop_session
+      - key: PAYMENT_PROVIDER
+        value: mock
+      - key: DB_POOL_MAX
+        value: "5"
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: RANKER_URL
+        value: http://localhost:8001
+      - key: WEB_ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

@@ -38,6 +38,17 @@ describe('organizer workshop and session endpoints', () => {
     expect(createdWorkshop.status).toBe(201);
     expect(createdWorkshop.body.workshop.status).toBe('pending');
 
+    const missingCreateTimezone = await request(app)
+      .post(`/organizer/workshops/${createdWorkshop.body.workshop.id}/sessions`)
+      .set('Cookie', organizer.cookie)
+      .send({
+        startsAt: '2030-05-01T09:00:00',
+        endsAt: '2030-05-01T10:00:00',
+        price: 10000,
+        capacity: 10,
+      });
+    expect(missingCreateTimezone.status).toBe(422);
+
     await query(`UPDATE workshops SET status = 'approved' WHERE id = $1`, [
       createdWorkshop.body.workshop.id,
     ]);
@@ -56,6 +67,14 @@ describe('organizer workshop and session endpoints', () => {
     );
     expect(createdSession.status).toBe(201);
     expect(createdSession.body.session.status).toBe('scheduled');
+
+    const missingTimezone = await request(app)
+      .patch(`/organizer/sessions/${createdSession.body.session.id}`)
+      .set('Cookie', organizer.cookie)
+      .send({
+        startsAt: '2030-05-01T09:00:00',
+      });
+    expect(missingTimezone.status).toBe(422);
 
     const updatedSession = await request(app)
       .patch(`/organizer/sessions/${createdSession.body.session.id}`)

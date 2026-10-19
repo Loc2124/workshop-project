@@ -9,7 +9,7 @@ Trình duyệt (Next.js) → API (Node.js) → PostgreSQL
 
 ## Luồng chính
 1. Khách nhập bộ lọc + một câu nhu cầu.
-2. API **lọc cứng bằng SQL** (ngày, giá, khu vực, loại, chỗ trống, workshop `approved`, buổi `scheduled`).
+2. API **lọc cứng bằng SQL** (ngày, giá, khu vực, loại, chỗ trống, workshop và organizer `approved`, buổi `scheduled`). Ngày lịch được hiểu theo `Asia/Ho_Chi_Minh`; truy vấn dùng khoảng nửa mở và chuyển ngày bằng `AT TIME ZONE`, không phụ thuộc múi giờ phiên DB.
 3. API gửi tập ứng viên + câu nhu cầu cho ranker; nhận danh sách đã xếp hạng. Lỗi/chậm quá `RANKER_TIMEOUT_MS` → xếp hạng dự phòng, ghi `search_logs.fallback_used = true`.
 4. Khách chọn buổi, số người → API tạo booking `pending` và giữ chỗ (nguyên tử) → tạo thanh toán PayOS → trả `checkout_url`.
 5. Khách trả tiền → PayOS gọi webhook → API xác thực, xử lý idempotent → booking `paid`, chuyển chỗ giữ thành chỗ bán, cấp vé.
@@ -64,7 +64,7 @@ Job phải an toàn khi chạy chồng (không giải phóng một booking hai l
 ### Giải phóng khi truy cập (bắt buộc, không chỉ dựa vào job)
 Dịch vụ host miễn phí có thể ngủ nên job định kỳ không chạy. Vì vậy, cùng hàm `releaseExpiredHolds({ sessionId? })` phải được gọi thêm:
 1. Ở đầu `POST /bookings`, cho buổi được đặt, **trong cùng transaction và trước** câu UPDATE giữ chỗ.
-2. Trong `GET /workshops/:id`, trước khi trả danh sách buổi còn chỗ.
+2. Trong `GET /workshops` và `GET /workshops/:id`, trước khi trả thông tin buổi còn chỗ.
 
 Khi chỉ xử lý một buổi, giới hạn cập nhật booking hết hạn theo `session_id`:
 ```sql

@@ -4,6 +4,7 @@ import {
   type QueryResult,
   type QueryResultRow,
 } from 'pg';
+import { loadConfig } from '../config.js';
 
 let sharedPool: Pool | undefined;
 
@@ -19,7 +20,10 @@ export function getPool(): Pool {
       throw new Error(`${target} is required to connect to PostgreSQL.`);
     }
     assertDatabaseUrl(connectionString);
-    sharedPool = new Pool({ connectionString });
+    sharedPool = new Pool({
+      connectionString,
+      max: loadConfig().DB_POOL_MAX,
+    });
   }
 
   return sharedPool;
