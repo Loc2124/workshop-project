@@ -11,8 +11,13 @@ router.post(
   requireAuth(['customer', 'organizer']),
   validateBody(organizerProfileSchema),
   async (request, response) => {
-    const result = await createOrganizerProfile(request.user!.sub, request.body);
-    response.status(result.created ? 201 : 200).json({ organizer: result.organizer });
+    const result = await createOrganizerProfile(
+      request.user!.sub,
+      request.body,
+    );
+    response
+      .status(result.created ? 201 : 200)
+      .json({ organizer: result.organizer });
   },
 );
 

@@ -5,7 +5,11 @@ import { assertSafeTestDatabase } from '../../../../scripts/assert-safe-test-db.
 import { migrateDatabase } from '../../../../scripts/migrate.js';
 import { createApp } from '../../src/app.js';
 import { query } from '../../src/db/pool.js';
-import { closeTestPool, getTestPool, withTestDatabase } from '../helpers/database.js';
+import {
+  closeTestPool,
+  getTestPool,
+  withTestDatabase,
+} from '../helpers/database.js';
 
 const app = createApp();
 
@@ -14,7 +18,9 @@ describe('auth module', () => {
     assertSafeTestDatabase();
     const databaseUrl = process.env.DATABASE_URL_TEST;
     if (!databaseUrl) {
-      throw new Error('DATABASE_URL_TEST is required for auth integration tests.');
+      throw new Error(
+        'DATABASE_URL_TEST is required for auth integration tests.',
+      );
     }
     await migrateDatabase(databaseUrl);
   });
@@ -41,7 +47,9 @@ describe('auth module', () => {
 
     expect(loginResponse.status).toBe(200);
     expect(loginResponse.body.user.email).toBe(email.toLowerCase());
-    expect(loginResponse.headers['set-cookie'][0]).toContain('workshop_session=');
+    expect(loginResponse.headers['set-cookie'][0]).toContain(
+      'workshop_session=',
+    );
 
     const meResponse = await request(app)
       .get('/me')

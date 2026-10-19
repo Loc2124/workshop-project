@@ -50,7 +50,11 @@ export function createApp() {
   app.get('/me', requireAuth(), async (request, response) => {
     const user = await getCurrentUser(request.user!.sub);
     if (!user) {
-      throw new AppError(401, 'UNAUTHORIZED', 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.');
+      throw new AppError(
+        401,
+        'UNAUTHORIZED',
+        'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
+      );
     }
     response.json({ user });
   });

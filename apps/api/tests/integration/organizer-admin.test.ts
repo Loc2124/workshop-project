@@ -15,7 +15,9 @@ describe('organizer and admin module', () => {
     assertSafeTestDatabase();
     const databaseUrl = process.env.DATABASE_URL_TEST;
     if (!databaseUrl) {
-      throw new Error('DATABASE_URL_TEST is required for organizer flow tests.');
+      throw new Error(
+        'DATABASE_URL_TEST is required for organizer flow tests.',
+      );
     }
     await migrateDatabase(databaseUrl);
   });
@@ -59,7 +61,9 @@ describe('organizer and admin module', () => {
 
     expect(meResponse.status).toBe(200);
     expect(meResponse.body.user.role).toBe('organizer');
-    expect(meResponse.body.user.organizerId).toBe(profileResponse.body.organizer.id);
+    expect(meResponse.body.user.organizerId).toBe(
+      profileResponse.body.organizer.id,
+    );
   });
 
   it('allows admin approval flow and blocks customers from admin routes', async () => {
@@ -110,7 +114,12 @@ describe('organizer and admin module', () => {
       .set('Cookie', adminLogin.headers['set-cookie'][0]);
 
     expect(listResponse.status).toBe(200);
-    expect(listResponse.body.organizers.some((organizer: { id: string }) => organizer.id === organizerProfile.body.organizer.id)).toBe(true);
+    expect(
+      listResponse.body.organizers.some(
+        (organizer: { id: string }) =>
+          organizer.id === organizerProfile.body.organizer.id,
+      ),
+    ).toBe(true);
 
     const approvalResponse = await request(app)
       .patch(`/admin/organizers/${organizerProfile.body.organizer.id}/status`)

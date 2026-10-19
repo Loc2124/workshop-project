@@ -11,7 +11,7 @@ export function getPool(): Pool {
   if (!sharedPool) {
     const isTestEnvironment = process.env.NODE_ENV === 'test';
     const connectionString = isTestEnvironment
-      ? process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL
+      ? (process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL)
       : process.env.DATABASE_URL;
 
     if (!connectionString) {

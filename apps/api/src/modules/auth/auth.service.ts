@@ -46,7 +46,11 @@ export async function loginCustomer(input: LoginInput): Promise<{
   const user = await findUserByEmail(email);
 
   if (!user || !(await argon2.verify(user.passwordHash, input.password))) {
-    throw new AppError(401, 'UNAUTHORIZED', 'Email hoặc mật khẩu không chính xác.');
+    throw new AppError(
+      401,
+      'UNAUTHORIZED',
+      'Email hoặc mật khẩu không chính xác.',
+    );
   }
 
   const organizerId = await findOrganizerIdByUserId(user.id);
@@ -93,7 +97,8 @@ function signAccessToken(
   role: 'customer' | 'organizer' | 'admin',
   organizerId: string | null,
 ): string {
-  const expiresIn = (process.env.JWT_EXPIRES_IN || '7d') as jwt.SignOptions['expiresIn'];
+  const expiresIn = (process.env.JWT_EXPIRES_IN ||
+    '7d') as jwt.SignOptions['expiresIn'];
 
   return jwt.sign(
     {

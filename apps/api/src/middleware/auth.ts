@@ -9,11 +9,9 @@ export type AuthUser = {
   organizerId?: string | null;
 };
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthUser;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: AuthUser;
   }
 }
 
@@ -27,11 +25,18 @@ export function requireAuth(roles: AuthUser['role'][] = []) {
     const token = request.cookies?.[cookieName];
 
     if (!token) {
-      next(new AppError(401, 'UNAUTHORIZED', 'Bạn cần đăng nhập để thực hiện thao tác này.'));
+      next(
+        new AppError(
+          401,
+          'UNAUTHORIZED',
+          'Bạn cần đăng nhập để thực hiện thao tác này.',
+        ),
+      );
       return;
     }
 
-    const jwtSecret = process.env.JWT_SECRET || 'change-me-to-a-long-random-string';
+    const jwtSecret =
+      process.env.JWT_SECRET || 'change-me-to-a-long-random-string';
 
     try {
       const payload = jwt.verify(token, jwtSecret) as {
@@ -45,7 +50,13 @@ export function requireAuth(roles: AuthUser['role'][] = []) {
       }
 
       if (roles.length > 0 && !roles.includes(payload.role)) {
-        next(new AppError(403, 'FORBIDDEN', 'Bạn không có quyền thực hiện thao tác này.'));
+        next(
+          new AppError(
+            403,
+            'FORBIDDEN',
+            'Bạn không có quyền thực hiện thao tác này.',
+          ),
+        );
         return;
       }
 
@@ -61,7 +72,13 @@ export function requireAuth(roles: AuthUser['role'][] = []) {
       };
       next();
     } catch {
-      next(new AppError(401, 'UNAUTHORIZED', 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.'));
+      next(
+        new AppError(
+          401,
+          'UNAUTHORIZED',
+          'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
+        ),
+      );
     }
   };
 }

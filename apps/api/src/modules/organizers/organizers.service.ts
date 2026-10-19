@@ -1,8 +1,14 @@
-import { AppError } from '../../errors/app-error.js';
-import { findOrganizerByUserId, setUserRole, upsertOrganizerProfile } from './organizers.repository.js';
+import {
+  findOrganizerByUserId,
+  setUserRole,
+  upsertOrganizerProfile,
+} from './organizers.repository.js';
 import type { OrganizerProfileInput } from './organizers.schemas.js';
 
-export async function createOrganizerProfile(userId: string, input: OrganizerProfileInput): Promise<{
+export async function createOrganizerProfile(
+  userId: string,
+  input: OrganizerProfileInput,
+): Promise<{
   organizer: {
     id: string;
     userId: string;

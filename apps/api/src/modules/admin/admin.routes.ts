@@ -2,7 +2,10 @@ import { Router } from 'express';
 import { AppError } from '../../errors/app-error.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-body.js';
-import { organizerStatusSchema, updateOrganizerStatusSchema } from './admin.schemas.js';
+import {
+  organizerStatusSchema,
+  updateOrganizerStatusSchema,
+} from './admin.schemas.js';
 import { getOrganizersForAdmin, setOrganizerStatus } from './admin.service.js';
 
 const router = Router();

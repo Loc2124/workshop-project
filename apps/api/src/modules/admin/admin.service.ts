@@ -1,8 +1,13 @@
 import { AppError } from '../../errors/app-error.js';
 import type { OrganizerApprovalStatus } from './admin.schemas.js';
-import { listOrganizersForAdmin, updateOrganizerStatus } from './admin.repository.js';
+import {
+  listOrganizersForAdmin,
+  updateOrganizerStatus,
+} from './admin.repository.js';
 
-export async function getOrganizersForAdmin(status?: OrganizerApprovalStatus): Promise<{
+export async function getOrganizersForAdmin(
+  status?: OrganizerApprovalStatus,
+): Promise<{
   organizers: Array<{
     id: string;
     userId: string;
@@ -51,7 +56,11 @@ export async function setOrganizerStatus(
   const organizer = await updateOrganizerStatus(organizerId, status);
 
   if (!organizer) {
-    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy đơn vị tổ chức cần duyệt.');
+    throw new AppError(
+      404,
+      'NOT_FOUND',
+      'Không tìm thấy đơn vị tổ chức cần duyệt.',
+    );
   }
 
   return {
