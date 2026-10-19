@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Pool, type PoolClient } from 'pg';
-import { assertSafeTestDatabase } from '../../../scripts/assert-safe-test-db.js';
-import { migrateDatabase } from '../../../scripts/migrate.js';
+import { assertSafeTestDatabase } from '../../../../scripts/assert-safe-test-db.js';
+import { migrateDatabase } from '../../../../scripts/migrate.js';
 
 let pool: Pool | undefined;
 let databaseUrl: string;

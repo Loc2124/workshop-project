@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { getTestDatabaseSafetyIssues } from '../../../scripts/assert-safe-test-db.js';
-import { createApp } from '../src/app.js';
-import { loadConfig } from '../src/config.js';
+import { getTestDatabaseSafetyIssues } from '../../../../scripts/assert-safe-test-db.js';
+import { createApp } from '../../src/app.js';
+import { loadConfig } from '../../src/config.js';
 
 const app = createApp();
 

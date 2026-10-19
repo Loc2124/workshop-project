@@ -21,6 +21,10 @@
 ```
 apps/web          Next.js
 apps/api          Express API
+  src/app.ts, server.ts  app composition and process entry point
+  src/db, errors, middleware  shared API infrastructure
+  src/modules/<feature>  feature routes, schemas, services, repositories (add as needed)
+  tests/unit, integration, helpers  tests grouped by scope and reusable fixtures
 packages/shared   kiểu và schema zod dùng chung
 services/ranker   Python: dữ liệu, baseline, fine-tune, dịch vụ /rank
 db/migrations     SQL đánh số: 001_init.sql, 002_rls_lockdown.sql, 003_...
@@ -28,6 +32,8 @@ scripts           migrate.ts, seed
 data              dữ liệu mẫu, nhãn, quy tắc gán nhãn
 docs              đặc tả
 ```
+
+Trong web, `src/app` dành cho routing/layout của Next.js; thêm `features`, `components` hoặc `lib` khi có nghiệp vụ cần dùng, không tạo thư mục rỗng trước.
 
 ## Quy tắc BẮT BUỘC (không được phá, kể cả khi "cho nhanh")
 1. **Điều kiện cứng do database lọc** (ngày, giá, khu vực, chỗ trống). Mô hình AI chỉ xếp hạng tập ứng viên đã qua lọc.
