@@ -37,6 +37,12 @@ Test và script thao tác dữ liệu test dùng chung guard tại `scripts/asse
 | `data/workshops.sample.json`, `queries.sample.jsonl`, `labels.sample.jsonl` | Dữ liệu MẪU (mô phỏng) để thấy định dạng |
 | `.github/workflows/ci.yml` | CI chạy lint và test trên PostgreSQL service |
 
+## Trạng thái tiến độ roadmap
+- Bước 1: nền tảng API/test/schema — hoàn thành.
+- Bước 2: đăng ký, đăng nhập, JWT cookie, vai `customer|organizer|admin` — hoàn thành.
+- Bước 3: hồ sơ organizer và duyệt admin (`pending|approved|rejected`) — hoàn thành.
+- Tiếp theo: Bước 4, tạo workshop và session của organizer; sau đó chuyển sang lọc công khai và booking.
+
 ## Lưu ý
 - Hai migration `001_init.sql` và `002_rls_lockdown.sql` đã được áp dụng và kiểm tra trên database test PostgreSQL riêng. Chưa xác nhận migration trên database dev/demo; trước khi chạy migrate vào đó, kiểm tra lại URL đích. Migration đã chạy không được sửa; nếu cần thay đổi, tạo migration mới.
 - Phần chữ ký webhook PayOS không được viết sẵn: Bước 9 yêu cầu dán tài liệu chính thức của PayOS cho AI.

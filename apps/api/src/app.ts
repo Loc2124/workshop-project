@@ -4,7 +4,13 @@ import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
 import { randomUUID } from 'node:crypto';
+import authRoutes from './modules/auth/auth.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
+import organizerRoutes from './modules/organizers/organizers.routes.js';
+import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
+import { getCurrentUser } from './modules/auth/auth.service.js';
+import { AppError } from './errors/app-error.js';
 
 export function createApp() {
   const app = express();
@@ -36,6 +42,17 @@ export function createApp() {
 
   app.get('/health', (_request, response) => {
     response.json({ ok: true });
+  });
+
+  app.use('/auth', authRoutes);
+  app.use('/organizer', organizerRoutes);
+  app.use('/admin', adminRoutes);
+  app.get('/me', requireAuth(), async (request, response) => {
+    const user = await getCurrentUser(request.user!.sub);
+    if (!user) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.');
+    }
+    response.json({ user });
   });
 
   app.use(notFoundHandler);

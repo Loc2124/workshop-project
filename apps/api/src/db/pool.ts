@@ -9,9 +9,14 @@ let sharedPool: Pool | undefined;
 
 export function getPool(): Pool {
   if (!sharedPool) {
-    const connectionString = process.env.DATABASE_URL;
+    const isTestEnvironment = process.env.NODE_ENV === 'test';
+    const connectionString = isTestEnvironment
+      ? process.env.DATABASE_URL_TEST ?? process.env.DATABASE_URL
+      : process.env.DATABASE_URL;
+
     if (!connectionString) {
-      throw new Error('DATABASE_URL is required to connect to PostgreSQL.');
+      const target = isTestEnvironment ? 'DATABASE_URL_TEST' : 'DATABASE_URL';
+      throw new Error(`${target} is required to connect to PostgreSQL.`);
     }
     assertDatabaseUrl(connectionString);
     sharedPool = new Pool({ connectionString });
