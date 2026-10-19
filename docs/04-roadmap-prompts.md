@@ -170,6 +170,8 @@ Triển khai bản đầu (chưa có thanh toán thật), không thêm tính nă
 4. Monorepo: ghi rõ root directory và lệnh build cho từng dịch vụ; bảo đảm packages/shared được build trước khi API/web phụ thuộc vào nó.
 5. Chạy migrate thủ công vào DATABASE_URL (dev/demo), rồi xác nhận mọi bảng bật RLS.
 6. Smoke test: /health; kiểm tra đăng ký/đăng nhập qua web, cookie Secure và danh sách workshop khi các endpoint tương ứng đã sẵn sàng. Ghi rõ phần nào chưa thể kiểm tra ở bước này.
+7. Ghi vào docs/deploy.md mọi thao tác thủ công tôi cần làm trên giao diện của nhà cung cấp (đặt biến môi trường ở đâu, URL webhook PayOS, DNS nếu có), cùng danh sách đầy đủ biến môi trường của từng dịch vụ và ý nghĩa của chúng. Mục đích: nếu đổi nhà cung cấp, tôi làm lại được theo tài liệu này.
+8. Kiểm tra rằng web chỉ dùng tính năng Next.js thông thường, không phụ thuộc tính năng riêng của Vercel, và API không ghi dữ liệu vào ổ đĩa local. Nếu có chỗ vi phạm thì báo tôi.
 Liệt kê rõ thao tác tôi phải tự làm trên dashboard của nhà cung cấp. Không đưa secret vào Git.
 ```
 
@@ -257,6 +259,7 @@ Cài:
 4. Một helper chỉ dùng trong test để tạo webhook giả có chữ ký đúng bằng PAYOS_CHECKSUM_KEY_TEST và chạy qua CÙNG đường xử lý.
 Test: T04 gửi cùng webhook hợp lệ 2 lần (và 10 lần song song) => 1 booking paid, 1 bộ vé, seats_sold tăng đúng một lần, các lần sau là duplicate; T05 chữ ký sai; T06 số tiền sai; T07 thanh toán thất bại/hủy.
 ```
+
 Trước khi bổ sung tác vụ đối soát thanh toán pending/expired bằng API PayOS, phải đọc tài liệu chính thức và hỏi tôi duyệt phạm vi; nếu được duyệt, dùng cùng đường xử lý idempotent của webhook.
 
 **Kiểm tra thật (bằng tay, ghi vào nhật ký bằng chứng):** dùng API đã triển khai (tunnel chỉ khi cần dự phòng), đặt chỗ, thanh toán một khoản nhỏ thật, xác nhận webhook đến, booking chuyển `paid`, vé được cấp; chụp màn hình và lưu log.
@@ -395,17 +398,17 @@ Không bịa số liệu: chỉ dùng kết quả có file log kèm theo.
 
 ## H. Bảng đối chiếu bước ↔ tuần ↔ test
 
-| Bước | Tuần | Test liên quan |
-|---|---|---|
-| 0A, 0B, 1 | 2 | schema, RLS, hạ tầng |
-| 2, 3, 4 | 2-3 | T11, T12 |
-| 5, 5B, 6, 7A-C | 3-4 | lọc, hiển thị, smoke test triển khai |
-| 8 | 4-5 | T01, T02, T03, T03b, T10 |
-| 9 | 5 | T04-T07 + thanh toán thật |
-| 10, 11 | 6-7 | T08, T09, T13, T14 |
-| 12 | 1-5 | dữ liệu, baseline |
-| 13 | 6-7 | đánh giá mô hình |
-| 14 | 8 | T17-T19 |
-| 15, 16 | 9-10 | T15, T16 (mức 2, 3) |
-| 17, 18 | 10-11 | rà soát, triển khai |
-| 19 | 11-12 | T20, gom bằng chứng |
+| Bước           | Tuần  | Test liên quan                       |
+| -------------- | ----- | ------------------------------------ |
+| 0A, 0B, 1      | 2     | schema, RLS, hạ tầng                 |
+| 2, 3, 4        | 2-3   | T11, T12                             |
+| 5, 5B, 6, 7A-C | 3-4   | lọc, hiển thị, smoke test triển khai |
+| 8              | 4-5   | T01, T02, T03, T03b, T10             |
+| 9              | 5     | T04-T07 + thanh toán thật            |
+| 10, 11         | 6-7   | T08, T09, T13, T14                   |
+| 12             | 1-5   | dữ liệu, baseline                    |
+| 13             | 6-7   | đánh giá mô hình                     |
+| 14             | 8     | T17-T19                              |
+| 15, 16         | 9-10  | T15, T16 (mức 2, 3)                  |
+| 17, 18         | 10-11 | rà soát, triển khai                  |
+| 19             | 11-12 | T20, gom bằng chứng                  |

@@ -20,7 +20,7 @@ Không chạy migration cho tới khi xác nhận `DATABASE_URL` đúng project 
 
 ## 2. Web trên Vercel
 
-Import cùng repository thành một project Vercel. Đặt **Root Directory** là `apps/web`; để Vercel nhận diện npm workspace và framework Next.js. Giữ build command mặc định (`next build`) và cài đặt package manager mặc định theo lockfile npm ở repository. Nếu Vercel không tự nhận lockfile workspace, dùng Install Command `cd ../.. && npm ci` và Build Command `cd ../.. && npm run build --workspace @workshop/web`.
+Import cùng repository thành một project Vercel. Đặt **Root Directory** là `apps/web`; để Vercel nhận diện npm workspace và framework Next.js. Giữ build command mặc định (`next build`). Đặt Install Command thành `npm install --production=false` để chắc chắn các gói build trong `devDependencies` được cài, kể cả khi `NODE_ENV=production` đang có trong Vercel Project Settings. Nếu cấu hình project yêu cầu cài từ repository root, dùng `cd ../.. && npm ci --include=dev` và Build Command `cd ../.. && npm run build --workspace @workshop/web`.
 
 Thêm biến môi trường `API_INTERNAL_URL` vào Production (và Preview nếu cần), với giá trị origin API Render, ví dụ `https://workshop-api.onrender.com` — không có path hoặc dấu `/` cuối. Build lại web sau khi thêm biến này vì Next.js đóng rewrite vào cấu hình build.
 

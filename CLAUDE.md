@@ -3,6 +3,7 @@
 Đọc file này đầu tiên trong mỗi phiên làm việc. Chi tiết nằm trong `docs/`.
 
 ## Dự án là gì
+
 Đồ án tốt nghiệp: website để các đơn vị tổ chức đăng workshop thủ công (gốm, nến, vẽ, cắm hoa...) tại một thành phố; khách tìm, đặt chỗ, thanh toán. **Phần AI trọng tâm: mô hình xếp hạng workshop theo nhu cầu bằng ngôn ngữ tự nhiên, do sinh viên tự fine-tune** (xem `docs/05-ranking-spec.md`). Đặt chỗ + thanh toán là môi trường để triển khai và kiểm chứng.
 
 - Giao diện và thông báo: tiếng Việt. Tiền: VND, **số nguyên**, không dùng float.
@@ -10,6 +11,7 @@
 - Dữ liệu mẫu là MÔ PHỎNG, luôn ghi rõ như vậy trong báo cáo và UI demo.
 
 ## Tech stack (đã chốt — xem `docs/00-tech-stack.md`)
+
 - **DB:** PostgreSQL qua hai Supabase project riêng: `DATABASE_URL` cho dev/demo và `DATABASE_URL_TEST` chỉ cho test. Không cài PostgreSQL local, không dùng Docker ngoài PostgreSQL service trong CI. **SQL thuần qua `pg`, không ORM.**
 - **API:** Node.js + TypeScript + **Express**, `zod` (validate qua middleware), `pino-http` (log), `helmet`, `cookie-parser`, `express-rate-limit`. Xác thực tự làm (JWT trong cookie httpOnly). Mọi handler async phải đi qua một wrapper bắt lỗi (hoặc dùng bản Express tự bắt lỗi async), không để lỗi bị nuốt.
 - **Web:** Next.js (App Router) + TypeScript + Tailwind + shadcn/ui. Gọi API qua rewrites `/api/*`.
@@ -19,6 +21,7 @@
 - **KHÔNG dùng:** Supabase Auth/RLS làm phân quyền/Edge Functions/client SDK từ trình duyệt, ORM, GraphQL, Redis, queue.
 
 ## Cấu trúc thư mục
+
 ```
 apps/
   api/                       Express API
@@ -49,6 +52,7 @@ docs/                         đặc tả
 Đây là quy ước, không phải danh sách thư mục phải tạo sẵn: chỉ thêm module, feature hoặc thư mục khi bước tương ứng cần. Trong API, routes gọi service rồi repository; SQL nghiệp vụ nằm trong repository. Trong web, `src/app` chỉ dành cho routing/layout Next.js.
 
 ### Quy ước module API
+
 - Dùng `apps/api/src/modules/<feature>/` cho `auth`, `organizers`, `workshops`, `sessions`, `catalog`, `search`, `bookings`, `payments`, `tickets` và `admin`; chỉ thêm `reviews`/`revenue` khi làm mức 2.
 - Mỗi module chỉ tạo các file cần dùng: `<feature>.routes.ts`, `<feature>.schemas.ts`, `<feature>.service.ts`, `<feature>.repository.ts`.
 - Chiều phụ thuộc là routes → service → repository → `db`; SQL nghiệp vụ chỉ nằm trong repository.
@@ -56,9 +60,23 @@ docs/                         đặc tả
 - Các thao tác giữ chỗ và xử lý thanh toán cần nhận transaction hiện tại để có thể gọi trong cùng transaction và kiểm thử trực tiếp.
 
 ### Triển khai
-Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL công khai sớm (hướng dẫn chuẩn bị tại `docs/deploy.md`); Bước 18 hoàn thiện triển khai, dữ liệu demo và checklist trước buổi bảo vệ.
+
+Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL công khai sớm (hướng dẫn tại `docs/deploy.md`). API hiện đã deploy trên Render; web đang chờ deploy trên Vercel. Bước 18 hoàn thiện triển khai, dữ liệu demo và checklist trước buổi bảo vệ.
+
+### Giữ cho dễ chuyển nhà cung cấp
+
+Giữ nguyên mục này khi chỉnh sửa `CLAUDE.md`. Hiện dùng Render (API) và Vercel (web) làm chỗ chạy tạm; có thể đổi sau. Không để code ứng dụng phụ thuộc trực tiếp vào nhà cung cấp. Để việc đổi không đau:
+
+1. Mọi cấu hình nằm trong biến môi trường, không ghi cứng địa chỉ hay khóa vào code. Danh sách đầy đủ các biến ghi ở `docs/deploy.md`.
+2. Web dùng Next.js thông thường. Không dùng tính năng riêng của Vercel (edge runtime, kho dữ liệu, công cụ phân tích của họ).
+3. API không ghi dữ liệu vào ổ đĩa local. Mọi dữ liệu lưu trong database.
+4. Giữ lệnh chuẩn trong package.json (`npm run build`, `npm start`). Không dùng cấu hình chỉ có ở một nhà cung cấp.
+5. `rewrites` `/api/*` đọc địa chỉ API từ biến môi trường.
+6. Mọi thao tác thủ công (nơi đặt biến, đăng ký webhook PayOS, DNS) phải được ghi vào `docs/deploy.md` ngay khi làm.
+7. Cấu hình riêng của nhà cung cấp chỉ đặt trong Blueprint/dashboard và tài liệu deploy; không đưa API SDK hoặc dịch vụ lưu trữ riêng của host vào luồng nghiệp vụ nếu chưa được yêu cầu.
 
 ## Quy tắc BẮT BUỘC (không được phá, kể cả khi "cho nhanh")
+
 1. **Điều kiện cứng do database lọc** (ngày, giá, khu vực, chỗ trống). Mô hình AI chỉ xếp hạng tập ứng viên đã qua lọc.
 2. **Giữ chỗ phải nguyên tử**: một câu `UPDATE ... WHERE seats_held + seats_sold + $qty <= capacity RETURNING ...` trong transaction. Cấm đọc số chỗ rồi ghi lại ở tầng ứng dụng. Mẫu SQL ở `docs/02-architecture.md`. Không chỉ dựa vào job định kỳ để giải phóng chỗ hết hạn: ngoài job, phải giải phóng chỗ hết hạn của buổi liên quan ở đầu `POST /bookings` trong cùng transaction, trước câu UPDATE giữ chỗ, và trước khi trả danh sách buổi còn chỗ; xem `docs/02-architecture.md`.
 3. **Webhook thanh toán idempotent**: xác thực chữ ký, ghi mọi sự kiện vào `webhook_events` (unique theo khóa chống trùng), nhận lặp không tạo vé hay cộng doanh thu hai lần. Đọc tài liệu chính thức PayOS trước khi code phần chữ ký, không đoán.
@@ -73,6 +91,7 @@ Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL c
 12. Không thêm tính năng ngoài phạm vi khi chưa hỏi.
 
 ## Phạm vi và mức ưu tiên
+
 - **Mức 1 (lõi):** đăng ký/đăng nhập, ba vai; đăng workshop, tạo buổi; bộ lọc cứng; xếp hạng; giữ chỗ có hạn; PayOS; webhook idempotent; mã vé hiển thị; bộ test đồng thời/webhook/phân quyền.
 - **Mức 2:** duyệt bằng cờ trạng thái (đã có trong mức 1 ở dạng trường); doanh thu; đánh giá sau tham gia.
 - **Mức 3:** vé QR + điểm danh; trích xuất nhu cầu bằng Gemini ra JSON (kèm bước khách xem lại).
@@ -80,6 +99,7 @@ Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL c
 - **Mốc cắt:** cuối tuần 7, nếu mức 1 chưa xong thì bỏ mức 2 và 3.
 
 ## Cách làm việc với Claude
+
 - Làm từng bước nhỏ theo `docs/04-roadmap-prompts.md`; mỗi bước phải chạy được và có test trước khi sang bước sau.
 - Luôn **lập kế hoạch trước, chưa viết code**, chờ tôi đồng ý.
 - Trước khi sửa schema: nói lý do và tạo migration mới, không sửa migration cũ đã chạy.
@@ -87,6 +107,7 @@ Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL c
 - Cuối mỗi bước: liệt kê file đã sửa, lệnh kiểm tra, và những gì CHƯA làm.
 
 ## Lệnh
+
 ```
 npm run migrate          # chạy migration vào DATABASE_URL
 npm run migrate:test     # chạy migration vào DATABASE_URL_TEST
@@ -98,4 +119,5 @@ npm run test             # test API trên DB test
 Trước khi chạy test hoặc migration test, và trước mọi thao tác reset dữ liệu test, phải gọi `assertSafeTestDatabase()` trong `scripts/assert-safe-test-db.ts`. Guard từ chối nếu `ALLOW_DESTRUCTIVE_TESTS` không đúng chính xác `"true"`, thiếu/không hợp lệ URL DB, hoặc `DATABASE_URL_TEST` có cùng host và username với `DATABASE_URL`. `DATABASE_URL` là Supabase project dev/demo; `DATABASE_URL_TEST` là project Supabase riêng chỉ dành cho test. Chỉ dùng Direct hoặc Session pooler (cổng 5432); không dùng Transaction pooler (cổng 6543) cho API hoặc migration. Máy Windows không cần cài PostgreSQL/Docker; CI dùng PostgreSQL service container riêng.
 
 ## Định nghĩa "xong" cho một bước
+
 Chạy được; có test tự động cho nhánh chính và nhánh lỗi; không vi phạm quy tắc bắt buộc; `.env.example`, tài liệu và `CLAUDE.md` đã cập nhật nếu thay đổi.
