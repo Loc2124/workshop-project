@@ -7,6 +7,8 @@ import { randomUUID } from 'node:crypto';
 import authRoutes from './modules/auth/auth.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import organizerRoutes from './modules/organizers/organizers.routes.js';
+import workshopRoutes from './modules/workshops/workshops.routes.js';
+import sessionRoutes from './modules/sessions/sessions.routes.js';
 import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { getCurrentUser } from './modules/auth/auth.service.js';
@@ -46,6 +48,8 @@ export function createApp() {
 
   app.use('/auth', authRoutes);
   app.use('/organizer', organizerRoutes);
+  app.use('/organizer', workshopRoutes);
+  app.use('/organizer', sessionRoutes);
   app.use('/admin', adminRoutes);
   app.get('/me', requireAuth(), async (request, response) => {
     const user = await getCurrentUser(request.user!.sub);

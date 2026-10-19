@@ -137,10 +137,10 @@ Test: customer gọi /admin/* bị 403; organizer pending vẫn đăng nhập đ
 **Đưa cho AI:** `docs/01-prd.md` (O2-O5), `docs/02-architecture.md` (mục Phân quyền).
 
 ```text
-Cài /organizer/workshops (GET, POST), PATCH /organizer/workshops/:id, POST /organizer/workshops/:id/sessions, PATCH /organizer/sessions/:id.
+Cài /organizer/workshops (GET, POST), PATCH /organizer/workshops/:id, POST /organizer/workshops/:id/sessions, PATCH /organizer/sessions/:id và POST /organizer/sessions/:id/cancel (O5).
 BẮT BUỘC (CLAUDE.md quy tắc 5): viết repository của organizer sao cho MỌI hàm nhận organizerId và đưa vào WHERE; không có hàm truy vấn organizer nào bỏ qua tham số này.
-Quy tắc: sức chứa > 0; không sửa sức chứa xuống dưới seats_held + seats_sold; workshop mới có status pending; sửa workshop đã approved thì đưa về pending (hỏi tôi nếu bạn thấy không hợp lý); không sửa giá buổi đã có booking pending/paid.
-Test T11 dạng tham số hóa: với MỖI endpoint organizer, đơn vị B không đọc/sửa/tạo con cho dữ liệu của đơn vị A (trả 403 hoặc 404, thống nhất một kiểu và ghi vào tài liệu); T12: customer không gọi được.
+Quy tắc: sức chứa > 0; không sửa sức chứa xuống dưới seats_held + seats_sold; workshop mới có status pending; sửa workshop đã approved thì đưa về pending; không sửa giá buổi đã có booking pending/paid. Hủy buổi trong transaction: pending → cancelled và trả chỗ giữ; paid → refund_needed.
+Với tài nguyên không thuộc đơn vị đăng nhập, trả 404 nhất quán để không làm lộ sự tồn tại. Test T11 dạng tham số hóa: đơn vị B không đọc/sửa/tạo con cho dữ liệu của đơn vị A trên mọi endpoint; T12: customer không gọi được. Danh sách đăng ký được triển khai cùng booking.
 ```
 
 **Kiểm tra:** đọc code repository và xác nhận không có truy vấn nào thiếu `organizer_id`.
@@ -267,8 +267,8 @@ Trước khi bổ sung tác vụ đối soát thanh toán pending/expired bằng
 ```text
 Cài theo docs/02-architecture.md:
 - Thanh toán đến muộn: webhook hợp lệ cho booking đã expired => thử giành lại chỗ bằng cùng câu UPDATE giữ chỗ trong transaction; còn chỗ thì paid + cấp vé (outcome late_payment_confirmed); hết chỗ thì refund_needed (late_payment_no_seat).
-- POST /organizer/sessions/:id/cancel: buổi => cancelled; booking paid => refund_needed; booking pending => cancelled và trả seats_held; chỉ chủ buổi.
-- GET /bookings/:id, GET /me/bookings, GET /bookings/:id/tickets (chỉ chủ đơn, chỉ đơn paid).
+- GET /organizer/sessions/:id/registrations: chỉ chủ buổi được xem danh sách booking liên quan.
+- GET /bookings/:id, GET /me/bookings, GET /bookings/:id/tickets (chỉ chủ đơn, chỉ đơn paid). Hủy buổi đã triển khai ở Bước 4.
 Test: T08, T09, T13, T14.
 ```
 

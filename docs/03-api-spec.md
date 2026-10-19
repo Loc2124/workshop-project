@@ -34,11 +34,13 @@ Tiền: VND số nguyên. Thời gian: ISO 8601. Lỗi trả dạng `{ "error": 
 | GET/POST | /organizer/workshops | Danh sách, tạo |
 | PATCH | /organizer/workshops/:id | Sửa workshop của mình |
 | POST | /organizer/workshops/:id/sessions | Tạo buổi |
-| PATCH | /organizer/sessions/:id | Sửa buổi (không giảm sức chứa dưới số đã giữ/bán) |
-| POST | /organizer/sessions/:id/cancel | Hủy buổi (xem kiến trúc) |
-| GET | /organizer/sessions/:id/registrations | Danh sách đăng ký |
+| PATCH | /organizer/sessions/:id | Sửa lịch/giá/sức chứa; không giảm sức chứa dưới số đã giữ/bán hoặc đổi giá khi có booking `pending`/`paid` |
+| POST | /organizer/sessions/:id/cancel | Hủy buổi; booking `pending` chuyển `cancelled`, booking `paid` chuyển `refund_needed` |
+| GET | /organizer/sessions/:id/registrations | Danh sách đăng ký (triển khai cùng booking) |
 | GET | /organizer/revenue | Mức 2 |
 | POST | /organizer/tickets/check-in | Mức 3 |
+
+Các endpoint organizer trả `404` nếu workshop/buổi không tồn tại hoặc không thuộc đơn vị đang đăng nhập, để không làm lộ tài nguyên của đơn vị khác. Workshop mới có trạng thái `pending`; sửa workshop đã duyệt đưa trạng thái về `pending` để admin duyệt lại.
 
 ## Quản trị
 | Method | Đường dẫn | Mô tả |

@@ -15,7 +15,7 @@ Mỗi mục có test tự động nếu có thể; chạy và lưu log kết qu�
 | T08 | Thanh toán muộn | Webhook đến sau khi booking `expired`, còn chỗ | Booking `paid`, cấp vé |
 | T09 | Thanh toán muộn | Như T08 nhưng hết chỗ | Booking `refund_needed`, không cấp vé |
 | T10 | Tiền | Client gửi giá/tổng tiền khác | Server bỏ qua, tính lại từ `sessions` |
-| T11 | Phân quyền | Đơn vị B đọc/sửa workshop, buổi, đăng ký của đơn vị A | 403/404 trên mọi endpoint organizer |
+| T11 | Phân quyền | Đơn vị B đọc/sửa workshop, buổi, đăng ký của đơn vị A | 404 thống nhất trên tài nguyên không thuộc đơn vị; danh sách chỉ chứa dữ liệu của chính đơn vị |
 | T12 | Phân quyền | Khách gọi endpoint organizer/admin | 403 |
 | T13 | Phân quyền | Khách xem booking/vé của người khác | 403/404 |
 | T14 | Hủy buổi | Đơn vị hủy buổi đã có booking | Booking `paid` → `refund_needed`; `pending` → `cancelled`, trả chỗ giữ; doanh thu loại buổi hủy |
