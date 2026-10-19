@@ -12,7 +12,7 @@ Nhà cung cấp đã chọn: **API trên Render, web trên Vercel**. Blueprint A
 
 ## 1. API trên Render
 
-Tạo Blueprint mới trong Render Dashboard, kết nối repository này và chọn `render.yaml`. Blueprint dùng repository root làm working directory, cài dependencies qua `npm ci`, build workspace API, start bằng lệnh workspace, và dùng `/health` để health check. Kế hoạch được đặt `free`; đổi plan trong dashboard nếu cần dịch vụ không ngủ.
+Tạo Blueprint mới trong Render Dashboard, kết nối repository này và chọn `render.yaml`. Blueprint dùng repository root làm working directory, cài dependencies qua `npm ci --include=dev` (cần TypeScript và type declarations để build), build workspace API, start bằng lệnh workspace, và dùng `/health` để health check. Dev dependencies chỉ cần trong giai đoạn build; không cần thiết lúc chạy API. Kế hoạch được đặt `free`; đổi plan trong dashboard nếu cần dịch vụ không ngủ.
 
 Khi Render hỏi các biến `sync: false`, điền `DATABASE_URL` của project Supabase dev/demo và `WEB_ORIGIN` tạm bằng `https://example.invalid`. Không lưu URL DB trong Git. Blueprint tự tạo `JWT_SECRET`; `PORT` do Render cấp. Sau khi deploy, ghi lại hostname API, ví dụ `workshop-api.onrender.com`.
 

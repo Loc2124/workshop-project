@@ -4,7 +4,7 @@ services:
     runtime: node
     region: singapore
     plan: free
-    buildCommand: npm ci && npm run build --workspace @workshop/api
+    buildCommand: npm ci --include=dev && npm run build --workspace @workshop/api
     startCommand: npm run start --workspace @workshop/api
     healthCheckPath: /health
     envVars:
