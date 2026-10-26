@@ -11,15 +11,17 @@ services:
       - key: NODE_ENV
         value: production
       - key: COOKIE_SECURE
-        value: "true"
+        value: 'true'
+      - key: COOKIE_SAME_SITE
+        value: none
       - key: COOKIE_NAME
         value: workshop_session
       - key: PAYMENT_PROVIDER
         value: mock
       - key: DB_POOL_MAX
-        value: "5"
+        value: '5'
       - key: TRUST_PROXY_HOPS
-        value: "1"
+        value: '1'
       - key: RANKER_URL
         value: http://localhost:8001
       - key: WEB_ORIGIN

@@ -3,10 +3,13 @@ import { rateLimit } from 'express-rate-limit';
 import { validateBody } from '../../middleware/validate-body.js';
 import { loginSchema, registerSchema } from './auth.schemas.js';
 import { loginCustomer, registerCustomer } from './auth.service.js';
+import { loadConfig } from '../../config.js';
 
 const router = Router();
 const cookieName = process.env.COOKIE_NAME || 'workshop_session';
-const cookieSecure = process.env.COOKIE_SECURE === 'true';
+const { COOKIE_SECURE: cookieSecureValue, COOKIE_SAME_SITE: cookieSameSite } =
+  loadConfig();
+const cookieSecure = cookieSecureValue === 'true';
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 5,
@@ -38,7 +41,7 @@ router.post(
 
     response.cookie(cookieName, result.token, {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: cookieSameSite,
       secure: cookieSecure,
       maxAge: getCookieMaxAge(),
     });
@@ -50,7 +53,7 @@ router.post(
 router.post('/logout', (_request, response) => {
   response.clearCookie(cookieName, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: cookieSameSite,
     secure: cookieSecure,
   });
   response.status(204).send();

@@ -14,10 +14,13 @@ import { errorHandler, notFoundHandler } from './middleware/errors.js';
 import { getCurrentUser } from './modules/auth/auth.service.js';
 import { AppError } from './errors/app-error.js';
 import catalogRoutes from './modules/catalog/catalog.routes.js';
+import { loadConfig } from './config.js';
+import { corsForWeb } from './middleware/cors.js';
 
 export function createApp() {
   const app = express();
 
+  app.use(corsForWeb(loadConfig().WEB_ORIGIN));
   app.use(helmet());
   app.use(
     pinoHttp({

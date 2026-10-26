@@ -10,8 +10,12 @@ const configSchema = z.object({
     .default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).optional(),
   API_PORT: z.coerce.number().int().min(1).max(65535).optional(),
-  WEB_ORIGIN: z.url().default('http://localhost:3000'),
+  WEB_ORIGIN: z
+    .url()
+    .default('http://localhost:3000')
+    .transform((value) => new URL(value).origin),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
+  COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).optional(),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   DB_POOL_MAX: z.coerce.number().int().min(1).max(20).default(5),
 });
@@ -42,8 +46,18 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     );
   }
 
+  const cookieSameSite =
+    result.data.COOKIE_SAME_SITE ??
+    (result.data.NODE_ENV === 'production' ? 'none' : 'lax');
+  if (cookieSameSite === 'none' && result.data.COOKIE_SECURE !== 'true') {
+    throw new Error(
+      'Invalid API configuration: COOKIE_SECURE must be true when COOKIE_SAME_SITE is none.',
+    );
+  }
+
   return {
     ...result.data,
+    COOKIE_SAME_SITE: cookieSameSite,
     API_PORT: result.data.PORT ?? result.data.API_PORT ?? 4000,
   };
 }
