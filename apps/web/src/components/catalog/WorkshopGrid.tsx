@@ -1,0 +1,66 @@
+import { cn } from '../../lib/utils';
+import { TicketCard } from '../tickets';
+import type { Workshop } from '../../types/workshop';
+import type { StudioListing } from '../../types/studio';
+import type { CatalogView } from './ViewToggle';
+import { StudioCard } from './StudioCard';
+import { WorkshopCard } from './WorkshopCard';
+
+type Props = {
+  workshops: Workshop[];
+  studios?: StudioListing[];
+  view?: CatalogView;
+  columns?: 'default' | 'home';
+  loading: boolean;
+  error: boolean;
+};
+
+export function WorkshopGrid({
+  workshops,
+  studios = [],
+  view = 'workshops',
+  columns = 'default',
+  loading,
+  error,
+}: Props) {
+  const gridClass = cn(
+    'grid grid-cols-1 items-stretch gap-5 md:grid-cols-2',
+    columns === 'home' && 'home-workshop-list',
+  );
+  const isEmpty =
+    view === 'studios' ? studios.length === 0 : workshops.length === 0;
+  if (loading && view === 'workshops')
+    return (
+      <div className={gridClass}>
+        {Array.from({ length: 6 }, (_, index) => (
+          <TicketCard key={index} loading />
+        ))}
+      </div>
+    );
+  if (loading || error || isEmpty) {
+    return (
+      <div
+        aria-live="polite"
+        className="rounded-lg border border-line bg-surface px-6 py-12 text-center text-base text-muted"
+      >
+        {loading
+          ? 'Đang tìm workshop phù hợp…'
+          : error
+            ? 'Chưa tải được danh sách workshop. Vui lòng thử lại sau.'
+            : `Chưa có ${view === 'studios' ? 'xưởng' : 'workshop'} phù hợp. Hãy thử thay đổi bộ lọc.`}
+      </div>
+    );
+  }
+
+  return (
+    <div className={gridClass}>
+      {view === 'studios'
+        ? studios.map((studio) => (
+            <StudioCard key={studio.id} studio={studio} />
+          ))
+        : workshops.map((workshop) => (
+            <WorkshopCard key={workshop.id} workshop={workshop} />
+          ))}
+    </div>
+  );
+}

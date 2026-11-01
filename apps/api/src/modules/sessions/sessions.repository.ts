@@ -34,26 +34,35 @@ const ownedSessionColumns = `s.id,
   s.seats_held AS "seatsHeld",
   s.seats_sold AS "seatsSold",
   s.status,
-  s.created_at AS "createdAt"`;
+  s.created_at AS "createdAt",
+  sm.role AS "memberRole"`;
+type OwnedSessionRow = SessionRow & { memberRole: 'owner' | 'staff' };
 
 export async function createSession(
-  organizerId: string,
+  studioId: string,
+  userId: string,
   workshopId: string,
   input: SessionInput,
 ): Promise<SessionRow | null> {
   const result = await query<SessionRow>(
     `INSERT INTO sessions (workshop_id, starts_at, ends_at, price, capacity)
-     SELECT id, $3, $4, $5, $6
-     FROM workshops
-     WHERE id = $1 AND organizer_id = $2
+     SELECT w.id, $3, $4, COALESCE($5::integer, w.base_price), $6
+     FROM workshops w
+     JOIN studio_members sm ON sm.studio_id = w.studio_id
+     WHERE w.id = $1
+       AND w.studio_id = $2
+       AND sm.user_id = $7
+       AND (NOT $8::boolean OR sm.role = 'owner')
      RETURNING ${sessionColumns}`,
     [
       workshopId,
-      organizerId,
+      studioId,
       input.startsAt,
       input.endsAt,
-      input.price,
+      input.price ?? null,
       input.capacity,
+      userId,
+      Object.hasOwn(input, 'price'),
     ],
   );
 
@@ -61,21 +70,31 @@ export async function createSession(
 }
 
 export async function updateSession(
-  organizerId: string,
+  studioId: string,
+  userId: string,
   sessionId: string,
   input: SessionUpdate,
 ): Promise<
   | { session: SessionRow; conflict: null }
   | {
       session: null;
-      conflict: 'capacity' | 'price_locked' | 'invalid_schedule';
+      conflict:
+        'capacity' | 'price_locked' | 'invalid_schedule' | 'owner_required';
     }
   | null
 > {
   return withTransaction(async (client) => {
-    const existing = await findOwnedSession(client, organizerId, sessionId);
+    const existing = await findOwnedSession(
+      client,
+      studioId,
+      userId,
+      sessionId,
+    );
     if (!existing) {
       return null;
+    }
+    if (Object.hasOwn(input, 'price') && existing.memberRole !== 'owner') {
+      return { session: null, conflict: 'owner_required' };
     }
 
     const startsAt = input.startsAt ?? existing.startsAt;
@@ -101,10 +120,15 @@ export async function updateSession(
              SELECT 1
              FROM sessions s
              JOIN workshops w ON w.id = s.workshop_id
-             WHERE s.id = b.session_id AND w.organizer_id = $2
+             WHERE s.id = b.session_id
+               AND w.studio_id = $2
+               AND EXISTS (
+                 SELECT 1 FROM studio_members sm
+                 WHERE sm.studio_id = $2 AND sm.user_id = $3
+               )
            )
          LIMIT 1`,
-        [sessionId, organizerId],
+        [sessionId, studioId, userId],
       );
       if (bookings.rowCount) {
         return { session: null, conflict: 'price_locked' };
@@ -121,7 +145,22 @@ export async function updateSession(
          AND EXISTS (
            SELECT 1
            FROM workshops w
-           WHERE w.id = sessions.workshop_id AND w.organizer_id = $6
+           WHERE w.id = sessions.workshop_id
+             AND w.studio_id = $6
+             AND EXISTS (
+               SELECT 1 FROM studio_members sm
+               WHERE sm.studio_id = $6 AND sm.user_id = $7
+             )
+         )
+         AND (
+           NOT $8::boolean
+           OR EXISTS (
+               SELECT 1
+               FROM studio_members sm
+               WHERE sm.studio_id = $6
+                 AND sm.user_id = $7
+                 AND sm.role = 'owner'
+           )
          )
        RETURNING ${sessionColumns}`,
       [
@@ -130,20 +169,34 @@ export async function updateSession(
         input.price ?? existing.price,
         input.capacity ?? existing.capacity,
         sessionId,
-        organizerId,
+        studioId,
+        userId,
+        Object.hasOwn(input, 'price'),
       ],
     );
 
-    return { session: updated.rows[0], conflict: null };
+    const updatedSession = updated.rows[0];
+    if (!updatedSession) {
+      return Object.hasOwn(input, 'price')
+        ? { session: null, conflict: 'owner_required' }
+        : null;
+    }
+    return { session: updatedSession, conflict: null };
   });
 }
 
 export async function cancelSession(
-  organizerId: string,
+  studioId: string,
+  userId: string,
   sessionId: string,
 ): Promise<SessionRow | null> {
   return withTransaction(async (client) => {
-    const existing = await findOwnedSession(client, organizerId, sessionId);
+    const existing = await findOwnedSession(
+      client,
+      studioId,
+      userId,
+      sessionId,
+    );
     if (!existing) {
       return null;
     }
@@ -152,7 +205,7 @@ export async function cancelSession(
       return null;
     }
     if (existing.status === 'cancelled') {
-      return existing;
+      return toSessionRow(existing);
     }
 
     const pending = await client.query<{ quantity: number }>(
@@ -164,10 +217,15 @@ export async function cancelSession(
            SELECT 1
            FROM sessions s
            JOIN workshops w ON w.id = s.workshop_id
-           WHERE s.id = b.session_id AND w.organizer_id = $2
+           WHERE s.id = b.session_id
+             AND w.studio_id = $2
+             AND EXISTS (
+               SELECT 1 FROM studio_members sm
+               WHERE sm.studio_id = $2 AND sm.user_id = $3
+             )
          )
        RETURNING quantity`,
-      [sessionId, organizerId],
+      [sessionId, studioId, userId],
     );
     const heldSeatsToRelease = pending.rows.reduce(
       (total, booking) => total + booking.quantity,
@@ -183,9 +241,14 @@ export async function cancelSession(
            SELECT 1
            FROM sessions s
            JOIN workshops w ON w.id = s.workshop_id
-           WHERE s.id = b.session_id AND w.organizer_id = $2
+           WHERE s.id = b.session_id
+             AND w.studio_id = $2
+             AND EXISTS (
+               SELECT 1 FROM studio_members sm
+               WHERE sm.studio_id = $2 AND sm.user_id = $3
+             )
          )`,
-      [sessionId, organizerId],
+      [sessionId, studioId, userId],
     );
 
     const result = await client.query<SessionRow>(
@@ -196,27 +259,49 @@ export async function cancelSession(
          AND EXISTS (
            SELECT 1
            FROM workshops w
-           WHERE w.id = sessions.workshop_id AND w.organizer_id = $3
+           WHERE w.id = sessions.workshop_id
+             AND w.studio_id = $3
+             AND EXISTS (
+               SELECT 1 FROM studio_members sm
+               WHERE sm.studio_id = $3 AND sm.user_id = $4
+             )
          )
        RETURNING ${sessionColumns}`,
-      [heldSeatsToRelease, sessionId, organizerId],
+      [heldSeatsToRelease, sessionId, studioId, userId],
     );
     return result.rows[0] ?? null;
   });
 }
 
+function toSessionRow(session: OwnedSessionRow): SessionRow {
+  return {
+    id: session.id,
+    workshopId: session.workshopId,
+    startsAt: session.startsAt,
+    endsAt: session.endsAt,
+    price: session.price,
+    capacity: session.capacity,
+    seatsHeld: session.seatsHeld,
+    seatsSold: session.seatsSold,
+    status: session.status,
+    createdAt: session.createdAt,
+  };
+}
+
 async function findOwnedSession(
   client: PoolClient,
-  organizerId: string,
+  studioId: string,
+  userId: string,
   sessionId: string,
-): Promise<SessionRow | null> {
-  const result = await client.query<SessionRow>(
+): Promise<OwnedSessionRow | null> {
+  const result = await client.query<OwnedSessionRow>(
     `SELECT ${ownedSessionColumns}
      FROM sessions s
      JOIN workshops w ON w.id = s.workshop_id
-     WHERE s.id = $1 AND w.organizer_id = $2
+     JOIN studio_members sm ON sm.studio_id = w.studio_id
+     WHERE s.id = $1 AND w.studio_id = $2 AND sm.user_id = $3
      FOR UPDATE OF s`,
-    [sessionId, organizerId],
+    [sessionId, studioId, userId],
   );
   return result.rows[0] ?? null;
 }

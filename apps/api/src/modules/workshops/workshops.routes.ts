@@ -7,21 +7,21 @@ import {
   updateWorkshopSchema,
 } from './workshops.schemas.js';
 import {
-  createOrganizerWorkshop,
-  getOrganizerWorkshops,
-  updateOrganizerWorkshop,
+  createStudioWorkshop,
+  getStudioWorkshops,
+  updateStudioWorkshop,
 } from './workshops.service.js';
-import { createOrganizerSession } from '../sessions/sessions.service.js';
+import { createStudioSession } from '../sessions/sessions.service.js';
 import { createSessionSchema } from '../sessions/sessions.schemas.js';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-function getOrganizerId(request: Request): string {
-  const organizerId = request.user?.organizerId;
-  if (!organizerId) {
-    throw new AppError(403, 'FORBIDDEN', 'Tài khoản chưa có hồ sơ đơn vị.');
+function getStudioId(request: Request): string {
+  const studioId = request.params.studioId;
+  if (!studioId || Array.isArray(studioId)) {
+    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy xưởng.');
   }
-  return organizerId;
+  return studioId;
 }
 
 function getResourceId(request: Request): string {
@@ -32,21 +32,20 @@ function getResourceId(request: Request): string {
   return id;
 }
 
-router.get(
-  '/workshops',
-  requireAuth(['organizer']),
-  async (request, response) => {
-    response.json(await getOrganizerWorkshops(getOrganizerId(request)));
-  },
-);
+router.get('/workshops', requireAuth(), async (request, response) => {
+  response.json(
+    await getStudioWorkshops(getStudioId(request), request.user!.sub),
+  );
+});
 
 router.post(
   '/workshops',
-  requireAuth(['organizer']),
+  requireAuth(),
   validateBody(createWorkshopSchema),
   async (request, response) => {
-    const result = await createOrganizerWorkshop(
-      getOrganizerId(request),
+    const result = await createStudioWorkshop(
+      getStudioId(request),
+      request.user!.sub,
       request.body,
     );
     response.status(201).json(result);
@@ -55,12 +54,13 @@ router.post(
 
 router.patch(
   '/workshops/:id',
-  requireAuth(['organizer']),
+  requireAuth(),
   validateBody(updateWorkshopSchema),
   async (request, response) => {
     response.json(
-      await updateOrganizerWorkshop(
-        getOrganizerId(request),
+      await updateStudioWorkshop(
+        getStudioId(request),
+        request.user!.sub,
         getResourceId(request),
         request.body,
       ),
@@ -70,11 +70,12 @@ router.patch(
 
 router.post(
   '/workshops/:id/sessions',
-  requireAuth(['organizer']),
+  requireAuth(),
   validateBody(createSessionSchema),
   async (request, response) => {
-    const result = await createOrganizerSession(
-      getOrganizerId(request),
+    const result = await createStudioSession(
+      getStudioId(request),
+      request.user!.sub,
       getResourceId(request),
       request.body,
     );

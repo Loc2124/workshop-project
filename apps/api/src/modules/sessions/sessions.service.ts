@@ -5,25 +5,40 @@ import {
   updateSession as saveSession,
 } from './sessions.repository.js';
 import type { SessionInput, SessionUpdate } from './sessions.schemas.js';
+import { getStudioMemberRole } from '../studios/studios.repository.js';
 
-export async function createOrganizerSession(
-  organizerId: string,
+export async function createStudioSession(
+  studioId: string,
+  userId: string,
   workshopId: string,
   input: SessionInput,
 ) {
-  const session = await insertSession(organizerId, workshopId, input);
+  const role = await getStudioMemberRole(studioId, userId);
+  if (!role) {
+    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy xưởng.');
+  }
+  if (Object.hasOwn(input, 'price') && role !== 'owner') {
+    throw new AppError(
+      403,
+      'FORBIDDEN',
+      'Chỉ chủ xưởng được đặt giá buổi workshop.',
+    );
+  }
+
+  const session = await insertSession(studioId, userId, workshopId, input);
   if (!session) {
     throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy workshop.');
   }
   return { session };
 }
 
-export async function updateOrganizerSession(
-  organizerId: string,
+export async function updateStudioSession(
+  studioId: string,
+  userId: string,
   sessionId: string,
   input: SessionUpdate,
 ) {
-  const result = await saveSession(organizerId, sessionId, input);
+  const result = await saveSession(studioId, userId, sessionId, input);
   if (!result) {
     throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy buổi workshop.');
   }
@@ -41,6 +56,13 @@ export async function updateOrganizerSession(
       'Không thể đổi giá buổi đã có đăng ký đang chờ thanh toán hoặc đã thanh toán.',
     );
   }
+  if (result.conflict === 'owner_required') {
+    throw new AppError(
+      403,
+      'FORBIDDEN',
+      'Chỉ chủ xưởng được thay đổi giá buổi workshop.',
+    );
+  }
   if (result.conflict === 'invalid_schedule') {
     throw new AppError(
       422,
@@ -51,11 +73,12 @@ export async function updateOrganizerSession(
   return { session: result.session };
 }
 
-export async function cancelOrganizerSession(
-  organizerId: string,
+export async function cancelStudioSession(
+  studioId: string,
+  userId: string,
   sessionId: string,
 ) {
-  const session = await cancelOwnedSession(organizerId, sessionId);
+  const session = await cancelOwnedSession(studioId, userId, sessionId);
   if (!session) {
     throw new AppError(
       404,

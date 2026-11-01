@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import { AppError } from '../../errors/app-error.js';
 import {
   createUser,
-  findOrganizerIdByUserId,
   findUserByEmail,
   findUserById,
 } from './auth.repository.js';
@@ -13,8 +12,7 @@ export type AuthUserPublic = {
   id: string;
   email: string;
   fullName: string;
-  role: 'customer' | 'organizer' | 'admin';
-  organizerId?: string | null;
+  role: 'customer' | 'admin';
 };
 
 const jwtSecret = process.env.JWT_SECRET || 'change-me-to-a-long-random-string';
@@ -34,7 +32,7 @@ export async function registerCustomer(
   const created = await createUser(email, passwordHash, fullName);
 
   return {
-    user: serializePublicUser(created, null),
+    user: serializePublicUser(created),
   };
 }
 
@@ -53,12 +51,11 @@ export async function loginCustomer(input: LoginInput): Promise<{
     );
   }
 
-  const organizerId = await findOrganizerIdByUserId(user.id);
-  const token = signAccessToken(user.id, user.role, organizerId);
+  const token = signAccessToken(user.id, user.role);
 
   return {
     token,
-    user: serializePublicUser(user, organizerId),
+    user: serializePublicUser(user),
   };
 }
 
@@ -70,33 +67,24 @@ export async function getCurrentUser(
     return null;
   }
 
-  const organizerId = await findOrganizerIdByUserId(user.id);
-  return serializePublicUser(user, organizerId);
+  return serializePublicUser(user);
 }
 
-function serializePublicUser(
-  user: {
-    id: string;
-    email: string;
-    fullName: string;
-    role: 'customer' | 'organizer' | 'admin';
-  },
-  organizerId: string | null,
-): AuthUserPublic {
+function serializePublicUser(user: {
+  id: string;
+  email: string;
+  fullName: string;
+  role: 'customer' | 'admin';
+}): AuthUserPublic {
   return {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
     role: user.role,
-    organizerId: organizerId ?? undefined,
   };
 }
 
-function signAccessToken(
-  userId: string,
-  role: 'customer' | 'organizer' | 'admin',
-  organizerId: string | null,
-): string {
+function signAccessToken(userId: string, role: 'customer' | 'admin'): string {
   const expiresIn = (process.env.JWT_EXPIRES_IN ||
     '7d') as jwt.SignOptions['expiresIn'];
 
@@ -104,7 +92,6 @@ function signAccessToken(
     {
       sub: userId,
       role,
-      ...(organizerId ? { organizerId } : {}),
     },
     jwtSecret,
     {

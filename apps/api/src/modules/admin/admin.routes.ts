@@ -3,14 +3,14 @@ import { AppError } from '../../errors/app-error.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-body.js';
 import {
-  organizerStatusSchema,
-  updateOrganizerStatusSchema,
+  studioStatusSchema,
+  updateStudioStatusSchema,
 } from './admin.schemas.js';
-import { getOrganizersForAdmin, setOrganizerStatus } from './admin.service.js';
+import { getStudiosForAdmin, setStudioStatus } from './admin.service.js';
 
 const router = Router();
 
-router.get('/organizers', requireAuth(['admin']), async (request, response) => {
+router.get('/studios', requireAuth(['admin']), async (request, response) => {
   const rawStatus = request.query.status;
   let status: 'pending' | 'approved' | 'rejected' | undefined;
 
@@ -19,7 +19,7 @@ router.get('/organizers', requireAuth(['admin']), async (request, response) => {
   }
 
   if (typeof rawStatus === 'string' && rawStatus.length > 0) {
-    const parsed = organizerStatusSchema.safeParse(rawStatus);
+    const parsed = studioStatusSchema.safeParse(rawStatus);
     if (!parsed.success) {
       throw new AppError(400, 'BAD_REQUEST', 'Trạng thái duyệt không hợp lệ.');
     }
@@ -27,24 +27,24 @@ router.get('/organizers', requireAuth(['admin']), async (request, response) => {
     status = parsed.data;
   }
 
-  const result = await getOrganizersForAdmin(status);
+  const result = await getStudiosForAdmin(status);
   response.json(result);
 });
 
 router.patch(
-  '/organizers/:id/status',
+  '/studios/:id/status',
   requireAuth(['admin']),
-  validateBody(updateOrganizerStatusSchema),
+  validateBody(updateStudioStatusSchema),
   async (request, response) => {
-    const organizerId = Array.isArray(request.params.id)
+    const studioId = Array.isArray(request.params.id)
       ? request.params.id[0]
       : request.params.id;
 
-    if (!organizerId) {
-      throw new AppError(400, 'BAD_REQUEST', 'Thiếu ID đơn vị tổ chức.');
+    if (!studioId) {
+      throw new AppError(400, 'BAD_REQUEST', 'Thiếu ID xưởng.');
     }
 
-    const result = await setOrganizerStatus(organizerId, request.body.status);
+    const result = await setStudioStatus(studioId, request.body.status);
     response.json(result);
   },
 );

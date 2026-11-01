@@ -4,7 +4,7 @@ export const workshopInputSchema = z
   .object({
     title: z.string().trim().min(1).max(200),
     description: z.string().trim().min(1),
-    category: z.string().trim().min(1).max(100),
+    categoryId: z.string().trim().min(1).max(100),
     level: z.enum(['beginner', 'intermediate', 'all']).default('beginner'),
     audience: z.array(z.string().trim().min(1)).default([]),
     takeaway: z.string().trim().nullable().optional(),
@@ -12,8 +12,6 @@ export const workshopInputSchema = z
     basePrice: z.number().int().nonnegative(),
     requirements: z.string().trim().nullable().optional(),
     policy: z.string().trim().nullable().optional(),
-    district: z.string().trim().min(1).max(100),
-    address: z.string().trim().nullable().optional(),
   })
   .strict();
 

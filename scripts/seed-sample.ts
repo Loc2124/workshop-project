@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import * as argon2 from 'argon2';
 import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
+import { VIETNAM_PROVINCES } from '../apps/api/src/constants/vietnam-provinces.js';
 import { assertSafeTestDatabase } from './assert-safe-test-db.js';
 import { closePool, withTransaction } from '../apps/api/src/db/pool.js';
 
@@ -17,14 +18,15 @@ const sampleWorkshopSchema = z.array(
       id: z.string().min(1),
       title: z.string().min(1),
       description: z.string().min(1),
-      category: z.string().min(1),
+      categoryId: z.string().min(1),
       level: z.enum(['beginner', 'intermediate', 'all']),
       audience: z.array(z.string()),
       takeaway: z.string().nullable().optional(),
       duration_minutes: z.number().int().positive(),
       price_hint: z.number().int().nonnegative(),
       requirements: z.string().nullable().optional(),
-      district: z.string().min(1),
+      province: z.enum(VIETNAM_PROVINCES),
+      address: z.string().trim().min(1).max(500),
     })
     .strict(),
 );
@@ -47,7 +49,7 @@ async function main(): Promise<void> {
   await withTransaction(async (client) => {
     const insertedUser = await client.query<{ id: string; role: string }>(
       `INSERT INTO users (email, password_hash, full_name, role)
-       VALUES ('sample-organizer@workshop.local', $1, 'Đơn vị workshop mô phỏng', 'organizer')
+       VALUES ('sample-studio@workshop.local', $1, 'Chủ xưởng mô phỏng', 'customer')
        ON CONFLICT (email) DO NOTHING
        RETURNING id, role`,
       [passwordHash],
@@ -58,66 +60,90 @@ async function main(): Promise<void> {
         await client.query<{ id: string; role: string }>(
           `SELECT id, role
            FROM users
-           WHERE email = 'sample-organizer@workshop.local'`,
+           WHERE email = 'sample-studio@workshop.local'`,
         )
       ).rows[0];
-    if (!existingUser || existingUser.role !== 'organizer') {
+    if (!existingUser || existingUser.role !== 'customer') {
       throw new Error(
-        'sample-organizer@workshop.local is already used by a non-organizer account.',
+        'sample-studio@workshop.local is already used by a non-customer account.',
       );
     }
-    const organizer = await client.query<{ id: string }>(
-      `INSERT INTO organizers (user_id, name, description, district, status)
-       VALUES ($1, 'Không gian thủ công mô phỏng', 'Đơn vị tổ chức dữ liệu mẫu mô phỏng.', 'Quận 1', 'approved')
-       ON CONFLICT (user_id)
-       DO UPDATE SET
-         name = EXCLUDED.name,
-         description = EXCLUDED.description,
-         district = EXCLUDED.district,
-         status = 'approved'
-       RETURNING id`,
-      [existingUser.id],
-    );
 
     for (const [index, sample] of sampleData.entries()) {
+      const studioId = stableUuid(`studio-sample:${sample.id}`);
+      const studio = await client.query<{ id: string }>(
+        `INSERT INTO studios (
+           id, name, description, district, province_id, address, category_id, status
+         )
+         SELECT $1, $2, $3, NULL, p.id, $4, $6, 'approved'
+         FROM provinces p
+         WHERE p.name = $5
+         ON CONFLICT (id)
+         DO UPDATE SET
+           name = EXCLUDED.name,
+           description = EXCLUDED.description,
+           province_id = EXCLUDED.province_id,
+           category_id = EXCLUDED.category_id,
+           address = EXCLUDED.address,
+           status = 'approved'
+         RETURNING id`,
+        [
+          studioId,
+          sample.title,
+          'Xưởng mô phỏng dùng cho dữ liệu workshop mẫu.',
+          sample.address,
+          sample.province,
+          sample.categoryId,
+        ],
+      );
+      if (!studio.rows[0]) {
+        throw new Error(`Province not found for sample: ${sample.province}`);
+      }
+      await client.query(
+        `INSERT INTO studio_members (studio_id, user_id, role)
+         VALUES ($1, $2, 'owner')
+         ON CONFLICT (studio_id, user_id)
+         DO UPDATE SET role = 'owner'`,
+        [studioId, existingUser.id],
+      );
+
       const workshopId = stableUuid(`workshop-sample:${sample.id}`);
       await client.query(
         `INSERT INTO workshops (
-           id, organizer_id, title, description, category, level, audience,
-           takeaway, duration_minutes, base_price, requirements, district,
+           id, studio_id, title, description, category_id, level, audience,
+           takeaway, duration_minutes, base_price, requirements,
            status, is_simulated
          )
          VALUES (
-           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'approved', true
+           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+           'approved', true
          )
          ON CONFLICT (id)
          DO UPDATE SET
-           organizer_id = EXCLUDED.organizer_id,
+           studio_id = EXCLUDED.studio_id,
            title = EXCLUDED.title,
            description = EXCLUDED.description,
-           category = EXCLUDED.category,
+           category_id = EXCLUDED.category_id,
            level = EXCLUDED.level,
            audience = EXCLUDED.audience,
            takeaway = EXCLUDED.takeaway,
            duration_minutes = EXCLUDED.duration_minutes,
            base_price = EXCLUDED.base_price,
            requirements = EXCLUDED.requirements,
-           district = EXCLUDED.district,
            status = 'approved',
            is_simulated = true`,
         [
           workshopId,
-          organizer.rows[0].id,
+          studio.rows[0].id,
           sample.title,
           sample.description,
-          sample.category,
+          sample.categoryId,
           sample.level,
           sample.audience,
           sample.takeaway ?? null,
           sample.duration_minutes,
           sample.price_hint,
           sample.requirements ?? null,
-          sample.district,
         ],
       );
 

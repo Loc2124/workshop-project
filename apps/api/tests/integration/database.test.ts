@@ -5,7 +5,7 @@ import { assertSafeTestDatabase } from '../../../../scripts/assert-safe-test-db.
 import { withTransaction } from '../../src/db/pool.js';
 import {
   closeTestPool,
-  createOrganizer,
+  createStudio,
   createSession,
   createUser,
   createWorkshop,
@@ -60,14 +60,14 @@ describe('database infrastructure', () => {
     const ids = await withTestDatabase(async (client) => {
       const suffix = randomUUID();
       const userId = await createUser(client, suffix);
-      const organizerId = await createOrganizer(
+      const studioId = await createStudio(
         client,
         userId,
-        `Test organizer ${suffix}`,
+        `Test studio ${suffix}`,
       );
-      const workshopId = await createWorkshop(client, organizerId, suffix);
+      const workshopId = await createWorkshop(client, studioId, suffix);
       const sessionId = await createSession(client, workshopId);
-      return { userId, organizerId, workshopId, sessionId };
+      return { userId, studioId, workshopId, sessionId };
     });
 
     expect(Object.values(ids)).toHaveLength(4);

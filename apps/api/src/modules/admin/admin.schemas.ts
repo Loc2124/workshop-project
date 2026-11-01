@@ -1,13 +1,9 @@
 import { z } from 'zod';
 
-export const organizerStatusSchema = z.enum([
-  'pending',
-  'approved',
-  'rejected',
-]);
+export const studioStatusSchema = z.enum(['pending', 'approved', 'rejected']);
 
-export const updateOrganizerStatusSchema = z.object({
-  status: organizerStatusSchema,
+export const updateStudioStatusSchema = z.object({
+  status: studioStatusSchema,
 });
 
-export type OrganizerApprovalStatus = z.infer<typeof organizerStatusSchema>;
+export type StudioApprovalStatus = z.infer<typeof studioStatusSchema>;

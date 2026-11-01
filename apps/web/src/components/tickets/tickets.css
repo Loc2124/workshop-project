@@ -1,0 +1,78 @@
+@reference '../../styles.css';
+
+/* Only the cutout geometry needs custom CSS; layout lives in Tailwind. */
+.ticket-shell {
+  --ticket-notch: theme('spacing.ticket-notch');
+}
+.ticket-body {
+  mask-image:
+    radial-gradient(
+      circle at 0 100%,
+      transparent var(--ticket-notch),
+      #000 calc(var(--ticket-notch) + 1px)
+    ),
+    radial-gradient(
+      circle at 100% 100%,
+      transparent var(--ticket-notch),
+      #000 calc(var(--ticket-notch) + 1px)
+    );
+}
+.ticket-stub {
+  mask-image:
+    radial-gradient(
+      circle at 0 0,
+      transparent var(--ticket-notch),
+      #000 calc(var(--ticket-notch) + 1px)
+    ),
+    radial-gradient(
+      circle at 100% 0,
+      transparent var(--ticket-notch),
+      #000 calc(var(--ticket-notch) + 1px)
+    );
+}
+.ticket-body,
+.ticket-stub {
+  mask-composite: intersect;
+}
+@media (min-width: 768px), print {
+  .ticket-shell-row > .ticket-body {
+    mask-image:
+      radial-gradient(
+        circle at 0 0,
+        transparent var(--ticket-notch),
+        #000 calc(var(--ticket-notch) + 1px)
+      ),
+      radial-gradient(
+        circle at 0 100%,
+        transparent var(--ticket-notch),
+        #000 calc(var(--ticket-notch) + 1px)
+      );
+  }
+  .ticket-shell-row > .ticket-stub {
+    mask-image:
+      radial-gradient(
+        circle at 100% 0,
+        transparent var(--ticket-notch),
+        #000 calc(var(--ticket-notch) + 1px)
+      ),
+      radial-gradient(
+        circle at 100% 100%,
+        transparent var(--ticket-notch),
+        #000 calc(var(--ticket-notch) + 1px)
+      );
+  }
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  body:has(> .booking-print-root) > :not(.booking-print-root) {
+    display: none !important;
+  }
+  .booking-print-root .ticket-shell {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    break-inside: avoid;
+  }
+}

@@ -3,7 +3,7 @@ import { z } from 'zod';
 const sessionFields = {
   startsAt: z.string().datetime({ offset: true }),
   endsAt: z.string().datetime({ offset: true }),
-  price: z.number().int().nonnegative(),
+  price: z.number().int().nonnegative().optional(),
   capacity: z.number().int().positive(),
 };
 

@@ -2,13 +2,15 @@ import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Pool, type PoolClient } from 'pg';
 import { assertSafeTestDatabase } from '../../../../scripts/assert-safe-test-db.js';
 import { migrateDatabase } from '../../../../scripts/migrate.js';
 
 let pool: Pool | undefined;
 let databaseUrl: string;
+
+vi.setConfig({ testTimeout: 30_000 });
 
 beforeAll(async () => {
   assertSafeTestDatabase();
@@ -24,6 +26,34 @@ afterAll(async () => {
 });
 
 describe('database migrations', () => {
+  it('uses studio tables and customer/admin system roles', async () => {
+    const result = await getPool().query<{
+      studios: string | null;
+      organizers: string | null;
+      members: string | null;
+      roles: string[];
+    }>(
+      `SELECT
+         to_regclass('public.studios')::text AS studios,
+         to_regclass('public.organizers')::text AS organizers,
+         to_regclass('public.studio_members')::text AS members,
+         ARRAY(
+           SELECT e.enumlabel::text
+           FROM pg_enum e
+           JOIN pg_type t ON t.oid = e.enumtypid
+           WHERE t.typname = 'user_role'
+           ORDER BY e.enumsortorder
+         ) AS roles`,
+    );
+
+    expect(result.rows[0]).toEqual({
+      studios: 'studios',
+      organizers: null,
+      members: 'studio_members',
+      roles: ['customer', 'admin'],
+    });
+  });
+
   it('enables RLS without policies on every public table', async () => {
     const result = await getPool().query<{
       tablename: string;
@@ -67,25 +97,28 @@ describe('database migrations', () => {
         'INSERT INTO users (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING id',
         [`${suffix}@example.test`, 'test-hash', 'Migration test'],
       );
-      const organizer = await client.query<{ id: string }>(
-        'INSERT INTO organizers (user_id, name) VALUES ($1, $2) RETURNING id',
-        [user.rows[0].id, `Migration test ${suffix}`],
+      const studio = await client.query<{ id: string; slug: string }>(
+        `INSERT INTO studios (name, province_id, address)
+         VALUES ($1, 'ho-chi-minh', 'Migration test')
+         RETURNING id, slug`,
+        [`Migration test ${suffix}`],
       );
-      const workshop = await client.query<{ id: string }>(
+      expect(studio.rows[0].slug).toMatch(/^studio-[0-9a-f-]{36}$/);
+      const workshop = await client.query<{ id: string; slug: string }>(
         `INSERT INTO workshops
-           (organizer_id, title, description, category, duration_minutes, base_price, district)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id`,
+           (studio_id, title, description, category_id, duration_minutes, base_price)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, slug`,
         [
-          organizer.rows[0].id,
+          studio.rows[0].id,
           'Migration test workshop',
           'Test description',
-          'craft',
+          'other',
           60,
           1000,
-          'test-district',
         ],
       );
+      expect(workshop.rows[0].slug).toMatch(/^workshop-[0-9a-f-]{36}$/);
       const startsAt = new Date(Date.now() + 60 * 60 * 1000);
       const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000);
       const session = await client.query<{ id: string }>(

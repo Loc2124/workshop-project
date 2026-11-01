@@ -4,7 +4,7 @@ export type UserRow = {
   id: string;
   email: string;
   fullName: string;
-  role: 'customer' | 'organizer' | 'admin';
+  role: 'customer' | 'admin';
   passwordHash: string;
   createdAt: string;
 };
@@ -62,18 +62,4 @@ export async function createUser(
   );
 
   return result.rows[0];
-}
-
-export async function findOrganizerIdByUserId(
-  userId: string,
-): Promise<string | null> {
-  const result = await query<{ id: string }>(
-    `SELECT id
-     FROM organizers
-     WHERE user_id = $1
-     LIMIT 1`,
-    [userId],
-  );
-
-  return result.rows[0]?.id ?? null;
 }

@@ -4,18 +4,18 @@ import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-body.js';
 import { updateSessionSchema } from './sessions.schemas.js';
 import {
-  cancelOrganizerSession,
-  updateOrganizerSession,
+  cancelStudioSession,
+  updateStudioSession,
 } from './sessions.service.js';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-function getOrganizerId(request: Request): string {
-  const organizerId = request.user?.organizerId;
-  if (!organizerId) {
-    throw new AppError(403, 'FORBIDDEN', 'Tài khoản chưa có hồ sơ đơn vị.');
+function getStudioId(request: Request): string {
+  const studioId = request.params.studioId;
+  if (!studioId || Array.isArray(studioId)) {
+    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy xưởng.');
   }
-  return organizerId;
+  return studioId;
 }
 
 function getResourceId(request: Request): string {
@@ -28,12 +28,13 @@ function getResourceId(request: Request): string {
 
 router.patch(
   '/sessions/:id',
-  requireAuth(['organizer']),
+  requireAuth(),
   validateBody(updateSessionSchema),
   async (request, response) => {
     response.json(
-      await updateOrganizerSession(
-        getOrganizerId(request),
+      await updateStudioSession(
+        getStudioId(request),
+        request.user!.sub,
         getResourceId(request),
         request.body,
       ),
@@ -43,11 +44,12 @@ router.patch(
 
 router.post(
   '/sessions/:id/cancel',
-  requireAuth(['organizer']),
+  requireAuth(),
   async (request, response) => {
     response.json(
-      await cancelOrganizerSession(
-        getOrganizerId(request),
+      await cancelStudioSession(
+        getStudioId(request),
+        request.user!.sub,
         getResourceId(request),
       ),
     );

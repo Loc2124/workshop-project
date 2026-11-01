@@ -6,7 +6,7 @@ import pinoHttp from 'pino-http';
 import { randomUUID } from 'node:crypto';
 import authRoutes from './modules/auth/auth.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
-import organizerRoutes from './modules/organizers/organizers.routes.js';
+import studioRoutes from './modules/studios/studios.routes.js';
 import workshopRoutes from './modules/workshops/workshops.routes.js';
 import sessionRoutes from './modules/sessions/sessions.routes.js';
 import { requireAuth } from './middleware/auth.js';
@@ -52,9 +52,9 @@ export function createApp() {
 
   app.use('/auth', authRoutes);
   app.use('/', catalogRoutes);
-  app.use('/organizer', organizerRoutes);
-  app.use('/organizer', workshopRoutes);
-  app.use('/organizer', sessionRoutes);
+  app.use('/studios', studioRoutes);
+  app.use('/studios/:studioId', workshopRoutes);
+  app.use('/studios/:studioId', sessionRoutes);
   app.use('/admin', adminRoutes);
   app.get('/me', requireAuth(), async (request, response) => {
     const user = await getCurrentUser(request.user!.sub);

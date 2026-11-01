@@ -61,11 +61,11 @@ Dựng monorepo bằng npm workspaces theo đúng cấu trúc trong CLAUDE.md: a
 - Script gốc: dev, build, lint, test, migrate, migrate:test (migrate sẽ được làm ở bước sau, tạm để placeholder in thông báo).
 - GitHub Actions: lint + test, có PostgreSQL service container.
 - apps/api: chỉ cần server Express (TypeScript) chạy được với GET /health trả { ok: true }, đọc cấu hình từ biến môi trường bằng zod (lỗi rõ ràng nếu thiếu).
-- apps/web: Next.js App Router + Tailwind, trang chủ trống, chưa có logic.
+- apps/web: React + TypeScript + Vite + Tailwind CSS, trang chủ trống, chưa có logic.
 Không viết nghiệp vụ. Cuối cùng liệt kê lệnh để tôi tự kiểm tra từng phần.
 ```
 
-**Kiểm tra:** kết nối được hai Supabase project riêng; `npm run lint` xanh; `curl localhost:4000/health` trả `ok`; Next.js mở được; workflow CI có PostgreSQL service container.
+**Kiểm tra:** kết nối được hai Supabase project riêng; `npm run lint` xanh; `curl localhost:4000/health` trả `ok`; ứng dụng React/Vite mở được; workflow CI có PostgreSQL service container.
 **Lỗi hay gặp:** AI cài thừa thư viện (ORM, state manager); yêu cầu gỡ. Cổng bị trùng; cố định cổng trong `.env`.
 
 ### Bước 0B — Trình chạy migration và kiểm tra schema (tuần 2)
@@ -98,7 +98,7 @@ Trong apps/api, dựng hạ tầng chung:
 - Định dạng lỗi thống nhất { error: { code, message } }; lớp AppError (400/401/403/404/409/422); handler lỗi trung tâm không lộ chi tiết nội bộ ra ngoài.
 - Validate đầu vào bằng zod cho mọi endpoint; schema dùng chung đặt ở packages/shared khi web cũng cần.
 - Log bằng pino-http có request id; không log mật khẩu, token, chữ ký. Thêm helmet, cookie-parser. Mọi handler async đi qua một wrapper bắt lỗi chuyển cho middleware lỗi trung tâm (hoặc dùng bản Express tự bắt lỗi async; kiểm tra phiên bản và giải thích lựa chọn), để lỗi async không làm treo request hay sập tiến trình.
-- Tách việc tạo app Express (createApp) khỏi việc mở cổng (listen) để test gọi trực tiếp bằng supertest. Khung test: dùng DB test thật, có helper làm sạch dữ liệu giữa các test và các factory tạo user/organizer/workshop/session.
+- Tách việc tạo app Express (createApp) khỏi việc mở cổng (listen) để test gọi trực tiếp bằng supertest. Khung test: dùng DB test thật, có helper làm sạch dữ liệu giữa các test và các factory tạo user/studio/workshop/session.
 Viết 3 test mẫu cho hạ tầng này (lỗi validate, lỗi 404 định dạng đúng, withTransaction rollback đúng).
 ```
 
@@ -112,8 +112,8 @@ Viết 3 test mẫu cho hạ tầng này (lỗi validate, lỗi 404 định dạ
 Cài xác thực theo PRD C1 và API spec:
 - POST /auth/register (chỉ tạo role customer), POST /auth/login, POST /auth/logout, GET /me.
 - Băm mật khẩu bằng argon2 hoặc bcrypt (chọn một và giải thích vì sao). Email duy nhất, chuẩn hóa chữ thường.
-- JWT trong cookie httpOnly, SameSite=Lax, Secure theo biến COOKIE_SECURE; payload gồm sub, role và organizerId nếu có.
-- Middleware requireAuth(roles[]) và hàm lấy organizerId cho vai organizer.
+- JWT trong cookie httpOnly, SameSite=Lax, Secure theo biến COOKIE_SECURE; payload gồm sub và role hệ thống (`customer` hoặc `admin`), không nhúng studio hay vai thành viên.
+- Middleware requireAuth(roles[]) và repository kiểm tra vai `owner`/`staff` qua `studio_members` cho từng `studio_id`.
 - Giới hạn tốc độ cho /auth/login (chống dò mật khẩu).
 - Thông báo lỗi đăng nhập không tiết lộ email có tồn tại hay không.
 Test: đăng ký trùng email; đăng nhập sai; truy cập endpoint cần quyền khi chưa đăng nhập (401) và sai vai (403); cookie có đúng cờ; token hết hạn.
@@ -122,38 +122,38 @@ Test: đăng ký trùng email; đăng nhập sai; truy cập endpoint cần quy�
 **Kiểm tra:** thử bằng curl hoặc REST client, xem cookie và cờ `HttpOnly`.
 **Lỗi hay gặp:** AI lưu token trong localStorage (cấm), hoặc trả `password_hash` trong response.
 
-### Bước 3 — Đơn vị tổ chức và duyệt bằng cờ trạng thái (tuần 3)
+### Bước 3 — Studio và duyệt bằng cờ trạng thái (tuần 3)
 
 ```text
 Cài theo PRD O1 và A1:
-- POST /organizer/profile: user đăng nhập tạo hồ sơ đơn vị (role chuyển sang organizer khi tạo hồ sơ thành công, hoặc cách khác nếu bạn thấy hợp hơn; giải thích lựa chọn trong kế hoạch). Trạng thái ban đầu pending.
-- Admin: GET /admin/organizers (lọc status), PATCH /admin/organizers/:id/status.
+- POST /studios: user đăng nhập tạo studio và được thêm vào `studio_members` với vai `owner`; vai hệ thống của user vẫn là customer. Trạng thái studio ban đầu pending.
+- Admin: GET /admin/studios (lọc status), PATCH /admin/studios/:id/status. Studio/workshop chưa được duyệt không xuất hiện công khai.
 - scripts/seed-admin.ts tạo admin từ SEED_ADMIN_EMAIL/SEED_ADMIN_PASSWORD.
-Test: customer gọi /admin/* bị 403; organizer pending vẫn đăng nhập được nhưng workshop của họ chưa hiện ở trang công khai (kiểm tra ở bước sau); chuyển trạng thái hợp lệ và không hợp lệ.
+Test: customer gọi /admin/* bị 403; studio pending vẫn không hiện công khai; kiểm tra role owner trong bảng thành viên và trạng thái duyệt hợp lệ/không hợp lệ.
 ```
 
-### Bước 4 — Workshop và buổi của đơn vị tổ chức (tuần 3)
+### Bước 4 — Workshop và buổi của studio (tuần 3)
 
 **Đưa cho AI:** `docs/01-prd.md` (O2-O5), `docs/02-architecture.md` (mục Phân quyền).
 
 ```text
-Cài /organizer/workshops (GET, POST), PATCH /organizer/workshops/:id, POST /organizer/workshops/:id/sessions, PATCH /organizer/sessions/:id và POST /organizer/sessions/:id/cancel (O5).
-BẮT BUỘC (CLAUDE.md quy tắc 5): viết repository của organizer sao cho MỌI hàm nhận organizerId và đưa vào WHERE; không có hàm truy vấn organizer nào bỏ qua tham số này.
+Cài các endpoint `/studios/:studioId/workshops` (GET, POST), PATCH `/studios/:studioId/workshops/:id`, POST `/studios/:studioId/workshops/:id/sessions`, PATCH `/studios/:studioId/sessions/:id` và POST `/studios/:studioId/sessions/:id/cancel` (O5).
+BẮT BUỘC (CLAUDE.md quy tắc 5): mọi truy vấn quản lý phải kiểm tra `studio_id` và `user_id` qua `studio_members`; không suy quyền từ vai trò toàn cục.
 Quy tắc: sức chứa > 0; không sửa sức chứa xuống dưới seats_held + seats_sold; workshop mới có status pending; sửa workshop đã approved thì đưa về pending; không sửa giá buổi đã có booking pending/paid. Hủy buổi trong transaction: pending → cancelled và trả chỗ giữ; paid → refund_needed.
-Với tài nguyên không thuộc đơn vị đăng nhập, trả 404 nhất quán để không làm lộ sự tồn tại. Test T11 dạng tham số hóa: đơn vị B không đọc/sửa/tạo con cho dữ liệu của đơn vị A trên mọi endpoint; T12: customer không gọi được. Danh sách đăng ký được triển khai cùng booking.
+Với tài nguyên không thuộc studio thành viên, trả 404 nhất quán để không làm lộ sự tồn tại. Test T11: thành viên studio B không đọc/sửa/tạo con cho dữ liệu studio A; kiểm tra cả owner và staff. Danh sách đăng ký được triển khai cùng booking.
 ```
 
-**Kiểm tra:** đọc code repository và xác nhận không có truy vấn nào thiếu `organizer_id`.
+**Kiểm tra:** đọc code repository và xác nhận mọi truy vấn đều giới hạn theo `studio_id` và membership của user.
 
 ### Bước 5 — Danh mục công khai: liệt kê, lọc, chi tiết (tuần 3-4)
 
 ```text
 Cài GET /workshops và GET /workshops/:id (công khai).
-Bộ lọc cứng hoàn toàn bằng SQL tham số hóa: date_from, date_to, price_min, price_max, district, category, và chỉ trả workshop approved của organizer approved, buổi scheduled, starts_at > now(), còn chỗ (capacity - seats_held - seats_sold >= 1). Phân trang, sắp xếp mặc định theo starts_at.
+ Bộ lọc cứng hoàn toàn bằng SQL tham số hóa: date_from, date_to, price_min, price_max, province_id, area_ids (nhiều giá trị), category, và chỉ trả workshop approved của studio approved, buổi scheduled, starts_at > now(), còn chỗ (capacity - seats_held - seats_sold >= 1). Địa điểm được lọc qua studio; không lọc theo quận/huyện. Thêm GET /provinces và GET /provinces/:id/areas từ danh mục database, kèm số lượng workshop có thể tìm thấy. Phân trang, sắp xếp mặc định theo starts_at. Trước khi trả danh sách, giải phóng holds hết hạn cho các buổi liên quan như quy định trong `docs/02-architecture.md`.
 Viết hàm findCandidates(filters) dùng lại được cho POST /search ở bước sau, trả cả các trường văn bản cần cho xếp hạng.
 Thêm index nếu cần, dựa trên EXPLAIN (chỉ cần chứng minh các truy vấn chính không quét toàn bảng với dữ liệu mẫu vài trăm dòng).
-Seed: script nạp data/workshops.sample.json vào DB (đánh dấu is_simulated=true) cùng vài organizer, buổi mẫu.
-Test: từng bộ lọc; workshop pending/rejected không hiện; buổi hết chỗ, quá khứ, bị hủy không hiện; không có kết quả thì trả danh sách rỗng.
+Seed: script nạp data/workshops.sample.json vào DB (đánh dấu is_simulated=true), danh mục tỉnh/thành và studio, buổi mẫu ở nhiều tỉnh/thành.
+Test: từng bộ lọc; lọc tỉnh/thành và nhiều khu vực; workshop pending/rejected không hiện; buổi hết chỗ, quá khứ, bị hủy không hiện; không có kết quả thì trả danh sách rỗng.
 ```
 
 ### Bước 5B — Triển khai sớm API và web (tuần 4, sau Bước 5)
@@ -166,33 +166,35 @@ Test: từng bộ lọc; workshop pending/rejected không hiện; buổi hết c
 Triển khai bản đầu (chưa có thanh toán thật), không thêm tính năng:
 1. Tạo docs/deploy.md, ghi các bước triển khai và biến môi trường cho từng dịch vụ.
 2. API: cấu hình build/start, đọc PORT, giữ GET /health, dùng DATABASE_URL; nếu host chỉ có IPv4 thì dùng Session pooler cổng 5432; giới hạn kích thước pool phù hợp gói DB; đặt COOKIE_SECURE=true, WEB_ORIGIN đúng và cấu hình trust proxy khi cần. Giải thích các lựa chọn.
-3. Web: build Next.js; NEXT_PUBLIC_* chỉ chứa thông tin công khai; rewrites /api/* trỏ tới URL API đã triển khai.
+3. Web: build React/Vite thành static site; `VITE_API_BASE_URL` chỉ chứa URL API công khai; cấu hình API CORS cho origin web và gửi cookie với credentials.
 4. Monorepo: ghi rõ root directory và lệnh build cho từng dịch vụ; bảo đảm packages/shared được build trước khi API/web phụ thuộc vào nó.
 5. Chạy migrate thủ công vào DATABASE_URL (dev/demo), rồi xác nhận mọi bảng bật RLS.
 6. Smoke test: /health; kiểm tra đăng ký/đăng nhập qua web, cookie Secure và danh sách workshop khi các endpoint tương ứng đã sẵn sàng. Ghi rõ phần nào chưa thể kiểm tra ở bước này.
 7. Ghi vào docs/deploy.md mọi thao tác thủ công tôi cần làm trên giao diện của nhà cung cấp (đặt biến môi trường ở đâu, URL webhook PayOS, DNS nếu có), cùng danh sách đầy đủ biến môi trường của từng dịch vụ và ý nghĩa của chúng. Mục đích: nếu đổi nhà cung cấp, tôi làm lại được theo tài liệu này.
-8. Kiểm tra rằng web chỉ dùng tính năng Next.js thông thường, không phụ thuộc tính năng riêng của Vercel, và API không ghi dữ liệu vào ổ đĩa local. Nếu có chỗ vi phạm thì báo tôi.
+8. Kiểm tra web chỉ cần static hosting với SPA fallback, không phụ thuộc tính năng riêng của nhà cung cấp, và API không ghi dữ liệu vào ổ đĩa local. Nếu có chỗ vi phạm thì báo tôi.
 Liệt kê rõ thao tác tôi phải tự làm trên dashboard của nhà cung cấp. Không đưa secret vào Git.
 ```
 
 **Kiểm tra:** có URL HTTPS công khai; `/health` hoạt động; ghi nhận rõ hạng mục smoke test chưa sẵn sàng nếu endpoint tương ứng chưa được triển khai.
 
-**Lỗi hay gặp:** host chỉ hỗ trợ IPv4 nên không kết nối được Direct; cần chuyển sang Session pooler. Monorepo có thể cần cấu hình root/build riêng. Cookie có thể không được gửi nếu Secure/SameSite hoặc rewrites cấu hình sai. Gói miễn phí có thể ngủ, nên phải kiểm tra API còn thức trước demo.
+**Lỗi hay gặp:** host chỉ hỗ trợ IPv4 nên không kết nối được Direct; cần chuyển sang Session pooler. Monorepo có thể cần cấu hình root/build riêng. Cookie có thể không được gửi nếu Secure/SameSite/CORS hoặc credentials cấu hình sai. Gói miễn phí có thể ngủ, nên phải kiểm tra API còn thức trước demo.
 
 ---
 
 ## C. Giao diện web
 
+> Quy trình U1–U8 trong UI brief là quy trình hiện hành. Các prompt Bước 7A–7C dưới đây là tài liệu lịch sử, được thay thế bởi U7; không chạy song song hoặc coi chúng là bước bổ sung. Catalog P01/P02 đã có trong mã nguồn từ trước quy trình này.
+
 ### Bước 6 — Khung web, đăng nhập, điều hướng theo vai (tuần 2-3)
 
 ```text
-Trong apps/web (Next.js App Router + Tailwind + shadcn/ui):
-- Cấu hình rewrites để /api/* chuyển tới API (địa chỉ lấy từ biến môi trường).
+Trong apps/web (React + TypeScript + Vite + Tailwind CSS):
+- Cấu hình client API dùng `VITE_API_BASE_URL`; request xác thực gửi cookie bằng `credentials: 'include'`. API cần CORS credentials cho origin web.
 - Layout chung, thanh điều hướng thay đổi theo vai (khách, đơn vị, admin), toàn bộ chữ tiếng Việt.
-- Trang đăng ký, đăng nhập, đăng xuất; middleware bảo vệ các khu vực /organizer và /admin; trang 403/404.
+- Trang đăng ký, đăng nhập, đăng xuất; middleware bảo vệ khu vực quản lý studio và /admin; trang 403/404.
 - Client gọi API có kiểu (dùng schema zod của packages/shared), xử lý lỗi thống nhất và hiện thông báo thân thiện.
 - Mọi trang có trạng thái đang tải, lỗi, rỗng.
-Chưa làm trang nghiệp vụ. Dùng shadcn/ui, không tự viết lại các thành phần có sẵn.
+Chưa làm trang nghiệp vụ. Dùng các component dùng chung; chỉ thêm thư viện UI khi thật sự cần.
 ```
 
 **Kiểm tra:** đăng nhập bằng ba vai, thử truy cập trực tiếp URL không có quyền.
@@ -206,13 +208,13 @@ Làm trang danh sách workshop có bộ lọc (ngày, khoảng giá, khu vực, 
 ### Bước 7B — Khu vực đơn vị tổ chức (tuần 3-4)
 
 ```text
-Làm khu vực /organizer: tạo hồ sơ đơn vị, danh sách workshop của mình kèm trạng thái duyệt, form tạo/sửa workshop (đủ các trường theo PRD O2, có kiểm tra phía client bằng cùng schema zod), tạo buổi (ngày giờ, giá, sức chứa), danh sách đăng ký của từng buổi (khung, dữ liệu sẽ có ở bước 8-10). Hiển thị rõ khi đơn vị đang ở trạng thái chờ duyệt.
+Làm khu vực quản lý studio: tạo hồ sơ với tỉnh/thành bắt buộc từ danh mục API, khu vực tùy chọn theo tỉnh/thành và địa chỉ chi tiết theo phường/xã; danh sách workshop của studio kèm trạng thái duyệt; form tạo/sửa workshop (đủ các trường theo PRD O2, workshop kế thừa địa điểm từ studio, có kiểm tra phía client bằng cùng schema zod); tạo buổi (ngày giờ, giá, sức chứa); danh sách đăng ký của từng buổi (khung, dữ liệu sẽ có ở bước 8-10). Hiển thị rõ khi studio đang ở trạng thái chờ duyệt.
 ```
 
 ### Bước 7C — Khu vực quản trị (tuần 4)
 
 ```text
-Làm khu vực /admin: danh sách đơn vị và workshop có lọc theo trạng thái, nút duyệt/từ chối đổi cờ trạng thái; sau này sẽ thêm danh sách booking và webhook (bước 15). Chỉ admin truy cập được.
+Làm khu vực /admin: danh sách đơn vị và workshop có lọc theo trạng thái, nút duyệt/từ chối đổi cờ trạng thái. Chỉ admin truy cập được. Màn hình theo dõi booking/webhook thuộc mức 1 (PRD A2), nối sau khi API sẵn sàng ở Bước 10; khi làm UI, dùng quy trình U7 thay cho prompt 7C này.
 ```
 
 ---
@@ -228,7 +230,7 @@ Cài POST /bookings (chỉ customer) theo ĐÚNG mẫu SQL trong docs/02-archite
 - Trong một transaction: UPDATE sessions có điều kiện để giành chỗ (0 dòng bị ảnh hưởng = hết chỗ, trả 409 với mã lỗi riêng), rồi INSERT booking với giá lấy từ dòng vừa trả về. KHÔNG đọc số chỗ rồi ghi lại ở tầng ứng dụng. KHÔNG nhận giá hay tổng tiền từ client.
 - order_code: số nguyên không trùng; kiểm tra giới hạn kích thước mà PayOS cho phép trong tài liệu chính thức (tôi sẽ dán nếu cần); sinh mã rồi thử lại khi vi phạm UNIQUE.
 - Giới hạn quantity theo MAX_TICKETS_PER_BOOKING; mỗi khách tối đa N booking pending cùng lúc (đề xuất N và giải thích).
-- Hàm releaseExpiredHolds({ sessionId? }) theo mẫu SQL trong tài liệu, gọi định kỳ trong tiến trình API (khoảng EXPIRY_JOB_INTERVAL_SECONDS) có pg_try_advisory_lock để không chạy chồng; hàm này phải test được trực tiếp. BẮT BUỘC gọi thêm theo buổi (a) ở đầu POST /bookings, trong cùng transaction và trước câu UPDATE giữ chỗ, (b) trong GET /workshops/:id trước khi trả danh sách buổi còn chỗ; không dựa riêng vào job vì host có thể ngủ (xem docs/02-architecture.md).
+- Hàm releaseExpiredHolds({ sessionId? }) theo mẫu SQL trong tài liệu, gọi định kỳ trong tiến trình API (khoảng EXPIRY_JOB_INTERVAL_SECONDS) có pg_try_advisory_lock để không chạy chồng; hàm này phải test được trực tiếp. BẮT BUỘC gọi thêm theo buổi (a) ở đầu POST /bookings, trong cùng transaction và trước câu UPDATE giữ chỗ, (b) trong GET /workshops và GET /workshops/:id trước khi trả danh sách/thông tin buổi còn chỗ; không dựa riêng vào job vì host có thể ngủ (xem docs/02-architecture.md).
 - Cài interface PaymentProvider và MockProvider (createPayment trả checkoutUrl giả; bước 9 mới có PayOS). Tạm thời POST /bookings gọi provider và lưu một dòng payments trạng thái created.
 Test (Vitest, PostgreSQL thật, NHIỀU kết nối song song bằng pool riêng, không giả lập):
 - T01: buổi capacity 5, bắn 50 yêu cầu đặt 1 chỗ cùng lúc => đúng 5 thành công, 45 nhận hết chỗ, seats_held = 5, không vượt capacity. Lặp lại ít nhất 20 lần để lộ lỗi chạy đua.
@@ -251,8 +253,8 @@ Dưới đây là tài liệu chính thức của PayOS về tạo thanh toán, 
 Cài:
 1. PayOSProvider cho interface PaymentProvider (createPayment và verifyWebhook). Nếu có SDK chính thức cho Node thì dùng; nếu không, gọi REST theo tài liệu. KHÔNG đoán định dạng chữ ký; nếu tài liệu thiếu chi tiết, hỏi tôi.
 2. POST /webhooks/payos theo mục "Xử lý webhook (idempotent)" trong docs/02-architecture.md:
-   - Lấy body THÔ (với Express: đăng ký route webhook với express.raw() hoặc giữ raw body qua tùy chọn verify của express.json(), và đặt TRƯỚC middleware parse JSON chung nếu cần; giải thích cách làm), xác thực chữ ký bằng Checksum Key. Sai chữ ký: lưu webhook_events với signature_valid=false, trả lỗi, KHÔNG xử lý.
-   - INSERT webhook_events ... ON CONFLICT (provider, dedupe_key) DO NOTHING; nếu đã có thì trả thành công và outcome='duplicate'.
+   - Lấy body THÔ (với Express: đăng ký route webhook với express.raw() hoặc giữ raw body qua tùy chọn verify của express.json(), và đặt TRƯỚC middleware parse JSON chung nếu cần; giải thích cách làm), xác thực chữ ký bằng Checksum Key. Sai chữ ký: lưu webhook_events với signature_valid=false, trả HTTP không-2xx, KHÔNG xử lý booking.
+   - Với chữ ký hợp lệ, INSERT webhook_events ... ON CONFLICT (provider, dedupe_key) DO NOTHING; nếu đã có thì trả HTTP 2xx và outcome='duplicate'. Trả HTTP 2xx cho sự kiện hợp lệ sau khi đã lưu và xử lý outcome cuối; lỗi tạm thời chưa lưu/xử lý thì trả lỗi để nhà cung cấp gửi lại. Đối chiếu phản hồi với tài liệu PayOS chính thức.
    - Tìm booking theo order_code; kiểm tra số tiền khớp total_amount; trong MỘT transaction chuyển booking pending -> paid, seats_held -= qty, seats_sold += qty, cấp quantity vé (mã vé ngẫu nhiên khó đoán, UNIQUE (booking_id, seq)), cập nhật payments.
    - Không bao giờ tin trang /payment/return để xác nhận thanh toán; trang đó chỉ hiển thị.
 3. Chọn nhà cung cấp theo PAYMENT_PROVIDER (mock | payos).
@@ -270,8 +272,9 @@ Trước khi bổ sung tác vụ đối soát thanh toán pending/expired bằng
 ```text
 Cài theo docs/02-architecture.md:
 - Thanh toán đến muộn: webhook hợp lệ cho booking đã expired => thử giành lại chỗ bằng cùng câu UPDATE giữ chỗ trong transaction; còn chỗ thì paid + cấp vé (outcome late_payment_confirmed); hết chỗ thì refund_needed (late_payment_no_seat).
-- GET /organizer/sessions/:id/registrations: chỉ chủ buổi được xem danh sách booking liên quan.
+- GET /studios/:studioId/sessions/:id/registrations: chỉ thành viên studio được xem danh sách booking liên quan.
 - GET /bookings/:id, GET /me/bookings, GET /bookings/:id/tickets (chỉ chủ đơn, chỉ đơn paid). Hủy buổi đã triển khai ở Bước 4.
+- GET /admin/bookings và GET /admin/webhook-events: admin theo dõi booking, giao dịch, buổi hủy và webhook bị từ chối/trùng theo PRD A2 (mức 1).
 Test: T08, T09, T13, T14.
 ```
 
@@ -333,12 +336,11 @@ Test T17 (ranker tắt/chậm => vẫn có kết quả, fallback_used=true), T18
 
 ## F. Hoàn thiện
 
-### Bước 15 — Mức 2: duyệt, doanh thu, đánh giá (tuần 9, CHỈ khi mức 1 đã xong và qua mốc cắt tuần 7)
+### Bước 15 — Mức 2: doanh thu và đánh giá (tuần 9, CHỈ khi mức 1 đã xong và qua mốc cắt tuần 7)
 
 ```text
 Cài theo PRD:
-- Admin xem booking, giao dịch, buổi bị hủy, booking refund_needed, webhook bị từ chối/duplicate.
-- GET /organizer/revenue dùng view v_organizer_revenue; test T15 (khớp tổng booking paid, loại buổi bị hủy).
+- GET /studios/:studioId/revenue dùng view v_studio_revenue; test T15 (khớp tổng booking paid, loại buổi bị hủy).
 - POST /bookings/:id/review: chỉ chủ booking paid, buổi đã diễn ra, mỗi booking một đánh giá; test T16. Số sao hiển thị ở trang workshop nhưng KHÔNG dùng làm nhãn huấn luyện.
 Cập nhật giao diện tương ứng.
 ```
@@ -347,8 +349,8 @@ Cập nhật giao diện tương ứng.
 
 ```text
 Chọn MỘT trong hai (hỏi tôi trước):
-(a) Vé QR: mã hóa mã vé thành QR ở trang vé; POST /organizer/tickets/check-in nhận mã, chỉ chấp nhận vé valid của buổi thuộc đơn vị mình, đổi sang used; quét hai lần bị từ chối; test.
-(b) Trích xuất nhu cầu bằng Gemini ra JSON (số người, ngân sách, thời gian, khu vực): lược đồ JSON cố định, kiểm tra kết quả bằng zod, KHÔNG tin mù; hiển thị các điều kiện đã hiểu cho khách sửa trước khi lọc; lỗi/quota thì quay về form bộ lọc thường. Đo độ chính xác trên khoảng 50 câu có đáp án.
+(a) Vé QR: mã hóa mã vé thành QR ở trang vé; POST /studios/:studioId/tickets/check-in nhận mã, chỉ chấp nhận vé valid của buổi thuộc studio thành viên, đổi sang used; quét hai lần bị từ chối; test.
+(b) Trích xuất nhu cầu bằng Gemini ra JSON (số người, ngân sách, thời gian, tỉnh/thành, khu vực): lược đồ JSON cố định, kiểm tra kết quả bằng zod, KHÔNG tin mù; hiển thị các điều kiện đã hiểu cho khách sửa trước khi lọc; lỗi/quota thì quay về form bộ lọc thường. Đo độ chính xác trên khoảng 50 câu có đáp án.
 ```
 
 ### Bước 17 — Rà soát bảo mật và độ bền (tuần 10)
@@ -360,7 +362,7 @@ Rà soát toàn bộ dự án theo danh sách và báo cáo (chưa sửa ngay):
 3. Cookie/JWT: cờ HttpOnly/Secure/SameSite, thời hạn, thu hồi khi đăng xuất.
 4. Giới hạn tốc độ cho đăng nhập, đăng ký, /search, /bookings.
 5. Webhook: xác thực chữ ký, replay, kích thước body, trả mã đúng.
-6. Dữ liệu nhạy cảm trong log; biến môi trường lộ ra client (Next.js chỉ NEXT_PUBLIC_).
+6. Dữ liệu nhạy cảm trong log; chỉ `VITE_*` không nhạy cảm mới được đưa vào bundle frontend.
 7. Phụ thuộc: chạy npm audit và pip-audit, liệt kê lỗ hổng cần xử lý.
 8. RLS: xác nhận mọi bảng public bật RLS, test còn xanh.
 9. Xử lý lỗi: mọi lỗi 500 tiềm tàng.
@@ -370,7 +372,7 @@ Sau khi tôi duyệt danh sách, sửa từng mục kèm test.
 ### Bước 18 — Triển khai và dữ liệu demo (tuần 10-11)
 
 ```text
-Chuẩn bị triển khai: (1) Supabase: chạy migrate với chuỗi Direct hoặc Session pooler (cổng 5432), xác nhận mọi bảng bật RLS không policy; không dùng Transaction pooler (cổng 6543) cho API hoặc migration; (2) API ở nơi có URL công khai, cấu hình PAYOS_WEBHOOK_URL và đăng ký URL webhook ở PayOS; (3) web trỏ rewrites tới API triển khai; (4) ranker triển khai với mô hình nhỏ và dự phòng BM25 trong API; (5) script seed dữ liệu demo (ghi rõ mô phỏng) và tài khoản demo cho ba vai; (6) chế độ MockProvider có thể bật bằng biến môi trường để demo khi mạng/PayOS lỗi; (7) checklist trước buổi demo: dự án Supabase còn chạy, webhook còn hoạt động, thanh toán thật số tiền nhỏ chạy được.
+Chuẩn bị triển khai: (1) Supabase: chạy migrate với chuỗi Direct hoặc Session pooler (cổng 5432), xác nhận mọi bảng bật RLS không policy; không dùng Transaction pooler (cổng 6543) cho API hoặc migration; (2) API ở nơi có URL công khai, cấu hình PAYOS_WEBHOOK_URL và đăng ký URL webhook ở PayOS; (3) web build tĩnh, đặt VITE_API_BASE_URL tới API và cấu hình CORS/credentials; (4) ranker triển khai với mô hình nhỏ và dự phòng BM25 trong API; (5) script seed dữ liệu demo (ghi rõ mô phỏng) và tài khoản demo cho ba vai; (6) chế độ MockProvider có thể bật bằng biến môi trường để demo khi mạng/PayOS lỗi; (7) checklist trước buổi demo: dự án Supabase còn chạy, webhook còn hoạt động, thanh toán thật số tiền nhỏ chạy được.
 Cập nhật docs/deploy.md đã tạo ở Bước 5B với toàn bộ dịch vụ, biến môi trường và checklist demo.
 ```
 
@@ -389,8 +391,8 @@ Không bịa số liệu: chỉ dùng kết quả có file log kèm theo.
 ## G. Mẹo giữ chất lượng khi vibe code
 
 - Mỗi bước dán cho AI **đúng các file đặc tả của bước đó**, không dán cả dự án.
-- Ba chỗ phải tự đọc diff từng dòng: **giữ chỗ (bước 8), webhook (bước 9), phân quyền organizer (bước 4)**. Sai ở đây mất điểm nhiều nhất.
-- Thử phá có chủ đích: đổi `<=` thành `<` trong câu giữ chỗ, bỏ `organizer_id` khỏi một truy vấn, tắt kiểm tra chữ ký; test phải đỏ. Test không đỏ nghĩa là test chưa bảo vệ gì.
+- Ba chỗ phải tự đọc diff từng dòng: **giữ chỗ (bước 8), webhook (bước 9), phân quyền studio (bước 4)**. Sai ở đây mất điểm nhiều nhất.
+- Thử phá có chủ đích: đổi `<=` thành `<` trong câu giữ chỗ, bỏ kiểm tra membership studio khỏi một truy vấn, tắt kiểm tra chữ ký; test phải đỏ. Test không đỏ nghĩa là test chưa bảo vệ gì.
 - Nếu AI đề xuất bỏ quy tắc bắt buộc "cho đơn giản", từ chối và nhắc CLAUDE.md.
 - Nếu kẹt hơn nửa ngày ở một bước: thu nhỏ phạm vi, hoặc hạ mức ưu tiên; áp dụng mốc cắt cuối tuần 7.
 - Mỗi tuần viết báo cáo chương tương ứng ngay sau khi xong bước; log và ảnh chụp lưu cùng lúc.

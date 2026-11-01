@@ -1,19 +1,230 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@500;600;700&family=Open+Sans:wght@400;500;600;700&family=Source+Code+Pro:wght@400;500&display=swap&subset=vietnamese');
+@import 'react-day-picker/style.css';
 @import 'tailwindcss';
+@config '../tailwind.config.js';
 
-:root {
-  font-family: sans-serif;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-* {
-  box-sizing: border-box;
+@layer base {
+  * {
+    @apply box-border;
+  }
+  html {
+    @apply min-w-[320px] scroll-smooth;
+  }
+  body {
+    @apply m-0 min-h-screen bg-paper font-sans text-base leading-[1.6] text-ink antialiased;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  summary:focus-visible {
+    @apply outline-2 outline-offset-2 outline-porcelain;
+  }
 }
 
-body {
-  min-width: 320px;
-  min-height: 100vh;
+.rdp-root {
+  --rdp-accent-color: theme('colors.primary');
+  --rdp-accent-background-color: theme('colors.soft');
+  --rdp-day_button-width: 2.75rem;
+  --rdp-day_button-height: 2.75rem;
+  --rdp-day-width: 2.75rem;
+  --rdp-day-height: 2.75rem;
+  --rdp-nav_button-width: 2.75rem;
+  --rdp-nav_button-height: 2.75rem;
+  color: theme('colors.ink');
+  font-family: theme('fontFamily.sans');
+  font-size: 0.875rem;
+}
+
+.date-range-calendar
+  .rdp-today:not(.rdp-outside):not(.rdp-selected)
+  .rdp-day_button {
+  border-radius: theme('borderRadius.full');
+  background-color: var(--rdp-accent-background-color);
+  color: var(--rdp-accent-color);
+  font-weight: 700;
+}
+
+.date-range-calendar .rdp-selected {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.date-range-calendar .rdp-selected .rdp-day_button {
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.date-range-calendar .rdp-today:not(.rdp-outside):not(.rdp-selected) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.date-range-popover-content[data-state='open'] {
+  animation: date-range-popover-in 140ms ease-out;
+}
+
+.date-range-popover-content[data-state='closed'] {
+  animation: date-range-popover-out 100ms ease-in;
+}
+
+@keyframes date-range-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes date-range-popover-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .date-range-popover-content[data-state] {
+    animation-duration: 0.01ms;
+  }
+}
+
+.price-range-slider {
+  --range-start: 0%;
+  --range-end: 100%;
+  position: relative;
+  height: 1.75rem;
+  touch-action: pan-y;
+}
+
+.price-range-slider::before,
+.price-range-slider::after {
+  position: absolute;
+  top: 50%;
+  height: 0.25rem;
+  border-radius: theme('borderRadius.full');
+  content: '';
+  transform: translateY(-50%);
+}
+
+.price-range-slider::before {
+  left: 0;
+  right: 0;
+  background: theme('colors.line');
+}
+
+.price-range-slider::after {
+  left: var(--range-start);
+  right: calc(100% - var(--range-end));
+  background: theme('colors.primary');
+}
+
+.price-range-slider__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.price-range-slider__input::-webkit-slider-runnable-track {
+  height: 0.25rem;
+  background: transparent;
+}
+
+.price-range-slider__input::-moz-range-track {
+  height: 0.25rem;
+  background: transparent;
+}
+
+.price-range-slider__input::-webkit-slider-thumb {
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: -0.4375rem;
+  appearance: none;
+  border: 2px solid theme('colors.surface');
+  border-radius: theme('borderRadius.full');
+  background: theme('colors.primary');
+  box-shadow: 0 0 0 1px theme('colors.primary');
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.price-range-slider__input::-moz-range-thumb {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 2px solid theme('colors.surface');
+  border-radius: theme('borderRadius.full');
+  background: theme('colors.primary');
+  box-shadow: 0 0 0 1px theme('colors.primary');
+  cursor: grab;
+  pointer-events: auto;
+}
+
+.price-range-slider__input:focus-visible {
+  outline: 2px solid theme('colors.primary');
+  outline-offset: 3px;
+}
+
+.price-range-slider__input--min {
+  z-index: 2;
+}
+
+.price-range-slider__input--max {
+  z-index: 1;
+}
+
+.price-range-slider__input:active {
+  z-index: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+.horizontal-ticket-stub::after {
+  content: '';
+  position: absolute;
+  inset-block: 8px;
+  right: -3px;
+  width: 6px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='10'%3E%3Cpath d='M0 0L5 5L0 10' fill='none' stroke='%23a8a29e' stroke-width='1.5'/%3E%3C/svg%3E") repeat-y;
+  pointer-events: none;
+  z-index: 1;
+}
+.horizontal-ticket > article {
+  mask: radial-gradient(circle at var(--stub-width, 28%) 0, transparent 8px, #000 9px), radial-gradient(circle at var(--stub-width, 28%) 100%, transparent 8px, #000 9px);
+  mask-composite: intersect;
+}
+.horizontal-ticket footer { margin-top: auto; padding-top: .75rem; }
+.horizontal-ticket .ticket-rating { font-size: 13px; font-variant-numeric: tabular-nums; }
+.horizontal-ticket .ticket-price > span { font-size: 13px; }
+@media (min-width: 640px) {
+  .horizontal-ticket-featured { --stub-width: 18rem; }
+}
+@media (min-width: 1024px) {
+  .horizontal-ticket { --stub-width: 12rem; }
+  .horizontal-ticket-featured { --stub-width: 18rem; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .horizontal-ticket:not(.horizontal-ticket-featured) footer { flex-wrap: wrap; }
 }

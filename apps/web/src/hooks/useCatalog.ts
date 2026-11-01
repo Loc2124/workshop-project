@@ -1,16 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { catalogService } from '../services/catalogService';
+import type { CatalogFilters } from '../types/catalog';
 
 export const catalogKeys = {
   all: ['catalog'] as const,
-  list: (category: string) => [...catalogKeys.all, category] as const,
+  list: (filters: CatalogFilters) => [...catalogKeys.all, filters] as const,
   detail: (id: string) => [...catalogKeys.all, 'detail', id] as const,
 };
 
-export function useCatalog(category: string) {
+export function useCatalog(filters: CatalogFilters, enabled = true) {
   return useQuery({
-    queryKey: catalogKeys.list(category),
-    queryFn: ({ signal }) => catalogService.list(category, signal),
+    queryKey: catalogKeys.list(filters),
+    queryFn: ({ signal }) => catalogService.list(filters, signal),
+    enabled,
   });
 }
 

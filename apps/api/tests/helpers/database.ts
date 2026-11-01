@@ -55,38 +55,42 @@ export async function createUser(
   return result.rows[0].id;
 }
 
-export async function createOrganizer(
+export async function createStudio(
   client: PoolClient,
   userId: string,
   name: string,
 ): Promise<string> {
   const result = await client.query<{ id: string }>(
-    `INSERT INTO organizers (user_id, name)
-     VALUES ($1, $2)
+    `INSERT INTO studios (name, province_id, address)
+     VALUES ($1, 'ho-chi-minh', 'Test address')
      RETURNING id`,
-    [userId, name],
+    [name],
+  );
+  await client.query(
+    `INSERT INTO studio_members (studio_id, user_id, role)
+     VALUES ($1, $2, 'owner')`,
+    [result.rows[0].id, userId],
   );
   return result.rows[0].id;
 }
 
 export async function createWorkshop(
   client: PoolClient,
-  organizerId: string,
+  studioId: string,
   suffix: string,
 ): Promise<string> {
   const result = await client.query<{ id: string }>(
     `INSERT INTO workshops
-       (organizer_id, title, description, category, duration_minutes, base_price, district)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+       (studio_id, title, description, category_id, duration_minutes, base_price)
+     VALUES ($1, $2, $3, $4, $5, $6)
      RETURNING id`,
     [
-      organizerId,
+      studioId,
       `Test workshop ${suffix}`,
       'Test description',
-      'craft',
+      'other',
       60,
       1000,
-      'test',
     ],
   );
   return result.rows[0].id;

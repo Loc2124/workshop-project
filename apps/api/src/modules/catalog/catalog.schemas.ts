@@ -6,6 +6,15 @@ const queryInteger = z
   .transform(Number)
   .pipe(z.number().int().safe());
 const queryPrice = queryInteger.pipe(z.number().max(2_147_483_647));
+const areaIds = z
+  .union([
+    z
+      .string()
+      .uuid()
+      .transform((id) => [id]),
+    z.array(z.string().uuid()).max(50),
+  ])
+  .optional();
 
 const calendarDate = z.string().refine((value) => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -25,8 +34,11 @@ export const catalogQuerySchema = z
     date_to: calendarDate.optional(),
     price_min: queryPrice.optional(),
     price_max: queryPrice.optional(),
-    district: z.string().trim().min(1).max(100).optional(),
-    category: z.string().trim().min(1).max(100).optional(),
+    province_id: z.string().trim().min(1).max(100).optional(),
+    area_ids: areaIds,
+    category_id: z.string().trim().min(1).max(100).optional(),
+    level: z.enum(['beginner', 'intermediate', 'all']).optional(),
+    audience: z.string().trim().min(1).max(100).optional(),
     page: queryInteger.optional(),
     page_size: queryInteger.optional(),
   })
@@ -83,8 +95,11 @@ export type CatalogFilters = {
   dateTo?: string;
   priceMin?: number;
   priceMax?: number;
-  district?: string;
-  category?: string;
+  provinceId?: string;
+  areaIds?: string[];
+  categoryId?: string;
+  level?: 'beginner' | 'intermediate' | 'all';
+  audience?: string;
   page: number;
   pageSize: number;
 };
@@ -95,8 +110,11 @@ export function toCatalogFilters(query: CatalogQuery): CatalogFilters {
     dateTo: query.date_to,
     priceMin: query.price_min,
     priceMax: query.price_max,
-    district: query.district,
-    category: query.category,
+    provinceId: query.province_id,
+    areaIds: query.area_ids,
+    categoryId: query.category_id,
+    level: query.level,
+    audience: query.audience,
     page: query.page ?? 1,
     pageSize: query.page_size ?? 20,
   };

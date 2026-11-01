@@ -11,6 +11,11 @@ dist/
 coverage/
 npm-debug.log*
 
+# Local browser automation logs and snapshots
+.playwright-cli/
+.playwright-mcp/
+.taste-skill/
+
 # Python
 .venv/
 venv/

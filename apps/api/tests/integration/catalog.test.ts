@@ -11,8 +11,11 @@ vi.setConfig({ testTimeout: 30_000 });
 
 type FixtureOptions = {
   district: string;
-  category: string;
-  organizerStatus?: 'pending' | 'approved' | 'rejected';
+  categoryId: string;
+  provinceId?: string;
+  level?: 'beginner' | 'intermediate' | 'all';
+  audience?: string[];
+  studioStatus?: 'pending' | 'approved' | 'rejected';
   workshopStatus?: 'pending' | 'approved' | 'rejected';
 };
 
@@ -42,18 +45,14 @@ describe('public workshop catalog', () => {
   it('applies each public filter to the matching workshop or session', async () => {
     const suffix = randomUUID();
     const district = `District ${suffix}`;
-    const category = `Category ${suffix}`;
+    const categoryId = `Category ${suffix}`;
     const targetId = await createWorkshop({
       district,
-      category,
-    });
-    const otherDistrictId = await createWorkshop({
-      district: `Other ${suffix}`,
-      category,
+      categoryId,
     });
     const otherCategoryId = await createWorkshop({
       district,
-      category: `Other ${suffix}`,
+      categoryId: `Other ${suffix}`,
     });
 
     await addSession(targetId, {
@@ -68,32 +67,40 @@ describe('public workshop catalog', () => {
       startsAt: '2032-05-02T17:30:00.000Z',
       price: 300,
     });
-    await addSession(otherDistrictId, {
-      startsAt: '2032-05-01T17:30:00.000Z',
-      price: 500,
-    });
     await addSession(otherCategoryId, {
       startsAt: '2032-05-01T17:30:00.000Z',
       price: 50,
     });
 
-    const districtResult = await request(app)
+    const otherProvinceId = await createWorkshop({
+      district: `Other province ${suffix}`,
+      categoryId,
+      provinceId: 'ha-noi',
+    });
+    await addSession(otherProvinceId, {
+      startsAt: '2032-05-01T17:30:00.000Z',
+    });
+    const provinceResult = await request(app)
       .get('/workshops')
-      .query({ district });
-    expect(districtResult.status).toBe(200);
-    expect(idsOf(districtResult.body.items)).toContain(targetId);
-    expect(idsOf(districtResult.body.items)).not.toContain(otherDistrictId);
+      .query({ province_id: 'ho-chi-minh', category_id: categoryId });
+    expect(provinceResult.status).toBe(200);
+    expect(idsOf(provinceResult.body.items)).toContain(targetId);
+    expect(idsOf(provinceResult.body.items)).not.toContain(otherProvinceId);
 
     const categoryResult = await request(app)
       .get('/workshops')
-      .query({ category });
+      .query({ category_id: categoryId });
     expect(categoryResult.status).toBe(200);
     expect(idsOf(categoryResult.body.items)).toContain(targetId);
     expect(idsOf(categoryResult.body.items)).not.toContain(otherCategoryId);
 
     const minimumPriceResult = await request(app)
       .get('/workshops')
-      .query({ district, category, price_min: 200 });
+      .query({
+        province_id: 'ho-chi-minh',
+        category_id: categoryId,
+        price_min: 200,
+      });
     expect(minimumPriceResult.status).toBe(200);
     expect(idsOf(minimumPriceResult.body.items)).toEqual([targetId]);
     expect(sessionPrices(minimumPriceResult.body.items[0].sessions)).toEqual([
@@ -102,7 +109,11 @@ describe('public workshop catalog', () => {
 
     const maximumPriceResult = await request(app)
       .get('/workshops')
-      .query({ district, category, price_max: 200 });
+      .query({
+        province_id: 'ho-chi-minh',
+        category_id: categoryId,
+        price_max: 200,
+      });
     expect(maximumPriceResult.status).toBe(200);
     expect(idsOf(maximumPriceResult.body.items)).toEqual([targetId]);
     expect(sessionPrices(maximumPriceResult.body.items[0].sessions)).toEqual([
@@ -110,8 +121,8 @@ describe('public workshop catalog', () => {
     ]);
 
     const dateResult = await request(app).get('/workshops').query({
-      district,
-      category,
+      province_id: 'ho-chi-minh',
+      category_id: categoryId,
       date_from: '2032-05-02',
       date_to: '2032-05-02',
     });
@@ -120,11 +131,74 @@ describe('public workshop catalog', () => {
     expect(sessionPrices(dateResult.body.items[0].sessions)).toEqual([200]);
   });
 
+  it('filters by level and audience and allows combining them with existing filters', async () => {
+    const suffix = randomUUID();
+    const district = `Level audience ${suffix}`;
+    const categoryId = `Level audience ${suffix}`;
+    const audience = `cặp đôi ${suffix}`;
+    const targetId = await createWorkshop({
+      district,
+      categoryId,
+      level: 'beginner',
+      audience: [audience, 'nhóm bạn'],
+    });
+    const otherLevelId = await createWorkshop({
+      district,
+      categoryId,
+      level: 'intermediate',
+      audience: [audience],
+    });
+    const otherAudienceId = await createWorkshop({
+      district,
+      categoryId,
+      level: 'beginner',
+      audience: ['một mình'],
+    });
+    for (const workshopId of [targetId, otherLevelId, otherAudienceId]) {
+      await addSession(workshopId, {
+        startsAt: '2032-05-01T17:30:00.000Z',
+      });
+    }
+
+    const byLevel = await request(app)
+      .get('/workshops')
+      .query({ category_id: categoryId, level: 'beginner' });
+    expect(byLevel.status).toBe(200);
+    expect(idsOf(byLevel.body.items)).toContain(targetId);
+    expect(idsOf(byLevel.body.items)).not.toContain(otherLevelId);
+
+    const byAudience = await request(app)
+      .get('/workshops')
+      .query({ category_id: categoryId, audience });
+    expect(byAudience.status).toBe(200);
+    expect(idsOf(byAudience.body.items)).toContain(targetId);
+    expect(idsOf(byAudience.body.items)).toContain(otherLevelId);
+    expect(idsOf(byAudience.body.items)).not.toContain(otherAudienceId);
+
+    const combined = await request(app)
+      .get('/workshops')
+      .query({ category_id: categoryId, level: 'beginner', audience });
+    expect(combined.status).toBe(200);
+    expect(idsOf(combined.body.items)).toEqual([targetId]);
+  });
+
+  it('rejects unsupported level and province filter values', async () => {
+    const invalidLevel = await request(app)
+      .get('/workshops')
+      .query({ level: 'expert' });
+    expect(invalidLevel.status).toBe(422);
+
+    const invalidProvince = await request(app)
+      .get('/workshops')
+      .query({ province: 'Atlantis' });
+    expect(invalidProvince.status).toBe(422);
+  });
+
   it('uses inclusive Vietnam calendar days at both date-range boundaries', async () => {
     const suffix = randomUUID();
     const workshopId = await createWorkshop({
       district: `Boundary ${suffix}`,
-      category: `Boundary ${suffix}`,
+      categoryId: `Boundary ${suffix}`,
     });
 
     const boundarySessions = [
@@ -142,7 +216,7 @@ describe('public workshop catalog', () => {
     const result = await request(app)
       .get('/workshops')
       .query({
-        district: `Boundary ${suffix}`,
+        category_id: `Boundary ${suffix}`,
         date_from: '2032-04-10',
         date_to: '2032-04-11',
       });
@@ -159,36 +233,36 @@ describe('public workshop catalog', () => {
   it('hides unapproved, cancelled, past, and sold-out catalog entries', async () => {
     const suffix = randomUUID();
     const district = `Hidden ${suffix}`;
-    const category = `Hidden ${suffix}`;
+    const categoryId = `Hidden ${suffix}`;
     const pendingWorkshop = await createWorkshop({
       district,
-      category,
+      categoryId,
       workshopStatus: 'pending',
     });
-    const rejectedOrganizerWorkshop = await createWorkshop({
+    const rejectedStudioWorkshop = await createWorkshop({
       district,
-      category,
-      organizerStatus: 'rejected',
+      categoryId,
+      studioStatus: 'rejected',
     });
-    const pendingOrganizerWorkshop = await createWorkshop({
+    const pendingStudioWorkshop = await createWorkshop({
       district,
-      category,
-      organizerStatus: 'pending',
+      categoryId,
+      studioStatus: 'pending',
     });
     const rejectedWorkshop = await createWorkshop({
       district,
-      category,
+      categoryId,
       workshopStatus: 'rejected',
     });
-    const unavailableWorkshop = await createWorkshop({ district, category });
+    const unavailableWorkshop = await createWorkshop({ district, categoryId });
 
     await addSession(pendingWorkshop, {
       startsAt: '2032-05-01T17:30:00.000Z',
     });
-    await addSession(rejectedOrganizerWorkshop, {
+    await addSession(rejectedStudioWorkshop, {
       startsAt: '2032-05-01T17:30:00.000Z',
     });
-    await addSession(pendingOrganizerWorkshop, {
+    await addSession(pendingStudioWorkshop, {
       startsAt: '2032-05-01T17:30:00.000Z',
     });
     await addSession(rejectedWorkshop, {
@@ -207,7 +281,9 @@ describe('public workshop catalog', () => {
       seatsSold: 1,
     });
 
-    const result = await request(app).get('/workshops').query({ district });
+    const result = await request(app)
+      .get('/workshops')
+      .query({ category_id: categoryId });
 
     expect(result.status).toBe(200);
     expect(result.body.items).toEqual([]);
@@ -218,7 +294,7 @@ describe('public workshop catalog', () => {
     const suffix = randomUUID();
     const listWorkshopId = await createWorkshop({
       district: `List ${suffix}`,
-      category: `List ${suffix}`,
+      categoryId: `List ${suffix}`,
     });
     const listSessionId = await addSession(listWorkshopId, {
       startsAt: '2032-05-01T17:30:00.000Z',
@@ -241,7 +317,7 @@ describe('public workshop catalog', () => {
     );
     const listedWorkshops = await request(app)
       .get('/workshops')
-      .query({ district: `List ${suffix}` });
+      .query({ category_id: `List ${suffix}` });
     expect(listedWorkshops.status).toBe(200);
     expect(listedWorkshops.body.items[0].sessions[0].availableSeats).toBe(2);
     const listedBookingStatus = await query<{ status: string }>(
@@ -252,7 +328,7 @@ describe('public workshop catalog', () => {
 
     const workshopId = await createWorkshop({
       district: `Detail ${suffix}`,
-      category: `Detail ${suffix}`,
+      categoryId: `Detail ${suffix}`,
     });
     const sessionId = await addSession(workshopId, {
       startsAt: '2032-05-01T17:30:00.000Z',
@@ -277,8 +353,14 @@ describe('public workshop catalog', () => {
     const detail = await request(app).get(`/workshops/${workshopId}`);
     expect(detail.status).toBe(200);
     expect(detail.body.workshop.id).toBe(workshopId);
+    expect(detail.body.workshop.slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     expect(detail.body.workshop.sessions).toHaveLength(1);
     expect(detail.body.workshop.sessions[0].availableSeats).toBe(3);
+    const slugDetail = await request(app).get(
+      `/workshops/${detail.body.workshop.slug}`,
+    );
+    expect(slugDetail.status).toBe(200);
+    expect(slugDetail.body.workshop.id).toBe(workshopId);
 
     const releasedBooking = await query<{ status: string }>(
       'SELECT status FROM bookings WHERE id = $1',
@@ -293,18 +375,48 @@ describe('public workshop catalog', () => {
 
     const emptyList = await request(app)
       .get('/workshops')
-      .query({ district: `No match ${suffix}` });
+      .query({ category_id: `No match ${suffix}` });
     expect(emptyList.status).toBe(200);
     expect(emptyList.body.items).toEqual([]);
     expect(emptyList.body.pagination.total).toBe(0);
   });
 
+  it('returns public studio details with its available workshops', async () => {
+    const suffix = randomUUID();
+    const workshopId = await createWorkshop({
+      district: `Studio ${suffix}`,
+      categoryId: `Studio ${suffix}`,
+    });
+    await addSession(workshopId, {
+      startsAt: '2032-05-01T17:30:00.000Z',
+    });
+    const studioResult = await query<{ studio_id: string }>(
+      'SELECT studio_id FROM workshops WHERE id = $1',
+      [workshopId],
+    );
+
+    const response = await request(app).get(
+      `/studios/${studioResult.rows[0].studio_id}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.studio.id).toBe(studioResult.rows[0].studio_id);
+    expect(response.body.studio.slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+    expect(response.body.studio.workshops).toHaveLength(1);
+    expect(response.body.studio.workshops[0].id).toBe(workshopId);
+    const slugResponse = await request(app).get(
+      `/studios/${response.body.studio.slug}`,
+    );
+    expect(slugResponse.status).toBe(200);
+    expect(slugResponse.body.studio.id).toBe(studioResult.rows[0].studio_id);
+  });
+
   it('validates query parameters and paginates candidates by their next session', async () => {
     const suffix = randomUUID();
     const district = `Page ${suffix}`;
-    const category = `Page ${suffix}`;
-    const laterWorkshop = await createWorkshop({ district, category });
-    const earlierWorkshop = await createWorkshop({ district, category });
+    const categoryId = `Page ${suffix}`;
+    const laterWorkshop = await createWorkshop({ district, categoryId });
+    const earlierWorkshop = await createWorkshop({ district, categoryId });
     await addSession(laterWorkshop, {
       startsAt: '2032-05-02T17:30:00.000Z',
     });
@@ -314,10 +426,10 @@ describe('public workshop catalog', () => {
 
     const firstPage = await request(app)
       .get('/workshops')
-      .query({ district, page: 1, page_size: 1 });
+      .query({ category_id: categoryId, page: 1, page_size: 1 });
     const secondPage = await request(app)
       .get('/workshops')
-      .query({ district, page: 2, page_size: 1 });
+      .query({ category_id: categoryId, page: 2, page_size: 1 });
     expect(firstPage.status).toBe(200);
     expect(secondPage.status).toBe(200);
     expect(firstPage.body.items[0].id).toBe(earlierWorkshop);
@@ -335,33 +447,49 @@ async function createWorkshop(options: FixtureOptions): Promise<string> {
   const suffix = randomUUID();
   const user = await query<{ id: string }>(
     `INSERT INTO users (email, password_hash, full_name, role)
-     VALUES ($1, 'test-password-hash', 'Catalog test', 'organizer')
+     VALUES ($1, 'test-password-hash', 'Catalog test', 'customer')
      RETURNING id`,
     [`catalog.${suffix}@example.test`],
   );
-  const organizer = await query<{ id: string }>(
-    `INSERT INTO organizers (user_id, name, description, district, status)
-     VALUES ($1, $2, 'Catalog fixture', $3, $4::approval_status)
+  const studio = await query<{ id: string }>(
+    `INSERT INTO studios (
+       name, description, district, province_id, address, status
+     )
+     VALUES ($1, 'Catalog fixture', $2, $3, '12 Example Street, Ward 1', $4::approval_status)
      RETURNING id`,
     [
-      user.rows[0].id,
-      `Organizer ${suffix}`,
+      `Studio ${suffix}`,
       options.district,
-      options.organizerStatus ?? 'approved',
+      options.provinceId ?? 'ho-chi-minh',
+      options.studioStatus ?? 'approved',
     ],
+  );
+  await query(
+    `INSERT INTO studio_members (studio_id, user_id, role)
+     VALUES ($1, $2, 'owner')`,
+    [studio.rows[0].id, user.rows[0].id],
+  );
+  await query(
+    'INSERT INTO categories (id, slug, name) VALUES ($1, $1, $1) ON CONFLICT (id) DO NOTHING',
+    [options.categoryId],
   );
   const workshop = await query<{ id: string }>(
     `INSERT INTO workshops (
-      organizer_id, title, description, category, duration_minutes,
-      base_price, district, status, is_simulated
-     )
-    VALUES ($1, $2, 'Catalog fixture description', $3, 60, 100, $4, $5, true)
+      studio_id, title, description, category_id, level, audience,
+     duration_minutes, base_price, status,
+     is_simulated
+    )
+    VALUES (
+     $1, $2, 'Catalog fixture description', $3, $4::text,
+     $5::text[], 60, 100, $6, true
+    )
      RETURNING id`,
     [
-      organizer.rows[0].id,
+      studio.rows[0].id,
       `Workshop ${suffix}`,
-      options.category,
-      options.district,
+      options.categoryId,
+      options.level ?? 'beginner',
+      options.audience ?? [],
       options.workshopStatus ?? 'approved',
     ],
   );

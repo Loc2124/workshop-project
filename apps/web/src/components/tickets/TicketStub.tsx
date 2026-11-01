@@ -1,0 +1,78 @@
+import { useState, type ReactNode } from 'react';
+import {
+  DEFAULT_CATEGORY,
+  getCategoryIcon,
+  getCategoryMeta,
+} from '../../constants/categories';
+import { cn } from '../../lib/utils';
+
+export function TicketStub({
+  imageUrl,
+  alt,
+  categoryId,
+  featured = false,
+  children,
+}: {
+  imageUrl?: string | null;
+  alt: string;
+  categoryId?: string;
+  featured?: boolean;
+  children: ReactNode;
+}) {
+  const [loadedUrl, setLoadedUrl] = useState<string>();
+  const [failedUrls, setFailedUrls] = useState<string[]>([]);
+  const category = getCategoryMeta(categoryId);
+  const displaySource = [
+    imageUrl,
+    category.placeholderImage,
+    DEFAULT_CATEGORY.placeholderImage,
+  ].find((url): url is string => Boolean(url && !failedUrls.includes(url)));
+  const hasImage = Boolean(displaySource && loadedUrl === displaySource);
+  const Icon = getCategoryIcon(categoryId);
+  const objectPosition = category.imagePosition;
+  return (
+    <div
+      className={cn(
+        'horizontal-ticket-stub relative w-[var(--stub-width,28%)] shrink-0 bg-beige',
+        featured && 'sm:w-[var(--stub-width)]',
+      )}
+    >
+      {displaySource && (
+        <img
+          src={displaySource}
+          alt={imageUrl && displaySource === imageUrl ? alt : ''}
+          loading="lazy"
+          onLoad={() => setLoadedUrl(displaySource)}
+          onError={() => {
+            setLoadedUrl(undefined);
+            setFailedUrls((urls) => [...urls, displaySource]);
+          }}
+          style={{ objectPosition }}
+          className={cn(
+            'absolute inset-0 size-full object-cover',
+            !hasImage && 'opacity-0',
+          )}
+        />
+      )}
+      {hasImage && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+        />
+      )}
+      <div
+        className={cn(
+          'relative flex h-full flex-col p-3 lg:p-5',
+          hasImage ? 'text-white' : 'text-stone-700',
+        )}
+      >
+        {!hasImage && (
+          <Icon size={22} aria-hidden="true" className="shrink-0" />
+        )}
+        <div className="mt-auto flex flex-col pt-8 tabular-nums">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}

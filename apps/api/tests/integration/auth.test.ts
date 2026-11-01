@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { assertSafeTestDatabase } from '../../../../scripts/assert-safe-test-db.js';
@@ -124,6 +125,15 @@ describe('auth module', () => {
 
     expect(badTokenResponse.status).toBe(401);
     expect(badTokenResponse.body.error.code).toBe('UNAUTHORIZED');
+
+    const legacyToken = jwt.sign(
+      { sub: randomUUID(), role: 'organizer' },
+      process.env.JWT_SECRET || 'change-me-to-a-long-random-string',
+    );
+    const legacyResponse = await request(app)
+      .get('/me')
+      .set('Cookie', `workshop_session=${legacyToken}`);
+    expect(legacyResponse.status).toBe(401);
   });
 
   it('uses a transaction-safe database fixture and never leaks user records across tests', async () => {

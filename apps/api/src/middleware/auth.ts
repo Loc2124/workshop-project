@@ -1,12 +1,10 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../errors/app-error.js';
-import { findOrganizerIdByUserId } from '../modules/auth/auth.repository.js';
 
 export type AuthUser = {
   sub: string;
-  role: 'customer' | 'organizer' | 'admin';
-  organizerId?: string | null;
+  role: 'customer' | 'admin';
 };
 
 declare module 'express-serve-static-core' {
@@ -41,11 +39,13 @@ export function requireAuth(roles: AuthUser['role'][] = []) {
     try {
       const payload = jwt.verify(token, jwtSecret) as {
         sub?: string;
-        role?: AuthUser['role'];
-        organizerId?: string | null;
+        role?: unknown;
       };
 
-      if (!payload.sub || !payload.role) {
+      if (
+        !payload.sub ||
+        (payload.role !== 'customer' && payload.role !== 'admin')
+      ) {
         throw new Error('Invalid token payload');
       }
 
@@ -60,15 +60,9 @@ export function requireAuth(roles: AuthUser['role'][] = []) {
         return;
       }
 
-      let organizerId = payload.organizerId ?? null;
-      if (payload.role === 'organizer' && !organizerId) {
-        organizerId = await findOrganizerIdByUserId(payload.sub);
-      }
-
       request.user = {
         sub: payload.sub,
         role: payload.role,
-        organizerId,
       };
       next();
     } catch {
