@@ -25,34 +25,40 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 type DialogContentProps = React.ComponentPropsWithoutRef<
   typeof DialogPrimitive.Content
-> & { sheet?: boolean };
+> & { sheet?: boolean; closeDisabled?: boolean };
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, sheet = false, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        sheet
-          ? 'fixed inset-x-0 bottom-0 top-auto z-50 max-h-[90dvh] w-full max-w-none overflow-hidden rounded-b-none rounded-t-2xl border-0 bg-surface p-0 text-ink shadow-overlay'
-          : 'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-line bg-surface p-6 text-ink shadow-overlay',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      <DialogPrimitive.Close
-        aria-label="Đóng"
-        className="absolute right-4 top-4 grid size-11 place-items-center rounded-md text-muted hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain"
+>(
+  (
+    { className, children, sheet = false, closeDisabled = false, ...props },
+    ref,
+  ) => (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          sheet
+            ? 'fixed inset-x-0 bottom-0 top-auto z-50 max-h-[90dvh] w-full max-w-none overflow-hidden rounded-b-none rounded-t-2xl border-0 bg-surface p-0 text-ink shadow-overlay'
+            : 'fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-line bg-surface p-6 text-ink shadow-overlay',
+          className,
+        )}
+        {...props}
       >
-        <X aria-hidden="true" size={18} />
-      </DialogPrimitive.Close>
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+        {children}
+        <DialogPrimitive.Close
+          aria-label="Đóng"
+          disabled={closeDisabled}
+          className="absolute right-4 top-4 grid size-11 place-items-center rounded-md text-muted hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain"
+        >
+          <X aria-hidden="true" size={18} />
+        </DialogPrimitive.Close>
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  ),
+);
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogTitle = React.forwardRef<

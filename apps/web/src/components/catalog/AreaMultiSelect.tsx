@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { catalogService } from '../../services/catalogService';
 import { mockAreas } from '../../data/mockStudios';
+import { isDemoDataMode } from '../../lib/data-mode';
 
 type Props = {
   provinceId?: string;
@@ -32,7 +33,7 @@ export function AreaMultiSelect({
       setLoadError(undefined);
       return;
     }
-    if (import.meta.env.DEV) {
+    if (isDemoDataMode) {
       const mockOptions = mockAreas
         .filter((area) => area.provinceId === provinceId)
         .map((area) => ({

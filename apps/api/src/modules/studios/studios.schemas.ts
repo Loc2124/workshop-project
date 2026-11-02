@@ -1,12 +1,11 @@
 import { z } from 'zod';
+import { studioRegistrationSchema } from '@workshop/shared';
 
-export const studioProfileSchema = z.object({
-  name: z.string().trim().min(2).max(120),
-  categoryId: z.string().trim().min(1).max(100).default('other'),
-  description: z.string().trim().max(2000).optional().nullable(),
-  provinceId: z.string().trim().min(1).max(100),
-  areaId: z.string().uuid().optional().nullable(),
-  address: z.string().trim().min(1).max(500),
-});
+export const studioProfileSchema = z.preprocess((input) => {
+  if (input && typeof input === 'object' && !Array.isArray(input)) {
+    return { categoryId: 'other', ...input };
+  }
+  return input;
+}, studioRegistrationSchema);
 
 export type StudioProfileInput = z.infer<typeof studioProfileSchema>;

@@ -9,25 +9,16 @@ import { WorkshopCard } from '../catalog/WorkshopCard';
 
 type Props = Pick<
   ReturnType<typeof useHomeCatalog>,
-  | 'featuredWorkshops'
-  | 'provinceName'
-  | 'browseUrl'
-  | 'loading'
-  | 'error'
-  | 'refetch'
+  'featuredWorkshops' | 'browseUrl' | 'loading' | 'error' | 'refetch'
 >;
 
 export function HomeWorkshopSection({
   featuredWorkshops,
-  provinceName,
   browseUrl,
   loading,
   error,
   refetch,
 }: Props) {
-  const simulated =
-    import.meta.env.DEV ||
-    featuredWorkshops.some((workshop) => workshop.isSimulated);
   return (
     <PageContainer
       as="section"
@@ -37,17 +28,8 @@ export function HomeWorkshopSection({
     >
       <SectionHeading
         id="featured-title"
-        title={
-          <>Những buổi hẹn sắp tới{provinceName ? ` ở ${provinceName}` : ''}</>
-        }
-        description={
-          <>
-            {provinceName
-              ? `Khám phá workshop ở ${provinceName}.`
-              : 'Chọn một buổi, dành thời gian cho điều bạn thích.'}
-            {simulated && ' Dữ liệu mô phỏng.'}
-          </>
-        }
+        title="Workshop nổi bật"
+        description="Chọn một trải nghiệm, dành thời gian cho điều bạn thích."
         action={
           <Button asChild variant="link" className="px-0">
             <Link to={browseUrl}>
@@ -64,7 +46,7 @@ export function HomeWorkshopSection({
           <p>
             {error
               ? 'Chưa tải được workshop. Bạn có thể thử lại.'
-              : 'Chưa có workshop tại đây. Hãy thử tỉnh, thành phố khác.'}
+              : 'Chưa có workshop công khai để giới thiệu.'}
           </p>
           {error && (
             <Button type="button" onClick={refetch} className="mt-4">
@@ -74,9 +56,9 @@ export function HomeWorkshopSection({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {featuredWorkshops.map((workshop, index) => (
-            <div key={workshop.id} className={index === 0 ? 'md:col-span-2' : undefined}>
-              <WorkshopCard workshop={workshop} variant={index === 0 ? 'featured' : 'default'} />
+          {featuredWorkshops.map((workshop) => (
+            <div key={workshop.id}>
+              <WorkshopCard workshop={workshop} variant="default" />
             </div>
           ))}
         </div>

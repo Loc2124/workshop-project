@@ -1,39 +1,20 @@
-import { query, withTransaction } from '../../db/pool.js';
+import {
+  studioTrustSql,
+  studioDepositEligibleSql,
+} from '../studios/studio-profile-sql.js';
+import type { PoolClient } from 'pg';
+import { withTransaction } from '../../db/pool.js';
 import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
+import type {
+  PublicStudioResponseDto,
+  PublicWorkshopDto,
+} from '@workshop/shared';
 import type { CatalogFilters } from './catalog.schemas.js';
 
-export type CatalogSession = {
-  id: string;
-  startsAt: string;
-  endsAt: string;
-  price: number;
-  availableSeats: number;
-};
+export type CatalogSession = PublicWorkshopDto['sessions'][number];
 
-export type CatalogCandidate = {
-  id: string;
-  slug: string;
-  studioId: string;
-  studioSlug: string;
-  title: string;
-  description: string;
-  categoryId: string;
-  level: string;
-  audience: string[];
-  takeaway: string | null;
-  durationMinutes: number;
-  basePrice: number;
-  requirements: string | null;
-  district: string | null;
-  province: string;
-  provinceId: string;
-  areaId: string | null;
-  address: string;
-  isSimulated: boolean;
-  studioName: string;
-  studioDescription: string | null;
+export type CatalogCandidate = Omit<PublicWorkshopDto, 'nextStartsAt'> & {
   nextStartsAt: string;
-  sessions: CatalogSession[];
 };
 
 export type CatalogPage = {
@@ -47,71 +28,125 @@ export type CatalogPage = {
 
 type WorkshopDetail = Omit<CatalogCandidate, 'nextStartsAt'>;
 type CandidateCount = { total: number };
-
-export type PublicStudio = {
-  categoryId: string;
-  id: string;
-  slug: string;
-  name: string;
-  description: string | null;
-  province: string;
-  provinceId: string;
-  areaId: string | null;
-  areaName: string | null;
-  address: string;
-  workshops: WorkshopDetail[];
+type StudioCandidate = Omit<PublicStudio, 'workshops' | 'description'> & {
+  description: string;
+  workshopCount: number;
+  categoryIds: string[];
+  startingPrice: number;
+  availableSessions: number;
 };
 
-export async function listProvinces() {
-  const result = await query<{
-    id: string;
-    name: string;
-    studioCount: number;
-  }>(
-    `SELECT p.id, p.name, count(DISTINCT st.id)::integer AS "studioCount"
-     FROM provinces p
-     JOIN studios st ON st.province_id = p.id AND st.status = 'approved'
-     WHERE EXISTS (
-       SELECT 1
-       FROM workshops w
-       JOIN sessions s ON s.workshop_id = w.id
-       WHERE w.studio_id = st.id
-         AND w.status = 'approved'
-         AND s.status = 'scheduled'
-         AND s.starts_at > now()
-         AND s.capacity - s.seats_held - s.seats_sold >= 1
-     )
-     GROUP BY p.id
-     ORDER BY p.sort_order`,
+export type PublicStudio = PublicStudioResponseDto['studio'];
+
+export type StudioCatalogPage = {
+  items: StudioCandidate[];
+  pagination: CatalogPage['pagination'];
+};
+
+async function releaseExpiredHoldsInScope(
+  client: PoolClient,
+  joins: string,
+  where: string,
+  values: unknown[] = [],
+): Promise<void> {
+  const result = await client.query<{ id: string }>(
+    `SELECT DISTINCT s.id
+     FROM sessions s
+     ${joins}
+     WHERE s.status = 'scheduled'
+       AND s.starts_at > now()
+       AND ${where}
+       AND EXISTS (
+         SELECT 1
+         FROM bookings b
+         WHERE b.session_id = s.id
+           AND b.status = 'pending'
+           AND b.hold_expires_at < now()
+       )
+     ORDER BY s.id`,
+    values,
   );
-  return result.rows;
+  await releaseExpiredHolds(
+    client,
+    result.rows.map(({ id }) => id),
+  );
+}
+
+export async function listProvinces(includeEmpty = false) {
+  return withTransaction(async (client) => {
+    await releaseExpiredHoldsInScope(
+      client,
+      `JOIN workshops w ON w.id = s.workshop_id
+       JOIN studios st ON st.id = w.studio_id`,
+      `w.status = 'approved' AND w.visibility_status = 'active'
+       AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
+       AND st.province_id IS NOT NULL`,
+    );
+    const result = await client.query<{
+      id: string;
+      name: string;
+      studioCount: number;
+    }>(
+      `SELECT p.id, p.name, count(DISTINCT st.id)::integer AS "studioCount"
+       FROM provinces p
+       LEFT JOIN studios st
+         ON st.province_id = p.id
+        AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
+        AND EXISTS (
+          SELECT 1
+          FROM workshops w
+          JOIN sessions s ON s.workshop_id = w.id
+          WHERE w.studio_id = st.id
+            AND w.status = 'approved' AND w.visibility_status = 'active'
+            AND s.status = 'scheduled'
+            AND s.starts_at > now()
+            AND s.capacity - s.seats_held - s.seats_sold >= 1
+        )
+       WHERE $1::boolean OR st.id IS NOT NULL
+       GROUP BY p.id
+       ORDER BY p.sort_order`,
+      [includeEmpty],
+    );
+    return result.rows;
+  });
 }
 
 export async function listAreas(provinceId: string) {
-  const result = await query<{
-    id: string;
-    name: string;
-    studioCount: number;
-  }>(
-    `SELECT a.id, a.name, count(DISTINCT st.id)::integer AS "studioCount"
-     FROM areas a
-     JOIN studios st ON st.area_id = a.id AND st.status = 'approved'
-     WHERE a.province_id = $1
-       AND EXISTS (
-         SELECT 1
-         FROM workshops w
-         JOIN sessions s ON s.workshop_id = w.id
-         WHERE w.studio_id = st.id
-           AND w.status = 'approved'
-           AND s.status = 'scheduled'
-           AND s.starts_at > now()
-           AND s.capacity - s.seats_held - s.seats_sold >= 1
-       )
-     GROUP BY a.id
-     ORDER BY a.sort_order, a.name`,
-    [provinceId],
-  );
-  return result.rows;
+  return withTransaction(async (client) => {
+    await releaseExpiredHoldsInScope(
+      client,
+      `JOIN workshops w ON w.id = s.workshop_id
+       JOIN studios st ON st.id = w.studio_id`,
+      `w.status = 'approved' AND w.visibility_status = 'active'
+       AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
+       AND st.province_id = $1`,
+      [provinceId],
+    );
+    const result = await client.query<{
+      id: string;
+      name: string;
+      studioCount: number;
+    }>(
+      `SELECT a.id, a.name, count(DISTINCT st.id)::integer AS "studioCount"
+       FROM areas a
+       JOIN studios st ON st.area_id = a.id AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
+       WHERE a.province_id = $1
+         AND EXISTS (
+           SELECT 1
+           FROM workshops w
+           JOIN sessions s ON s.workshop_id = w.id
+           WHERE w.studio_id = st.id
+             AND w.status = 'approved' AND w.visibility_status = 'active'
+             AND s.status = 'scheduled'
+             AND s.starts_at > now()
+             AND s.capacity - s.seats_held - s.seats_sold >= 1
+         )
+       GROUP BY a.id
+       ORDER BY a.sort_order, a.name`,
+      [provinceId],
+    );
+    return result.rows;
+  });
 }
 
 const sessionColumns = `s.id,
@@ -121,16 +156,28 @@ const sessionColumns = `s.id,
   s.price,
   (s.capacity - s.seats_held - s.seats_sold) AS "availableSeats"`;
 
+const vietnameseAccentSource =
+  'áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ';
+const vietnameseAccentTarget =
+  'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd';
+
+function normalizedSql(expression: string): string {
+  return `translate(lower(coalesce(${expression}, '')), '${vietnameseAccentSource}', '${vietnameseAccentTarget}')`;
+}
+
 function createCandidateFilters(filters: CatalogFilters) {
   const values: unknown[] = [];
-  const sessionConditions = [
+  const sessionScopeConditions = [
     `s.status = 'scheduled'`,
     's.starts_at > now()',
+  ];
+  const sessionConditions = [
+    ...sessionScopeConditions,
     's.capacity - s.seats_held - s.seats_sold >= 1',
   ];
   const workshopConditions = [
-    `w.status = 'approved'`,
-    `st.status = 'approved'`,
+    `w.status = 'approved' AND w.visibility_status = 'active'`,
+    `st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
   ];
   const addValue = (value: unknown) => {
     values.push(value);
@@ -139,21 +186,25 @@ function createCandidateFilters(filters: CatalogFilters) {
 
   if (filters.dateFrom !== undefined) {
     const parameter = addValue(filters.dateFrom);
-    sessionConditions.push(
-      `s.starts_at >= (${parameter}::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`,
-    );
+    const condition = `s.starts_at >= (${parameter}::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`;
+    sessionConditions.push(condition);
+    sessionScopeConditions.push(condition);
   }
   if (filters.dateTo !== undefined) {
     const parameter = addValue(filters.dateTo);
-    sessionConditions.push(
-      `s.starts_at < ((${parameter}::date + 1)::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`,
-    );
+    const condition = `s.starts_at < ((${parameter}::date + 1)::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`;
+    sessionConditions.push(condition);
+    sessionScopeConditions.push(condition);
   }
   if (filters.priceMin !== undefined) {
-    sessionConditions.push(`s.price >= ${addValue(filters.priceMin)}`);
+    const condition = `s.price >= ${addValue(filters.priceMin)}`;
+    sessionConditions.push(condition);
+    sessionScopeConditions.push(condition);
   }
   if (filters.priceMax !== undefined) {
-    sessionConditions.push(`s.price <= ${addValue(filters.priceMax)}`);
+    const condition = `s.price <= ${addValue(filters.priceMax)}`;
+    sessionConditions.push(condition);
+    sessionScopeConditions.push(condition);
   }
   if (filters.provinceId !== undefined) {
     workshopConditions.push(`st.province_id = ${addValue(filters.provinceId)}`);
@@ -174,33 +225,128 @@ function createCandidateFilters(filters: CatalogFilters) {
       `w.audience @> ARRAY[${addValue(filters.audience)}]::text[]`,
     );
   }
+  if (filters.takeawaySameDay) {
+    workshopConditions.push(`coalesce(w.takeaway, '') ~* 'ngay|ngày'`);
+  }
+
+  const searchFields = [
+    normalizedSql('w.title'),
+    normalizedSql('w.description'),
+    normalizedSql('c.name'),
+    normalizedSql('c.description'),
+    normalizedSql("array_to_string(c.keywords, ' ')"),
+    normalizedSql('st.name'),
+    normalizedSql('p.name'),
+    normalizedSql("array_to_string(w.audience, ' ')"),
+  ];
+  const titleField = normalizedSql('w.title');
+  const categoryField = normalizedSql(
+    "concat_ws(' ', c.name, array_to_string(c.keywords, ' '))",
+  );
+  const categoryDescriptionField = normalizedSql('c.description');
+  const studioField = normalizedSql('st.name');
+  const provinceField = normalizedSql('p.name');
+  const workshopDescriptionField = normalizedSql('w.description');
+  const audienceField = normalizedSql("array_to_string(w.audience, ' ')");
+  const searchConditions: string[] = [];
+  const relevanceParts: string[] = [];
+
+  const searchTerms = (filters.query ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .toLocaleLowerCase('vi')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  for (const term of new Set(searchTerms)) {
+    const parameter = addValue(term);
+    const matches = (field: string) => `position(${parameter} in ${field}) > 0`;
+    searchConditions.push(`(${searchFields.map(matches).join(' OR ')})`);
+    relevanceParts.push(
+      `(CASE WHEN ${matches(titleField)} THEN 8 ELSE 0 END
+        + CASE WHEN ${matches(categoryField)} THEN 5 ELSE 0 END
+        + CASE WHEN ${matches(categoryDescriptionField)} THEN 2 ELSE 0 END
+        + CASE WHEN ${matches(studioField)} THEN 4 ELSE 0 END
+        + CASE WHEN ${matches(provinceField)} THEN 2 ELSE 0 END
+        + CASE WHEN ${matches(workshopDescriptionField)} THEN 1 ELSE 0 END
+        + CASE WHEN ${matches(audienceField)} THEN 2 ELSE 0 END)`,
+    );
+  }
+  if (searchConditions.length > 0) {
+    workshopConditions.push(`(${searchConditions.join(' OR ')})`);
+  }
 
   return {
     values,
     sessionWhere: sessionConditions.join('\n AND '),
+    sessionScopeWhere: sessionScopeConditions.join('\n AND '),
     workshopWhere: workshopConditions.join('\n AND '),
+    relevance: relevanceParts.length ? relevanceParts.join(' + ') : '0',
   };
+}
+
+function getCatalogOrderBy(sort: CatalogFilters['sort']): string {
+  switch (sort) {
+    case 'price-asc':
+      return '"startingPrice" ASC';
+    case 'price-desc':
+      return '"startingPrice" DESC';
+    case 'soonest':
+      return '"nextStartsAt" ASC';
+    case 'recommended':
+      return '"relevance" DESC, "nextStartsAt" ASC';
+  }
+}
+
+function createFilteredWorkshopCte(
+  workshopWhere: string,
+  relevance: string,
+): string {
+  return `filtered_workshops AS (
+    SELECT w.id, w.studio_id AS "studioId", ${relevance} AS relevance
+    FROM workshops w
+    JOIN studios st ON st.id = w.studio_id
+    JOIN provinces p ON p.id = st.province_id
+    JOIN categories c ON c.id = w.category_id
+    WHERE ${workshopWhere}
+      AND st.province_id IS NOT NULL
+  )`;
 }
 
 export async function findCandidates(
   filters: CatalogFilters,
 ): Promise<CatalogPage> {
   return withTransaction(async (client) => {
-    await releaseExpiredHolds(client);
-    const { values, sessionWhere, workshopWhere } =
-      createCandidateFilters(filters);
-
-    const countResult = await client.query<CandidateCount>(
-      `SELECT count(DISTINCT w.id)::integer AS total
-       FROM workshops w
+    const {
+      values,
+      sessionWhere,
+      sessionScopeWhere,
+      workshopWhere,
+      relevance,
+    } = createCandidateFilters(filters);
+    await releaseExpiredHoldsInScope(
+      client,
+      `JOIN workshops w ON w.id = s.workshop_id
        JOIN studios st ON st.id = w.studio_id
-       WHERE ${workshopWhere}
-         AND st.province_id IS NOT NULL
-         AND EXISTS (
-           SELECT 1
-           FROM sessions s
-           WHERE s.workshop_id = w.id AND ${sessionWhere}
-         )`,
+       JOIN provinces p ON p.id = st.province_id
+       JOIN categories c ON c.id = w.category_id`,
+      `${sessionScopeWhere} AND ${workshopWhere}`,
+      values,
+    );
+    const filteredWorkshops = createFilteredWorkshopCte(
+      workshopWhere,
+      relevance,
+    );
+    const countResult = await client.query<CandidateCount>(
+      `WITH ${filteredWorkshops}
+       SELECT count(*)::integer AS total
+       FROM filtered_workshops fw
+       WHERE EXISTS (
+         SELECT 1 FROM sessions s
+         WHERE s.workshop_id = fw.id AND ${sessionWhere}
+       )`,
       values,
     );
 
@@ -212,15 +358,16 @@ export async function findCandidates(
          FROM sessions s
          WHERE ${sessionWhere}
        ),
+       ${filteredWorkshops},
        page AS (
-         SELECT w.id, min(es."startsAt") AS "nextStartsAt"
-         FROM workshops w
-         JOIN studios st ON st.id = w.studio_id
-         JOIN eligible_sessions es ON es."workshopId" = w.id
-         WHERE ${workshopWhere}
-           AND st.province_id IS NOT NULL
-         GROUP BY w.id
-         ORDER BY min(es."startsAt"), w.id
+         SELECT fw.id,
+           min(es."startsAt") AS "nextStartsAt",
+           min(es.price)::integer AS "startingPrice",
+           fw.relevance
+         FROM filtered_workshops fw
+         JOIN eligible_sessions es ON es."workshopId" = fw.id
+         GROUP BY fw.id, fw.relevance
+         ORDER BY ${getCatalogOrderBy(filters.sort)}, fw.id
          LIMIT ${pageSizeParameter}
          OFFSET ${offsetParameter}
        )
@@ -236,7 +383,11 @@ export async function findCandidates(
          w.takeaway,
          w.duration_minutes AS "durationMinutes",
          w.base_price AS "basePrice",
+         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",
+         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "effectiveDepositPercent",
          w.requirements,
+         w.cancellation_policy AS "cancellationPolicy",
+         w.payment_policy AS "paymentPolicy",
          st.district,
          p.name AS province,
          st.province_id AS "provinceId",
@@ -261,8 +412,10 @@ export async function findCandidates(
        JOIN studios st ON st.id = w.studio_id
        JOIN provinces p ON p.id = st.province_id
        JOIN eligible_sessions es ON es."workshopId" = w.id
-       GROUP BY w.id, st.id, p.id, page."nextStartsAt"
-       ORDER BY page."nextStartsAt", w.id`,
+       GROUP BY
+         w.id, st.id, p.id, page."nextStartsAt", page."startingPrice",
+         page.relevance
+       ORDER BY ${getCatalogOrderBy(filters.sort)}, w.id`,
       [...values, filters.pageSize, (filters.page - 1) * filters.pageSize],
     );
 
@@ -277,16 +430,129 @@ export async function findCandidates(
   });
 }
 
+export async function findStudioCandidates(
+  filters: CatalogFilters,
+): Promise<StudioCatalogPage> {
+  return withTransaction(async (client) => {
+    const {
+      values,
+      sessionWhere,
+      sessionScopeWhere,
+      workshopWhere,
+      relevance,
+    } = createCandidateFilters(filters);
+    await releaseExpiredHoldsInScope(
+      client,
+      `JOIN workshops w ON w.id = s.workshop_id
+       JOIN studios st ON st.id = w.studio_id
+       JOIN provinces p ON p.id = st.province_id
+       JOIN categories c ON c.id = w.category_id`,
+      `${sessionScopeWhere} AND ${workshopWhere}`,
+      values,
+    );
+    const filteredWorkshops = createFilteredWorkshopCte(
+      workshopWhere,
+      relevance,
+    );
+    const countResult = await client.query<CandidateCount>(
+      `WITH ${filteredWorkshops}
+       SELECT count(DISTINCT fw."studioId")::integer AS total
+       FROM filtered_workshops fw
+       WHERE EXISTS (
+         SELECT 1 FROM sessions s
+         WHERE s.workshop_id = fw.id AND ${sessionWhere}
+       )`,
+      values,
+    );
+    const pageSizeParameter = `$${values.length + 1}`;
+    const offsetParameter = `$${values.length + 2}`;
+    const pageResult = await client.query<StudioCandidate>(
+      `WITH eligible_sessions AS (
+         SELECT ${sessionColumns}
+         FROM sessions s
+         WHERE ${sessionWhere}
+       ),
+       ${filteredWorkshops},
+       filtered_studio_workshops AS (
+         SELECT fw."studioId",
+           w.category_id AS "categoryId",
+           min(es.price)::integer AS "startingPrice",
+           min(es."startsAt") AS "nextStartsAt",
+           count(es.id)::integer AS "availableSessions",
+           fw.relevance
+         FROM filtered_workshops fw
+         JOIN workshops w ON w.id = fw.id
+         JOIN eligible_sessions es ON es."workshopId" = fw.id
+         GROUP BY fw."studioId", fw.id, w.category_id, fw.relevance
+       ),
+       studios AS (
+         SELECT st.id,
+           st.slug,
+           ${studioTrustSql} AS "trustLevel",
+         ${studioDepositEligibleSql} AS "canCollectDeposit",
+         st.category_id AS "categoryId",
+           st.name,
+           coalesce(st.description, '') AS description,
+           p.name AS province,
+           st.province_id AS "provinceId",
+           st.area_id AS "areaId",
+           a.name AS "areaName",
+           st.address,
+           count(*)::integer AS "workshopCount",
+           array_agg(DISTINCT fsw."categoryId" ORDER BY fsw."categoryId") AS "categoryIds",
+           min(fsw."startingPrice")::integer AS "startingPrice",
+           sum(fsw."availableSessions")::integer AS "availableSessions",
+           min(fsw."nextStartsAt") AS "nextStartsAt",
+           max(fsw.relevance) AS relevance
+         FROM filtered_studio_workshops fsw
+         JOIN studios st ON st.id = fsw."studioId"
+         JOIN provinces p ON p.id = st.province_id
+         LEFT JOIN areas a ON a.id = st.area_id
+         GROUP BY st.id, p.id, a.id
+       ),
+       page AS (
+         SELECT *
+         FROM studios
+         ORDER BY ${getCatalogOrderBy(filters.sort)}, id
+         LIMIT ${pageSizeParameter}
+         OFFSET ${offsetParameter}
+       )
+       SELECT id, slug, "categoryId", name, description, province,
+         "provinceId", "areaId", "areaName", address, "workshopCount",
+         "categoryIds", "startingPrice", "availableSessions"
+       FROM page
+       ORDER BY ${getCatalogOrderBy(filters.sort)}, id`,
+      [...values, filters.pageSize, (filters.page - 1) * filters.pageSize],
+    );
+
+    return {
+      items: pageResult.rows,
+      pagination: {
+        page: filters.page,
+        pageSize: filters.pageSize,
+        total: countResult.rows[0]?.total ?? 0,
+      },
+    };
+  });
+}
+
 export async function getPublicWorkshop(
   workshopId: string,
 ): Promise<WorkshopDetail | null> {
   return withTransaction(async (client) => {
-    await releaseExpiredHolds(client);
+    await releaseExpiredHoldsInScope(
+      client,
+      `JOIN workshops w ON w.id = s.workshop_id
+       JOIN studios st ON st.id = w.studio_id`,
+      `(w.id::text = $1 OR w.slug = $1)
+       AND w.status = 'approved' AND w.visibility_status = 'active'
+       AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
+      [workshopId],
+    );
     const result = await client.query<WorkshopDetail>(
       `SELECT w.id,
          w.slug,
          st.id AS "studioId",
-         st.slug AS "studioSlug",
          st.slug AS "studioSlug",
          w.title,
          w.description,
@@ -296,7 +562,11 @@ export async function getPublicWorkshop(
          w.takeaway,
          w.duration_minutes AS "durationMinutes",
          w.base_price AS "basePrice",
+         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",
+         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "effectiveDepositPercent",
          w.requirements,
+         w.cancellation_policy AS "cancellationPolicy",
+         w.payment_policy AS "paymentPolicy",
          st.district,
          p.name AS province,
          st.province_id AS "provinceId",
@@ -327,8 +597,8 @@ export async function getPublicWorkshop(
         AND s.starts_at > now()
         AND s.capacity - s.seats_held - s.seats_sold >= 1
        WHERE (w.id::text = $1 OR w.slug = $1)
-         AND w.status = 'approved'
-         AND st.status = 'approved'
+         AND w.status = 'approved' AND w.visibility_status = 'active'
+         AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
        GROUP BY w.id, st.id, p.id`,
       [workshopId],
     );
@@ -340,10 +610,22 @@ export async function getPublicStudio(
   studioId: string,
 ): Promise<PublicStudio | null> {
   return withTransaction(async (client) => {
-    await releaseExpiredHolds(client);
-    const studioResult = await client.query<Omit<PublicStudio, 'workshops'>>(
+    await releaseExpiredHoldsInScope(
+      client,
+      `JOIN workshops w ON w.id = s.workshop_id
+       JOIN studios st ON st.id = w.studio_id`,
+      `(st.id::text = $1 OR st.slug = $1)
+       AND w.status = 'approved' AND w.visibility_status = 'active'
+       AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
+      [studioId],
+    );
+    const studioResult = await client.query<
+      Omit<PublicStudio, 'workshops'> & { photoIds: string[] }
+    >(
       `SELECT st.id,
          st.slug,
+         ${studioTrustSql} AS "trustLevel",
+         ${studioDepositEligibleSql} AS "canCollectDeposit",
          st.category_id AS "categoryId",
          st.name,
          st.description,
@@ -351,12 +633,12 @@ export async function getPublicStudio(
          st.province_id AS "provinceId",
          st.area_id AS "areaId",
          a.name AS "areaName",
-         st.address
+         st.address, st.contact_phone AS "contactPhone", st.contact_email AS "contactEmail", st.facebook_url AS "facebookUrl", st.instagram_url AS "instagramUrl", st.google_maps_url AS "googleMapsUrl", st.photo_ids AS "photoIds"
        FROM studios st
        JOIN provinces p ON p.id = st.province_id
        LEFT JOIN areas a ON a.id = st.area_id
        WHERE (st.id::text = $1 OR st.slug = $1)
-         AND st.status = 'approved'`,
+         AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
       [studioId],
     );
     const studio = studioResult.rows[0];
@@ -375,7 +657,11 @@ export async function getPublicStudio(
          w.takeaway,
          w.duration_minutes AS "durationMinutes",
          w.base_price AS "basePrice",
+         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",
+         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "effectiveDepositPercent",
          w.requirements,
+         w.cancellation_policy AS "cancellationPolicy",
+         w.payment_policy AS "paymentPolicy",
          st.district,
          p.name AS province,
          st.province_id AS "provinceId",
@@ -406,7 +692,7 @@ export async function getPublicStudio(
         AND s.starts_at > now()
         AND s.capacity - s.seats_held - s.seats_sold >= 1
        WHERE (st.id::text = $1 OR st.slug = $1)
-         AND w.status = 'approved'
+         AND w.status = 'approved' AND w.visibility_status = 'active'
        GROUP BY w.id, st.id, p.id
        ORDER BY min(s.starts_at), w.id`,
       [studioId],

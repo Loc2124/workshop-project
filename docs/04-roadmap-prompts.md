@@ -110,9 +110,9 @@ Viết 3 test mẫu cho hạ tầng này (lỗi validate, lỗi 404 định dạ
 
 ```text
 Cài xác thực theo PRD C1 và API spec:
-- POST /auth/register (chỉ tạo role customer), POST /auth/login, POST /auth/logout, GET /me.
+- POST /auth/register (chỉ tạo role customer), POST /auth/login, POST /auth/refresh, POST /auth/logout, GET /me.
 - Băm mật khẩu bằng argon2 hoặc bcrypt (chọn một và giải thích vì sao). Email duy nhất, chuẩn hóa chữ thường.
-- JWT trong cookie httpOnly, SameSite=Lax, Secure theo biến COOKIE_SECURE; payload gồm sub và role hệ thống (`customer` hoặc `admin`), không nhúng studio hay vai thành viên.
+- Access JWT trong cookie httpOnly 15 phút và refresh token ngẫu nhiên trong cookie httpOnly 14 ngày; refresh token chỉ lưu dạng hash, xoay sau mỗi lần refresh. Payload access gồm sub, sid và role hệ thống (`customer` hoặc `admin`), không nhúng studio hay vai thành viên. Middleware đọc role hiện tại và session còn hiệu lực từ database.
 - Middleware requireAuth(roles[]) và repository kiểm tra vai `owner`/`staff` qua `studio_members` cho từng `studio_id`.
 - Giới hạn tốc độ cho /auth/login (chống dò mật khẩu).
 - Thông báo lỗi đăng nhập không tiết lộ email có tồn tại hay không.

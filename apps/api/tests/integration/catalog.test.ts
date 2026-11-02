@@ -1,6 +1,12 @@
+import { seedStudioEvidence } from '../helpers/studio-evidence.js';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  catalogResponseSchema,
+  publicStudioResponseSchema,
+  publicWorkshopResponseSchema,
+} from '@workshop/shared';
 import { assertSafeTestDatabase } from '../../../../scripts/assert-safe-test-db.js';
 import { migrateDatabase } from '../../../../scripts/migrate.js';
 import { createApp } from '../../src/app.js';
@@ -40,6 +46,24 @@ describe('public workshop catalog', () => {
 
   afterAll(async () => {
     await closePool();
+  });
+
+  it('can include provinces without public workshops for studio registration', async () => {
+    const response = await request(app)
+      .get('/provinces')
+      .query({ include_empty: 'true' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.provinces).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'an-giang', name: 'An Giang' }),
+      ]),
+    );
+
+    const invalidQuery = await request(app)
+      .get('/provinces')
+      .query({ include_empty: 'false' });
+    expect(invalidQuery.status).toBe(422);
   });
 
   it('applies each public filter to the matching workshop or session', async () => {
@@ -94,26 +118,22 @@ describe('public workshop catalog', () => {
     expect(idsOf(categoryResult.body.items)).toContain(targetId);
     expect(idsOf(categoryResult.body.items)).not.toContain(otherCategoryId);
 
-    const minimumPriceResult = await request(app)
-      .get('/workshops')
-      .query({
-        province_id: 'ho-chi-minh',
-        category_id: categoryId,
-        price_min: 200,
-      });
+    const minimumPriceResult = await request(app).get('/workshops').query({
+      province_id: 'ho-chi-minh',
+      category_id: categoryId,
+      price_min: 200,
+    });
     expect(minimumPriceResult.status).toBe(200);
     expect(idsOf(minimumPriceResult.body.items)).toEqual([targetId]);
     expect(sessionPrices(minimumPriceResult.body.items[0].sessions)).toEqual([
       200, 300,
     ]);
 
-    const maximumPriceResult = await request(app)
-      .get('/workshops')
-      .query({
-        province_id: 'ho-chi-minh',
-        category_id: categoryId,
-        price_max: 200,
-      });
+    const maximumPriceResult = await request(app).get('/workshops').query({
+      province_id: 'ho-chi-minh',
+      category_id: categoryId,
+      price_max: 200,
+    });
     expect(maximumPriceResult.status).toBe(200);
     expect(idsOf(maximumPriceResult.body.items)).toEqual([targetId]);
     expect(sessionPrices(maximumPriceResult.body.items[0].sessions)).toEqual([
@@ -319,6 +339,12 @@ describe('public workshop catalog', () => {
       .get('/workshops')
       .query({ category_id: `List ${suffix}` });
     expect(listedWorkshops.status).toBe(200);
+    expect(catalogResponseSchema.parse(listedWorkshops.body).items[0]).toEqual(
+      expect.objectContaining({
+        cancellationPolicy: null,
+        paymentPolicy: null,
+      }),
+    );
     expect(listedWorkshops.body.items[0].sessions[0].availableSeats).toBe(2);
     const listedBookingStatus = await query<{ status: string }>(
       'SELECT status FROM bookings WHERE id = $1',
@@ -330,6 +356,12 @@ describe('public workshop catalog', () => {
       district: `Detail ${suffix}`,
       categoryId: `Detail ${suffix}`,
     });
+    await query(
+      `UPDATE workshops
+       SET cancellation_policy = $1, payment_policy = $2
+       WHERE id = $3`,
+      ['Đổi lịch trước một ngày.', 'Thanh toán tại chỗ.', workshopId],
+    );
     const sessionId = await addSession(workshopId, {
       startsAt: '2032-05-01T17:30:00.000Z',
       capacity: 3,
@@ -352,6 +384,11 @@ describe('public workshop catalog', () => {
 
     const detail = await request(app).get(`/workshops/${workshopId}`);
     expect(detail.status).toBe(200);
+    const parsedDetail = publicWorkshopResponseSchema.parse(detail.body);
+    expect(parsedDetail.workshop).toMatchObject({
+      cancellationPolicy: 'Đổi lịch trước một ngày.',
+      paymentPolicy: 'Thanh toán tại chỗ.',
+    });
     expect(detail.body.workshop.id).toBe(workshopId);
     expect(detail.body.workshop.slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     expect(detail.body.workshop.sessions).toHaveLength(1);
@@ -381,12 +418,169 @@ describe('public workshop catalog', () => {
     expect(emptyList.body.pagination.total).toBe(0);
   });
 
+  it('scopes catalog cleanup and releases location holds before listing', async () => {
+    const suffix = randomUUID();
+    const categoryId = `Scoped ${suffix}`;
+    const otherCategoryId = `Unrelated ${suffix}`;
+    const scopedWorkshopId = await createWorkshop({
+      district: `Scoped ${suffix}`,
+      categoryId,
+    });
+    const unrelatedWorkshopId = await createWorkshop({
+      district: `Unrelated ${suffix}`,
+      categoryId: otherCategoryId,
+    });
+    const scopedSessionId = await addSession(scopedWorkshopId, {
+      startsAt: '2032-05-01T17:30:00.000Z',
+      capacity: 1,
+      seatsHeld: 1,
+    });
+    const unrelatedSessionId = await addSession(unrelatedWorkshopId, {
+      startsAt: '2032-05-01T17:30:00.000Z',
+      capacity: 1,
+      seatsHeld: 1,
+    });
+    const scopedBookingId = await addExpiredBooking(scopedSessionId);
+    const unrelatedBookingId = await addExpiredBooking(unrelatedSessionId);
+
+    const filtered = await request(app)
+      .get('/workshops')
+      .query({ category_id: categoryId });
+    expect(filtered.status).toBe(200);
+    expect(idsOf(filtered.body.items)).toEqual([scopedWorkshopId]);
+    expect(filtered.body.items[0].sessions[0].availableSeats).toBe(1);
+    const bookingStates = await query<{ id: string; status: string }>(
+      `SELECT id, status
+       FROM bookings
+       WHERE id = ANY($1::uuid[])`,
+      [[scopedBookingId, unrelatedBookingId]],
+    );
+    expect(bookingStates.rows).toEqual(
+      expect.arrayContaining([
+        { id: scopedBookingId, status: 'expired' },
+        { id: unrelatedBookingId, status: 'pending' },
+      ]),
+    );
+
+    const detailSessionId = await addSession(scopedWorkshopId, {
+      startsAt: '2032-05-02T17:30:00.000Z',
+      capacity: 1,
+      seatsHeld: 1,
+    });
+    const detailBookingId = await addExpiredBooking(detailSessionId);
+    const workshopDetail = await request(app).get(
+      `/workshops/${scopedWorkshopId}`,
+    );
+    expect(workshopDetail.status).toBe(200);
+    const detailBooking = await query<{ status: string }>(
+      'SELECT status FROM bookings WHERE id = $1',
+      [detailBookingId],
+    );
+    expect(detailBooking.rows[0].status).toBe('expired');
+
+    const studio = await query<{ id: string }>(
+      'SELECT studio_id AS id FROM workshops WHERE id = $1',
+      [scopedWorkshopId],
+    );
+    const studioSessionId = await addSession(scopedWorkshopId, {
+      startsAt: '2032-05-03T17:30:00.000Z',
+      capacity: 1,
+      seatsHeld: 1,
+    });
+    const studioBookingId = await addExpiredBooking(studioSessionId);
+    const studioDetail = await request(app).get(
+      `/studios/${studio.rows[0].id}`,
+    );
+    expect(studioDetail.status).toBe(200);
+    const studioBooking = await query<{ status: string }>(
+      'SELECT status FROM bookings WHERE id = $1',
+      [studioBookingId],
+    );
+    expect(studioBooking.rows[0].status).toBe('expired');
+    const unrelatedBeforeLocationList = await query<{ status: string }>(
+      'SELECT status FROM bookings WHERE id = $1',
+      [unrelatedBookingId],
+    );
+    expect(unrelatedBeforeLocationList.rows[0].status).toBe('pending');
+
+    const areaId = await query<{ id: string }>(
+      `INSERT INTO areas (province_id, name, sort_order)
+       VALUES ('ho-chi-minh', $1, 1)
+       RETURNING id`,
+      [`Area ${suffix}`],
+    );
+    await query(
+      `UPDATE studios
+       SET area_id = $1
+       WHERE id = (SELECT studio_id FROM workshops WHERE id = $2)`,
+      [areaId.rows[0].id, unrelatedWorkshopId],
+    );
+
+    const provinceWorkshopId = await createWorkshop({
+      district: `Province ${suffix}`,
+      categoryId: `Province ${suffix}`,
+      provinceId: 'da-nang',
+    });
+    const provinceSessionId = await addSession(provinceWorkshopId, {
+      startsAt: '2032-05-04T17:30:00.000Z',
+      capacity: 1,
+      seatsHeld: 1,
+    });
+    const provinceBookingId = await addExpiredBooking(provinceSessionId);
+    const provinces = await request(app).get('/provinces');
+    expect(provinces.status).toBe(200);
+    expect(provinces.body.provinces).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'da-nang' })]),
+    );
+    const provinceBooking = await query<{ status: string }>(
+      'SELECT status FROM bookings WHERE id = $1',
+      [provinceBookingId],
+    );
+    expect(provinceBooking.rows[0].status).toBe('expired');
+
+    const areaWorkshopId = await createWorkshop({
+      district: `Area ${suffix}`,
+      categoryId: `Area ${suffix}`,
+    });
+    await query(
+      `UPDATE studios
+       SET area_id = $1
+       WHERE id = (SELECT studio_id FROM workshops WHERE id = $2)`,
+      [areaId.rows[0].id, areaWorkshopId],
+    );
+    const areaSessionId = await addSession(areaWorkshopId, {
+      startsAt: '2032-05-01T17:30:00.000Z',
+      capacity: 1,
+      seatsHeld: 1,
+    });
+    const areaBookingId = await addExpiredBooking(areaSessionId);
+
+    const areas = await request(app).get('/provinces/ho-chi-minh/areas');
+    expect(areas.status).toBe(200);
+    expect(areas.body.areas).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: areaId.rows[0].id }),
+      ]),
+    );
+    const areaBooking = await query<{ status: string }>(
+      'SELECT status FROM bookings WHERE id = $1',
+      [areaBookingId],
+    );
+    expect(areaBooking.rows[0].status).toBe('expired');
+  });
+
   it('returns public studio details with its available workshops', async () => {
     const suffix = randomUUID();
     const workshopId = await createWorkshop({
       district: `Studio ${suffix}`,
       categoryId: `Studio ${suffix}`,
     });
+    await query(
+      `UPDATE workshops
+       SET cancellation_policy = $1, payment_policy = $2
+       WHERE id = $3`,
+      ['Hủy theo điều kiện studio.', 'Thanh toán tại chỗ.', workshopId],
+    );
     await addSession(workshopId, {
       startsAt: '2032-05-01T17:30:00.000Z',
     });
@@ -400,6 +594,11 @@ describe('public workshop catalog', () => {
     );
 
     expect(response.status).toBe(200);
+    const parsedStudio = publicStudioResponseSchema.parse(response.body);
+    expect(parsedStudio.studio.workshops[0]).toMatchObject({
+      cancellationPolicy: 'Hủy theo điều kiện studio.',
+      paymentPolicy: 'Thanh toán tại chỗ.',
+    });
     expect(response.body.studio.id).toBe(studioResult.rows[0].studio_id);
     expect(response.body.studio.slug).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
     expect(response.body.studio.workshops).toHaveLength(1);
@@ -441,7 +640,204 @@ describe('public workshop catalog', () => {
       .query({ price_min: 500, price_max: 100 });
     expect(invalidQuery.status).toBe(422);
   });
+
+  it('searches and paginates the full workshop and studio catalogs', async () => {
+    const suffix = randomUUID();
+    const categoryId = `CAT1-${suffix}`;
+    await createLargeCatalogFixture(suffix, categoryId, 105);
+
+    const accentInsensitiveSearch = await request(app).get('/workshops').query({
+      q: 'gom no-match-token',
+      category_id: categoryId,
+      page_size: 1,
+    });
+    expect(accentInsensitiveSearch.status).toBe(200);
+    expect(accentInsensitiveSearch.body.pagination.total).toBe(105);
+
+    const lastWorkshopPage = await request(app).get('/workshops').query({
+      q: suffix,
+      category_id: categoryId,
+      sort: 'price-asc',
+      page: 11,
+      page_size: 10,
+    });
+    expect(lastWorkshopPage.status).toBe(200);
+    expect(lastWorkshopPage.body.pagination).toEqual({
+      page: 11,
+      pageSize: 10,
+      total: 105,
+    });
+    expect(lastWorkshopPage.body.items).toHaveLength(5);
+    expect(lastWorkshopPage.body.items[0].sessions[0].price).toBe(201);
+
+    const highestPrice = await request(app).get('/workshops').query({
+      q: suffix,
+      category_id: categoryId,
+      sort: 'price-desc',
+      page_size: 1,
+    });
+    expect(highestPrice.status).toBe(200);
+    expect(highestPrice.body.items[0].sessions[0].price).toBe(205);
+    expect(highestPrice.body.pagination.total).toBe(105);
+
+    const priceFiltered = await request(app)
+      .get('/workshops')
+      .query({ q: suffix, category_id: categoryId, price_min: 200 });
+    expect(priceFiltered.status).toBe(200);
+    expect(priceFiltered.body.pagination.total).toBe(6);
+    expect(
+      priceFiltered.body.items.flatMap(
+        (workshop: { sessions: Array<{ price: number }> }) =>
+          workshop.sessions.map((session) => session.price),
+      ),
+    ).toEqual([200, 201, 202, 203, 204, 205]);
+
+    await addWorkshopToExistingStudio(suffix, categoryId, 50);
+    const groupedStudios = await request(app).get('/catalog/studios').query({
+      q: suffix,
+      category_id: categoryId,
+      sort: 'price-asc',
+      page: 1,
+      page_size: 1,
+    });
+    expect(groupedStudios.status).toBe(200);
+    expect(groupedStudios.body.pagination.total).toBe(105);
+    expect(groupedStudios.body.items[0].workshopCount).toBe(2);
+    expect(groupedStudios.body.items[0].startingPrice).toBe(50);
+
+    const lastStudioPage = await request(app).get('/catalog/studios').query({
+      q: suffix,
+      category_id: categoryId,
+      sort: 'price-asc',
+      page: 11,
+      page_size: 10,
+    });
+    expect(lastStudioPage.status).toBe(200);
+    expect(lastStudioPage.body.pagination.total).toBe(105);
+    expect(lastStudioPage.body.items).toHaveLength(5);
+  });
 });
+
+async function createLargeCatalogFixture(
+  suffix: string,
+  categoryId: string,
+  count: number,
+): Promise<void> {
+  const ownerEmail = `catalog.large.${suffix}@example.test`;
+  await query(
+    `WITH generated AS (
+       SELECT generate_series(1, $3::integer) AS ordinal
+     ),
+     owner AS (
+       INSERT INTO users (email, password_hash, full_name, role)
+       VALUES ($1, 'test-password-hash', 'Catalog test', 'customer')
+       RETURNING id
+     ),
+     category AS (
+       INSERT INTO categories (id, slug, name)
+       VALUES ($2, $2, 'Gốm workshop ' || $4)
+       ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
+       RETURNING id
+     ),
+     new_studios AS (
+       INSERT INTO studios (
+         name, description, district, province_id, address, status
+       )
+       SELECT
+         'CAT1 Studio ' || $4 || ' ' || generated.ordinal,
+         'Catalog fixture',
+         'CAT1 district ' || $4,
+         'ho-chi-minh',
+         '12 Example Street, Ward 1',
+         'approved'::approval_status
+       FROM generated
+       RETURNING id, name
+     ),
+     new_members AS (
+       INSERT INTO studio_members (studio_id, user_id, role)
+       SELECT new_studios.id, owner.id, 'owner'
+       FROM new_studios
+       CROSS JOIN owner
+       RETURNING studio_id
+     ),
+     new_workshops AS (
+       INSERT INTO workshops (
+         studio_id, title, description, category_id, level, audience,
+         duration_minutes, base_price, status, is_simulated
+       )
+       SELECT
+         new_studios.id,
+         'CAT1 Workshop ' || $4 || ' ' || generated.ordinal,
+         'Catalog fixture description',
+         category.id,
+         'beginner',
+         ARRAY[]::text[],
+         60,
+         100,
+         'approved'::approval_status,
+         true
+       FROM new_studios
+       JOIN generated
+         ON new_studios.name =
+           'CAT1 Studio ' || $4 || ' ' || generated.ordinal
+       CROSS JOIN category
+       RETURNING id, title
+     )
+     INSERT INTO sessions (
+       workshop_id, starts_at, ends_at, price, capacity, seats_held,
+       seats_sold, status
+     )
+     SELECT
+       new_workshops.id,
+       '2032-05-01T17:30:00Z'::timestamptz +
+         generated.ordinal * interval '1 day',
+       '2032-05-01T18:30:00Z'::timestamptz +
+         generated.ordinal * interval '1 day',
+       100 + generated.ordinal,
+       10,
+       0,
+       0,
+       'scheduled'::session_status
+     FROM new_workshops
+     JOIN generated
+       ON new_workshops.title =
+         'CAT1 Workshop ' || $4 || ' ' || generated.ordinal`,
+    [ownerEmail, categoryId, count, suffix],
+  );
+  await query(
+    `WITH source AS (
+    SELECT st.id AS studio_id, sm.user_id, gen_random_uuid() AS image_id FROM studios st JOIN studio_members sm ON sm.studio_id=st.id JOIN users u ON u.id=sm.user_id CROSS JOIN generate_series(1,3) WHERE u.email=$1
+  ), inserted AS (
+    INSERT INTO images(id,studio_id,uploaded_by,key,state,byte_size) SELECT image_id,studio_id,user_id,'studios/'||studio_id::text||'/profile/'||image_id::text||'.webp','ready',100 FROM source RETURNING studio_id,id
+  ), grouped AS (SELECT studio_id,array_agg(id) AS ids FROM inserted GROUP BY studio_id)
+  UPDATE studios st SET contact_phone='0901234567',contact_email='studio@example.test',photo_ids=grouped.ids FROM grouped WHERE st.id=grouped.studio_id`,
+    [ownerEmail],
+  );
+}
+
+async function addWorkshopToExistingStudio(
+  suffix: string,
+  categoryId: string,
+  price: number,
+): Promise<void> {
+  const workshop = await query<{ id: string }>(
+    `INSERT INTO workshops (
+       studio_id, title, description, category_id, level, audience,
+       duration_minutes, base_price, status, is_simulated
+     )
+     SELECT
+       studio_id, $2, 'Catalog fixture description', category_id, 'beginner',
+       ARRAY[]::text[], 60, $3, 'approved'::approval_status, true
+     FROM workshops
+     WHERE title = $1
+     RETURNING id`,
+    [`CAT1 Workshop ${suffix} 1`, `CAT1 Extra ${suffix}`, price],
+  );
+  await addSession(workshop.rows[0].id, {
+    startsAt: '2032-05-01T17:30:00.000Z',
+    price,
+  });
+}
 
 async function createWorkshop(options: FixtureOptions): Promise<string> {
   const suffix = randomUUID();
@@ -473,6 +869,7 @@ async function createWorkshop(options: FixtureOptions): Promise<string> {
     'INSERT INTO categories (id, slug, name) VALUES ($1, $1, $1) ON CONFLICT (id) DO NOTHING',
     [options.categoryId],
   );
+  await seedStudioEvidence(studio.rows[0].id, user.rows[0].id);
   const workshop = await query<{ id: string }>(
     `INSERT INTO workshops (
       studio_id, title, description, category_id, level, audience,
@@ -529,6 +926,24 @@ async function createCustomer(): Promise<string> {
      VALUES ($1, 'test-password-hash', 'Catalog customer', 'customer')
      RETURNING id`,
     [`customer.${randomUUID()}@example.test`],
+  );
+  return result.rows[0].id;
+}
+
+async function addExpiredBooking(sessionId: string): Promise<string> {
+  const userId = await createCustomer();
+  const result = await query<{ id: string }>(
+    `INSERT INTO bookings (
+       user_id, session_id, quantity, unit_price, total_amount,
+       hold_expires_at, order_code
+     )
+     VALUES ($1, $2, 1, 100, 100, now() - interval '1 minute', $3)
+     RETURNING id`,
+    [
+      userId,
+      sessionId,
+      Date.now() + Number.parseInt(randomUUID().slice(0, 8), 16),
+    ],
   );
   return result.rows[0].id;
 }

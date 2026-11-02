@@ -1,10 +1,12 @@
 import type { PoolClient } from 'pg';
 import { query, withTransaction } from '../../db/pool.js';
+import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
 import type { SessionInput, SessionUpdate } from './sessions.schemas.js';
 
 export type SessionRow = {
   id: string;
   workshopId: string;
+  workshopTitle?: string;
   startsAt: string;
   endsAt: string;
   price: number;
@@ -14,6 +16,41 @@ export type SessionRow = {
   status: 'scheduled' | 'cancelled' | 'completed';
   createdAt: string;
 };
+
+export async function listStudioSessions(
+  studioId: string,
+  userId: string,
+): Promise<SessionRow[] | null> {
+  const membership = await query(
+    `SELECT 1
+     FROM studio_members
+     WHERE studio_id = $1 AND user_id = $2`,
+    [studioId, userId],
+  );
+  if (!membership.rowCount) return null;
+
+  const result = await query<SessionRow>(
+    `SELECT
+       s.id,
+       s.workshop_id AS "workshopId",
+       w.title AS "workshopTitle",
+       s.starts_at AS "startsAt",
+       s.ends_at AS "endsAt",
+       s.price,
+       s.capacity,
+       s.seats_held AS "seatsHeld",
+       s.seats_sold AS "seatsSold",
+       s.status,
+       s.created_at AS "createdAt"
+     FROM sessions s
+     JOIN workshops w ON w.id = s.workshop_id
+     JOIN studio_members sm ON sm.studio_id = w.studio_id
+     WHERE w.studio_id = $1 AND sm.user_id = $2
+     ORDER BY s.starts_at, s.id`,
+    [studioId, userId],
+  );
+  return result.rows;
+}
 
 const sessionColumns = `id,
   workshop_id AS "workshopId",
@@ -79,7 +116,12 @@ export async function updateSession(
   | {
       session: null;
       conflict:
-        'capacity' | 'price_locked' | 'invalid_schedule' | 'owner_required';
+        | 'capacity'
+        | 'price_locked'
+        | 'schedule_locked'
+        | 'session_closed'
+        | 'invalid_schedule'
+        | 'owner_required';
     }
   | null
 > {
@@ -92,6 +134,12 @@ export async function updateSession(
     );
     if (!existing) {
       return null;
+    }
+    if (
+      existing.status !== 'scheduled' ||
+      new Date(existing.startsAt) <= new Date()
+    ) {
+      return { session: null, conflict: 'session_closed' };
     }
     if (Object.hasOwn(input, 'price') && existing.memberRole !== 'owner') {
       return { session: null, conflict: 'owner_required' };
@@ -110,12 +158,17 @@ export async function updateSession(
       return { session: null, conflict: 'capacity' };
     }
 
-    if (input.price !== undefined && input.price !== existing.price) {
+    const scheduleChanged =
+      new Date(startsAt).getTime() !== new Date(existing.startsAt).getTime() ||
+      new Date(endsAt).getTime() !== new Date(existing.endsAt).getTime();
+    const priceChanged =
+      input.price !== undefined && input.price !== existing.price;
+    if (scheduleChanged || priceChanged) {
       const bookings = await client.query(
         `SELECT 1
          FROM bookings b
          WHERE b.session_id = $1
-           AND b.status IN ('pending', 'paid')
+           AND b.status IN ('pending', 'paid', 'refund_needed')
            AND EXISTS (
              SELECT 1
              FROM sessions s
@@ -131,7 +184,10 @@ export async function updateSession(
         [sessionId, studioId, userId],
       );
       if (bookings.rowCount) {
-        return { session: null, conflict: 'price_locked' };
+        return {
+          session: null,
+          conflict: scheduleChanged ? 'schedule_locked' : 'price_locked',
+        };
       }
     }
 
@@ -208,6 +264,7 @@ export async function cancelSession(
       return toSessionRow(existing);
     }
 
+    await releaseExpiredHolds(client, [sessionId]);
     const pending = await client.query<{ quantity: number }>(
       `UPDATE bookings b
        SET status = 'cancelled'
@@ -256,6 +313,7 @@ export async function cancelSession(
        SET status = 'cancelled',
            seats_held = seats_held - $1
        WHERE id = $2
+         AND seats_held >= $1
          AND EXISTS (
            SELECT 1
            FROM workshops w
@@ -269,7 +327,12 @@ export async function cancelSession(
        RETURNING ${sessionColumns}`,
       [heldSeatsToRelease, sessionId, studioId, userId],
     );
-    return result.rows[0] ?? null;
+    if (!result.rows[0]) {
+      throw new Error(
+        'Pending booking quantities exceed the session seats currently held.',
+      );
+    }
+    return result.rows[0];
   });
 }
 

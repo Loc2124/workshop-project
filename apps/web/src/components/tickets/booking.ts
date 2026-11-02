@@ -13,8 +13,8 @@ export function bookingPaymentLabel(booking: Booking) {
   if (booking.paymentStatus === 'paid')
     return booking.paymentMethod === 'prepaid'
       ? 'Đã thanh toán trước'
-      : 'Đã thanh toán tại xưởng';
+      : 'Đã thanh toán tại studio';
   return booking.paymentMethod === 'at_studio'
-    ? 'Trả tại xưởng'
+    ? 'Trả tại studio'
     : 'Chờ thanh toán trước';
 }

@@ -1,3 +1,4 @@
+import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import { ArrowDown, Star } from 'lucide-react';
 import { studioRating } from '../../lib/studioRatings';
 import { Link } from 'react-router-dom';
@@ -42,7 +43,7 @@ export function StudioHero({
       : 'Khám phá workshop';
   const href = workshop
     ? `/workshop/${workshop.slug ?? workshop.id}#lich-trai-nghiem`
-    : '#workshop-tai-xuong';
+    : '#workshop-tai-studio';
   const prices = (
     available.length
       ? available.map((item) => item.price)
@@ -86,7 +87,7 @@ export function StudioHero({
           <div className="min-w-0 lg:order-first">
             <div
               className="mb-3 flex flex-wrap gap-2"
-              aria-label="Danh mục của xưởng"
+              aria-label="Danh mục của studio"
             >
               {categoryIds.map((id) => {
                 const category = getCategoryMeta(id);
@@ -110,6 +111,7 @@ export function StudioHero({
               >
                 {studio.name}
               </h1>
+              <StudioTrustBadge level={studio.trustLevel} explain />
               {workshops.some((item) => item.isSimulated) && (
                 <SimulatedDataBadge />
               )}
@@ -166,8 +168,8 @@ export function StudioHero({
             {coverImage && (
               <MediaImage
                 src={coverImage}
-                alt={`Ảnh bìa xưởng ${studio.name}`}
-                placeholder={`Ảnh bìa xưởng ${studio.name}`}
+                alt={`Ảnh bìa studio ${studio.name}`}
+                placeholder={`Ảnh bìa studio ${studio.name}`}
                 showPlaceholderText={false}
                 loading="eager"
                 width={800}

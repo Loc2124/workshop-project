@@ -12,7 +12,7 @@ import { SiteFooter } from '../components/layout/SiteFooter';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { Button } from '../components/ui/button';
 import { SimulatedDataBadge } from '../components/ui/SimulatedDataBadge';
-import { footerInformation, siteContact } from '../data/siteInformation';
+import { useSiteInformation } from '../hooks/useSiteInformation';
 
 const aboutContent = {
   isSimulated: false,
@@ -30,12 +30,13 @@ const activities = [
     text: 'Xem lịch, giá và số chỗ còn để chọn buổi phù hợp. Kiểm tra điều kiện tham gia trước khi đặt.',
   },
   {
-    title: 'Gặp nhau tại xưởng',
-    text: 'Đến xưởng, gặp nghệ nhân và tự tay làm dưới sự hướng dẫn của người làm nghề.',
+    title: 'Gặp nhau tại studio',
+    text: 'Đến studio, gặp nghệ nhân và tự tay làm dưới sự hướng dẫn của người làm nghề.',
   },
 ];
 
 export function AboutPage() {
+  const { siteContact, information: footerInformation } = useSiteInformation();
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, []);
@@ -71,8 +72,8 @@ export function AboutPage() {
               {aboutContent.isSimulated && <SimulatedDataBadge />}
             </div>
             <p className="mt-5 max-w-prose text-base leading-7 text-stone-700">
-              Open Slot kết nối bạn với xưởng thủ công và người làm nghề. Tìm
-              một buổi phù hợp, đến xưởng và tự tay làm điều có ý nghĩa.
+              Open Slot kết nối bạn với studio thủ công và người làm nghề. Tìm
+              một buổi phù hợp, đến studio và tự tay làm điều có ý nghĩa.
             </p>
             <Button asChild className="mt-6 w-fit">
               <Link to="/kham-pha">
@@ -104,7 +105,7 @@ export function AboutPage() {
               >
                 <p className="mb-6 leading-relaxed text-stone-700">
                   Dành thời gian cho một điều bạn tò mò. Xem nội dung buổi học,
-                  yêu cầu tham gia và thành phẩm trước khi chọn xưởng.
+                  yêu cầu tham gia và thành phẩm trước khi chọn studio.
                 </p>
                 <Button asChild className="mt-auto w-fit">
                   <Link to="/kham-pha">
@@ -120,7 +121,7 @@ export function AboutPage() {
               >
                 <p className="mb-6 leading-relaxed text-stone-700">
                   Chia sẻ nghề và đón những người muốn bắt đầu. Tìm hiểu cách
-                  giới thiệu xưởng, buổi trải nghiệm và những điều bạn muốn
+                  giới thiệu studio, buổi trải nghiệm và những điều bạn muốn
                   truyền lại.
                 </p>
                 <Button asChild className="mt-auto w-fit">

@@ -7,6 +7,20 @@ import { cn } from '../../lib/utils';
 import { WorkshopRating } from './WorkshopRating';
 import { SimulatedDataBadge } from '../ui/SimulatedDataBadge';
 import { workshopText, workshopSessionRange } from './workshopPresentation';
+import { bookingFormSchema } from '../../lib/form-validation';
+
+const MAX_BOOKING_QUANTITY = 10;
+
+export function bookingQuantityLimit(availableSeats: number): number {
+  return Math.min(Math.max(0, availableSeats), MAX_BOOKING_QUANTITY);
+}
+
+export function clampBookingQuantity(
+  quantity: number,
+  availableSeats: number,
+): number {
+  return Math.min(Math.max(1, quantity), bookingQuantityLimit(availableSeats));
+}
 
 export type WorkshopBookingRequest = {
   workshopId: string;
@@ -53,14 +67,8 @@ export function WorkshopSchedule({
     initial;
   const seats =
     confirmed?.quantity ??
-    (selected ? Math.min(Math.max(1, quantity), selected.availableSeats) : 0);
+    (selected ? clampBookingQuantity(quantity, selected.availableSeats) : 0);
   const total = selected ? selected.price * seats : undefined;
-  const bookingPolicy = [
-    workshopText(workshop.cancellationPolicy),
-    workshopText(workshop.paymentPolicy),
-  ]
-    .filter(Boolean)
-    .join(' · ');
   const locked = pending || Boolean(confirmed);
   const primary =
     'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-600';
@@ -76,6 +84,16 @@ export function WorkshopSchedule({
     if (!selected || !seats || confirmed || submitting.current) return;
     setError('');
     setNotice('');
+    const parsed = bookingFormSchema.safeParse({
+      workshopId: workshop.id,
+      sessionId: selected.id,
+      quantity: seats,
+      availableSeats: selected.availableSeats,
+    });
+    if (!parsed.success) {
+      setError('Kiểm tra lại buổi trải nghiệm và số người tham gia.');
+      return;
+    }
     if (!onBook) {
       setError('Đặt chỗ hiện chưa khả dụng. Vui lòng thử lại sau.');
       return;
@@ -84,11 +102,7 @@ export function WorkshopSchedule({
     setPending(true);
     const snapshot = { ...selected };
     try {
-      const result = await onBook({
-        workshopId: workshop.id,
-        sessionId: snapshot.id,
-        quantity: seats,
-      });
+      const result = await onBook(parsed.data);
       if (!result?.id?.trim()) throw new Error('Missing booking confirmation');
       setConfirmed({ id: result.id, session: snapshot, quantity: seats });
       setNotice('Đã đặt chỗ thành công. Bạn có thể thêm buổi hẹn vào lịch.');
@@ -168,6 +182,7 @@ export function WorkshopSchedule({
           </p>
         )}
         <form
+          noValidate
           id="workshop-booking-form"
           onSubmit={book}
           className="mt-5 space-y-5"
@@ -253,9 +268,17 @@ export function WorkshopSchedule({
                     type="button"
                     aria-label="Tăng số người"
                     aria-controls="booking-quantity"
-                    disabled={locked || seats >= selected.availableSeats}
+                    disabled={
+                      locked ||
+                      seats >= bookingQuantityLimit(selected.availableSeats)
+                    }
                     onClick={() => {
-                      setQuantity(Math.min(selected.availableSeats, seats + 1));
+                      setQuantity(
+                        clampBookingQuantity(
+                          seats + 1,
+                          selected.availableSeats,
+                        ),
+                      );
                       setError('');
                     }}
                     className="grid size-11 place-items-center rounded-md text-primary hover:bg-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:text-stone-400 disabled:hover:bg-transparent"
@@ -285,11 +308,6 @@ export function WorkshopSchedule({
           >
             {pending ? 'Đang đặt chỗ…' : confirmed ? 'Đã đặt chỗ' : 'Đặt chỗ'}
           </button>
-          {bookingPolicy && (
-            <p className="text-xs leading-relaxed text-stone-700">
-              {bookingPolicy}
-            </p>
-          )}
           {error && (
             <p id="booking-error" role="alert" className="text-sm text-brick">
               {error}

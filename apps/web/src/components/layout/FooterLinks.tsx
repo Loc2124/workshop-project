@@ -2,10 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useRef, type ReactNode } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 
-import {
-  footerInformation as information,
-  siteContact,
-} from '../../data/siteInformation';
+import { useSiteInformation } from '../../hooks/useSiteInformation';
 
 const linkClass =
   'inline-flex min-h-11 items-center rounded-lg text-sm hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:min-h-7';
@@ -28,6 +25,7 @@ function FooterGroup({
 }
 
 export function FooterLinks() {
+  const { siteContact, information } = useSiteInformation();
   const { pathname, search, hash } = useLocation();
   const navigate = useNavigate();
   const currentPath = pathname.replace(/\/+$/, '') || '/';
@@ -67,10 +65,16 @@ export function FooterLinks() {
               currentPath === '/danh-cho-nghe-nhan' ? 'page' : undefined
             }
           >
-            Mở xưởng trên Open Slot
+            Mở studio trên Open Slot
           </Link>
         </FooterGroup>
         <FooterGroup title="Hỗ trợ">
+          <a
+            className={`${linkClass} max-w-full break-all`}
+            href={`mailto:${siteContact.email}`}
+          >
+            {siteContact.email}
+          </a>
           <Link
             className={linkClass}
             to="/ve-open-slot"
@@ -96,7 +100,7 @@ export function FooterLinks() {
           })}
           {(siteContact.hotline?.trim() ||
             siteContact.workingHours?.trim()) && (
-            <p className="footer-hotline text-sm font-semibold leading-relaxed">
+            <p className="footer-hotline max-w-full break-words text-sm font-semibold leading-relaxed">
               {siteContact.hotline?.trim() && (
                 <a
                   href={'tel:' + siteContact.hotline.replace(/[^\d+]/g, '')}

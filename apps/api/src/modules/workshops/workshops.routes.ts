@@ -2,6 +2,7 @@ import { Router, type Request } from 'express';
 import { AppError } from '../../errors/app-error.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-body.js';
+import { validateUuidParam } from '../../middleware/validate-uuid-param.js';
 import {
   createWorkshopSchema,
   updateWorkshopSchema,
@@ -19,7 +20,7 @@ const router = Router({ mergeParams: true });
 function getStudioId(request: Request): string {
   const studioId = request.params.studioId;
   if (!studioId || Array.isArray(studioId)) {
-    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy xưởng.');
+    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy studio.');
   }
   return studioId;
 }
@@ -32,15 +33,21 @@ function getResourceId(request: Request): string {
   return id;
 }
 
-router.get('/workshops', requireAuth(), async (request, response) => {
-  response.json(
-    await getStudioWorkshops(getStudioId(request), request.user!.sub),
-  );
-});
+router.get(
+  '/workshops',
+  requireAuth(),
+  validateUuidParam('studioId'),
+  async (request, response) => {
+    response.json(
+      await getStudioWorkshops(getStudioId(request), request.user!.sub),
+    );
+  },
+);
 
 router.post(
   '/workshops',
   requireAuth(),
+  validateUuidParam('studioId'),
   validateBody(createWorkshopSchema),
   async (request, response) => {
     const result = await createStudioWorkshop(
@@ -55,6 +62,8 @@ router.post(
 router.patch(
   '/workshops/:id',
   requireAuth(),
+  validateUuidParam('studioId'),
+  validateUuidParam('id'),
   validateBody(updateWorkshopSchema),
   async (request, response) => {
     response.json(
@@ -71,6 +80,8 @@ router.patch(
 router.post(
   '/workshops/:id/sessions',
   requireAuth(),
+  validateUuidParam('studioId'),
+  validateUuidParam('id'),
   validateBody(createSessionSchema),
   async (request, response) => {
     const result = await createStudioSession(

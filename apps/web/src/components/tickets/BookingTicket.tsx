@@ -44,7 +44,7 @@ function BookingVisual({
           <div className="grid gap-1.5 text-sm">
             <p>
               <strong>Địa chỉ:</strong>{' '}
-              {studio.address ?? 'Liên hệ xưởng để xác nhận địa chỉ.'}
+              {studio.address ?? 'Liên hệ studio để xác nhận địa chỉ.'}
             </p>
             {artisan && (
               <p>

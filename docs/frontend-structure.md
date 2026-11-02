@@ -7,12 +7,12 @@
 | `pages/HomePage.tsx`                      | Ghép các section của trang chủ; không chứa truy vấn, định vị hay CSS layout riêng.                           |
 | `components/home/`                        | Hero/tìm kiếm, danh sách workshop, ba bước trải nghiệm, giới thiệu dành cho nghệ nhân.                       |
 | `hooks/useHomeCatalog.ts`                 | Bộ lọc trang chủ, lưu lựa chọn tỉnh, định vị tự động/thử lại, điều hướng URL, danh sách tối đa năm workshop. |
-| `hooks/useProvinces.ts`                   | Danh mục tỉnh có xưởng, loading/error và hủy request; dùng chung cho trang chủ và khám phá.                  |
+| `hooks/useProvinces.ts`                   | Danh mục tỉnh có studio, loading/error và hủy request; dùng chung cho trang chủ và khám phá.                 |
 | `hooks/useBookingTicketActions.ts`        | Lưu PNG và in vé; tách khỏi phần trình bày booking.                                                          |
 | `components/layout/PageContainer.tsx`     | Một khung căn lề chung cho header, footer, các section và trang.                                             |
 | `components/layout/SectionHeading.tsx`    | Tiêu đề section, mô tả và hành động.                                                                         |
 | `components/ui/MediaImage.tsx`            | Ảnh, placeholder khi chờ tải/thiếu/lỗi; dùng cho hero, ảnh nghệ nhân và vé.                                  |
-| `components/tickets/TicketPrimitives.tsx` | Link toàn vé, tiêu đề/xưởng và hành động dùng chung.                                                         |
+| `components/tickets/TicketPrimitives.tsx` | Link toàn vé, tiêu đề/studio và hành động dùng chung.                                                        |
 | `components/tickets/TicketContent.tsx`    | Giá, rating, số chỗ, nghệ nhân, ô lịch và footer vé.                                                         |
 | `components/tickets/TicketShell.tsx`      | Ghép thân/cuống và hình học khuyết; hỗ trợ ngang/dọc/in.                                                     |
 | `components/tickets/booking.ts`           | Nhãn trạng thái booking và thanh toán; trang demo dùng cùng danh sách trạng thái.                            |

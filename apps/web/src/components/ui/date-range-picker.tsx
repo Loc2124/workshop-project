@@ -4,6 +4,11 @@ import { vi } from 'date-fns/locale';
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { DateRange } from 'react-day-picker';
+import {
+  formatCalendarDate,
+  getBusinessToday,
+  parseCalendarDate,
+} from '../../lib/calendar-date';
 import { Button } from './button';
 
 type CalendarProps = {
@@ -24,7 +29,7 @@ const Calendar = lazy(async () => {
           {...props}
           className="date-range-calendar text-xs"
           defaultMonth={props.selected?.from ?? props.selected?.to}
-          disabled={{ before: new Date() }}
+          disabled={{ before: getBusinessToday() }}
           locale={locale.vi}
           min={1}
           mode="range"
@@ -43,25 +48,17 @@ type Props = {
   onChange: (range: { dateFrom?: string; dateTo?: string }) => void;
 };
 
-function parseDate(value?: string) {
-  if (!value) return undefined;
-  const [year, month, day] = value.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function formatDate(value: Date) {
-  const year = value.getFullYear();
-  const month = String(value.getMonth() + 1).padStart(2, '0');
-  const day = String(value.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function formatDateLabel(value?: string) {
-  const date = parseDate(value);
+  const date = parseCalendarDate(value);
   return date ? format(date, 'dd/MM/yyyy', { locale: vi }) : '';
 }
 
-export function DateRangePicker({ dateFrom, dateTo, onChange, compact = false }: Props) {
+export function DateRangePicker({
+  dateFrom,
+  dateTo,
+  onChange,
+  compact = false,
+}: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [numberOfMonths, setNumberOfMonths] = useState(() =>
     typeof window !== 'undefined' &&
@@ -79,17 +76,23 @@ export function DateRangePicker({ dateFrom, dateTo, onChange, compact = false }:
     mediaQuery.addEventListener('change', updateNumberOfMonths);
     return () => mediaQuery.removeEventListener('change', updateNumberOfMonths);
   }, []);
+  const parsedFrom = parseCalendarDate(dateFrom);
+  const parsedTo = parseCalendarDate(dateTo);
+  const isOrdered =
+    !parsedFrom || !parsedTo || parsedFrom.getTime() <= parsedTo.getTime();
+  const validFrom = isOrdered ? parsedFrom : undefined;
+  const validTo = isOrdered ? parsedTo : undefined;
   const selected: DateRange | undefined =
-    dateFrom || dateTo
-      ? { from: parseDate(dateFrom), to: parseDate(dateTo) }
-      : undefined;
+    validFrom || validTo ? { from: validFrom, to: validTo } : undefined;
+  const formattedFrom = validFrom ? formatDateLabel(dateFrom) : '';
+  const formattedTo = validTo ? formatDateLabel(dateTo) : '';
   const label =
-    dateFrom && dateTo
-      ? `${formatDateLabel(dateFrom)} – ${formatDateLabel(dateTo)}`
-      : dateFrom
-        ? `Từ ${formatDateLabel(dateFrom)}`
-        : dateTo
-          ? `Đến ${formatDateLabel(dateTo)}`
+    formattedFrom && formattedTo
+      ? `${formattedFrom} – ${formattedTo}`
+      : formattedFrom
+        ? `Từ ${formattedFrom}`
+        : formattedTo
+          ? `Đến ${formattedTo}`
           : 'Chọn ngày';
 
   return (
@@ -97,7 +100,11 @@ export function DateRangePicker({ dateFrom, dateTo, onChange, compact = false }:
       <Popover.Trigger asChild>
         <Button
           aria-label="Chọn khoảng ngày"
-          className={compact ? 'justify-start gap-1.5 border border-line bg-surface px-2 text-left text-[13px] font-normal text-ink hover:bg-surface' : 'w-full justify-start border border-line bg-surface px-3 text-left text-base font-normal text-ink hover:bg-surface'}
+          className={
+            compact
+              ? 'justify-start gap-1.5 border border-line bg-surface px-2 text-left text-[13px] font-normal text-ink hover:bg-surface'
+              : 'w-full justify-start border border-line bg-surface px-3 text-left text-base font-normal text-ink hover:bg-surface'
+          }
           title={label}
           type="button"
           variant="outline"
@@ -108,8 +115,14 @@ export function DateRangePicker({ dateFrom, dateTo, onChange, compact = false }:
             size={16}
           />
           <span className="truncate">{compact ? 'Ngày' : label}</span>
-          {(dateFrom || dateTo) && <span className="text-xs font-bold">(1)</span>}
-          <ChevronDown size={16} aria-hidden="true" className="ml-auto shrink-0 text-stone-600" />
+          {(validFrom || validTo) && (
+            <span className="text-xs font-bold">(1)</span>
+          )}
+          <ChevronDown
+            size={16}
+            aria-hidden="true"
+            className="ml-auto shrink-0 text-stone-600"
+          />
         </Button>
       </Popover.Trigger>
       <Popover.Portal>
@@ -133,8 +146,10 @@ export function DateRangePicker({ dateFrom, dateTo, onChange, compact = false }:
               selected={selected}
               onSelect={(range) => {
                 onChange({
-                  dateFrom: range?.from ? formatDate(range.from) : undefined,
-                  dateTo: range?.to ? formatDate(range.to) : undefined,
+                  dateFrom: range?.from
+                    ? formatCalendarDate(range.from)
+                    : undefined,
+                  dateTo: range?.to ? formatCalendarDate(range.to) : undefined,
                 });
               }}
             />

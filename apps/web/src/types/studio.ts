@@ -25,6 +25,14 @@ export type StudioDetailsContent = {
 export type Studio = StudioDetailsContent & {
   id: string;
   categoryId: string;
+  trustLevel?: 'unapproved' | 'approved' | 'verified';
+  canCollectDeposit?: boolean;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
+  googleMapsUrl?: string | null;
+  photoUrls?: string[];
   slug?: string;
   name: string;
   description: string;
@@ -43,6 +51,11 @@ export type StudioListing = Studio & {
   categoryIds: string[];
   startingPrice: number;
   availableSessions: number;
+};
+
+export type StudioCatalogResponse = {
+  items: StudioListing[];
+  pagination: { page: number; pageSize: number; total: number };
 };
 
 export type PublicStudio = Omit<Studio, 'description'> & {

@@ -5,7 +5,7 @@ Demo: `/demo/ve`. `TicketRow` được dùng cho tối đa năm workshop trên t
 ## Cấu trúc code
 
 - `TicketShell`: hình học khuyết và phân chia thân/cuống. `tickets.css` chỉ giữ mask và quy tắc in.
-- `TicketPrimitives`: link toàn vé, tiêu đề/xưởng và hành động dùng chung.
+- `TicketPrimitives`: link toàn vé, tiêu đề/studio và hành động dùng chung.
 - `TicketContent`: ảnh, thông tin buổi, nghệ nhân, giá/rating/số chỗ. Cùng `TicketFooter` hỗ trợ hàng ngang hoặc cuống dọc.
 - `MediaImage` trong `components/ui`: xử lý ảnh đang tải, lỗi và placeholder cho vé, hero, khối nghệ nhân.
 - `useBookingTicketActions`: logic tải PNG và in; phần JSX của `BookingTicket` chỉ ghép nội dung.
@@ -25,7 +25,7 @@ import { TicketRow, TicketCard, BookingTicket, toTicketProps } from './component
 // Dữ liệu booking phải đến từ hệ thống đặt chỗ khi tích hợp thực tế.
 <BookingTicket
   {...toTicketProps(workshop)}
-  studio={{ name: 'Gốm Nhà Mình', provinceName: 'TP. Hồ Chí Minh', address: 'Địa chỉ xưởng' }}
+  studio={{ name: 'Gốm Nhà Mình', provinceName: 'TP. Hồ Chí Minh', address: 'Địa chỉ studio' }}
   booking={{
     code: 'OS-9031-1017', status: 'confirmed', partySize: 2,
     paymentMethod: 'at_studio', paymentStatus: 'unpaid',
@@ -39,7 +39,7 @@ Các component cũng nhận trực tiếp `workshop`, `studio`, `session`, `arti
 
 - `TicketShell` nhận `body`, `stub`, `variant="row" | "card"`, `pattern` mặc định `false`.
 - `TicketInfoBox` được đặt trong `dl`, nhận `label`, `value`, `detail`, `emphasis`.
-- Vé ngang có ảnh đầy cuống cùng ngày/giờ đè trên lớp tối; thiếu ảnh dùng nền theo loại. Thân có loại, số vé, xưởng, nghệ nhân, dòng thời lượng/thành phẩm; giá và rating bên trái, hành động bên phải. `SeatsStamp` hiển thị con dấu khi còn 1–3 chỗ, các trường hợp khác dùng `SeatsBadge`. Dưới 768px thân ở trên, cuống ở dưới.
+- Vé ngang có ảnh đầy cuống cùng ngày/giờ đè trên lớp tối; thiếu ảnh dùng nền theo loại. Thân có loại, số vé, studio, nghệ nhân, dòng thời lượng/thành phẩm; giá và rating bên trái, hành động bên phải. `SeatsStamp` hiển thị con dấu khi còn 1–3 chỗ, các trường hợp khác dùng `SeatsBadge`. Dưới 768px thân ở trên, cuống ở dưới.
 - Số chỗ chỉ hiện một lần trong thân vé, không lặp trong ô thông tin. Vé hết chỗ vẫn là link truy cập được. Các trạng thái dùng chữ và độ đậm, không chỉ dựa vào màu.
 - `formatSessionDate(value, { parts: true })` cung cấp các phần ngày/giờ theo `Asia/Ho_Chi_Minh`; cách gọi chuỗi cũ vẫn được hỗ trợ.
 - QR mã hóa `booking.code`, kích thước hiển thị 144px có quiet zone. Đây không phải cơ chế xác thực hay điểm danh ở backend.

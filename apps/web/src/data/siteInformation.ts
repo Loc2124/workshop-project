@@ -1,18 +1,16 @@
-export const siteContact: { hotline?: string; workingHours?: string } = {
-  hotline: '1900 8889',
-  workingHours: '8:30–21:00',
-};
+import { defaultSiteSettings } from '@workshop/shared';
+export const siteContact = defaultSiteSettings.support;
 
 export const footerInformation = [
   {
     id: 'chinh-sach-dat-lich',
     label: 'Chính sách đặt lịch',
-    text: 'Kiểm tra ngày, giờ, giá, số chỗ và cách nhận thành phẩm trên trang workshop trước khi đặt. Liên hệ xưởng để xác nhận hình thức thanh toán và điều kiện thay đổi lịch của buổi bạn chọn.',
+    text: 'Kiểm tra ngày, giờ, giá, số chỗ và cách nhận thành phẩm trên trang workshop trước khi đặt. Liên hệ studio để xác nhận hình thức thanh toán và điều kiện thay đổi lịch của buổi bạn chọn.',
   },
   {
     id: 'dieu-khoan-dich-vu',
     label: 'Điều khoản dịch vụ',
-    text: 'Thông tin buổi trải nghiệm do xưởng tổ chức cung cấp. Đọc kỹ yêu cầu tham gia và cung cấp thông tin liên hệ chính xác khi đặt chỗ. Các điều kiện cụ thể của buổi học cần được xác nhận với xưởng trước khi đăng ký.',
+    text: 'Thông tin buổi trải nghiệm do studio tổ chức cung cấp. Đọc kỹ yêu cầu tham gia và cung cấp thông tin liên hệ chính xác khi đặt chỗ. Các điều kiện cụ thể của buổi học cần được xác nhận với studio trước khi đăng ký.',
   },
   {
     id: 'ho-tro',

@@ -1,7 +1,6 @@
 import { MediaImage } from '../ui/MediaImage';
 import { ArrowRight, Search } from 'lucide-react';
 import type { useHomeCatalog } from '../../hooks/useHomeCatalog';
-import { mockWorkshops } from '../../data/mockWorkshops';
 import { PageContainer } from '../layout/PageContainer';
 import { ProvinceCombobox } from '../catalog/ProvinceCombobox';
 import { SingleDatePicker } from '../ui/single-date-picker';
@@ -22,6 +21,7 @@ type Props = Pick<
   | 'query'
   | 'setQuery'
   | 'submitSearch'
+  | 'searchError'
 >;
 const labelClass = 'grid min-w-0 gap-1.5 text-sm font-semibold md:gap-2';
 
@@ -39,6 +39,7 @@ export function HomeSearchHero(props: Props) {
     query,
     setQuery,
     submitSearch,
+    searchError,
   } = props;
   return (
     <PageContainer
@@ -61,7 +62,11 @@ export function HomeSearchHero(props: Props) {
             điều của riêng mình.
           </p>
         </div>
-        <form className="grid gap-3 md:gap-4" onSubmit={submitSearch}>
+        <form
+          noValidate
+          className="grid gap-3 md:gap-4"
+          onSubmit={submitSearch}
+        >
           <div className="grid grid-cols-2 items-start gap-3 md:grid-cols-1 lg:grid-cols-2 lg:gap-4">
             <div>
               <label className={labelClass}>
@@ -106,9 +111,15 @@ export function HomeSearchHero(props: Props) {
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Nặn gốm, làm nến, vẽ tranh…"
                 type="search"
+                maxLength={200}
               />
             </span>
           </label>
+          {searchError && (
+            <p role="alert" className="text-sm text-brick">
+              {searchError}
+            </p>
+          )}
           <Button
             className="min-h-12 w-full justify-between text-base font-semibold"
             type="submit"
@@ -120,14 +131,14 @@ export function HomeSearchHero(props: Props) {
       </div>
       <figure className="min-w-0 overflow-hidden rounded-2xl bg-beige">
         <MediaImage
-          src={mockWorkshops[0]?.imageUrl}
-          alt="Những chiếc bình gốm men trắng trên bàn"
+          src="/images/workshops/stampPhoto.jpg"
+          alt="Bàn làm thủ công với kéo, bút chì và dụng cụ cắt giấy"
           width={900}
           height={1100}
           fetchPriority="high"
-          placeholder="Gốm thủ công"
+          placeholder="Dụng cụ thủ công"
           loading="eager"
-          imageClassName="object-[50%_70%] md:object-center motion-safe:animate-home-photo-drift"
+          imageClassName="object-center motion-safe:animate-home-photo-drift"
           className="h-40 w-full sm:h-56 md:h-full md:min-h-[570px]"
         />
       </figure>

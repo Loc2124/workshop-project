@@ -5,13 +5,15 @@ export function formatPrice(value: number) {
 }
 
 export function formatDate(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '—';
   return new Intl.DateTimeFormat('vi-VN', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(new Date(value));
+  }).format(date);
 }
 
 export type SessionDateParts = {
@@ -35,6 +37,18 @@ export function formatSessionDate(
   options?: number | { parts: true },
 ) {
   const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) {
+    const invalidParts = {
+      day: '—',
+      month: '—',
+      weekday: '—',
+      date: '—',
+      time: '—',
+    };
+    return typeof options === 'object'
+      ? invalidParts
+      : `—${options !== undefined ? ` · ${options} phút` : ''}`;
+  }
   const weekday = new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -75,6 +89,7 @@ export function formatCategoryLabel(value: string) {
 }
 
 export function formatSlot(date: string | Date) {
+  if (date instanceof Date && !Number.isFinite(date.getTime())) return '—';
   const parts = formatSessionDate(
     date instanceof Date ? date.toISOString() : date,
     { parts: true },

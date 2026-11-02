@@ -52,62 +52,40 @@ VALUES ($user, $session_id, $qty, $price, $price * $qty,
 
 Ràng buộc `chk_capacity` trong DB là lưới an toàn cuối cùng.
 
-## Hết hạn giữ chỗ (job chạy mỗi phút)
+## Thứ tự khóa và hết hạn giữ chỗ
 
-```sql
-WITH expired AS (
-  UPDATE bookings
-  SET status = 'expired'
-  WHERE status = 'pending' AND hold_expires_at < now()
-  RETURNING session_id, quantity
-)
-UPDATE sessions s
-SET seats_held = s.seats_held - agg.qty
-FROM (SELECT session_id, sum(quantity) AS qty FROM expired GROUP BY session_id) agg
-WHERE s.id = agg.session_id;
-```
+Mọi transaction tác động đồng thời đến chỗ và booking phải lấy khóa theo thứ tự:
 
-Job phải an toàn khi chạy chồng (không giải phóng một booking hai lần: điều kiện `status = 'pending'` đảm bảo điều này).
+1. Khóa các dòng `sessions` liên quan theo `id` tăng dần.
+2. Cập nhật các dòng `bookings`.
+3. Cập nhật bộ đếm chỗ trong `sessions`.
+
+Áp dụng thứ tự này cho giữ chỗ, hết hạn, hủy buổi và thanh toán/webhook. Khi có nhiều session, khóa toàn bộ theo thứ tự ổn định trước khi cập nhật booking. Cleanup chỉ đổi booking `pending` đã hết hạn; `RETURNING` rồi cộng `quantity` theo session để trừ `seats_held` trong cùng transaction. Nếu số chỗ giữ không đủ để trừ, rollback toàn transaction thay vì tạo số dư sai. Điều kiện trạng thái và transaction khiến cleanup chạy lặp hoặc chạy đồng thời chỉ giải phóng mỗi booking một lần. Nếu bổ sung job định kỳ, job cũng phải dùng cùng thứ tự khóa và có thể xử lý theo batch.
 
 ### Giải phóng khi truy cập (bắt buộc, không chỉ dựa vào job)
 
-Dịch vụ host miễn phí có thể ngủ nên job định kỳ không chạy. Vì vậy, cùng hàm `releaseExpiredHolds({ sessionId? })` phải được gọi thêm:
+Dịch vụ host miễn phí có thể ngủ nên job định kỳ không đủ. Cleanup khi đọc phải giới hạn vào các session công khai phù hợp với truy vấn:
 
-1. Ở đầu `POST /bookings`, cho buổi được đặt, **trong cùng transaction và trước** câu UPDATE giữ chỗ.
-2. Trong `GET /workshops` và `GET /workshops/:id`, trước khi trả thông tin buổi còn chỗ.
+1. `POST /bookings`: khóa session được đặt, cleanup hold hết hạn của session **trong cùng transaction và trước** câu UPDATE giữ chỗ.
+2. `GET /workshops` và `/catalog/studios`: scope theo các bộ lọc truy vấn, nhưng không dùng điều kiện chỗ trống khi chọn session cần cleanup; hold hết hạn có thể là lý do session trông như đã bán hết.
+3. `GET /workshops/:id` và `/studios/:id`: scope theo workshop hoặc studio được yêu cầu.
+4. Danh sách tỉnh/khu vực: scope theo tỉnh/khu vực tương ứng trước khi tính studio có buổi còn chỗ.
 
-Khi chỉ xử lý một buổi, giới hạn cập nhật booking hết hạn theo `session_id`:
-
-```sql
-WITH expired AS (
-  UPDATE bookings
-  SET status = 'expired'
-  WHERE status = 'pending'
-    AND hold_expires_at < now()
-    AND session_id = $1
-  RETURNING session_id, quantity
-)
-UPDATE sessions s
-SET seats_held = s.seats_held - agg.qty
-FROM (SELECT session_id, sum(quantity) AS qty FROM expired GROUP BY session_id) agg
-WHERE s.id = agg.session_id;
-```
-
-Điều kiện `status = 'pending'` bảo đảm job và request có thể chạy chồng mà không giải phóng một booking hai lần.
+Không dùng một truy vấn đọc để cập nhật toàn bộ booking hết hạn ngoài phạm vi kết quả người dùng đang yêu cầu. `POST /bookings` hiện chưa được triển khai trong API; khi làm luồng này phải gọi cleanup theo session trong transaction tạo booking, trước thao tác giữ chỗ nguyên tử.
 
 ## Xử lý webhook (idempotent)
 
 1. Đọc body thô, **xác thực chữ ký** theo tài liệu chính thức PayOS. Sai chữ ký → lưu `webhook_events` với `signature_valid=false`, trả HTTP không-2xx, không xử lý booking.
 2. Với chữ ký hợp lệ, `INSERT INTO webhook_events ... ON CONFLICT (provider, dedupe_key) DO NOTHING`. Nếu đã nhận trước đó → trả HTTP 2xx, không làm gì thêm (`outcome='duplicate'`).
 3. Tìm booking theo `order_code`; kiểm tra số tiền khớp `total_amount`.
-4. Booking `pending` → trong một transaction: `status='paid'`, `paid_at`, `seats_held -= qty`, `seats_sold += qty`, cấp `quantity` vé (`UNIQUE (booking_id, seq)` chống cấp trùng), cập nhật `payments`.
+4. Booking `pending` → trong một transaction theo thứ tự khóa chung (session trước, booking sau): `status='paid'`, `paid_at`, `seats_held -= qty`, `seats_sold += qty`, cấp `quantity` vé (`UNIQUE (booking_id, seq)` chống cấp trùng), cập nhật `payments`.
 5. Với webhook có chữ ký hợp lệ, trả HTTP 2xx sau khi sự kiện đã được lưu và xử lý được kết quả cuối cùng (kể cả sự kiện trùng, sai số tiền hoặc booking không thể xác nhận). Nếu lỗi tạm thời khiến chưa lưu hoặc xử lý được, trả lỗi để nhà cung cấp có thể gửi lại. Phản hồi thực tế phải tuân theo hợp đồng webhook chính thức của PayOS.
 
 Khách rời trang checkout hoặc quay về `/payment/cancel` không tự hủy booking. Không có endpoint khách chủ động hủy booking trong phạm vi hiện tại; booking `pending` được giải phóng khi hết hạn. Chỉ webhook hợp lệ xác nhận thanh toán thất bại/hủy mới chuyển booking sang `cancelled` sớm và giải phóng chỗ.
 
 ## Thanh toán đến muộn (booking đã `expired`)
 
-Trong một transaction thử giành lại chỗ bằng cùng câu `UPDATE` giữ chỗ:
+Trong một transaction, khóa session trước booking rồi thử giành lại chỗ bằng cùng câu `UPDATE` giữ chỗ:
 
 - Còn chỗ → chuyển `paid`, bán chỗ, cấp vé (`outcome='late_payment_confirmed'`).
 - Hết chỗ → booking `refund_needed` (`outcome='late_payment_no_seat'`); hoàn tiền thủ công, ngoài phạm vi.

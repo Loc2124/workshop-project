@@ -16,6 +16,12 @@ services:
         value: none
       - key: COOKIE_NAME
         value: workshop_session
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: REFRESH_COOKIE_NAME
+        value: workshop_refresh
+      - key: REFRESH_TOKEN_EXPIRES_IN
+        value: 14d
       - key: PAYMENT_PROVIDER
         value: mock
       - key: DB_POOL_MAX

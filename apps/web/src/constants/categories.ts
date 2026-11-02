@@ -22,13 +22,16 @@ export type Category = {
   placeholderImage: string | null;
   status: 'active' | 'pending';
   sortOrder: number;
+  isVisible?: boolean;
   keywords: string[];
   description: string;
   imagePosition?: string;
 };
 
 export let categories: Category[] = categoryData as Category[];
+const metadata = new Map(categories.map((category) => [category.id, category]));
 export function registerCategories(data: Category[]) {
+  data.forEach((category) => metadata.set(category.id, category));
   categories = data;
   return data;
 }
@@ -58,7 +61,7 @@ const icons: Record<string, LucideIcon> = {
 };
 
 export function getCategoryMeta(id?: string | null): Category {
-  const category = categories.find((item) => item.id === id);
+  const category = metadata.get(id ?? '');
   return {
     ...DEFAULT_CATEGORY,
     ...category,
@@ -83,9 +86,11 @@ export function getCategoryIcon(id?: string | null) {
 export function categoryValue(value: string | null) {
   return categories.find(
     (category) =>
-      category.id === value ||
-      category.slug === value ||
-      category.name.toLocaleLowerCase('vi') === value?.toLocaleLowerCase('vi'),
+      category.isVisible !== false &&
+      (category.id === value ||
+        category.slug === value ||
+        category.name.toLocaleLowerCase('vi') ===
+          value?.toLocaleLowerCase('vi')),
   )?.id;
 }
 
@@ -121,15 +126,23 @@ export function getUpcomingCategories(workshops: Workshop[], now = Date.now()) {
 export function getCategoryOptions(workshops: Workshop[], now = Date.now()) {
   const upcoming = getUpcomingCategories(workshops, now);
   const options = new Map(
-    categories.map((category) => [
-      category.id,
-      { ...getCategoryMeta(category.id), count: 0 },
-    ]),
+    categories
+      .filter(
+        (category) =>
+          category.isVisible !== false &&
+          (category.status === 'active' || category.id === 'other'),
+      )
+      .map((category) => [
+        category.id,
+        { ...getCategoryMeta(category.id), count: 0 },
+      ]),
   );
-  upcoming.forEach((category) => options.set(category.id, category));
+  upcoming.forEach((category) => {
+    if (options.has(category.id)) options.set(category.id, category);
+  });
   return [...options.values()].sort(
     (a, b) =>
-      b.count - a.count ||
+      Number(a.id === 'other') - Number(b.id === 'other') ||
       a.sortOrder - b.sortOrder ||
       a.name.localeCompare(b.name, 'vi'),
   );

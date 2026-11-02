@@ -48,7 +48,7 @@ export function TicketDemoPage() {
         <div className="mb-8 flex flex-wrap items-end justify-between gap-6">
           <div>
             <h1 className="font-heading text-3xl font-bold leading-tight md:text-5xl">
-              Một vé đến xưởng.
+              Một vé đến studio.
             </h1>
             <p className="mt-4 max-w-2xl text-base">
               Bộ component vé workshop Open Slot. Dữ liệu mô phỏng; mã QR trên
@@ -163,7 +163,7 @@ export function TicketDemoPage() {
                     setPayment(event.target.value as Booking['paymentMethod'])
                   }
                 >
-                  <option value="at_studio">Trả tại xưởng</option>
+                  <option value="at_studio">Trả tại studio</option>
                   <option value="prepaid">Đã thanh toán trước</option>
                 </select>
               </label>

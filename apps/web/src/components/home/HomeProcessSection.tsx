@@ -9,10 +9,10 @@ const steps = [
   },
   {
     title: 'Chọn buổi phù hợp',
-    description: 'Đặt chỗ online, trả trước hoặc trả tại xưởng.',
+    description: 'Đặt chỗ online, trả trước hoặc trả tại studio.',
   },
   {
-    title: 'Gặp nhau tại xưởng',
+    title: 'Gặp nhau tại studio',
     description:
       'Kiểm tra thông tin đặt chỗ trước khi đến. Nghệ nhân sẽ hướng dẫn bạn từng bước.',
   },
@@ -26,7 +26,7 @@ export function HomeProcessSection({ browseUrl }: { browseUrl: string }) {
           id="booking-steps-title"
           className="font-heading text-[40px] font-medium leading-tight tracking-tight lg:text-[58px]"
         >
-          Đến xưởng.
+          Đến studio.
           <br />
           Thử điều mới.
         </h2>

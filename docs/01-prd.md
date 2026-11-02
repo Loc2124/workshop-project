@@ -4,7 +4,7 @@ Tham chiếu mức ưu tiên trong `CLAUDE.md`. Mỗi mục có tiêu chí chấ
 
 ## Vai trò
 
-- **Khách hàng (customer)**, **thành viên xưởng (studio member)**, **Quản trị (admin)**. Vai trò hệ thống là customer/admin; thành viên xưởng có quyền owner/staff theo từng studio.
+- **Khách hàng (customer)**, **thành viên studio (studio member)**, **Quản trị (admin)**. Vai trò hệ thống là customer/admin; thành viên studio có quyền owner/staff theo từng studio.
 - Mỗi workshop không có giao diện riêng: nội dung khác nhau là dữ liệu, trang chi tiết dùng chung một template.
 
 ## Khách hàng

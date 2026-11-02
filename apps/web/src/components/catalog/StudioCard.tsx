@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import { formatCategoryLabel } from '../../lib/format';
 import { TicketPrice, TicketRating } from '../tickets/TicketContent';
 import { TicketAction } from '../tickets/TicketPrimitives';
@@ -8,8 +9,8 @@ import type { StudioListing } from '../../types/studio';
 export function StudioCard({ studio }: { studio: StudioListing }) {
   return (
     <Link
-      to={`/xuong/${studio.slug ?? studio.id}`}
-      aria-label={`Xem xưởng ${studio.name}`}
+      to={`/studios/${studio.slug ?? studio.id}`}
+      aria-label={`Xem studio ${studio.name}`}
       className="studio-card horizontal-ticket group block h-full min-w-0 rounded-ticket text-ink focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-primary motion-safe:transition-transform motion-safe:hover:-translate-y-0.5"
     >
       <article className="flex h-full min-w-0 overflow-hidden rounded-ticket border border-stone-200 bg-stone-50">
@@ -29,7 +30,7 @@ export function StudioCard({ studio }: { studio: StudioListing }) {
         <div className="@container flex min-w-0 flex-1 flex-col p-3 lg:p-5">
           <p className="text-[13px] font-bold text-stone-700">
             {studio.categoryIds.map(formatCategoryLabel).join(' · ') ||
-              'Xưởng sáng tạo'}
+              'Studio sáng tạo'}
           </p>
           <h3
             title={studio.name}
@@ -37,6 +38,9 @@ export function StudioCard({ studio }: { studio: StudioListing }) {
           >
             {studio.name}
           </h3>
+          <div className="mt-2">
+            <StudioTrustBadge level={studio.trustLevel} />
+          </div>
           <p className="mt-2 text-[13px] text-stone-700">
             {[studio.areaName, studio.province].filter(Boolean).join(' · ')}
           </p>

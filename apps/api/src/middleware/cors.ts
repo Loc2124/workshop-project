@@ -16,6 +16,10 @@ export function corsForWeb(webOrigin: string) {
       response.setHeader('Access-Control-Allow-Credentials', 'true');
       response.setHeader('Access-Control-Allow-Methods', allowedMethods);
       response.setHeader('Access-Control-Allow-Headers', allowedHeaders);
+      response.setHeader(
+        'Access-Control-Expose-Headers',
+        'Retry-After, RateLimit, RateLimit-Policy',
+      );
       response.setHeader('Access-Control-Max-Age', '600');
     }
 

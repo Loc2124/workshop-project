@@ -35,7 +35,7 @@ export function HomeArtisanSection() {
           id="artists-title"
           className="font-heading text-3xl font-medium leading-tight tracking-tight lg:text-[44px]"
         >
-          Xưởng bạn còn chỗ?
+          Studio bạn còn chỗ?
         </h2>
         <p className="mt-8 max-w-[40ch] leading-relaxed">
           Mời những người tò mò đến với nghề của bạn. Open Slot kết nối lớp trải

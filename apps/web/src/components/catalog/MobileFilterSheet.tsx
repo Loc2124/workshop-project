@@ -76,36 +76,45 @@ export function MobileFilterSheet({
               <div className="flex max-h-[90dvh] flex-col">
                 <header className="border-b border-line px-5 py-4 pr-14">
                   <DialogTitle className="font-heading text-xl font-semibold leading-tight text-ink">
-                    Bộ lọc {view === 'studios' ? 'xưởng' : 'workshop'}
+                    Bộ lọc {view === 'studios' ? 'studio' : 'workshop'}
                   </DialogTitle>
-                  <DialogDescription aria-live="polite" className="mt-1 text-sm font-medium text-stone-600">
-                    {resultCount} {view === 'studios' ? 'xưởng' : 'workshop'}{' '}
+                  <DialogDescription
+                    aria-live="polite"
+                    className="mt-1 text-sm font-medium text-stone-600"
+                  >
+                    {resultCount} {view === 'studios' ? 'studio' : 'workshop'}{' '}
                     phù hợp
                   </DialogDescription>
                 </header>
                 <div className="min-h-0 flex-1 overflow-y-auto px-5">
-                  {children && <div className="flex flex-wrap items-center gap-3 py-3">{children}</div>}
+                  {children && (
+                    <div className="flex flex-wrap items-center gap-3 py-3">
+                      {children}
+                    </div>
+                  )}
                   <div className="py-5">
-                  <CatalogFilterFields
-                    stacked
-                    filters={filters}
-                    onChange={onChange}
-                    provinces={provinces}
-                    onLocate={onLocate}
-                    locating={locating}
-                    locationError={locationError}
-                    provinceError={provinceError}
-                  />
+                    <CatalogFilterFields
+                      stacked
+                      filters={filters}
+                      onChange={onChange}
+                      provinces={provinces}
+                      onLocate={onLocate}
+                      locating={locating}
+                      locationError={locationError}
+                      provinceError={provinceError}
+                    />
                   </div>
                 </div>
                 <footer className="flex items-center gap-3 border-t border-line bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                  {activeCount > 0 && <button
-                    className="min-h-12 flex-1 rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:border-porcelain"
-                    onClick={onClear}
-                    type="button"
-                  >
-                    Xóa lọc
-                  </button>}
+                  {activeCount > 0 && (
+                    <button
+                      className="min-h-12 flex-1 rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:border-porcelain"
+                      onClick={onClear}
+                      type="button"
+                    >
+                      Xóa lọc
+                    </button>
+                  )}
                   <DialogClose asChild>
                     <button
                       className="min-h-12 flex-2 rounded-lg bg-porcelain px-4 text-base font-semibold text-white hover:bg-porcelain focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain"

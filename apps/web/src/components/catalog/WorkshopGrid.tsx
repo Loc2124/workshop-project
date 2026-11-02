@@ -47,7 +47,7 @@ export function WorkshopGrid({
           ? 'Đang tìm workshop phù hợp…'
           : error
             ? 'Chưa tải được danh sách workshop. Vui lòng thử lại sau.'
-            : `Chưa có ${view === 'studios' ? 'xưởng' : 'workshop'} phù hợp. Hãy thử thay đổi bộ lọc.`}
+            : `Chưa có ${view === 'studios' ? 'studio' : 'workshop'} phù hợp. Hãy thử thay đổi bộ lọc.`}
       </div>
     );
   }

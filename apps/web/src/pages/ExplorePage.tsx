@@ -1,10 +1,7 @@
 import { PageContainer } from '../components/layout/PageContainer';
 import { useProvinces } from '../hooks/useProvinces';
-import {
-  categories,
-  categoryValue,
-  getCategoryMeta,
-} from '../constants/categories';
+import { categories, getCategoryMeta } from '../constants/categories';
+import { useCategoriesQuery } from '../hooks/useCategories';
 import { provinceSlug } from '../lib/catalog';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDownWideNarrow } from 'lucide-react';
@@ -20,66 +17,19 @@ import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { SiteHeader } from '../components/layout/SiteHeader';
 import { mockStudios } from '../data/mockStudios';
 import { mockWorkshops } from '../data/mockWorkshops';
-import { useCatalog } from '../hooks/useCatalog';
+import { useCatalog, useCatalogStudios } from '../hooks/useCatalog';
 import { detectProvinceId } from '../services/locationService';
 import type { CatalogFilters, SortOption } from '../types/catalog';
 import type { Studio, StudioListing } from '../types/studio';
 import type { Workshop } from '../types/workshop';
 import type { ProvinceOption } from '../components/catalog/ProvinceCombobox';
+import { isDemoDataMode } from '../lib/data-mode';
+import { parseExploreUrl } from '../lib/explore-url';
 
 const pageSize = 12;
 const provincePreferenceKey = 'open-slot.province';
 const locationAttemptKey = 'open-slot.location-attempted';
 const defaultFilters: CatalogFilters = { page: 1, pageSize };
-const validSortOptions: SortOption[] = [
-  'recommended',
-  'soonest',
-  'price-asc',
-  'price-desc',
-];
-
-function parseFilters(
-  params: URLSearchParams,
-  provinces: ProvinceOption[],
-): CatalogFilters {
-  const page = Number(params.get('page'));
-  const readNumber = (key: string) => {
-    const rawValue = params.get(key);
-    if (rawValue === null || rawValue.trim() === '') return undefined;
-    const value = Number(rawValue);
-    return Number.isSafeInteger(value) && value >= 0 ? value : undefined;
-  };
-  const areaIds = params.getAll('area_ids');
-  return {
-    page: Number.isSafeInteger(page) && page > 0 ? page : 1,
-    pageSize,
-    categoryId:
-      categoryValue(params.get('mon')) ??
-      categoryValue(params.get('type')) ??
-      categoryValue(params.get('category')) ??
-      params.get('category_id') ??
-      undefined,
-    provinceId:
-      params.get('province_id') ||
-      provinces.find(
-        (province) =>
-          province.id === params.get('province') ||
-          provinceSlug(province.name) === params.get('province'),
-      )?.id,
-    areaIds: areaIds.length > 0 ? areaIds : undefined,
-    level: ['beginner', 'intermediate', 'all'].includes(
-      params.get('level') ?? '',
-    )
-      ? (params.get('level') as CatalogFilters['level'])
-      : undefined,
-    audience: params.get('audience') || undefined,
-    priceMin: readNumber('price_min'),
-    priceMax: readNumber('price_max'),
-    dateFrom: params.get('date') || params.get('date_from') || undefined,
-    dateTo: params.get('date') || params.get('date_to') || undefined,
-    takeawaySameDay: params.get('same_day') === 'true' || undefined,
-  };
-}
 
 function writeFilters(
   params: URLSearchParams,
@@ -275,45 +225,48 @@ function toStudioListings(
   });
 }
 
-function getSort(params: URLSearchParams): SortOption {
-  const value = params.get('sort');
-  return validSortOptions.includes(value as SortOption)
-    ? (value as SortOption)
-    : 'recommended';
-}
-
-function getView(params: URLSearchParams): CatalogView {
-  return ['studio', 'studios'].includes(params.get('view') ?? '')
-    ? 'studios'
-    : 'workshops';
-}
-
 export function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const sort = getSort(searchParams);
-  const view = getView(searchParams);
+  const usingMockData = isDemoDataMode;
+  const categoryQuery = useCategoriesQuery(true);
+  const categoriesReady = categoryQuery.isSuccess;
   const { provinces: provinceOptions, error: provinceError } = useProvinces();
-  const filters = useMemo(
-    () => parseFilters(searchParams, provinceOptions),
-    [searchParams, provinceOptions, categories],
+  const parsedUrl = useMemo(
+    () => parseExploreUrl(searchParams, provinceOptions, categoriesReady),
+    [searchParams, provinceOptions, categoriesReady, categories],
   );
+  const { filters, sort, view, query: appliedQuery } = parsedUrl;
   const [, setAreaOptions] = useState<AreaOption[]>([]);
   const [locationError, setLocationError] = useState('');
   const [isLocating, setIsLocating] = useState(false);
 
-  const catalog = useCatalog(
-    { ...filters, page: 1, pageSize: 100 },
-    !import.meta.env.DEV,
+  const requestFilters = useMemo(
+    () => ({
+      ...filters,
+      query: appliedQuery,
+      sort,
+      page: filters.page,
+      pageSize,
+    }),
+    [filters, appliedQuery, sort],
   );
-  const usingMockData = import.meta.env.DEV;
+  const catalog = useCatalog(
+    requestFilters,
+    !usingMockData && view === 'workshops',
+  );
+  const studiosCatalog = useCatalogStudios(
+    requestFilters,
+    !usingMockData && view === 'studios',
+  );
   const source = usingMockData ? mockWorkshops : (catalog.data?.items ?? []);
-  const appliedQuery = searchParams.get('q') ?? '';
   const filteredWorkshops = useMemo(
-    () => filterWorkshops(source, filters, appliedQuery),
-    [source, filters, appliedQuery],
+    () =>
+      usingMockData ? filterWorkshops(source, filters, appliedQuery) : source,
+    [source, filters, appliedQuery, usingMockData],
   );
 
   const sortedWorkshops = useMemo(() => {
+    if (!usingMockData) return filteredWorkshops;
     const sorted = [...filteredWorkshops];
     if (sort === 'price-asc')
       sorted.sort((a, b) => getWorkshopPrice(a) - getWorkshopPrice(b));
@@ -325,32 +278,43 @@ export function ExplorePage() {
       );
     if (sort === 'recommended') return rankWorkshops(sorted, appliedQuery);
     return sorted;
-  }, [filteredWorkshops, appliedQuery, sort]);
+  }, [filteredWorkshops, appliedQuery, sort, usingMockData]);
 
   const studioListings = useMemo(
-    () => toStudioListings(usingMockData ? mockStudios : [], sortedWorkshops),
-    [sortedWorkshops, usingMockData],
+    () =>
+      usingMockData
+        ? toStudioListings(mockStudios, sortedWorkshops)
+        : (studiosCatalog.data?.items ?? []),
+    [sortedWorkshops, usingMockData, studiosCatalog.data?.items],
   );
   const sortedStudios = useMemo(() => {
+    if (!usingMockData) return studioListings;
     if (sort !== 'price-asc' && sort !== 'price-desc') return studioListings;
     return [...studioListings].sort((a, b) =>
       sort === 'price-asc'
         ? a.startingPrice - b.startingPrice
         : b.startingPrice - a.startingPrice,
     );
-  }, [sort, studioListings]);
-  const totalCount =
-    view === 'studios' ? sortedStudios.length : sortedWorkshops.length;
+  }, [sort, studioListings, usingMockData]);
+  const apiPagination =
+    view === 'studios'
+      ? studiosCatalog.data?.pagination
+      : catalog.data?.pagination;
+  const totalCount = usingMockData
+    ? view === 'studios'
+      ? sortedStudios.length
+      : sortedWorkshops.length
+    : (apiPagination?.total ?? 0);
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const page = Math.min(filters.page, totalPages);
-  const visibleWorkshops = sortedWorkshops.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
-  const visibleStudios = sortedStudios.slice(
-    (page - 1) * pageSize,
-    page * pageSize,
-  );
+  const page = usingMockData
+    ? Math.min(filters.page, totalPages)
+    : filters.page;
+  const visibleWorkshops = usingMockData
+    ? sortedWorkshops.slice((page - 1) * pageSize, page * pageSize)
+    : sortedWorkshops;
+  const visibleStudios = usingMockData
+    ? sortedStudios.slice((page - 1) * pageSize, page * pageSize)
+    : sortedStudios;
   const selectedProvince = provinceOptions.find(
     (province) => province.id === filters.provinceId,
   );
@@ -444,12 +408,12 @@ export function ExplorePage() {
   }, [filters, provinceOptions, requestLocation, updateFilters, searchParams]);
 
   useEffect(() => {
+    const params = new URLSearchParams(parsedUrl.normalizedParams);
     const expectedView = view === 'studios' ? 'studio' : 'workshop';
-    if (searchParams.get('view') === expectedView) return;
-    const params = new URLSearchParams(searchParams);
-    params.set('view', expectedView);
-    setSearchParams(params, { replace: true });
-  }, [searchParams, setSearchParams, view]);
+    if (params.get('view') !== expectedView) params.set('view', expectedView);
+    if (params.toString() !== searchParams.toString())
+      setSearchParams(params, { replace: true });
+  }, [parsedUrl.normalizedParams, searchParams, setSearchParams, view]);
 
   const titleLocation = selectedProvince?.name.replace(
     'TP. Hồ Chí Minh',
@@ -521,7 +485,7 @@ export function ExplorePage() {
               id="workshops-title"
               className="font-heading text-xl font-semibold"
             >
-              {view === 'studios' ? 'Xưởng nổi bật' : 'Workshop sắp tới'} ·{' '}
+              {view === 'studios' ? 'Studio nổi bật' : 'Workshop sắp tới'} ·{' '}
               <span aria-live="polite">{totalCount}</span>
             </h2>
             {titleLocation && (
@@ -529,8 +493,16 @@ export function ExplorePage() {
             )}
           </div>
           <WorkshopGrid
-            error={!usingMockData && catalog.isError}
-            loading={!usingMockData && catalog.isLoading}
+            error={
+              !usingMockData &&
+              (view === 'studios' ? studiosCatalog.isError : catalog.isError)
+            }
+            loading={
+              !usingMockData &&
+              (view === 'studios'
+                ? studiosCatalog.isLoading
+                : catalog.isLoading)
+            }
             studios={visibleStudios}
             view={view}
             workshops={visibleWorkshops}

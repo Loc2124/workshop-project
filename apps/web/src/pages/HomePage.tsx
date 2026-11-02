@@ -9,6 +9,7 @@ import { SiteHeader } from '../components/layout/SiteHeader';
 import { SiteFooter } from '../components/layout/SiteFooter';
 import { useHomeCatalog } from '../hooks/useHomeCatalog';
 import { useCategoryCatalog } from '../hooks/useCategoryCatalog';
+import { HomeFeaturedStudios } from '../components/home/HomeFeaturedStudios';
 
 export function HomePage() {
   const home = useHomeCatalog();
@@ -16,6 +17,15 @@ export function HomePage() {
   return (
     <div className="home-page min-h-screen bg-paper text-ink">
       <SiteHeader />
+      {home.preview && (
+        <div
+          className="border-b border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-900"
+          role="status"
+        >
+          {home.previewError ??
+            'Đang xem trước nội dung nổi bật chưa lưu. Trang chủ công khai chưa thay đổi.'}
+        </div>
+      )}
       <main>
         <HomeSearchHero {...home} />
         <PageContainer
@@ -27,6 +37,12 @@ export function HomePage() {
           <CategoryShortcuts variant="home" workshops={categoryWorkshops} />
         </PageContainer>
         <HomeWorkshopSection {...home} />
+        <HomeFeaturedStudios
+          studios={home.featuredStudios}
+          loading={home.loading}
+          error={home.error}
+          refetch={home.refetch}
+        />
         <HomeProcessSection browseUrl={home.browseUrl} />
         <HomeArtisanSection />
       </main>

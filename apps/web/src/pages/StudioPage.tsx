@@ -1,3 +1,4 @@
+import { ReportButton } from '../components/reports/ReportButton';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
@@ -23,6 +24,8 @@ import { rankWorkshops } from '../lib/rankWorkshops';
 import { catalogService } from '../services/catalogService';
 import type { PublicStudio, Studio } from '../types/studio';
 import type { Workshop } from '../types/workshop';
+import { isDemoDataMode } from '../lib/data-mode';
+import { ApiError } from '../lib/api-client';
 
 function StudioDetails({
   studio,
@@ -39,15 +42,26 @@ function StudioDetails({
     : sorted;
   return (
     <>
-      <StudioHero studio={studio} workshops={workshops} />
+      <StudioHero
+        studio={studio}
+        workshops={workshops}
+        imageUrl={studio.photoUrls?.[0]}
+      />
+      <div className="mt-3 flex justify-end">
+        <ReportButton
+          key={studio.id}
+          targetType="studio"
+          targetId={studio.id}
+        />
+      </div>
       <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-8">
         <div className="min-w-0 space-y-8">
           <DetailSection
             id="studio-workshops-heading"
-            title="Workshop tại xưởng"
+            title="Workshop tại studio"
             className="min-w-0 scroll-mt-24"
           >
-            <div id="workshop-tai-xuong" className="scroll-mt-24">
+            <div id="workshop-tai-studio" className="scroll-mt-24">
               {categoryIds.length > 1 && (
                 <div className="mb-4">
                   <CategoryShortcuts
@@ -71,16 +85,32 @@ function StudioDetails({
                   role="status"
                   className="rounded-xl bg-soft p-5 text-sm text-stone-700"
                 >
-                  Xưởng chưa có workshop thuộc bộ môn này.
+                  Studio chưa có workshop thuộc bộ môn này.
                 </p>
               )}
             </div>
           </DetailSection>
           <StudioArtists workshops={workshops} />
+          {!!studio.photoUrls?.length && (
+            <DetailSection id="studio-photos-heading" title="Không gian studio">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                {studio.photoUrls.map((url, index) => (
+                  <a key={url} href={url} target="_blank" rel="noreferrer">
+                    <img
+                      src={url}
+                      alt={`Không gian ${studio.name}, ảnh ${index + 1}`}
+                      loading="lazy"
+                      className="aspect-4/3 w-full rounded-lg object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
+            </DetailSection>
+          )}
           <StudioExtras studio={studio} />
         </div>
         <aside
-          aria-label="Địa chỉ xưởng"
+          aria-label="Địa chỉ studio"
           className="sticky top-20 min-w-0 self-start"
         >
           <StudioSidebar studio={studio} />
@@ -93,30 +123,31 @@ function StudioDetails({
 export function StudioPage() {
   const { id, slug } = useParams();
   const identifier = slug ?? id ?? '';
-  const sampleStudio = mockStudios.find(
-    (studio) => studio.id === identifier || studio.slug === identifier,
-  );
+  const sampleStudio = isDemoDataMode
+    ? mockStudios.find(
+        (studio) => studio.id === identifier || studio.slug === identifier,
+      )
+    : undefined;
   const query = useQuery({
     queryKey: ['catalog', 'studio', identifier],
     queryFn: ({ signal }) => catalogService.getStudioById(identifier, signal),
-    enabled: Boolean(identifier) && !sampleStudio,
+    enabled: Boolean(identifier) && !isDemoDataMode,
   });
   const studio = sampleStudio ?? query.data?.studio;
   const workshops = sampleStudio
     ? mockWorkshops.filter((workshop) => workshop.studioId === sampleStudio.id)
     : (query.data?.studio.workshops ?? []);
+  const notFound =
+    query.error instanceof ApiError && query.error.status === 404;
   return (
     <div className="min-h-screen bg-paper pb-28 text-ink md:pb-0">
       <SiteHeader />
-      <PageContainer
-        as="main"
-        className="pb-6 md:pb-8"
-      >
+      <PageContainer as="main" className="pb-6 md:pb-8">
         <PageBreadcrumb
           className="py-4"
           items={[
             { label: 'Khám phá', href: '/kham-pha?view=studio' },
-            { label: studio?.name ?? 'Xưởng' },
+            { label: studio?.name ?? 'Studio' },
           ]}
         />
         {studio ? (
@@ -128,8 +159,8 @@ export function StudioPage() {
         ) : (
           <DetailState
             loading={query.isLoading}
-            error={query.isError}
-            label="xưởng"
+            error={query.isError && !notFound}
+            label="studio"
             onRetry={() => void query.refetch()}
           />
         )}

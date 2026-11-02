@@ -27,7 +27,11 @@ export async function migrateDatabase(
     throw new Error(`No SQL migrations found in ${directory}.`);
   }
 
-  const pool = new Pool({ connectionString: databaseUrl, max: 1 });
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    max: 1,
+    connectionTimeoutMillis: 15000,
+  });
   const client = await pool.connect();
   let lockAcquired = false;
 

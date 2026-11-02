@@ -2,10 +2,21 @@ import { AppError } from '../../errors/app-error.js';
 import {
   cancelSession as cancelOwnedSession,
   createSession as insertSession,
+  listStudioSessions as selectStudioSessions,
   updateSession as saveSession,
 } from './sessions.repository.js';
 import type { SessionInput, SessionUpdate } from './sessions.schemas.js';
 import { getStudioMemberRole } from '../studios/studios.repository.js';
+
+export async function getStudioSessions(studioId: string, userId: string) {
+  const role = await getStudioMemberRole(studioId, userId);
+  if (!role) {
+    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy studio.');
+  }
+  return {
+    sessions: (await selectStudioSessions(studioId, userId)) ?? [],
+  };
+}
 
 export async function createStudioSession(
   studioId: string,
@@ -15,13 +26,13 @@ export async function createStudioSession(
 ) {
   const role = await getStudioMemberRole(studioId, userId);
   if (!role) {
-    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy xưởng.');
+    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy studio.');
   }
   if (Object.hasOwn(input, 'price') && role !== 'owner') {
     throw new AppError(
       403,
       'FORBIDDEN',
-      'Chỉ chủ xưởng được đặt giá buổi workshop.',
+      'Chỉ chủ studio được đặt giá buổi workshop.',
     );
   }
 
@@ -53,14 +64,28 @@ export async function updateStudioSession(
     throw new AppError(
       409,
       'CONFLICT',
-      'Không thể đổi giá buổi đã có đăng ký đang chờ thanh toán hoặc đã thanh toán.',
+      'Không thể đổi giá buổi đã có đăng ký đang chờ thanh toán, đã thanh toán hoặc cần hoàn tiền.',
+    );
+  }
+  if (result.conflict === 'schedule_locked') {
+    throw new AppError(
+      409,
+      'CONFLICT',
+      'Không thể đổi lịch buổi đã có đăng ký đang chờ thanh toán, đã thanh toán hoặc cần hoàn tiền.',
+    );
+  }
+  if (result.conflict === 'session_closed') {
+    throw new AppError(
+      409,
+      'CONFLICT',
+      'Không thể sửa buổi đã hủy, đã hoàn thành hoặc đã bắt đầu.',
     );
   }
   if (result.conflict === 'owner_required') {
     throw new AppError(
       403,
       'FORBIDDEN',
-      'Chỉ chủ xưởng được thay đổi giá buổi workshop.',
+      'Chỉ chủ studio được thay đổi giá buổi workshop.',
     );
   }
   if (result.conflict === 'invalid_schedule') {

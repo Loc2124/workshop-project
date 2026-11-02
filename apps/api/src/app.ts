@@ -1,19 +1,20 @@
 import cookieParser from 'cookie-parser';
 import express from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { createApiRateLimiter } from './middleware/rate-limits.js';
 import helmet from 'helmet';
 import pinoHttp from 'pino-http';
 import { randomUUID } from 'node:crypto';
 import authRoutes from './modules/auth/auth.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
+import { getSiteSettings } from './modules/settings/settings.repository.js';
 import studioRoutes from './modules/studios/studios.routes.js';
 import workshopRoutes from './modules/workshops/workshops.routes.js';
 import sessionRoutes from './modules/sessions/sessions.routes.js';
-import { requireAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errors.js';
-import { getCurrentUser } from './modules/auth/auth.service.js';
-import { AppError } from './errors/app-error.js';
+import meRoutes from './modules/auth/me.routes.js';
 import catalogRoutes from './modules/catalog/catalog.routes.js';
+import imageRoutes from './modules/images/images.routes.js';
+import reportRoutes from './modules/reports/reports.routes.js';
 import { loadConfig } from './config.js';
 import { corsForWeb } from './middleware/cors.js';
 
@@ -30,6 +31,7 @@ export function createApp() {
         paths: [
           'req.headers.authorization',
           'req.headers.cookie',
+          'res.headers["set-cookie"]',
           'req.headers.x-signature',
           'req.headers.x-payos-signature',
         ],
@@ -37,37 +39,28 @@ export function createApp() {
       },
     }),
   );
-  app.use(express.json());
+  app.use(express.json({ limit: '100kb', inflate: false }));
   app.use(cookieParser());
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      limit: 100,
-    }),
-  );
+  app.use(createApiRateLimiter());
 
   app.get('/health', (_request, response) => {
     response.json({ ok: true });
   });
 
   app.use('/auth', authRoutes);
+  app.get('/settings', async (_req, res) =>
+    res
+      .set('Cache-Control', 'no-store')
+      .json({ settings: await getSiteSettings() }),
+  );
+  app.use('/me', meRoutes);
   app.use('/', catalogRoutes);
   app.use('/studios', studioRoutes);
+  app.use('/images', imageRoutes);
+  app.use('/reports', reportRoutes);
   app.use('/studios/:studioId', workshopRoutes);
   app.use('/studios/:studioId', sessionRoutes);
   app.use('/admin', adminRoutes);
-  app.get('/me', requireAuth(), async (request, response) => {
-    const user = await getCurrentUser(request.user!.sub);
-    if (!user) {
-      throw new AppError(
-        401,
-        'UNAUTHORIZED',
-        'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
-      );
-    }
-    response.json({ user });
-  });
-
   app.use(notFoundHandler);
   app.use(errorHandler);
 

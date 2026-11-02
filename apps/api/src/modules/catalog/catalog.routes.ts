@@ -1,9 +1,16 @@
 import { Router } from 'express';
+import { publicFeatured } from '../admin/featured.repository.js';
+import { query } from '../../db/pool.js';
 import { listCategories } from './categories.repository.js';
 import { AppError } from '../../errors/app-error.js';
-import { catalogQuerySchema, toCatalogFilters } from './catalog.schemas.js';
+import {
+  catalogQuerySchema,
+  provinceListQuerySchema,
+  toCatalogFilters,
+} from './catalog.schemas.js';
 import {
   listPublicWorkshops,
+  listPublicStudios,
   readPublicStudio,
   readAreas,
   readProvinces,
@@ -11,13 +18,25 @@ import {
 } from './catalog.service.js';
 
 const router = Router();
+router.get('/home/featured', async (_req, res) =>
+  res.set('Cache-Control', 'no-store').json(await publicFeatured()),
+);
+router.get('/workshops/:id/reviews', async (request, response) => {
+  const result = await query(
+    `SELECT rev.id,u.full_name AS author,rev.rating,coalesce(rev.comment,'') AS comment,rev.created_at AS "createdAt" FROM reviews rev JOIN users u ON u.id=rev.user_id JOIN workshops w ON w.id=rev.workshop_id JOIN studios st ON st.id=w.studio_id WHERE (w.id::text=$1 OR w.slug=$1) AND NOT rev.is_hidden AND w.status='approved' AND w.visibility_status='active' AND st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st) ORDER BY rev.created_at DESC,rev.id LIMIT 100`,
+    [String(request.params.id)],
+  );
+  response.json({ reviews: result.rows });
+});
 
 router.get('/categories', async (_request, response) => {
   response.json({ categories: await listCategories() });
 });
 
-router.get('/provinces', async (_request, response) => {
-  response.json(await readProvinces());
+router.get('/provinces', async (request, response) => {
+  const parsed = provinceListQuerySchema.safeParse(request.query);
+  if (!parsed.success) throw parsed.error;
+  response.json(await readProvinces(parsed.data.include_empty === 'true'));
 });
 
 router.get('/provinces/:id/areas', async (request, response) => {
@@ -35,6 +54,15 @@ router.get('/workshops', async (request, response) => {
   }
 
   response.json(await listPublicWorkshops(toCatalogFilters(parsed.data)));
+});
+
+router.get('/catalog/studios', async (request, response) => {
+  const parsed = catalogQuerySchema.safeParse(request.query);
+  if (!parsed.success) {
+    throw parsed.error;
+  }
+
+  response.json(await listPublicStudios(toCatalogFilters(parsed.data)));
 });
 
 router.get('/workshops/:id', async (request, response) => {
@@ -57,7 +85,7 @@ router.get('/studios/:id', async (request, response) => {
     Array.isArray(studioId) ||
     !/^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(studioId)
   ) {
-    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy xưởng.');
+    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy studio.');
   }
 
   response.json(await readPublicStudio(studioId));

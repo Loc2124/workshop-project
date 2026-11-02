@@ -6,7 +6,7 @@
 - Web: React + TypeScript + Vite + Tailwind CSS, build thành static site. Nhà cung cấp hosting web chưa chốt.
 - Database: Supabase PostgreSQL.
 
-Web là SPA độc lập, gọi API bằng biến build-time `VITE_API_BASE_URL` (ví dụ `https://workshop-api.onrender.com`). API giới hạn CORS theo origin `WEB_ORIGIN`, cho phép credentials, và từ chối request thay đổi dữ liệu từ origin trình duyệt khác. Request đăng nhập và các request cần phiên gửi cookie bằng `credentials: 'include'`; production dùng cookie `HttpOnly`, `Secure`, `SameSite=None` để hoạt động giữa domain Vercel và Render. Local dùng `SameSite=Lax`.
+Web là SPA độc lập, gọi API bằng biến build-time `VITE_API_BASE_URL` (ví dụ `https://workshop-api.onrender.com`). `VITE_DATA_MODE` mặc định là `api` ở cả development lẫn production; chỉ đặt `VITE_DATA_MODE=demo` trong build muốn chủ đích dùng catalog mô phỏng. Chế độ API không chuyển sang mock khi API lỗi hoặc trả 404. API giới hạn CORS theo origin `WEB_ORIGIN`, cho phép credentials, và từ chối request thay đổi dữ liệu từ origin trình duyệt khác. Request đăng nhập và các request cần phiên gửi cookie bằng `credentials: 'include'`; production dùng cookie `HttpOnly`, `Secure`, `SameSite=None` để hoạt động giữa domain Vercel và Render. Local dùng `SameSite=Lax`.
 
 Trang khám phá có thể xin quyền vị trí trình duyệt để chọn tỉnh/thành mặc định. Tọa độ được gửi trực tiếp tới reverse-geocoding endpoint cấu hình bằng `VITE_REVERSE_GEOCODE_URL`; mặc định là Nominatim/OpenStreetMap. Người dùng có thể đổi tỉnh hoặc từ chối quyền vị trí. Chỉ bật tính năng này trên HTTPS khi deploy.
 
@@ -16,6 +16,9 @@ Trang khám phá có thể xin quyền vị trí trình duyệt để chọn t�
 - Frontend React/Vite trong `apps/web` hiện chỉ có cấu hình nền và cấu trúc thư mục; chưa có màn hình giao diện. Có thể chọn Vercel để host static site sau khi hoàn thiện web.
 - Chưa xác nhận URL công khai, giá trị `WEB_ORIGIN` production hoặc migration trên database dev/demo.
 - `packages/shared` chưa có script build; API chưa cần build package này riêng.
+- `JWT_SECRET` phải là chuỗi base64url ngẫu nhiên dài ít nhất 43 ký tự, có tối thiểu 16 ký tự khác nhau. Sinh bằng `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`; đặt trực tiếp trong secret manager/dashboard, không ghi vào Git hoặc log.
+- Production yêu cầu `WEB_ORIGIN` dùng HTTPS. Nếu thay `JWT_SECRET`, access token hiện hành không còn hợp lệ nhưng phiên có refresh token còn hạn có thể lấy access token mới; để thu hồi mọi phiên, thu hồi các dòng `auth_sessions` của user.
+- Access JWT có thời hạn 15 phút; refresh token ngẫu nhiên có thời hạn 14 ngày, lưu dưới dạng SHA-256 hash trong `auth_sessions` và xoay sau mỗi lần `POST /auth/refresh`. Logout thu hồi phiên hiện tại; đổi role có hiệu lực ngay do middleware đọc role từ database. Khi cần thu hồi mọi phiên, quản trị phải thu hồi các dòng `auth_sessions` của user.
 
 ## 1. API trên Render
 
@@ -33,6 +36,7 @@ Khi `apps/web` đã được tạo, cấu hình static site với root repositor
 - Build: `npm run build --workspace @workshop/web`.
 - Publish directory: thư mục output Vite, thường là `apps/web/dist`.
 - Build environment: `VITE_API_BASE_URL=https://<api-domain>`.
+- Data mode: để `VITE_DATA_MODE` không đặt hoặc đặt `api` cho web thật; chỉ đặt `demo` trong build demo có chủ đích.
 - Reverse geocoding: `VITE_REVERSE_GEOCODE_URL=https://nominatim.openstreetmap.org/reverse` (tọa độ trình duyệt được gửi tới endpoint này khi người dùng cho phép định vị).
 - SPA fallback: mọi đường dẫn frontend cần được rewrite về `/index.html`.
 
@@ -40,20 +44,23 @@ Tên lệnh và output directory cần khớp cấu hình Vite thực tế khi �
 
 ## 3. Biến môi trường API
 
-| Biến               | Giá trị                                                 |
-| ------------------ | ------------------------------------------------------- |
-| `DATABASE_URL`     | Supabase dev/demo; Direct hoặc Session pooler cổng 5432 |
-| `WEB_ORIGIN`       | Origin web production chính xác, dùng cho CORS          |
-| `JWT_SECRET`       | Secret mạnh, lưu trong dashboard                        |
-| `NODE_ENV`         | `production`                                            |
-| `COOKIE_SECURE`    | `true` ở production                                     |
-| `COOKIE_SAME_SITE` | `none` ở production; `lax` cho local                    |
-| `COOKIE_NAME`      | `workshop_session`                                      |
-| `DB_POOL_MAX`      | Mặc định `5`, giảm nếu giới hạn kết nối database thấp   |
-| `TRUST_PROXY_HOPS` | `1` khi API chạy sau load balancer Render               |
-| `PAYMENT_PROVIDER` | `mock` cho giai đoạn demo hiện tại                      |
-| `RANKER_URL`       | URL dịch vụ ranker; hiện chưa triển khai                |
-| `PORT`             | Render cấp tự động                                      |
+| Biến                       | Giá trị                                                      |
+| -------------------------- | ------------------------------------------------------------ |
+| `DATABASE_URL`             | Supabase dev/demo; Direct hoặc Session pooler cổng 5432      |
+| `WEB_ORIGIN`               | Origin web production chính xác, dùng cho CORS               |
+| `JWT_SECRET`               | Secret base64url ngẫu nhiên >= 43 ký tự, lưu trong dashboard |
+| `JWT_EXPIRES_IN`           | Thời hạn access JWT; mặc định `15m`                          |
+| `REFRESH_TOKEN_EXPIRES_IN` | Thời hạn refresh token; mặc định `14d`                       |
+| `NODE_ENV`                 | `production`                                                 |
+| `COOKIE_SECURE`            | `true` ở production                                          |
+| `COOKIE_SAME_SITE`         | `none` ở production; `lax` cho local                         |
+| `COOKIE_NAME`              | `workshop_session`                                           |
+| `REFRESH_COOKIE_NAME`      | `workshop_refresh`                                           |
+| `DB_POOL_MAX`              | Mặc định `5`, giảm nếu giới hạn kết nối database thấp        |
+| `TRUST_PROXY_HOPS`         | `1` khi API chạy sau load balancer Render                    |
+| `PAYMENT_PROVIDER`         | `mock` cho giai đoạn demo hiện tại                           |
+| `RANKER_URL`               | URL dịch vụ ranker; hiện chưa triển khai                     |
+| `PORT`                     | Render cấp tự động                                           |
 
 Không chép URL có mật khẩu hoặc secret vào tài liệu, log, ticket hay Git.
 

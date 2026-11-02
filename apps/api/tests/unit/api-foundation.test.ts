@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errors.js';
 import { validateBody } from '../../src/middleware/validate-body.js';
+import { validateUuidParam } from '../../src/middleware/validate-uuid-param.js';
 
 describe('API infrastructure', () => {
   it('validates request bodies and returns the shared error format', async () => {
@@ -40,8 +41,8 @@ describe('API infrastructure', () => {
 
   it('does not expose unexpected internal errors', async () => {
     const app = express();
-    app.get('/failure', async () => {
-      throw new Error('secret database detail');
+    app.get('/failure', (_request, _response, next) => {
+      next(new Error('secret database detail'));
     });
     app.use(errorHandler);
 
@@ -49,6 +50,54 @@ describe('API infrastructure', () => {
 
     expect(response.status).toBe(500);
     expect(response.body.error.message).not.toContain('secret database detail');
+  });
+
+  it('validates UUID path parameters before reaching the handler', async () => {
+    const app = express();
+    let handlerCalled = false;
+    app.get(
+      '/studios/:studioId/sessions/:id',
+      validateUuidParam('studioId'),
+      validateUuidParam('id'),
+      (_request, response) => {
+        handlerCalled = true;
+        response.json({ ok: true });
+      },
+    );
+    app.use(errorHandler);
+
+    const response = await request(app).get(
+      '/studios/not-a-uuid/sessions/not-a-uuid',
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('BAD_REQUEST');
+    expect(handlerCalled).toBe(false);
+  });
+
+  it('maps expected PostgreSQL constraint errors without exposing database details', async () => {
+    const app = express();
+    app.get('/conflict', () => {
+      throw Object.assign(new Error('private constraint detail'), {
+        code: '23505',
+      });
+    });
+    app.get('/invalid-data', () => {
+      throw Object.assign(new Error('private check constraint detail'), {
+        code: '23514',
+      });
+    });
+    app.use(errorHandler);
+
+    const conflict = await request(app).get('/conflict');
+    const invalidData = await request(app).get('/invalid-data');
+
+    expect(conflict.status).toBe(409);
+    expect(conflict.body.error.code).toBe('CONFLICT');
+    expect(conflict.text).not.toContain('private constraint detail');
+    expect(invalidData.status).toBe(422);
+    expect(invalidData.body.error.code).toBe('UNPROCESSABLE_ENTITY');
+    expect(invalidData.text).not.toContain('private check constraint detail');
   });
 });
 

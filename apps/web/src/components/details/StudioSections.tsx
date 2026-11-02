@@ -14,7 +14,7 @@ export function StudioArtists({ workshops }: { workshops: Workshop[] }) {
   return (
     <DetailSection
       id="studio-artists-heading"
-      title="Gặp những đôi tay ở xưởng"
+      title="Gặp những đôi tay ở studio"
     >
       <div
         className={`grid items-stretch gap-4 ${artisans.length > 1 ? 'md:grid-cols-2' : ''}`}
@@ -74,14 +74,14 @@ export function StudioExtras({
   return (
     <>
       {gallery.length > 0 && (
-        <DetailSection id="studio-gallery-heading" title="Ảnh xưởng">
+        <DetailSection id="studio-gallery-heading" title="Ảnh studio">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             {gallery.map((photo, index) => (
               <MediaImage
                 key={`${photo.url}-${index}`}
                 src={photo.url}
                 alt={photo.alt || `${studio.name} · ảnh ${index + 1}`}
-                placeholder="Ảnh xưởng"
+                placeholder="Ảnh studio"
                 width={600}
                 height={450}
                 className="aspect-4/3 rounded-xl"

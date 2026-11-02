@@ -9,23 +9,38 @@ import {
 } from '../../constants/categories';
 import { normalizeSearchText } from '../../lib/search';
 import type { Workshop } from '../../types/workshop';
+import type { Category } from '../../constants/categories';
 
 export function CategoryShortcuts({
   selected,
   workshops,
   onSelect,
   variant = 'filter',
+  categoryOptions,
 }: {
   selected?: string;
   workshops: Workshop[];
   onSelect?: (categoryId?: string) => void;
   variant?: 'filter' | 'home';
+  categoryOptions?: Category[];
 }) {
   const home = variant === 'home';
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const available = getUpcomingCategories(workshops);
-  const matches = getCategoryOptions(workshops).filter((category) =>
+  const remote = categoryOptions
+    ?.filter(
+      (category) =>
+        category.isVisible !== false &&
+        (category.status === 'active' || category.id === 'other'),
+    )
+    .map((category) => ({ ...category, count: 0 }));
+  const available = [...(remote ?? getUpcomingCategories(workshops))].sort(
+    (a, b) =>
+      Number(a.id === 'other') - Number(b.id === 'other') ||
+      a.sortOrder - b.sortOrder ||
+      a.name.localeCompare(b.name, 'vi'),
+  );
+  const matches = (remote ?? getCategoryOptions(workshops)).filter((category) =>
     normalizeSearchText(
       [category.name, category.description, ...category.keywords].join(' '),
     ).includes(normalizeSearchText(query)),
@@ -87,7 +102,11 @@ export function CategoryShortcuts({
             </Link>
           )}
           {available
-            .filter((category) => category.status === 'active')
+            .filter(
+              (category) =>
+                category.isVisible !== false &&
+                (category.status === 'active' || category.id === 'other'),
+            )
             .map((category) => categoryLink(category))}
         </div>
         <div

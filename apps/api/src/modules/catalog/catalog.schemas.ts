@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+export const provinceListQuerySchema = z
+  .object({ include_empty: z.literal('true').optional() })
+  .strict();
+
 const queryInteger = z
   .string()
   .regex(/^\d+$/)
@@ -30,6 +34,15 @@ const calendarDate = z.string().refine((value) => {
 
 export const catalogQuerySchema = z
   .object({
+    q: z
+      .string()
+      .trim()
+      .max(200)
+      .refine((value) => value.split(/\s+/).filter(Boolean).length <= 20)
+      .optional(),
+    sort: z
+      .enum(['recommended', 'soonest', 'price-asc', 'price-desc'])
+      .optional(),
     date_from: calendarDate.optional(),
     date_to: calendarDate.optional(),
     price_min: queryPrice.optional(),
@@ -39,6 +52,7 @@ export const catalogQuerySchema = z
     category_id: z.string().trim().min(1).max(100).optional(),
     level: z.enum(['beginner', 'intermediate', 'all']).optional(),
     audience: z.string().trim().min(1).max(100).optional(),
+    same_day: z.literal('true').optional(),
     page: queryInteger.optional(),
     page_size: queryInteger.optional(),
   })
@@ -91,6 +105,8 @@ export const catalogQuerySchema = z
 export type CatalogQuery = z.infer<typeof catalogQuerySchema>;
 
 export type CatalogFilters = {
+  query?: string;
+  sort: 'recommended' | 'soonest' | 'price-asc' | 'price-desc';
   dateFrom?: string;
   dateTo?: string;
   priceMin?: number;
@@ -100,12 +116,15 @@ export type CatalogFilters = {
   categoryId?: string;
   level?: 'beginner' | 'intermediate' | 'all';
   audience?: string;
+  takeawaySameDay?: boolean;
   page: number;
   pageSize: number;
 };
 
 export function toCatalogFilters(query: CatalogQuery): CatalogFilters {
   return {
+    query: query.q,
+    sort: query.sort ?? 'recommended',
     dateFrom: query.date_from,
     dateTo: query.date_to,
     priceMin: query.price_min,
@@ -115,6 +134,7 @@ export function toCatalogFilters(query: CatalogQuery): CatalogFilters {
     categoryId: query.category_id,
     level: query.level,
     audience: query.audience,
+    takeawaySameDay: query.same_day === 'true',
     page: query.page ?? 1,
     pageSize: query.page_size ?? 20,
   };

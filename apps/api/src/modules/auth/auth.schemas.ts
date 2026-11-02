@@ -1,14 +1,12 @@
 import { z } from 'zod';
+import { registrationInputSchema } from '@workshop/shared';
 
-export const registerSchema = z.object({
-  fullName: z.string().trim().min(2).max(120),
-  email: z.string().trim().email(),
-  password: z.string().min(8).max(128),
-});
+export const registerSchema = registrationInputSchema;
 
 export const loginSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(8).max(128),
+  rememberMe: z.boolean().optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

@@ -1,4 +1,6 @@
 export type CatalogFilters = {
+  query?: string;
+  sort?: SortOption;
   categoryId?: string;
   provinceId?: string;
   areaIds?: string[];

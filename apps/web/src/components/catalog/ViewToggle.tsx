@@ -14,7 +14,7 @@ export function ViewToggle({ value, onChange }: Props) {
     >
       {(
         [
-          ['studios', 'Xưởng'],
+          ['studios', 'Studio'],
           ['workshops', 'Workshop'],
         ] as const
       ).map(([view, label]) => (

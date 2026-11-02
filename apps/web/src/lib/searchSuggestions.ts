@@ -12,7 +12,7 @@ import {
 
 export type SearchSuggestion = {
   id: string;
-  group: 'Bộ môn' | 'Khác' | 'Xưởng' | 'Workshop';
+  group: 'Bộ môn' | 'Khác' | 'Studio' | 'Workshop';
   label: string;
   detail?: string;
   href: string;
@@ -63,10 +63,10 @@ export function getSearchSuggestions(
     )
     .map((workshop): SearchSuggestion => ({
       id: `studio-${workshop.studioId}`,
-      group: 'Xưởng',
+      group: 'Studio',
       label: workshop.studioName,
       detail: workshop.province,
-      href: `/xuong/${workshop.studioSlug ?? workshop.studioId}`,
+      href: `/studios/${workshop.studioSlug ?? workshop.studioId}`,
     }));
   const matches = rankWorkshops(workshops, query)
     .filter((workshop) => workshopSearchScore(workshop, query) > 0)

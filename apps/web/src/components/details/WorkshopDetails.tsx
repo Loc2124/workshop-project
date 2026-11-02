@@ -25,7 +25,7 @@ export function WorkshopDetails({
   related: Workshop[];
   onBook?: WorkshopBookingHandler;
 }) {
-  const studioHref = `/xuong/${workshop.studioSlug ?? workshop.studioId}`;
+  const studioHref = `/studios/${workshop.studioSlug ?? workshop.studioId}`;
   const description = workshopText(workshop.description);
   const takeaway = workshopText(workshop.takeaway);
   const audience = workshopAudience(workshop.audience);
@@ -40,6 +40,7 @@ export function WorkshopDetails({
   const preparation = duplicatesLevel ? '' : requirements;
   const included = workshop.included?.map(workshopText).filter(Boolean) ?? [];
   const cancellationPolicy = workshopText(workshop.cancellationPolicy);
+  const paymentPolicy = workshopText(workshop.paymentPolicy);
   const rawAddress = workshopText(workshop.address)
     .replace(/^Địa chỉ mô phỏng:\s*/i, '')
     .trim();
@@ -64,13 +65,13 @@ export function WorkshopDetails({
           className="aspect-4/3 rounded-2xl lg:col-start-1 lg:row-start-1"
         />
         <aside
-          aria-label="Đặt chỗ và thông tin xưởng"
+          aria-label="Đặt chỗ và thông tin studio"
           className="min-w-0 space-y-4 self-start lg:sticky lg:top-20 lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
           <WorkshopSchedule workshop={workshop} onBook={onBook} />
           {(workshopText(workshop.studioName) || address) && (
             <section
-              aria-label="Thông tin xưởng"
+              aria-label="Thông tin studio"
               className="rounded-xl bg-soft p-5"
             >
               {workshopText(workshop.studioName) && (
@@ -227,11 +228,8 @@ export function WorkshopDetails({
               </div>
             </DetailSection>
           )}
-          {(included.length > 0 || cancellationPolicy) && (
-            <DetailSection
-              id="policies-heading"
-              title="Bao gồm / Chính sách hủy"
-            >
+          {(included.length > 0 || cancellationPolicy || paymentPolicy) && (
+            <DetailSection id="policies-heading" title="Bao gồm / Chính sách">
               {included.length > 0 && (
                 <div>
                   <h3 className="font-semibold">Bao gồm</h3>
@@ -243,10 +241,22 @@ export function WorkshopDetails({
                 </div>
               )}
               {cancellationPolicy && (
-                <div className={included.length ? 'mt-5' : ''}>
+                <div className={included.length > 0 ? 'mt-5' : ''}>
                   <h3 className="font-semibold">Chính sách hủy</h3>
                   <p className="mt-2 whitespace-pre-line leading-relaxed text-stone-700">
                     {cancellationPolicy}
+                  </p>
+                </div>
+              )}
+              {paymentPolicy && (
+                <div
+                  className={
+                    included.length || cancellationPolicy ? 'mt-5' : ''
+                  }
+                >
+                  <h3 className="font-semibold">Chính sách thanh toán</h3>
+                  <p className="mt-2 whitespace-pre-line leading-relaxed text-stone-700">
+                    {paymentPolicy}
                   </p>
                 </div>
               )}

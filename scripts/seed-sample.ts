@@ -49,7 +49,7 @@ async function main(): Promise<void> {
   await withTransaction(async (client) => {
     const insertedUser = await client.query<{ id: string; role: string }>(
       `INSERT INTO users (email, password_hash, full_name, role)
-       VALUES ('sample-studio@workshop.local', $1, 'Chủ xưởng mô phỏng', 'customer')
+       VALUES ('sample-studio@workshop.local', $1, 'Chủ studio mô phỏng', 'customer')
        ON CONFLICT (email) DO NOTHING
        RETURNING id, role`,
       [passwordHash],
@@ -90,7 +90,7 @@ async function main(): Promise<void> {
         [
           studioId,
           sample.title,
-          'Xưởng mô phỏng dùng cho dữ liệu workshop mẫu.',
+          'Studio mô phỏng dùng cho dữ liệu workshop mẫu.',
           sample.address,
           sample.province,
           sample.categoryId,

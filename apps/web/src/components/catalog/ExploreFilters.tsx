@@ -7,14 +7,14 @@ import {
 import { CategoryShortcuts } from './CategoryShortcuts';
 import { countActiveFilters, MobileFilterSheet } from './MobileFilterSheet';
 import { CatalogFilterFields } from './CatalogFilterFields';
-import { useCategoryCatalog } from '../../hooks/useCategoryCatalog';
+import { useCategoriesQuery } from '../../hooks/useCategories';
 
 export function ExploreFilters(
   props: ComponentProps<typeof MobileFilterSheet> & { children: ReactNode },
 ) {
   const { filters, onChange, onClear, children, ...rest } = props;
   const count = countActiveFilters(filters);
-  const { items: categoryWorkshops } = useCategoryCatalog();
+  const categoryQuery = useCategoriesQuery(true);
   const barRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const bar = barRef.current;
@@ -41,7 +41,8 @@ export function ExploreFilters(
       <div className="flex min-w-0 items-center gap-3">
         <div className="min-w-0 flex-1">
           <CategoryShortcuts
-            workshops={categoryWorkshops}
+            workshops={[]}
+            categoryOptions={categoryQuery.data ?? []}
             selected={filters.categoryId}
             onSelect={(categoryId) =>
               onChange({ ...filters, categoryId, page: 1 })
@@ -59,6 +60,22 @@ export function ExploreFilters(
           </MobileFilterSheet>
         </div>
       </div>
+      {categoryQuery.isPending && (
+        <p role="status" className="py-2 text-xs text-muted">
+          Đang tải loại workshop…
+        </p>
+      )}
+      {categoryQuery.error && (
+        <div role="alert" className="py-2 text-sm text-brick">
+          Chưa tải được loại workshop.{' '}
+          <button
+            className="underline"
+            onClick={() => void categoryQuery.refetch()}
+          >
+            Thử lại
+          </button>
+        </div>
+      )}
       <div className="hidden flex-wrap items-center gap-2 pt-2 md:flex">
         <CatalogFilterFields {...rest} filters={filters} onChange={onChange} />
         {count > 0 && (

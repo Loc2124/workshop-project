@@ -1,10 +1,15 @@
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, Response, RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
+import { loadConfig } from '../config.js';
 import { AppError } from '../errors/app-error.js';
+import { getActiveAuthSession } from '../modules/auth/auth.service.js';
+
+const { JWT_SECRET: jwtSecret, COOKIE_NAME: cookieName } = loadConfig();
 
 export type AuthUser = {
   sub: string;
-  role: 'customer' | 'admin';
+  sid: string;
+  role: 'customer' | 'studio_owner' | 'admin';
 };
 
 declare module 'express-serve-static-core' {
@@ -19,7 +24,6 @@ export function requireAuth(roles: AuthUser['role'][] = []) {
     _response: Response,
     next: NextFunction,
   ): Promise<void> => {
-    const cookieName = process.env.COOKIE_NAME || 'workshop_session';
     const token = request.cookies?.[cookieName];
 
     if (!token) {
@@ -33,23 +37,40 @@ export function requireAuth(roles: AuthUser['role'][] = []) {
       return;
     }
 
-    const jwtSecret =
-      process.env.JWT_SECRET || 'change-me-to-a-long-random-string';
+    let payload: jwt.JwtPayload;
+    try {
+      const verified = jwt.verify(token, jwtSecret, {
+        algorithms: ['HS256'],
+      });
+      if (typeof verified === 'string')
+        throw new Error('Invalid token payload');
+      payload = verified;
+    } catch {
+      next(invalidSession());
+      return;
+    }
+
+    if (
+      typeof payload.sub !== 'string' ||
+      !isUuid(payload.sub) ||
+      typeof payload.sid !== 'string' ||
+      !isUuid(payload.sid) ||
+      (payload.role !== 'customer' &&
+        payload.role !== 'studio_owner' &&
+        payload.role !== 'admin')
+    ) {
+      next(invalidSession());
+      return;
+    }
 
     try {
-      const payload = jwt.verify(token, jwtSecret) as {
-        sub?: string;
-        role?: unknown;
-      };
-
-      if (
-        !payload.sub ||
-        (payload.role !== 'customer' && payload.role !== 'admin')
-      ) {
-        throw new Error('Invalid token payload');
+      const session = await getActiveAuthSession(payload.sid, payload.sub);
+      if (!session) {
+        next(invalidSession());
+        return;
       }
 
-      if (roles.length > 0 && !roles.includes(payload.role)) {
+      if (roles.length > 0 && !roles.includes(session.role)) {
         next(
           new AppError(
             403,
@@ -61,18 +82,46 @@ export function requireAuth(roles: AuthUser['role'][] = []) {
       }
 
       request.user = {
-        sub: payload.sub,
-        role: payload.role,
+        sub: session.userId,
+        sid: session.id,
+        role: session.role,
       };
       next();
-    } catch {
-      next(
-        new AppError(
-          401,
-          'UNAUTHORIZED',
-          'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
-        ),
-      );
+    } catch (error) {
+      next(error);
     }
   };
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
+/** Run after requireAuth so permissions always use the current database role. */
+export function requireRole(role: AuthUser['role']): RequestHandler {
+  return (request, _response, next) => {
+    if (request.user?.role !== role) {
+      next(
+        new AppError(
+          403,
+          'FORBIDDEN',
+          role === 'admin'
+            ? 'Chỉ quản trị viên mới được truy cập khu vực quản trị.'
+            : 'Bạn không có quyền truy cập khu vực này.',
+        ),
+      );
+      return;
+    }
+    next();
+  };
+}
+
+function invalidSession(): AppError {
+  return new AppError(
+    401,
+    'UNAUTHORIZED',
+    'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.',
+  );
 }

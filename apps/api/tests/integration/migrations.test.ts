@@ -26,6 +26,22 @@ afterAll(async () => {
 });
 
 describe('database migrations', () => {
+  it('splits the legacy workshop policy into cancellation and payment fields', async () => {
+    const result = await getPool().query<{ column_name: string }>(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'workshops'
+         AND column_name IN ('policy', 'cancellation_policy', 'payment_policy')
+       ORDER BY column_name`,
+    );
+
+    expect(result.rows.map((row) => row.column_name)).toEqual([
+      'cancellation_policy',
+      'payment_policy',
+    ]);
+  });
+
   it('uses studio tables and customer/admin system roles', async () => {
     const result = await getPool().query<{
       studios: string | null;

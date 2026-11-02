@@ -57,11 +57,7 @@ export function DetailRating({
   if (rating === undefined) return null;
   return (
     <span className="inline-flex items-center gap-1.5 text-sm font-bold tabular-nums text-ink">
-      <Star
-        size={16}
-        aria-hidden="true"
-        className="fill-current text-rating"
-      />
+      <Star size={16} aria-hidden="true" className="fill-current text-rating" />
       {rating.toFixed(1)}
       <span className="font-normal text-stone-700">
         ({count ?? 0} đánh giá)
@@ -111,7 +107,7 @@ export function VisitStudio({
   return (
     <div className="rounded-2xl bg-soft p-5 sm:p-6">
       <MapPin size={22} aria-hidden="true" className="mb-5 text-primary" />
-      <h3 className="font-heading text-xl font-semibold">Hẹn gặp ở xưởng</h3>
+      <h3 className="font-heading text-xl font-semibold">Hẹn gặp ở studio</h3>
       {href ? (
         <Link
           to={href}

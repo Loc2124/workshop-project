@@ -19,7 +19,16 @@ export function StudioSidebar({
 }: {
   studio: Pick<
     Studio,
-    'name' | 'address' | 'province' | 'mapImageUrl' | 'openingHours'
+    | 'name'
+    | 'address'
+    | 'province'
+    | 'mapImageUrl'
+    | 'openingHours'
+    | 'contactPhone'
+    | 'contactEmail'
+    | 'facebookUrl'
+    | 'instagramUrl'
+    | 'googleMapsUrl'
   >;
 }) {
   const rawAddress = studio.address
@@ -33,7 +42,7 @@ export function StudioSidebar({
   const address = studioAddress(studio.address, studio.province);
   return (
     <div className="rounded-2xl bg-soft p-5">
-      <h3 className="font-heading text-xl font-semibold">Hẹn gặp ở xưởng</h3>
+      <h3 className="font-heading text-xl font-semibold">Hẹn gặp ở studio</h3>
       {address && (
         <p
           title={address}
@@ -42,11 +51,43 @@ export function StudioSidebar({
           {address}
         </p>
       )}
+      <div className="mt-3 space-y-2 text-sm">
+        {studio.contactPhone && (
+          <a
+            href={`tel:${studio.contactPhone}`}
+            className="flex min-h-11 items-center font-semibold text-primary"
+          >
+            {studio.contactPhone}
+          </a>
+        )}
+        {studio.contactEmail && (
+          <a
+            href={`mailto:${studio.contactEmail}`}
+            className="flex min-h-11 items-center break-all font-semibold text-primary"
+          >
+            {studio.contactEmail}
+          </a>
+        )}
+        {(['facebookUrl', 'instagramUrl'] as const).map(
+          (field) =>
+            studio[field] && (
+              <a
+                key={field}
+                href={studio[field]!}
+                target="_blank"
+                rel="noreferrer"
+                className="mr-4 inline-flex min-h-11 items-center font-semibold text-primary underline"
+              >
+                {field === 'facebookUrl' ? 'Facebook' : 'Instagram'}
+              </a>
+            ),
+        )}
+      </div>
       {studio.mapImageUrl ? (
         <MediaImage
           src={studio.mapImageUrl}
           alt={`Bản đồ đến ${studio.name}`}
-          placeholder="Bản đồ vị trí xưởng"
+          placeholder="Bản đồ vị trí studio"
           width={480}
           height={280}
           className="mt-4 aspect-12/7 rounded-lg"
@@ -64,7 +105,10 @@ export function StudioSidebar({
         </div>
       )}
       <a
-        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([hasAddress ? studio.name : undefined, address].filter(Boolean).join(', '))}`}
+        href={
+          studio.googleMapsUrl ||
+          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([hasAddress ? studio.name : undefined, address].filter(Boolean).join(', '))}`
+        }
         target="_blank"
         rel="noreferrer"
         className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-primary hover:text-white focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary"

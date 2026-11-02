@@ -1,8 +1,9 @@
 import * as Popover from '@radix-ui/react-popover';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CalendarDays } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
+import { getBusinessToday, parseCalendarDate } from '../../lib/calendar-date';
 import { Button } from './button';
 
 const Calendar = lazy(async () => ({
@@ -17,7 +18,7 @@ export function SingleDatePicker({
   onChange: (value: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const selected = value ? parseISO(value) : undefined;
+  const selected = parseCalendarDate(value);
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
@@ -57,7 +58,7 @@ export function SingleDatePicker({
               defaultMonth={selected}
               locale={vi}
               weekStartsOn={1}
-              disabled={{ before: new Date() }}
+              disabled={{ before: getBusinessToday() }}
               autoFocus
               onSelect={(date) => {
                 onChange(date ? format(date, 'yyyy-MM-dd') : '');

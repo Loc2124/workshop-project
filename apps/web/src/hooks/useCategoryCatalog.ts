@@ -2,12 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { mockWorkshops } from '../data/mockWorkshops';
 import { catalogService } from '../services/catalogService';
 import type { Workshop } from '../types/workshop';
+import { isDemoDataMode } from '../lib/data-mode';
 
 // Unfiltered and unpaginated: choosing a chip must not remove its siblings.
 export function useCategoryCatalog() {
   const query = useQuery({
     queryKey: ['catalog', 'category-source'],
-    enabled: !import.meta.env.DEV,
+    enabled: !isDemoDataMode,
     staleTime: 60_000,
     queryFn: async ({ signal }) => {
       const items: Workshop[] = [];
@@ -28,6 +29,6 @@ export function useCategoryCatalog() {
   });
   return {
     ...query,
-    items: import.meta.env.DEV ? mockWorkshops : (query.data ?? []),
+    items: isDemoDataMode ? mockWorkshops : (query.data ?? []),
   };
 }

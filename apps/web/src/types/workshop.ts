@@ -1,3 +1,5 @@
+import type { CatalogResponseDto, PublicWorkshopDto } from '@workshop/shared';
+
 export type WorkshopSession = {
   id: string;
   startsAt: string;
@@ -13,6 +15,11 @@ export type WorkshopReview = {
   comment: string;
   createdAt?: string;
 };
+
+type WorkshopPolicies = Pick<
+  PublicWorkshopDto,
+  'cancellationPolicy' | 'paymentPolicy'
+>;
 
 export type Workshop = {
   id: string;
@@ -47,11 +54,6 @@ export type Workshop = {
   sessions: WorkshopSession[];
   reviews?: WorkshopReview[];
   included?: string[];
-  cancellationPolicy?: string;
-  paymentPolicy?: string;
-};
+} & Partial<WorkshopPolicies>;
 
-export type CatalogResponse = {
-  items: Workshop[];
-  pagination: { page: number; pageSize: number; total: number };
-};
+export type CatalogResponse = CatalogResponseDto;

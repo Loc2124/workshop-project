@@ -17,6 +17,7 @@ import {
   type SearchSuggestion,
 } from '../../lib/searchSuggestions';
 import { cn } from '../../lib/utils';
+import { searchQuerySchema } from '../../lib/form-validation';
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,7 @@ export function HeaderSearch({
     () => new URLSearchParams(location.search).get('q') ?? '',
   );
   const [active, setActive] = useState(-1);
+  const [searchError, setSearchError] = useState('');
   const [panelWidth, setPanelWidth] = useState(256);
   const catalog = useCategoryCatalog();
   const workshops = catalog.items;
@@ -176,7 +178,15 @@ export function HeaderSearch({
   };
   const choose = (suggestion: SearchSuggestion) => go(suggestion.href);
   const submit = () => {
-    const value = (inputRef.current?.value ?? query).trim();
+    const parsed = searchQuerySchema.safeParse(
+      inputRef.current?.value ?? query,
+    );
+    if (!parsed.success) {
+      setSearchError(parsed.error.issues[0]?.message ?? 'Từ khóa chưa hợp lệ.');
+      return;
+    }
+    setSearchError('');
+    const value = parsed.data;
     go(value ? `/kham-pha?${new URLSearchParams({ q: value })}` : '/kham-pha');
   };
   const keyboard = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -199,6 +209,7 @@ export function HeaderSearch({
   };
   const searchForm = (overlay: boolean) => (
     <form
+      noValidate
       className={cn(
         'flex min-h-11 items-center rounded-lg border border-line bg-surface focus-within:border-primary',
         overlay ? 'mr-14' : 'w-full',
@@ -215,7 +226,7 @@ export function HeaderSearch({
       />
       <input
         ref={inputRef}
-        aria-label="Tìm bộ môn, xưởng, workshop"
+        aria-label="Tìm bộ môn, studio, workshop"
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={open}
@@ -223,11 +234,15 @@ export function HeaderSearch({
         aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
         autoComplete="off"
         type="search"
+        maxLength={200}
+        aria-invalid={Boolean(searchError) || undefined}
+        aria-describedby={searchError ? `${listId}-error` : undefined}
         value={query}
-        placeholder="Tìm bộ môn, xưởng, workshop…"
+        placeholder="Tìm bộ môn, studio, workshop…"
         tabIndex={open ? 0 : -1}
         onChange={(event) => {
           setQuery(event.target.value);
+          setSearchError('');
           setActive(-1);
         }}
         onKeyDown={keyboard}
@@ -256,6 +271,15 @@ export function HeaderSearch({
   );
   const options = (
     <div className="p-3">
+      {searchError && (
+        <p
+          id={`${listId}-error`}
+          role="alert"
+          className="mb-3 text-sm text-brick"
+        >
+          {searchError}
+        </p>
+      )}
       {!query.trim() && (
         <p className="mb-2 text-[13px] font-semibold text-stone-700">
           Bộ môn phổ biến
@@ -268,7 +292,7 @@ export function HeaderSearch({
         className={query.trim() ? 'space-y-2' : 'flex flex-wrap gap-2'}
       >
         {(query.trim()
-          ? (['Bộ môn', 'Khác', 'Xưởng', 'Workshop'] as const)
+          ? (['Bộ môn', 'Khác', 'Studio', 'Workshop'] as const)
           : (['Bộ môn', 'Khác'] as const)
         ).map((group) => {
           const entries = suggestions.filter(
@@ -292,7 +316,7 @@ export function HeaderSearch({
                 const Icon =
                   group === 'Bộ môn' || group === 'Khác'
                     ? getCategoryIcon(suggestion.categoryId)
-                    : group === 'Xưởng'
+                    : group === 'Studio'
                       ? Store
                       : Ticket;
                 return (
@@ -397,7 +421,7 @@ export function HeaderSearch({
           >
             <DialogTitle className="sr-only">Tìm kiếm</DialogTitle>
             <DialogDescription className="sr-only">
-              Tìm bộ môn, xưởng và workshop.
+              Tìm bộ môn, studio và workshop.
             </DialogDescription>
             {searchForm(true)}
             <div className="mt-4 min-h-0 flex-1 overflow-y-auto">{options}</div>

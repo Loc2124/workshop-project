@@ -3,8 +3,8 @@ import { z } from 'zod';
 const sessionFields = {
   startsAt: z.string().datetime({ offset: true }),
   endsAt: z.string().datetime({ offset: true }),
-  price: z.number().int().nonnegative().optional(),
-  capacity: z.number().int().positive(),
+  price: z.number().int().min(0).max(2_147_483_647).optional(),
+  capacity: z.number().int().positive().max(2_147_483_647),
 };
 
 export const createSessionSchema = z
