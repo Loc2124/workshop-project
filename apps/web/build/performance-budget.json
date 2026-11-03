@@ -1,0 +1,4 @@
+{
+  "entryGzipBytes": 130548,
+  "baseline": "2026-11-03: existing production build after self-hosting fonts; Node gzip level 9"
+}

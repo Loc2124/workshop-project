@@ -24,7 +24,7 @@ export function DetailHero({
         alt={alt}
         placeholder={alt}
         loading="eager"
-        fetchPriority="high"
+        priority
         width={900}
         height={720}
         imageClassName="object-[65%_60%] motion-safe:transition-transform motion-safe:duration-700 motion-safe:hover:scale-[1.025]"
@@ -78,7 +78,7 @@ export function DetailSection({
   className?: string;
 }) {
   return (
-    <section aria-labelledby={id} className={className}>
+    <section aria-labelledby={id} className={cn('defer-render', className)}>
       <h2
         id={id}
         className="mb-5 font-heading text-2xl font-semibold leading-tight tracking-tight sm:text-3xl"

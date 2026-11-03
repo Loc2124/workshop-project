@@ -89,6 +89,8 @@ export const memberStudioSchema = z
             id: z.string().uuid(),
             key: z.string(),
             url: z.string().url(),
+            thumbnailUrl: z.string().url().optional(),
+            mediumUrl: z.string().url().optional(),
           })
           .strict(),
       )
@@ -189,6 +191,8 @@ export const adminStudioSchema = z
             id: z.string().uuid(),
             key: z.string(),
             url: z.string().url(),
+            thumbnailUrl: z.string().url().optional(),
+            mediumUrl: z.string().url().optional(),
           })
           .strict(),
       )

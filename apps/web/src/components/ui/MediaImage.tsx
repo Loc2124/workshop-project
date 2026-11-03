@@ -1,10 +1,8 @@
-import { useState, type ImgHTMLAttributes } from 'react';
+import { Img, type ImgProps } from './Img';
+import { useState } from 'react';
 import { cn } from '../../lib/utils';
 
-type Props = Omit<
-  ImgHTMLAttributes<HTMLImageElement>,
-  'src' | 'alt' | 'className'
-> & {
+type Props = Omit<ImgProps, 'src' | 'alt' | 'className'> & {
   src?: string | null;
   alt: string;
   placeholder: string;
@@ -21,6 +19,7 @@ export function MediaImage({
   imageClassName,
   showPlaceholderText = true,
   loading = 'lazy',
+  priority = false,
   ...props
 }: Props) {
   const [loadedUrl, setLoadedUrl] = useState<string>();
@@ -43,8 +42,9 @@ export function MediaImage({
         </span>
       )}
       {src && failedUrl !== src && (
-        <img
+        <Img
           {...props}
+          priority={priority}
           src={src}
           alt={alt}
           loading={loading}
@@ -53,7 +53,7 @@ export function MediaImage({
           onError={() => setFailedUrl(src)}
           className={cn(
             'absolute inset-0 size-full object-cover',
-            !loaded && 'opacity-0',
+            !loaded && !priority && 'opacity-0',
             imageClassName,
           )}
         />

@@ -1,3 +1,4 @@
+import { Img } from '../ui/Img';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Check, ChevronsUpDown, Plus, Store } from 'lucide-react';
 import type { MemberStudio } from '../../types/management';
@@ -32,8 +33,10 @@ function Cover({ studio }: { studio: MemberStudio }) {
     studio.images?.find((image) => image.id === studio.photoIds?.[0]) ??
     studio.images?.[0];
   return image ? (
-    <img
+    <Img
+      variant="thumbnail"
       src={image.url}
+      thumbnailUrl={image.thumbnailUrl}
       alt=""
       className="size-8 shrink-0 rounded-sm object-cover"
     />

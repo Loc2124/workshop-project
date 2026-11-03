@@ -651,7 +651,7 @@ describe('studio workshop and session endpoints', () => {
 
     const pending = await request(app)
       .get('/admin/workshops')
-      .query({ page_size: 100 })
+      .query({ pageSize: 100 })
       .set('Cookie', admin.cookie);
     expect(pending.status).toBe(200);
     expect(pending.body.items).toEqual(
@@ -700,7 +700,7 @@ describe('studio workshop and session endpoints', () => {
 
     const pendingAgain = await request(app)
       .get('/admin/workshops')
-      .query({ page_size: 100 })
+      .query({ pageSize: 100 })
       .set('Cookie', admin.cookie);
     const listedAgain = pendingAgain.body.items.find(
       (workshop: { id: string }) => workshop.id === created.body.workshop.id,

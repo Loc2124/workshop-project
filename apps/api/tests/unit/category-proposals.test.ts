@@ -1,3 +1,7 @@
+vi.mock('../../src/modules/settings/settings.repository.js', async () => {
+  const { defaultSiteSettings } = await import('@workshop/shared');
+  return { getSiteSettings: async () => defaultSiteSettings };
+});
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   createWorkshopSchema,
@@ -215,7 +219,7 @@ describe('studio category proposal decisions', () => {
     ).toBe(false);
     expect(client.query.mock.calls[4][1]).toEqual(['studio', 'embroidery']);
     expect(client.query.mock.calls[5][0]).toContain(
-      'DELETE FROM studio_categories',
+      'UPDATE studio_categories SET deleted_at',
     );
     expect(client.query.mock.calls[6][1]).toEqual([
       'approved',

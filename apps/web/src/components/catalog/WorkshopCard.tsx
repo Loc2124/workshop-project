@@ -1,6 +1,21 @@
+import { memo } from 'react';
 import type { Workshop } from '../../types/workshop';
 import { TicketCard, toTicketProps } from '../tickets';
 
-export function WorkshopCard({ workshop, variant = 'default' }: { workshop: Workshop; variant?: 'default' | 'featured' }) {
-  return <TicketCard {...toTicketProps(workshop)} variant={variant} />;
-}
+export const WorkshopCard = memo(function WorkshopCard({
+  workshop,
+  variant = 'default',
+  priority = false,
+}: {
+  workshop: Workshop;
+  priority?: boolean;
+  variant?: 'default' | 'featured';
+}) {
+  return (
+    <TicketCard
+      {...toTicketProps(workshop)}
+      variant={variant}
+      priority={priority}
+    />
+  );
+});

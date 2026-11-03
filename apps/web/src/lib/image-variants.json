@@ -1,0 +1,722 @@
+{
+  "/images/workshops/artPhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/artPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 58390
+    },
+    "medium": {
+      "src": "/images/workshops/artPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 54204
+    },
+    "thumbnail": {
+      "src": "/images/workshops/artPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 20100
+    }
+  },
+  "/images/workshops/artPhoto.webp": {
+    "original": {
+      "src": "/images/workshops/artPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 58390
+    },
+    "medium": {
+      "src": "/images/workshops/artPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 54204
+    },
+    "thumbnail": {
+      "src": "/images/workshops/artPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 20100
+    }
+  },
+  "/images/workshops/artPhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/artPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 58390
+    },
+    "medium": {
+      "src": "/images/workshops/artPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 54204
+    },
+    "thumbnail": {
+      "src": "/images/workshops/artPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 20100
+    }
+  },
+  "/images/workshops/artPhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/artPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 58390
+    },
+    "medium": {
+      "src": "/images/workshops/artPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 54204
+    },
+    "thumbnail": {
+      "src": "/images/workshops/artPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 20100
+    }
+  },
+  "/images/workshops/candlePhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/candlePhoto.webp",
+      "width": 900,
+      "height": 1350,
+      "bytes": 54836
+    },
+    "medium": {
+      "src": "/images/workshops/candlePhoto.medium.webp",
+      "width": 640,
+      "height": 960,
+      "bytes": 29590
+    },
+    "thumbnail": {
+      "src": "/images/workshops/candlePhoto.thumb.webp",
+      "width": 320,
+      "height": 480,
+      "bytes": 11150
+    }
+  },
+  "/images/workshops/candlePhoto.webp": {
+    "original": {
+      "src": "/images/workshops/candlePhoto.webp",
+      "width": 900,
+      "height": 1350,
+      "bytes": 54836
+    },
+    "medium": {
+      "src": "/images/workshops/candlePhoto.medium.webp",
+      "width": 640,
+      "height": 960,
+      "bytes": 29590
+    },
+    "thumbnail": {
+      "src": "/images/workshops/candlePhoto.thumb.webp",
+      "width": 320,
+      "height": 480,
+      "bytes": 11150
+    }
+  },
+  "/images/workshops/candlePhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/candlePhoto.webp",
+      "width": 900,
+      "height": 1350,
+      "bytes": 54836
+    },
+    "medium": {
+      "src": "/images/workshops/candlePhoto.medium.webp",
+      "width": 640,
+      "height": 960,
+      "bytes": 29590
+    },
+    "thumbnail": {
+      "src": "/images/workshops/candlePhoto.thumb.webp",
+      "width": 320,
+      "height": 480,
+      "bytes": 11150
+    }
+  },
+  "/images/workshops/candlePhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/candlePhoto.webp",
+      "width": 900,
+      "height": 1350,
+      "bytes": 54836
+    },
+    "medium": {
+      "src": "/images/workshops/candlePhoto.medium.webp",
+      "width": 640,
+      "height": 960,
+      "bytes": 29590
+    },
+    "thumbnail": {
+      "src": "/images/workshops/candlePhoto.thumb.webp",
+      "width": 320,
+      "height": 480,
+      "bytes": 11150
+    }
+  },
+  "/images/workshops/craftPhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/craftPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 12672
+    },
+    "medium": {
+      "src": "/images/workshops/craftPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 11114
+    },
+    "thumbnail": {
+      "src": "/images/workshops/craftPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 3286
+    }
+  },
+  "/images/workshops/craftPhoto.webp": {
+    "original": {
+      "src": "/images/workshops/craftPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 12672
+    },
+    "medium": {
+      "src": "/images/workshops/craftPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 11114
+    },
+    "thumbnail": {
+      "src": "/images/workshops/craftPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 3286
+    }
+  },
+  "/images/workshops/craftPhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/craftPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 12672
+    },
+    "medium": {
+      "src": "/images/workshops/craftPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 11114
+    },
+    "thumbnail": {
+      "src": "/images/workshops/craftPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 3286
+    }
+  },
+  "/images/workshops/craftPhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/craftPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 12672
+    },
+    "medium": {
+      "src": "/images/workshops/craftPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 11114
+    },
+    "thumbnail": {
+      "src": "/images/workshops/craftPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 3286
+    }
+  },
+  "/images/workshops/flowerPhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/flowerPhoto.webp",
+      "width": 900,
+      "height": 1125,
+      "bytes": 22836
+    },
+    "medium": {
+      "src": "/images/workshops/flowerPhoto.medium.webp",
+      "width": 768,
+      "height": 960,
+      "bytes": 12076
+    },
+    "thumbnail": {
+      "src": "/images/workshops/flowerPhoto.thumb.webp",
+      "width": 384,
+      "height": 480,
+      "bytes": 3684
+    }
+  },
+  "/images/workshops/flowerPhoto.webp": {
+    "original": {
+      "src": "/images/workshops/flowerPhoto.webp",
+      "width": 900,
+      "height": 1125,
+      "bytes": 22836
+    },
+    "medium": {
+      "src": "/images/workshops/flowerPhoto.medium.webp",
+      "width": 768,
+      "height": 960,
+      "bytes": 12076
+    },
+    "thumbnail": {
+      "src": "/images/workshops/flowerPhoto.thumb.webp",
+      "width": 384,
+      "height": 480,
+      "bytes": 3684
+    }
+  },
+  "/images/workshops/flowerPhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/flowerPhoto.webp",
+      "width": 900,
+      "height": 1125,
+      "bytes": 22836
+    },
+    "medium": {
+      "src": "/images/workshops/flowerPhoto.medium.webp",
+      "width": 768,
+      "height": 960,
+      "bytes": 12076
+    },
+    "thumbnail": {
+      "src": "/images/workshops/flowerPhoto.thumb.webp",
+      "width": 384,
+      "height": 480,
+      "bytes": 3684
+    }
+  },
+  "/images/workshops/flowerPhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/flowerPhoto.webp",
+      "width": 900,
+      "height": 1125,
+      "bytes": 22836
+    },
+    "medium": {
+      "src": "/images/workshops/flowerPhoto.medium.webp",
+      "width": 768,
+      "height": 960,
+      "bytes": 12076
+    },
+    "thumbnail": {
+      "src": "/images/workshops/flowerPhoto.thumb.webp",
+      "width": 384,
+      "height": 480,
+      "bytes": 3684
+    }
+  },
+  "/images/workshops/jewelryPhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/jewelryPhoto.webp",
+      "width": 900,
+      "height": 1348,
+      "bytes": 42484
+    },
+    "medium": {
+      "src": "/images/workshops/jewelryPhoto.medium.webp",
+      "width": 641,
+      "height": 960,
+      "bytes": 23904
+    },
+    "thumbnail": {
+      "src": "/images/workshops/jewelryPhoto.thumb.webp",
+      "width": 320,
+      "height": 480,
+      "bytes": 9248
+    }
+  },
+  "/images/workshops/jewelryPhoto.webp": {
+    "original": {
+      "src": "/images/workshops/jewelryPhoto.webp",
+      "width": 900,
+      "height": 1348,
+      "bytes": 42484
+    },
+    "medium": {
+      "src": "/images/workshops/jewelryPhoto.medium.webp",
+      "width": 641,
+      "height": 960,
+      "bytes": 23904
+    },
+    "thumbnail": {
+      "src": "/images/workshops/jewelryPhoto.thumb.webp",
+      "width": 320,
+      "height": 480,
+      "bytes": 9248
+    }
+  },
+  "/images/workshops/jewelryPhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/jewelryPhoto.webp",
+      "width": 900,
+      "height": 1348,
+      "bytes": 42484
+    },
+    "medium": {
+      "src": "/images/workshops/jewelryPhoto.medium.webp",
+      "width": 641,
+      "height": 960,
+      "bytes": 23904
+    },
+    "thumbnail": {
+      "src": "/images/workshops/jewelryPhoto.thumb.webp",
+      "width": 320,
+      "height": 480,
+      "bytes": 9248
+    }
+  },
+  "/images/workshops/jewelryPhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/jewelryPhoto.webp",
+      "width": 900,
+      "height": 1348,
+      "bytes": 42484
+    },
+    "medium": {
+      "src": "/images/workshops/jewelryPhoto.medium.webp",
+      "width": 641,
+      "height": 960,
+      "bytes": 23904
+    },
+    "thumbnail": {
+      "src": "/images/workshops/jewelryPhoto.thumb.webp",
+      "width": 320,
+      "height": 480,
+      "bytes": 9248
+    }
+  },
+  "/images/workshops/perfumePhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/perfumePhoto.webp",
+      "width": 900,
+      "height": 1293,
+      "bytes": 32634
+    },
+    "medium": {
+      "src": "/images/workshops/perfumePhoto.medium.webp",
+      "width": 668,
+      "height": 960,
+      "bytes": 18106
+    },
+    "thumbnail": {
+      "src": "/images/workshops/perfumePhoto.thumb.webp",
+      "width": 334,
+      "height": 480,
+      "bytes": 6458
+    }
+  },
+  "/images/workshops/perfumePhoto.webp": {
+    "original": {
+      "src": "/images/workshops/perfumePhoto.webp",
+      "width": 900,
+      "height": 1293,
+      "bytes": 32634
+    },
+    "medium": {
+      "src": "/images/workshops/perfumePhoto.medium.webp",
+      "width": 668,
+      "height": 960,
+      "bytes": 18106
+    },
+    "thumbnail": {
+      "src": "/images/workshops/perfumePhoto.thumb.webp",
+      "width": 334,
+      "height": 480,
+      "bytes": 6458
+    }
+  },
+  "/images/workshops/perfumePhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/perfumePhoto.webp",
+      "width": 900,
+      "height": 1293,
+      "bytes": 32634
+    },
+    "medium": {
+      "src": "/images/workshops/perfumePhoto.medium.webp",
+      "width": 668,
+      "height": 960,
+      "bytes": 18106
+    },
+    "thumbnail": {
+      "src": "/images/workshops/perfumePhoto.thumb.webp",
+      "width": 334,
+      "height": 480,
+      "bytes": 6458
+    }
+  },
+  "/images/workshops/perfumePhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/perfumePhoto.webp",
+      "width": 900,
+      "height": 1293,
+      "bytes": 32634
+    },
+    "medium": {
+      "src": "/images/workshops/perfumePhoto.medium.webp",
+      "width": 668,
+      "height": 960,
+      "bytes": 18106
+    },
+    "thumbnail": {
+      "src": "/images/workshops/perfumePhoto.thumb.webp",
+      "width": 334,
+      "height": 480,
+      "bytes": 6458
+    }
+  },
+  "/images/workshops/soapPhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/soapPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 87982
+    },
+    "medium": {
+      "src": "/images/workshops/soapPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 81964
+    },
+    "thumbnail": {
+      "src": "/images/workshops/soapPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 28988
+    }
+  },
+  "/images/workshops/soapPhoto.webp": {
+    "original": {
+      "src": "/images/workshops/soapPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 87982
+    },
+    "medium": {
+      "src": "/images/workshops/soapPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 81964
+    },
+    "thumbnail": {
+      "src": "/images/workshops/soapPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 28988
+    }
+  },
+  "/images/workshops/soapPhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/soapPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 87982
+    },
+    "medium": {
+      "src": "/images/workshops/soapPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 81964
+    },
+    "thumbnail": {
+      "src": "/images/workshops/soapPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 28988
+    }
+  },
+  "/images/workshops/soapPhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/soapPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 87982
+    },
+    "medium": {
+      "src": "/images/workshops/soapPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 81964
+    },
+    "thumbnail": {
+      "src": "/images/workshops/soapPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 28988
+    }
+  },
+  "/images/workshops/stampPhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/stampPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 37654
+    },
+    "medium": {
+      "src": "/images/workshops/stampPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 33458
+    },
+    "thumbnail": {
+      "src": "/images/workshops/stampPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 14554
+    }
+  },
+  "/images/workshops/stampPhoto.webp": {
+    "original": {
+      "src": "/images/workshops/stampPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 37654
+    },
+    "medium": {
+      "src": "/images/workshops/stampPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 33458
+    },
+    "thumbnail": {
+      "src": "/images/workshops/stampPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 14554
+    }
+  },
+  "/images/workshops/stampPhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/stampPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 37654
+    },
+    "medium": {
+      "src": "/images/workshops/stampPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 33458
+    },
+    "thumbnail": {
+      "src": "/images/workshops/stampPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 14554
+    }
+  },
+  "/images/workshops/stampPhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/stampPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 37654
+    },
+    "medium": {
+      "src": "/images/workshops/stampPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 33458
+    },
+    "thumbnail": {
+      "src": "/images/workshops/stampPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 14554
+    }
+  },
+  "/images/workshops/terrazzoPhoto.jpg": {
+    "original": {
+      "src": "/images/workshops/terrazzoPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 63644
+    },
+    "medium": {
+      "src": "/images/workshops/terrazzoPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 59312
+    },
+    "thumbnail": {
+      "src": "/images/workshops/terrazzoPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 21488
+    }
+  },
+  "/images/workshops/terrazzoPhoto.webp": {
+    "original": {
+      "src": "/images/workshops/terrazzoPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 63644
+    },
+    "medium": {
+      "src": "/images/workshops/terrazzoPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 59312
+    },
+    "thumbnail": {
+      "src": "/images/workshops/terrazzoPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 21488
+    }
+  },
+  "/images/workshops/terrazzoPhoto.medium.webp": {
+    "original": {
+      "src": "/images/workshops/terrazzoPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 63644
+    },
+    "medium": {
+      "src": "/images/workshops/terrazzoPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 59312
+    },
+    "thumbnail": {
+      "src": "/images/workshops/terrazzoPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 21488
+    }
+  },
+  "/images/workshops/terrazzoPhoto.thumb.webp": {
+    "original": {
+      "src": "/images/workshops/terrazzoPhoto.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 63644
+    },
+    "medium": {
+      "src": "/images/workshops/terrazzoPhoto.medium.webp",
+      "width": 900,
+      "height": 600,
+      "bytes": 59312
+    },
+    "thumbnail": {
+      "src": "/images/workshops/terrazzoPhoto.thumb.webp",
+      "width": 480,
+      "height": 320,
+      "bytes": 21488
+    }
+  }
+}

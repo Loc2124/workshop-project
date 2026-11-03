@@ -47,6 +47,8 @@ export type Workshop = {
   rating?: number;
   reviewCount?: number;
   imageUrl?: string;
+  thumbnailUrl?: string;
+  mediumUrl?: string;
   artistName?: string;
   artistPhoto?: string;
   artistIntro?: string;

@@ -5,10 +5,8 @@ import { workshopLevel } from '../../lib/workshopDetails';
 import { WorkshopCard } from '../catalog/WorkshopCard';
 import { MediaImage } from '../ui/MediaImage';
 import { DetailSection } from './DetailPrimitives';
-import {
-  WorkshopSchedule,
-  type WorkshopBookingHandler,
-} from './WorkshopSchedule';
+import type { WorkshopBookingHandler } from './WorkshopSchedule';
+import { DeferredSchedule } from './DeferredSchedule';
 import {
   workshopAudience,
   workshopText,
@@ -56,10 +54,12 @@ export function WorkshopDetails({
       <div className="grid items-start gap-8 pb-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:gap-10">
         <MediaImage
           src={workshop.imageUrl}
+          mediumUrl={workshop.mediumUrl}
+          thumbnailUrl={workshop.thumbnailUrl}
           alt={`${workshop.title} tại ${workshop.studioName}`}
           placeholder={workshop.title}
           loading="eager"
-          fetchPriority="high"
+          priority
           width={1000}
           height={750}
           className="aspect-4/3 rounded-2xl lg:col-start-1 lg:row-start-1"
@@ -68,7 +68,7 @@ export function WorkshopDetails({
           aria-label="Đặt chỗ và thông tin studio"
           className="min-w-0 space-y-4 self-start lg:sticky lg:top-20 lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
-          <WorkshopSchedule workshop={workshop} onBook={onBook} />
+          <DeferredSchedule workshop={workshop} onBook={onBook} />
           {(workshopText(workshop.studioName) || address) && (
             <section
               aria-label="Thông tin studio"

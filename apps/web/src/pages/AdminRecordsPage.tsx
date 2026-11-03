@@ -1,3 +1,5 @@
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../components/admin/DataTable';
@@ -22,6 +24,7 @@ const labels: Record<string, string> = {
   dismissed: 'Bỏ qua',
 };
 export function AdminRecordsPage({ kind }: { kind: AdminRecordKind }) {
+  const userId = useAuth().user?.id;
   const title =
     kind === 'users'
       ? 'Người dùng'
@@ -133,7 +136,7 @@ export function AdminRecordsPage({ kind }: { kind: AdminRecordKind }) {
         key={kind}
         columns={columns}
         fetcher={adminRecordsFetchers[kind]}
-        queryKey={['management', `admin-${kind}`, 'table']}
+        queryKey={queryKeys[kind].lists(userId)}
         tabs={statuses.map((value) => ({
           value,
           label:

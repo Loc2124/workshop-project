@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { Img } from '../ui/Img';
+import { queryKeys } from '../../lib/query-keys';
+import { useEffect, useRef, useState } from 'react';
 import { defaultSiteSettings } from '@workshop/shared';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { Plus, Trash2, Star } from 'lucide-react';
@@ -46,8 +48,16 @@ export function StudioEvidenceFields({
   const [progress, setProgress] = useState(0);
   const [uploadLabel, setUploadLabel] = useState('');
   const [preview, setPreview] = useState('');
+  const previewUrls = useRef(new Set<string>());
+  useEffect(
+    () => () => {
+      previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
+      previewUrls.current.clear();
+    },
+    [],
+  );
   const images = useQuery({
-    queryKey: ['studio-images', studioId],
+    queryKey: queryKeys.studios.images(user?.id, studioId),
     queryFn: ({ signal }) => imageService.list(studioId!, signal),
     enabled: !!(user && studioId),
   });
@@ -65,6 +75,7 @@ export function StudioEvidenceFields({
       const next = [...values.photoIds];
       for (const [index, file] of files.entries()) {
         const localUrl = URL.createObjectURL(file);
+        previewUrls.current.add(localUrl);
         setPreview(localUrl);
         setProgress(0);
         setUploadLabel(`Ảnh ${index + 1}/${files.length}`);
@@ -72,17 +83,20 @@ export function StudioEvidenceFields({
         try {
           image = await imageService.upload(id, file, setProgress);
         } finally {
-          URL.revokeObjectURL(localUrl);
+          if (previewUrls.current.delete(localUrl))
+            URL.revokeObjectURL(localUrl);
           setPreview('');
         }
         client.setQueryData<UploadedImage[]>(
-          ['studio-images', id],
+          queryKeys.studios.images(user?.id, id),
           (current) => [...(current ?? []), image],
         );
         next.push(image.id);
         onChange('photoIds', [...next]);
       }
-      await client.invalidateQueries({ queryKey: ['studio-images', id] });
+      await client.invalidateQueries({
+        queryKey: queryKeys.studios.images(user?.id, id),
+      });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Chưa tải được ảnh.');
     } finally {
@@ -203,8 +217,10 @@ export function StudioEvidenceFields({
                 className="relative aspect-square min-w-0 overflow-hidden rounded-lg bg-soft"
               >
                 {image ? (
-                  <img
+                  <Img
+                    variant="thumbnail"
                     src={image.url}
+                    thumbnailUrl={image.thumbnailUrl}
                     alt={`Ảnh studio ${index + 1}${index === 0 ? ', ảnh bìa' : ''}`}
                     className="size-full object-cover"
                     loading="lazy"
@@ -248,7 +264,8 @@ export function StudioEvidenceFields({
           })}
           {preview && (
             <figure className="relative aspect-square overflow-hidden rounded-lg">
-              <img
+              <Img
+                variant="thumbnail"
                 src={preview}
                 alt="Ảnh đang tải lên"
                 className="size-full object-cover"

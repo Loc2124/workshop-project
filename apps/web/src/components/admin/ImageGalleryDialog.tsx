@@ -1,3 +1,4 @@
+import { Img } from '../ui/Img';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Dialog,
@@ -49,7 +50,8 @@ export function ImageGalleryDialog({
           Dùng phím mũi tên trái/phải hoặc nút điều hướng để xem ảnh tiếp theo.
         </DialogDescription>
         {images[current] && (
-          <img
+          <Img
+            variant="original"
             src={images[current].url}
             alt={`Ảnh ${current + 1} của ${title}`}
             className="max-h-[70dvh] w-full object-contain"

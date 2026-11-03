@@ -124,7 +124,7 @@ describe('studio and admin module', () => {
         ...profileFields,
         categoryIds: ['ceramics', 'other'],
         proposedCategoryName: proposal,
-        name: 'Workshop Cắm Hoa',
+        name: 'Workshop Cắm Hoa' + ' ' + randomUUID(),
         description: 'Workshop cắm hoa cho gia đình.',
         provinceId: 'ho-chi-minh',
         address: '456 Đường Cây Cỏ',
@@ -150,6 +150,7 @@ describe('studio and admin module', () => {
 
     const list = await request(app)
       .get('/admin/studios')
+      .query({ q: studioProfile.body.studio.name })
       .set('Cookie', adminLogin.headers['set-cookie'][0]);
     expect(list.status).toBe(200);
     expect(

@@ -1,6 +1,8 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { Img } from '../ui/Img';
+import { prefetchDashboardRoute } from '../../lib/dashboard-routes';
+import { DashboardSkeleton } from './DashboardSkeleton';
+import { Fragment, Suspense, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowUpRight,
   ChevronDown,
@@ -123,6 +125,8 @@ function DashboardSidebar({
                     >
                       <Link
                         to={to}
+                        onMouseEnter={() => prefetchDashboardRoute(to)}
+                        onFocus={() => prefetchDashboardRoute(to)}
                         aria-label={label}
                         aria-current={
                           selected?.label === label ? 'page' : undefined
@@ -163,7 +167,7 @@ function DashboardBrand({
         {state === 'expanded' ? (
           <Logo className="w-32 sm:w-32" />
         ) : (
-          <img
+          <Img
             src="/brand/open-slot-symbol.svg"
             width={28}
             height={28}
@@ -201,7 +205,6 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const client = useQueryClient();
   const { logout, isLoggingOut } = useAuth();
   const [logoutError, setLogoutError] = useState('');
   const root = roleLabel === 'Quản trị' ? '/admin' : '/studio';
@@ -231,7 +234,6 @@ export function DashboardLayout({
     setLogoutError('');
     try {
       await logout();
-      client.removeQueries({ queryKey: ['management'] });
       navigate('/', { replace: true });
     } catch (error) {
       setLogoutError(
@@ -245,7 +247,7 @@ export function DashboardLayout({
     <SidebarProvider className="dashboard-shell bg-[#f7f7f5] text-sm text-ink">
       <a
         href="#dashboard-content"
-        className="sr-only fixed left-20 top-2 z-[60] rounded-sm bg-surface p-3 focus:not-sr-only"
+        className="sr-only fixed left-20 top-2 z-60 rounded-sm bg-surface p-3 focus:not-sr-only"
       >
         Đến nội dung chính
       </a>
@@ -345,7 +347,9 @@ export function DashboardLayout({
           tabIndex={-1}
           className="dashboard-content mx-auto w-full max-w-5xl min-w-0 p-3 outline-none md:p-5 lg:p-6"
         >
-          <Outlet />
+          <Suspense fallback={<DashboardSkeleton />}>
+            <Outlet />
+          </Suspense>
         </main>
       </SidebarInset>
     </SidebarProvider>

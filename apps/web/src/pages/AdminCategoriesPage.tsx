@@ -1,3 +1,9 @@
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
+import {
+  invalidatePublicCatalog,
+  invalidateResources,
+} from '../lib/query-invalidation';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -80,9 +86,10 @@ async function loadAllCategories(signal: AbortSignal) {
   return items;
 }
 export function AdminCategoriesPage() {
+  const userId = useAuth().user?.id;
   const client = useQueryClient();
   const query = useQuery({
-    queryKey: ['management', 'admin-categories'],
+    queryKey: queryKeys.categories.config(userId),
     queryFn: async ({ signal }) => loadAllCategories(signal),
   });
   const [editor, setEditor] = useState<Category | 'new' | null>(null);
@@ -104,14 +111,11 @@ export function AdminCategoriesPage() {
         }),
       ).categories,
     onSuccess: async (categories) => {
-      client.setQueryData(['management', 'admin-categories'], categories);
+      client.setQueryData(queryKeys.categories.config(userId), categories);
       await Promise.all([
         client.invalidateQueries({ queryKey: ['categories'] }),
-        client.invalidateQueries({ queryKey: ['admin-workshop-categories'] }),
-        client.invalidateQueries({ queryKey: ['catalog'] }),
-        client.invalidateQueries({
-          queryKey: ['management', 'admin-overview'],
-        }),
+        invalidatePublicCatalog(client),
+        invalidateResources(client, userId, ['categories']),
       ]);
       toast.success('Đã cập nhật danh mục workshop.');
     },

@@ -6,7 +6,6 @@ import { beforeAll, afterAll, expect, it, vi } from 'vitest';
 import { createApp } from '../../src/app.js';
 import { query, closePool } from '../../src/db/pool.js';
 import { loadConfig } from '../../src/config.js';
-import { seedStudioEvidence } from '../helpers/studio-evidence.js';
 import { migrateDatabase } from '../../../../scripts/migrate.js';
 import { assertSafeTestDatabase } from '../../../../scripts/assert-safe-test-db.js';
 vi.setConfig({ testTimeout: 120000, hookTimeout: 60000 });

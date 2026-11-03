@@ -20,16 +20,14 @@ export function TicketPhoto({
   const category = formatCategoryLabel(workshop.categoryId);
   return (
     <MediaImage
+      thumbnail
       src={workshop.imageUrl}
       alt={`${workshop.title} tại ${studio.name}`}
       placeholder={category}
       showPlaceholderText
       width={600}
       height={450}
-      className={cn(
-        'ticket-photo aspect-[4/3] shrink-0',
-        className,
-      )}
+      className={cn('ticket-photo aspect-[4/3] shrink-0', className)}
     />
   );
 }

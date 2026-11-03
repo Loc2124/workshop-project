@@ -1,3 +1,4 @@
+import { attachCoverImages } from '../images/image-variants.js';
 import { writeAuditLog } from './audit-log.js';
 import { z } from 'zod';
 import { adminListFields } from './admin-list-query.js';
@@ -47,9 +48,9 @@ function present({ imageKey, ...item }: Item) {
   return { ...item, imageUrl: imageKey ? imagePublicUrl(imageKey) : null };
 }
 const studioCover =
-  "(SELECT i.key FROM images i WHERE i.id=ANY(st.photo_ids) AND i.state='ready' ORDER BY array_position(st.photo_ids,i.id) LIMIT 1)";
+  "(SELECT COALESCE(i.thumbnail_key,i.key) FROM images i WHERE i.id=ANY(st.photo_ids) AND i.state='ready' ORDER BY array_position(st.photo_ids,i.id) LIMIT 1)";
 const workshopCover =
-  "(SELECT i.key FROM images i WHERE i.workshop_id=w.id AND i.state='ready' ORDER BY i.created_at,i.id LIMIT 1)";
+  "(SELECT COALESCE(i.thumbnail_key,i.key) FROM images i WHERE i.workshop_id=w.id AND i.state='ready' ORDER BY i.created_at,i.id LIMIT 1)";
 export async function getFeatured() {
   const saved = (
     await query<{
@@ -260,6 +261,9 @@ export async function publicFeatured(
       ...workshop,
       imageUrl: imageKey ? imagePublicUrl(imageKey) : undefined,
     }));
-    return { studios, workshops };
+    return {
+      studios: await attachCoverImages(studios, 'studio', client),
+      workshops: await attachCoverImages(workshops, 'workshop', client),
+    };
   });
 }

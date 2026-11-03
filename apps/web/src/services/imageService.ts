@@ -1,16 +1,22 @@
 import { z } from 'zod';
 import { fetchSiteSettings } from '../hooks/useSiteSettings';
 import { apiFetch } from '../lib/api-client';
-import { compressStudioImage } from '../lib/compress-studio-image';
 
 export const uploadedImageSchema = z
-  .object({ id: z.string().uuid(), key: z.string(), url: z.string().url() })
+  .object({
+    id: z.string().uuid(),
+    key: z.string(),
+    url: z.string().url(),
+    thumbnailUrl: z.string().url().optional(),
+    mediumUrl: z.string().url().optional(),
+  })
   .strict();
 export type UploadedImage = z.infer<typeof uploadedImageSchema>;
 export async function uploadToSignedUrl(
   signedUploadUrl: string,
   blob: Blob,
   onProgress?: (percent: number) => void,
+  cacheControl = '31536000',
 ) {
   await new Promise<void>((resolve, reject) => {
     const request = new XMLHttpRequest();
@@ -18,7 +24,7 @@ export async function uploadToSignedUrl(
     request.withCredentials = false;
     request.timeout = 60000;
     request.setRequestHeader('Content-Type', 'image/webp');
-    request.setRequestHeader('cache-control', '3600');
+    request.setRequestHeader('cache-control', `max-age=${cacheControl}`);
     request.setRequestHeader('x-upsert', 'false');
     request.upload.onprogress = (event) => {
       if (event.lengthComputable)
@@ -55,24 +61,52 @@ export const imageService = {
     onProgress?: (percent: number) => void,
   ): Promise<UploadedImage> {
     onProgress?.(0);
-    const blob = await compressStudioImage(
-      file,
-      (await fetchSiteSettings()).studio.maxImageMb,
+    const maxMb = (await fetchSiteSettings()).studio.maxImageMb;
+    const { compressStudioImage } =
+      await import('../lib/compress-studio-image');
+    const blob = await compressStudioImage(file, maxMb);
+    const medium = await compressStudioImage(
+      new File([blob], 'medium.webp', { type: 'image/webp' }),
+      maxMb,
+      960,
+      600 * 1024,
+    );
+    // Generate locally: no paid image transformation or service key in the browser.
+    const thumbnail = await compressStudioImage(
+      new File([blob], 'thumbnail.webp', { type: 'image/webp' }),
+      maxMb,
+      480,
+      200 * 1024,
     );
     const upload = z
       .object({
         id: z.string().uuid(),
         key: z.string(),
         signedUploadUrl: z.string().url(),
+        thumbnailSignedUploadUrl: z.string().url(),
+        mediumSignedUploadUrl: z.string().url(),
       })
       .parse(
         await apiFetch('/images/upload-url', {
           method: 'POST',
-          body: JSON.stringify({ studioId, byteSize: blob.size }),
+          body: JSON.stringify({
+            studioId,
+            byteSize: blob.size,
+            thumbnailByteSize: thumbnail.size,
+            mediumByteSize: medium.size,
+          }),
         }),
       );
     await uploadToSignedUrl(upload.signedUploadUrl, blob, (percent) =>
-      onProgress?.(Math.min(95, Math.round(percent * 0.95))),
+      onProgress?.(Math.min(65, Math.round(percent * 0.65))),
+    );
+    await uploadToSignedUrl(upload.mediumSignedUploadUrl, medium, (p) =>
+      onProgress?.(65 + Math.round(p * 0.2)),
+    );
+    await uploadToSignedUrl(
+      upload.thumbnailSignedUploadUrl,
+      thumbnail,
+      (percent) => onProgress?.(85 + Math.round(percent * 0.1)),
     );
     const image = z
       .object({ image: uploadedImageSchema })

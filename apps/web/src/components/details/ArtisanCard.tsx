@@ -24,6 +24,7 @@ export function ArtisanCard({
     <article className="h-full rounded-xl bg-soft p-5">
       <div className="flex items-center gap-4">
         <MediaImage
+          thumbnail
           src={photo}
           alt={name}
           placeholder={name.replace(/^Nghệ nhân\s+/i, '').slice(0, 1)}
@@ -48,7 +49,11 @@ export function ArtisanCard({
           )}
           {hasRating && (
             <span className="inline-flex items-center gap-1.5">
-              <Star size={16} className="fill-current text-rating" aria-hidden="true" />
+              <Star
+                size={16}
+                className="fill-current text-rating"
+                aria-hidden="true"
+              />
               <b className="text-ink">{rating!.toFixed(1)}</b>
               {Number.isInteger(reviewCount) && reviewCount! >= 0 && (
                 <span>({reviewCount} đánh giá)</span>

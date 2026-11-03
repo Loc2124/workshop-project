@@ -1,3 +1,10 @@
+import { Img } from '../components/ui/Img';
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
+import {
+  invalidateResources,
+  invalidatePublicCatalog,
+} from '../lib/query-invalidation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
 import { useRef, useState, useCallback, useMemo } from 'react';
@@ -132,8 +139,10 @@ function Cover({ studio }: { studio: AdminStudio }) {
     studio.images?.find((image) => image.id === studio.photoIds?.[0]) ??
     studio.images?.[0];
   return image ? (
-    <img
+    <Img
+      variant="thumbnail"
       src={image.url}
+      thumbnailUrl={image.thumbnailUrl}
       alt=""
       className="size-12 rounded-sm object-cover"
       loading="lazy"
@@ -149,6 +158,7 @@ export function AdminStudioProfilesPage({
 }: {
   showAllTab?: boolean;
 }) {
+  const userId = useAuth().user?.id;
   const settingsQuery = useSiteSettings();
   const photoPolicy = (settingsQuery.data ?? defaultSiteSettings).studio;
   const mutation = useSetStudioStatus();
@@ -164,8 +174,8 @@ export function AdminStudioProfilesPage({
       }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['management'] }),
-        queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+        invalidateResources(queryClient, userId, ['studios', 'workshops']),
+        invalidatePublicCatalog(queryClient),
       ]);
       toast.success('Đã hiển thị lại nội dung studio.');
     },
@@ -241,7 +251,7 @@ export function AdminStudioProfilesPage({
         <DataTable
           columns={columns}
           fetcher={fetchAdminStudios}
-          queryKey={['management', 'admin-studios', 'table']}
+          queryKey={queryKeys.studios.lists(userId)}
           tabs={
             showAllTab ? [{ value: 'all', label: 'Tất cả' }, ...tabs] : tabs
           }
@@ -338,8 +348,10 @@ export function AdminStudioProfilesPage({
                         aria-label={`Xem lớn ảnh ${index + 1}`}
                         className="relative overflow-hidden rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
-                        <img
+                        <Img
+                          variant="thumbnail"
                           src={image.url}
+                          thumbnailUrl={image.thumbnailUrl}
                           alt={`Ảnh studio ${index + 1}`}
                           className="aspect-square w-full object-cover"
                         />

@@ -1,3 +1,5 @@
+import { queryKeys } from '../lib/query-keys';
+import { invalidateResources } from '../lib/query-invalidation';
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -55,6 +57,7 @@ const tabs = [
   { value: 'blocked', label: 'Bị khóa' },
 ];
 export function AdminUsersPage() {
+  const userId = useAuth().user?.id;
   const { user: current } = useAuth();
   const client = useQueryClient();
   const [selected, setSelected] = useState<User | null>(null);
@@ -77,7 +80,7 @@ export function AdminUsersPage() {
       });
     },
     onSuccess: async () => {
-      await client.invalidateQueries({ queryKey: ['management'] });
+      await invalidateResources(client, userId, ['users']);
       toast.success('Đã cập nhật tài khoản và ghi nhật ký.');
       setSelected(null);
       setAction(null);
@@ -85,7 +88,7 @@ export function AdminUsersPage() {
     onError: (error) => {
       toast.error(error.message);
       void client.invalidateQueries({
-        queryKey: ['management', 'admin-user-management'],
+        queryKey: queryKeys.users.lists(userId),
       });
     },
   });
@@ -228,7 +231,7 @@ export function AdminUsersPage() {
       <DataTable
         columns={columns}
         fetcher={fetcher}
-        queryKey={['management', 'admin-user-management']}
+        queryKey={queryKeys.users.lists(userId)}
         tabs={tabs}
         defaultTab="all"
         defaultSort="createdAt:desc"

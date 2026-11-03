@@ -50,9 +50,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Open Sans', 'sans-serif'],
-        heading: ['Lora', 'serif'],
-        mono: ['Source Code Pro', 'monospace'],
+        sans: ['Open Sans', 'Open Sans Fallback', 'sans-serif'],
+        heading: ['Lora', 'Lora Fallback', 'serif'],
+        mono: ['Source Code Pro', 'Source Code Pro Fallback', 'monospace'],
       },
       borderRadius: {
         sm: '0.25rem',

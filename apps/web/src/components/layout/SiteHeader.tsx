@@ -7,7 +7,7 @@ import { PageContainer } from './PageContainer';
 import { Logo } from './Logo';
 import { HeaderSearch } from './HeaderSearch';
 import { useAuth } from '../../hooks/useAuth';
-import { useMyStudios } from '../../hooks/useManagement';
+import { useMyStudios } from '../../hooks/useOwnedStudios';
 
 const links = [
   { to: '/', label: 'Trang chủ' },

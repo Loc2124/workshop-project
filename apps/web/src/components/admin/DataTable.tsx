@@ -1,7 +1,13 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { shouldRetryApiQuery } from '../../lib/api-client';
 import { useLocation, useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import {
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from '@tanstack/react-query';
+import { useAuth } from '../../hooks/useAuth';
+import { scopePrivateKey } from '../../lib/query-keys';
 import {
   flexRender,
   getCoreRowModel,
@@ -81,17 +87,34 @@ export function DataTable<T, V = unknown>({
   onRowClick,
   onRowsChange,
 }: DataTableProps<T, V>) {
+  const userId = useAuth().user?.id;
+  const client = useQueryClient();
   const [params, setParams] = useSearchParams();
   const { pathname } = useLocation();
+  const serializedKey = JSON.stringify(
+    queryKey ?? ['admin-data-table', pathname, 'lists'],
+  );
+  const listKey = useMemo(
+    () => scopePrivateKey(userId, JSON.parse(serializedKey)),
+    [userId, serializedKey],
+  );
+  const countsKey = [
+    ...(listKey.at(-1) === 'lists' ? listKey.slice(0, -1) : listKey),
+    'counts',
+  ];
   const id = useId();
-  const query = readDataTableQuery(params, {
-    defaultTab,
-    tabs: tabs.length ? tabs.map((tab) => tab.value) : ['all'],
-    defaultSort,
-    sortIds: sortableIds(columns),
-    defaultPageSize,
-    filters,
-  });
+  const query = useMemo(
+    () =>
+      readDataTableQuery(params, {
+        defaultTab,
+        tabs: tabs.length ? tabs.map((tab) => tab.value) : ['all'],
+        defaultSort,
+        sortIds: sortableIds(columns),
+        defaultPageSize,
+        filters,
+      }),
+    [params, defaultTab, tabs, defaultSort, columns, defaultPageSize, filters],
+  );
   const [search, setSearch] = useState(query.q);
   const paramsRef = useRef(params);
   paramsRef.current = params;
@@ -108,33 +131,57 @@ export function DataTable<T, V = unknown>({
     return () => clearTimeout(timer);
   }, [search, query.q, setParams]);
   const result = useQuery({
-    queryKey: [...(queryKey ?? ['admin-data-table', pathname]), query],
+    queryKey: [...listKey, query],
     queryFn: ({ signal }) => fetcher(query, signal),
     retry: shouldRetryApiQuery,
+    placeholderData: (previous, previousQuery) =>
+      previousQuery &&
+      JSON.stringify(previousQuery.queryKey.slice(0, listKey.length)) ===
+        JSON.stringify(listKey)
+        ? keepPreviousData(previous)
+        : undefined,
   });
   const rows = result.data?.rows ?? EMPTY;
   const counts = useQuery({
-    queryKey: [
-      ...(queryKey ?? ['admin-data-table', pathname]),
-      'counts',
-      query.q,
-      query.filters,
-    ],
+    queryKey: [...countsKey, query.q, query.filters],
     queryFn: ({ signal }) => fetcher.counts!(query, signal),
     enabled: tabs.length > 0 && !!fetcher.counts,
     retry: shouldRetryApiQuery,
   });
+  useEffect(() => {
+    if (
+      !userId ||
+      result.isPlaceholderData ||
+      !result.data ||
+      query.page * query.pageSize >= result.data.total
+    )
+      return;
+    const next = { ...query, page: query.page + 1 };
+    void client.prefetchQuery({
+      queryKey: [...listKey, next],
+      queryFn: ({ signal }) => fetcher(next, signal),
+      staleTime: 30000,
+    });
+  }, [
+    client,
+    userId,
+    fetcher,
+    result.data,
+    result.isPlaceholderData,
+    query,
+    listKey,
+  ]);
   useEffect(() => onRowsChange?.(rows), [rows, onRowsChange]);
   const pageCount = result.data
     ? Math.max(1, Math.ceil(result.data.total / query.pageSize))
     : undefined;
   useEffect(() => {
-    if (pageCount && query.page > pageCount) {
+    if (!result.isPlaceholderData && pageCount && query.page > pageCount) {
       const next = new URLSearchParams(paramsRef.current);
       next.set('page', String(pageCount));
       setParams(next, { replace: true });
     }
-  }, [pageCount, query.page, setParams]);
+  }, [pageCount, query.page, setParams, result.isPlaceholderData]);
   function change(key: string, value: string, resetPage = true) {
     const next = new URLSearchParams(paramsRef.current);
     if (value) next.set(key, value);

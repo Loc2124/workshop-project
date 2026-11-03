@@ -1,3 +1,4 @@
+import { ImagePreload } from '../components/ui/ImagePreload';
 import { useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -8,15 +9,13 @@ import {
 import { GreenSection } from '../components/layout/GreenSection';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
-import { SiteFooter } from '../components/layout/SiteFooter';
-import { SiteHeader } from '../components/layout/SiteHeader';
 import { Button } from '../components/ui/button';
 import { SimulatedDataBadge } from '../components/ui/SimulatedDataBadge';
 import { useSiteInformation } from '../hooks/useSiteInformation';
 
 const aboutContent = {
   isSimulated: false,
-  imageUrl: '/images/workshops/craftPhoto.jpg',
+  imageUrl: '/images/workshops/craftPhoto.webp',
   imageAlt: 'Ba bình gốm thủ công với sắc men mộc và cành hoa khô',
 };
 
@@ -51,8 +50,8 @@ export function AboutPage() {
     policies.length,
   );
   return (
-    <div className="min-h-screen bg-paper text-ink">
-      <SiteHeader />
+    <>
+      <ImagePreload src="/images/workshops/craftPhoto.webp" />
       <main>
         <PageContainer>
           <PageBreadcrumb
@@ -207,7 +206,6 @@ export function AboutPage() {
           </Link>
         </GreenSection>
       </main>
-      <SiteFooter />
-    </div>
+    </>
   );
 }

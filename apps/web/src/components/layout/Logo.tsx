@@ -1,8 +1,10 @@
+import { Img } from '../ui/Img';
 import { cn } from '../../lib/utils';
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <img
+    <Img
+      priority
       src={`${import.meta.env.BASE_URL}brand/open-slot-logo.svg`}
       alt="Open Slot"
       width={470}

@@ -34,10 +34,10 @@ describe('server admin table queries', () => {
     ).toBe(false);
     expect(
       adminWorkshopListQuerySchema.parse({
-        page_size: '10',
+        pageSize: '10',
         status: 'all',
         sort: 'basePrice:desc',
-      }).page_size,
+      }).pageSize,
     ).toBe(10);
   });
   it('uses bound literal search patterns and allowlisted SQL order expressions', () => {

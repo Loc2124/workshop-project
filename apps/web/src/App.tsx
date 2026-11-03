@@ -5,58 +5,81 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
-import { lazy, Suspense } from 'react';
-import { AdminReportsPage } from './pages/AdminReportsPage';
-const AdminSettingsPage = lazy(() =>
-  import('./pages/AdminSettingsPage').then((module) => ({
-    default: module.AdminSettingsPage,
-  })),
-);
-const AdminAuditPage = lazy(() =>
-  import('./pages/AdminAuditPage').then((module) => ({
-    default: module.AdminAuditPage,
-  })),
-);
-const AdminOverviewPage = lazy(() => import('./pages/AdminOverviewPage'));
-import { RequireRole } from './components/auth/RequireRole';
+import { lazy, Suspense, useSyncExternalStore } from 'react';
 import {
+  onSessionCacheChange,
+  sessionCacheVersion,
+} from './lib/session-events';
+import { RequireRole } from './components/auth/RequireRole';
+import { DashboardSkeleton } from './components/layout/DashboardSkeleton';
+import {
+  AdminSettingsPage,
+  AdminAuditPage,
+  AdminOverviewPage,
+  AdminMessageTemplatesPage,
+  AdminContentPage,
+  AdminCategoriesPage,
+  AdminUsersPage,
+  AdminBookingsPage,
+  AdminReportsPage,
+  AdminWorkshopPage,
+  AdminStudioProfilesPage,
+  AdminApprovalPage,
+  StudioOverviewPage,
+  StudioWorkspacePage,
   StudioDashboard,
   AdminDashboard,
-} from './components/layout/DashboardShell';
-import { StudioWorkspacePage } from './pages/StudioWorkspacePage';
-const AdminMessageTemplatesPage = lazy(() =>
-  import('./pages/AdminMessageTemplatesPage').then((module) => ({
-    default: module.AdminMessageTemplatesPage,
-  })),
-);
-const AdminContentPage = lazy(() =>
-  import('./pages/AdminContentPage').then((module) => ({
-    default: module.AdminContentPage,
-  })),
-);
-const AdminCategoriesPage = lazy(() =>
-  import('./pages/AdminCategoriesPage').then((module) => ({
-    default: module.AdminCategoriesPage,
-  })),
-);
-import { AdminUsersPage } from './pages/AdminUsersPage';
+} from './lib/dashboard-routes';
 import { useCategories } from './hooks/useCategories';
-import { HomePage } from './pages/HomePage';
-import { ExplorePage } from './pages/ExplorePage';
-import { ArtisanPage } from './pages/ArtisanPage';
-import { AboutPage } from './pages/AboutPage';
-import { StudioPage } from './pages/StudioPage';
-import { WorkshopPage } from './pages/WorkshopPage';
-import { TicketDemoPage } from './pages/TicketDemoPage';
-import { LoginPage } from './pages/LoginPage';
-import { StudioOverviewPage } from './pages/StudioOverviewPage';
-import { StudioRegistrationPage } from './pages/StudioRegistrationPage';
-import { AdminApprovalPage } from './pages/AdminApprovalPage';
-import { AdminBookingsPage } from './pages/AdminBookingsPage';
-import { AdminWorkshopPage } from './pages/AdminWorkshopPage';
-import { AdminStudioProfilesPage } from './pages/AdminStudioProfilesPage';
-import { RegisterPage } from './pages/RegisterPage';
 
+const TicketDemoPage = lazy(() =>
+  import('./pages/TicketDemoPage').then((module) => ({
+    default: module.TicketDemoPage,
+  })),
+);
+
+import { PublicShell } from './components/layout/PublicShell';
+import { AuthLayout } from './components/layout/AuthLayout';
+import { Skeleton } from './components/ui/skeleton';
+const HomePage = lazy(() =>
+  import('./pages/HomePage').then((module) => ({ default: module.HomePage })),
+);
+const ExplorePage = lazy(() =>
+  import('./pages/ExplorePage').then((module) => ({
+    default: module.ExplorePage,
+  })),
+);
+const ArtisanPage = lazy(() =>
+  import('./pages/ArtisanPage').then((module) => ({
+    default: module.ArtisanPage,
+  })),
+);
+const AboutPage = lazy(() =>
+  import('./pages/AboutPage').then((module) => ({ default: module.AboutPage })),
+);
+const StudioPage = lazy(() =>
+  import('./pages/StudioPage').then((module) => ({
+    default: module.StudioPage,
+  })),
+);
+const WorkshopPage = lazy(() =>
+  import('./pages/WorkshopPage').then((module) => ({
+    default: module.WorkshopPage,
+  })),
+);
+const LoginPage = lazy(() =>
+  import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import('./pages/RegisterPage').then((module) => ({
+    default: module.RegisterPage,
+  })),
+);
+const StudioRegistrationPage = lazy(() =>
+  import('./pages/StudioRegistrationPage').then((module) => ({
+    default: module.StudioRegistrationPage,
+  })),
+);
 function LegacyStudioDetail() {
   const { studioId } = useParams();
   return (
@@ -78,162 +101,197 @@ function LegacyStudioRegistration() {
   return <Navigate to={`/dang-ky-studio${search}${hash}`} replace />;
 }
 function App() {
+  // A session reset removes observed Queries. Public routes rebind too, while
+  // their content continues to render independently from the auth bootstrap.
+  useSyncExternalStore(onSessionCacheChange, sessionCacheVersion, () => 0);
   useCategories();
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/explore" element={<ExplorePage />} />
-      <Route path="/kham-pha" element={<ExplorePage />} />
-      <Route path="/demo/ve" element={<TicketDemoPage />} />
-      <Route path="/dang-nhap" element={<LoginPage />} />
-      <Route path="/dang-ky" element={<RegisterPage />} />
-      <Route element={<RequireRole role="studio_owner" />}>
-        <Route path="/studio" element={<StudioDashboard />} />
+    <Suspense fallback={<DashboardSkeleton />}>
+      <Routes>
+        <Route element={<PublicShell />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/explore" element={<ExplorePage />} />
+          <Route path="/kham-pha" element={<ExplorePage />} />
+          <Route path="/dang-ky-studio" element={<StudioRegistrationPage />} />
+          <Route path="/danh-cho-nghe-nhan" element={<ArtisanPage />} />
+          <Route path="/ve-open-slot" element={<AboutPage />} />
+          <Route path="/studios/:slug" element={<StudioPage />} />
+          <Route path="/workshop/:slug" element={<WorkshopPage />} />
+          <Route path="/workshops/:id" element={<WorkshopPage />} />
+        </Route>
+        <Route path="/demo/ve" element={<TicketDemoPage />} />
         <Route
-          path="/studio/studios/:studioId"
+          path="/dang-nhap"
+          element={
+            <Suspense
+              fallback={
+                <AuthLayout>
+                  <div className="min-h-[520px] space-y-5" role="status">
+                    <Skeleton className="h-12 w-2/3" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                </AuthLayout>
+              }
+            >
+              <LoginPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/dang-ky"
+          element={
+            <Suspense
+              fallback={
+                <AuthLayout>
+                  <div className="min-h-[520px] space-y-5" role="status">
+                    <Skeleton className="h-12 w-2/3" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                </AuthLayout>
+              }
+            >
+              <RegisterPage />
+            </Suspense>
+          }
+        />
+        <Route element={<RequireRole role="studio_owner" />}>
+          <Route path="/studio" element={<StudioDashboard />} />
+          <Route
+            path="/studio/studios/:studioId"
+            element={<LegacyStudioDetail />}
+          />
+          {['workshops', 'sessions', 'bookings', 'profile'].map((section) => (
+            <Route
+              key={section}
+              path={`/studio/${section}`}
+              element={<StudioDashboard />}
+            />
+          ))}
+          <Route path="/studio/:studioId" element={<StudioDashboard />}>
+            <Route index element={<StudioOverviewPage />} />
+            <Route
+              path="workshops"
+              element={<StudioWorkspacePage section="workshops" />}
+            />
+            <Route
+              path="sessions"
+              element={<StudioWorkspacePage section="sessions" />}
+            />
+            <Route
+              path="bookings"
+              element={<StudioWorkspacePage section="bookings" />}
+            />
+            <Route
+              path="profile"
+              element={<StudioWorkspacePage section="profile" />}
+            />
+            <Route path="*" element={<Navigate to="/studio" replace />} />
+          </Route>
+        </Route>
+        <Route element={<RequireRole role="admin" />}>
+          <Route path="/admin" element={<AdminDashboard />}>
+            <Route
+              index
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <AdminOverviewPage />
+                </Suspense>
+              }
+            />
+            <Route path="bookings" element={<AdminBookingsPage />} />
+            <Route path="dat-cho" element={<AdminBookingsPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
+            <Route
+              path="noi-dung"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <AdminContentPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="mau-thong-bao"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <AdminMessageTemplatesPage />
+                </Suspense>
+              }
+            />
+            <Route path="bao-cao" element={<AdminReportsPage />} />
+            <Route
+              path="cai-dat"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <AdminSettingsPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="nhat-ky"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <AdminAuditPage />
+                </Suspense>
+              }
+            />
+            <Route path="ho-so-studio" element={<AdminStudioProfilesPage />} />
+            <Route
+              path="ho-so-xuong"
+              element={<Navigate to="/admin/ho-so-studio" replace />}
+            />
+            <Route
+              path="approvals"
+              element={<Navigate to="/admin/ho-so-studio" replace />}
+            />
+            <Route
+              path="studios"
+              element={<AdminStudioProfilesPage showAllTab />}
+            />
+            <Route path="workshop" element={<AdminWorkshopPage />} />
+            <Route path="workshops" element={<AdminWorkshopPage />} />
+            <Route path="workshop-review" element={<AdminApprovalPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route
+              path="danh-muc"
+              element={
+                <Suspense fallback={<DashboardSkeleton />}>
+                  <AdminCategoriesPage />
+                </Suspense>
+              }
+            />
+            <Route path="nguoi-dung" element={<AdminUsersPage />} />
+            <Route
+              path="*"
+              element={<Navigate to="/admin/ho-so-studio" replace />}
+            />
+          </Route>
+        </Route>
+        <Route path="/quan-ly" element={<Navigate to="/studio" replace />} />
+        <Route
+          path="/quan-ly/xuong/:studioId"
           element={<LegacyStudioDetail />}
         />
-        {['workshops', 'sessions', 'bookings', 'profile'].map((section) => (
-          <Route
-            key={section}
-            path={`/studio/${section}`}
-            element={<StudioDashboard />}
-          />
-        ))}
-        <Route path="/studio/:studioId" element={<StudioDashboard />}>
-          <Route index element={<StudioOverviewPage />} />
-          <Route
-            path="workshops"
-            element={<StudioWorkspacePage section="workshops" />}
-          />
-          <Route
-            path="sessions"
-            element={<StudioWorkspacePage section="sessions" />}
-          />
-          <Route
-            path="bookings"
-            element={<StudioWorkspacePage section="bookings" />}
-          />
-          <Route
-            path="profile"
-            element={<StudioWorkspacePage section="profile" />}
-          />
-          <Route path="*" element={<Navigate to="/studio" replace />} />
-        </Route>
-      </Route>
-      <Route element={<RequireRole role="admin" />}>
-        <Route path="/admin" element={<AdminDashboard />}>
-          <Route
-            index
-            element={
-              <Suspense
-                fallback={
-                  <p role="status" className="p-5 text-sm text-muted">
-                    Đang tải Tổng quan…
-                  </p>
-                }
-              >
-                <AdminOverviewPage />
-              </Suspense>
-            }
-          />
-          <Route path="bookings" element={<AdminBookingsPage />} />
-          <Route path="dat-cho" element={<AdminBookingsPage />} />
-          <Route path="reports" element={<AdminReportsPage />} />
-          <Route
-            path="noi-dung"
-            element={
-              <Suspense fallback={<p role="status">Đang tải nội dung…</p>}>
-                <AdminContentPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="mau-thong-bao"
-            element={
-              <Suspense fallback={<p role="status">Đang tải…</p>}>
-                <AdminMessageTemplatesPage />
-              </Suspense>
-            }
-          />
-          <Route path="bao-cao" element={<AdminReportsPage />} />
-          <Route
-            path="cai-dat"
-            element={
-              <Suspense fallback={<p role="status">Đang tải cài đặt…</p>}>
-                <AdminSettingsPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="nhat-ky"
-            element={
-              <Suspense fallback={<p role="status">Đang tải nhật ký…</p>}>
-                <AdminAuditPage />
-              </Suspense>
-            }
-          />
-          <Route path="ho-so-studio" element={<AdminStudioProfilesPage />} />
-          <Route
-            path="ho-so-xuong"
-            element={<Navigate to="/admin/ho-so-studio" replace />}
-          />
-          <Route
-            path="approvals"
-            element={<Navigate to="/admin/ho-so-studio" replace />}
-          />
-          <Route
-            path="studios"
-            element={<AdminStudioProfilesPage showAllTab />}
-          />
-          <Route path="workshop" element={<AdminWorkshopPage />} />
-          <Route path="workshops" element={<AdminWorkshopPage />} />
-          <Route path="workshop-review" element={<AdminApprovalPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route
-            path="danh-muc"
-            element={
-              <Suspense
-                fallback={
-                  <p role="status" className="text-sm text-muted">
-                    Đang tải danh mục…
-                  </p>
-                }
-              >
-                <AdminCategoriesPage />
-              </Suspense>
-            }
-          />
-          <Route path="nguoi-dung" element={<AdminUsersPage />} />
-          <Route
-            path="*"
-            element={<Navigate to="/admin/ho-so-studio" replace />}
-          />
-        </Route>
-      </Route>
-      <Route path="/quan-ly" element={<Navigate to="/studio" replace />} />
-      <Route path="/dang-ky-studio" element={<StudioRegistrationPage />} />
-      <Route path="/quan-ly/xuong/:studioId" element={<LegacyStudioDetail />} />
-      <Route path="/quan-ly/tao-xuong" element={<LegacyStudioRegistration />} />
-      <Route
-        path="/quan-tri/duyet"
-        element={<Navigate to="/admin/ho-so-studio" replace />}
-      />
-      <Route path="/danh-cho-nghe-nhan" element={<ArtisanPage />} />
-      <Route path="/ve-open-slot" element={<AboutPage />} />
-      <Route path="/studios/:slug" element={<StudioPage />} />
-      <Route path="/xuong/:slug" element={<LegacyPublicStudio />} />
-      <Route path="/workshop/:slug" element={<WorkshopPage />} />
-      <Route path="/workshops/:id" element={<WorkshopPage />} />
-      <Route
-        path="*"
-        element={
-          <main className="mx-auto max-w-3xl px-6 py-20 text-center text-lg text-muted">
-            Không tìm thấy trang.
-          </main>
-        }
-      />
-    </Routes>
+        <Route
+          path="/quan-ly/tao-xuong"
+          element={<LegacyStudioRegistration />}
+        />
+        <Route
+          path="/quan-tri/duyet"
+          element={<Navigate to="/admin/ho-so-studio" replace />}
+        />
+        <Route path="/xuong/:slug" element={<LegacyPublicStudio />} />
+        <Route
+          path="*"
+          element={
+            <main className="mx-auto max-w-3xl px-6 py-20 text-center text-lg text-muted">
+              Không tìm thấy trang.
+            </main>
+          }
+        />
+      </Routes>
+    </Suspense>
   );
 }
 

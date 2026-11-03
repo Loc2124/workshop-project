@@ -1,0 +1,32 @@
+{
+  "before": {
+    "entry": {
+      "bytes": 663615,
+      "gzipBytes": 189381
+    },
+    "initial": {
+      "bytes": 1130193,
+      "gzipBytes": 334945
+    },
+    "totalJs": {
+      "bytes": 1652934,
+      "gzipBytes": 498515
+    }
+  },
+  "after": {
+    "entry": {
+      "bytes": 449409,
+      "gzipBytes": 130274
+    },
+    "initial": {
+      "bytes": 866546,
+      "gzipBytes": 263862
+    },
+    "totalJs": {
+      "bytes": 1671913,
+      "gzipBytes": 525038
+    }
+  },
+  "measurement": "Actual dist files; Python gzip level 9; decimal kB. JS only.",
+  "baselineCommit": "d247ad4"
+}

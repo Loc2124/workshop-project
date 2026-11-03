@@ -7,6 +7,8 @@ export type TicketData = {
     reason?: string;
     categoryId: string;
     imageUrl?: string | null;
+    thumbnailUrl?: string | null;
+    mediumUrl?: string | null;
     price: number;
     rating?: number;
     ratingCount?: number;
@@ -32,6 +34,7 @@ export type TicketProps = TicketData & {
   pattern?: boolean;
   className?: string;
   loading?: false;
+  priority?: boolean;
 };
 export type TicketVariantProps =
   TicketProps | { loading: true; pattern?: boolean; className?: string };
@@ -55,6 +58,8 @@ export function toTicketProps(workshop: Workshop): TicketProps {
       reason: workshop.reason,
       categoryId: workshop.categoryId,
       imageUrl: workshop.imageUrl,
+      thumbnailUrl: workshop.thumbnailUrl,
+      mediumUrl: workshop.mediumUrl,
       price: session?.price ?? workshop.basePrice,
       rating: workshop.rating,
       ratingCount: workshop.reviewCount,

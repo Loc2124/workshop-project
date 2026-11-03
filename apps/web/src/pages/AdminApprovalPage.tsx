@@ -1,3 +1,5 @@
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { studioProvinces } from '@workshop/shared';
@@ -27,6 +29,7 @@ const tabs = [
   { value: 'all', label: 'Tất cả' },
 ];
 export function AdminApprovalPage() {
+  const userId = useAuth().user?.id;
   const mutation = useDecideWorkshop();
   const remoteCategories = useCategories();
   const [selected, setSelected] = useState<AdminWorkshop | null>(null);
@@ -144,7 +147,7 @@ export function AdminApprovalPage() {
       <DataTable
         columns={columns}
         fetcher={fetchAdminWorkshops}
-        queryKey={['management', 'admin-workshops', 'table']}
+        queryKey={queryKeys.workshops.reviews.lists(userId)}
         tabs={tabs}
         defaultTab="pending"
         defaultSort="createdAt:desc"

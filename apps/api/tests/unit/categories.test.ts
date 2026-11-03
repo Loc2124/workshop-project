@@ -34,8 +34,8 @@ describe('category references', () => {
     database.mockResolvedValueOnce({ rows: [{}], rowCount: 1 } as never);
     await expect(assertCategoryId('new-craft')).resolves.toBeUndefined();
     expect(database).toHaveBeenCalledWith(
-      'SELECT 1 FROM categories WHERE id = $1',
-      ['new-craft'],
+      expect.stringContaining('SELECT 1 FROM categories WHERE id = $1 AND'),
+      ['new-craft', null],
     );
     database.mockResolvedValueOnce({ rows: [], rowCount: 0 } as never);
     await expect(assertCategoryId('missing')).rejects.toMatchObject({

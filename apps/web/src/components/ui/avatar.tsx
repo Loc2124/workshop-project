@@ -21,6 +21,10 @@ const AvatarImage = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
 >(({ className, ...props }, ref) => (
   <AvatarPrimitive.Image
+    decoding="async"
+    loading="lazy"
+    width={64}
+    height={64}
     ref={ref}
     className={cn('aspect-square size-full object-cover', className)}
     {...props}

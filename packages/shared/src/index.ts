@@ -77,6 +77,9 @@ export const publicWorkshopDtoSchema = z
     isSimulated: z.boolean(),
     studioName: z.string(),
     studioDescription: z.string().nullable(),
+    imageUrl: z.string().optional(),
+    thumbnailUrl: z.string().optional(),
+    mediumUrl: z.string().optional(),
     nextStartsAt: isoDateTimeSchema.optional(),
     sessions: z.array(workshopSessionDtoSchema),
   })
@@ -114,6 +117,17 @@ export const publicStudioResponseSchema = z
         instagramUrl: z.string().nullable().optional(),
         googleMapsUrl: z.string().nullable().optional(),
         photoUrls: z.array(z.string()).optional(),
+        photoImages: z
+          .array(
+            z
+              .object({
+                url: z.string(),
+                thumbnailUrl: z.string().optional(),
+                mediumUrl: z.string().optional(),
+              })
+              .strict(),
+          )
+          .optional(),
         name: z.string(),
         description: z.string().nullable(),
         province: z.string(),

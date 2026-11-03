@@ -47,13 +47,11 @@ describe('remember login', () => {
     async (rememberMe) => {
       vi.mocked(loginCustomer).mockResolvedValue(result);
       vi.mocked(refreshCustomerSession).mockResolvedValue(result);
-      const login = await request(app)
-        .post('/auth/login')
-        .send({
-          email: 'an@example.test',
-          password: 'password123',
-          rememberMe,
-        });
+      const login = await request(app).post('/auth/login').send({
+        email: 'an@example.test',
+        password: 'password123',
+        rememberMe,
+      });
       expect(login.status).toBe(200);
       const cookies = login.headers['set-cookie'] as unknown as string[];
       for (const cookie of cookies) {

@@ -81,9 +81,10 @@ function renderPage() {
   const data = mocks.useAdminWorkshops().data;
   client.setQueryData(
     [
-      'management',
-      'admin-workshops',
-      'table',
+      'private',
+      admin.id,
+      'workshopReviews',
+      'lists',
       {
         page: 1,
         pageSize: 20,

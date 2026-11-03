@@ -1,3 +1,7 @@
+vi.mock('../../src/modules/settings/settings.repository.js', async () => {
+  const { defaultSiteSettings } = await import('@workshop/shared');
+  return { getSiteSettings: async () => defaultSiteSettings };
+});
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { studioVerificationDecisionSchema } from '@workshop/shared';
 

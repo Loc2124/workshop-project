@@ -1,3 +1,9 @@
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
+import {
+  invalidateResources,
+  invalidatePublicCatalog,
+} from '../lib/query-invalidation';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useWatch, type FieldPathByValue } from 'react-hook-form';
@@ -112,6 +118,7 @@ const groups: {
   },
 ];
 function SettingsEditor({ initial }: { initial: Snapshot }) {
+  const userId = useAuth().user?.id;
   const client = useQueryClient();
   const [snapshot, setSnapshot] = useState(initial);
   const [error, setError] = useState('');
@@ -139,11 +146,15 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
       setSnapshot(result);
       form.reset(result.settings);
       setError('');
-      client.setQueryData(['management', 'settings'], result);
+      client.setQueryData(queryKeys.settings.config(userId), result);
       client.setQueryData(['site-settings'], result.settings);
       await Promise.all([
-        client.invalidateQueries({ queryKey: ['management'] }),
-        client.invalidateQueries({ queryKey: ['catalog'] }),
+        invalidateResources(client, userId, [
+          'settings',
+          'studios',
+          'workshops',
+        ]),
+        invalidatePublicCatalog(client),
       ]);
       toast.success('Đã lưu cài đặt.');
     },
@@ -156,7 +167,7 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
       setSnapshot(data);
       form.reset(data.settings);
       setError('');
-      client.setQueryData(['management', 'settings'], data);
+      client.setQueryData(queryKeys.settings.config(userId), data);
     },
     onError: (e) =>
       setError(e instanceof Error ? e.message : 'Chưa tải lại được cài đặt.'),
@@ -255,8 +266,9 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
   );
 }
 export function AdminSettingsPage() {
+  const userId = useAuth().user?.id;
   const query = useQuery({
-    queryKey: ['management', 'settings'],
+    queryKey: queryKeys.settings.config(userId),
     queryFn: async ({ signal }) =>
       response.parse(await apiFetch('/admin/cai-dat', { signal })),
     refetchOnWindowFocus: false,

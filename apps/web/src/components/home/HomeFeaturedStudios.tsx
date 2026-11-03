@@ -54,7 +54,9 @@ export function HomeFeaturedStudios({
               className="group overflow-hidden rounded-lg border border-line bg-surface focus-visible:ring-2 focus-visible:ring-primary"
             >
               <MediaImage
+                thumbnail
                 src={studio.imageUrl}
+                thumbnailUrl={studio.thumbnailUrl}
                 alt={`Không gian ${studio.name}`}
                 placeholder={studio.name}
                 className="aspect-[4/3] w-full"

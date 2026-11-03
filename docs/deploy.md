@@ -3,7 +3,7 @@
 ## Kiến trúc triển khai
 
 - API Node.js/Express: Render, cấu hình Blueprint tại `render.yaml`.
-- Web: React + TypeScript + Vite + Tailwind CSS, build thành static site. Nhà cung cấp hosting web chưa chốt.
+- Web: React + TypeScript + Vite + Tailwind CSS, build thành static site; có cấu hình Vercel tại `apps/web/vercel.json`.
 - Database: Supabase PostgreSQL.
 
 Web là SPA độc lập, gọi API bằng biến build-time `VITE_API_BASE_URL` (ví dụ `https://workshop-api.onrender.com`). `VITE_DATA_MODE` mặc định là `api` ở cả development lẫn production; chỉ đặt `VITE_DATA_MODE=demo` trong build muốn chủ đích dùng catalog mô phỏng. Chế độ API không chuyển sang mock khi API lỗi hoặc trả 404. API giới hạn CORS theo origin `WEB_ORIGIN`, cho phép credentials, và từ chối request thay đổi dữ liệu từ origin trình duyệt khác. Request đăng nhập và các request cần phiên gửi cookie bằng `credentials: 'include'`; production dùng cookie `HttpOnly`, `Secure`, `SameSite=None` để hoạt động giữa domain Vercel và Render. Local dùng `SameSite=Lax`.
@@ -13,8 +13,8 @@ Trang khám phá có thể xin quyền vị trí trình duyệt để chọn t�
 ## Trạng thái hiện tại
 
 - API có cấu hình deploy trên Render và endpoint `GET /health`.
-- Frontend React/Vite trong `apps/web` hiện chỉ có cấu hình nền và cấu trúc thư mục; chưa có màn hình giao diện. Có thể chọn Vercel để host static site sau khi hoàn thiện web.
-- Chưa xác nhận URL công khai, giá trị `WEB_ORIGIN` production hoặc migration trên database dev/demo.
+- Frontend trong `apps/web` có giao diện khách, xác thực, đăng ký/quản lý studio và quản trị. Xem README để biết phạm vi đã triển khai và phần còn thiếu.
+- Chưa xác nhận URL công khai, giá trị `WEB_ORIGIN` production hoặc các migration mới nhất trên database dev/demo. Repository có migration đến `030_image_medium_variants.sql`; kiểm tra lịch sử migration từng môi trường trước khi triển khai.
 - `packages/shared` chưa có script build; API chưa cần build package này riêng.
 - `JWT_SECRET` phải là chuỗi base64url ngẫu nhiên dài ít nhất 43 ký tự, có tối thiểu 16 ký tự khác nhau. Sinh bằng `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`; đặt trực tiếp trong secret manager/dashboard, không ghi vào Git hoặc log.
 - Production yêu cầu `WEB_ORIGIN` dùng HTTPS. Nếu thay `JWT_SECRET`, access token hiện hành không còn hợp lệ nhưng phiên có refresh token còn hạn có thể lấy access token mới; để thu hồi mọi phiên, thu hồi các dòng `auth_sessions` của user.
@@ -30,7 +30,7 @@ Không chạy migration cho tới khi xác nhận `DATABASE_URL` trỏ đúng pr
 
 ## 2. Web React/Vite
 
-Khi `apps/web` đã được tạo, cấu hình static site với root repository hoặc thư mục phù hợp monorepo:
+Cấu hình static site với root repository hoặc thư mục phù hợp monorepo:
 
 - Install: `npm ci --include=dev` tại root.
 - Build: `npm run build --workspace @workshop/web`.
@@ -40,7 +40,7 @@ Khi `apps/web` đã được tạo, cấu hình static site với root repositor
 - Reverse geocoding: `VITE_REVERSE_GEOCODE_URL=https://nominatim.openstreetmap.org/reverse` (tọa độ trình duyệt được gửi tới endpoint này khi người dùng cho phép định vị).
 - SPA fallback: mọi đường dẫn frontend cần được rewrite về `/index.html`.
 
-Tên lệnh và output directory cần khớp cấu hình Vite thực tế khi ứng dụng được tạo. Chỉ đưa URL API công khai vào biến `VITE_*`; không đưa database URL, JWT secret, PayOS key hoặc secret nào vào bundle frontend. Sau khi có domain web, đặt `WEB_ORIGIN` ở Render thành origin đầy đủ, ví dụ `https://workshop.example.com`.
+Output hiện tại là `apps/web/dist`; dùng cấu hình rewrite/cache trong `apps/web/vercel.json` khi triển khai Vercel. Thư mục `apps/web/build` chứa mã hỗ trợ build cần được commit. Chỉ đưa URL API công khai vào biến `VITE_*`; không đưa database URL, JWT secret, PayOS key hoặc secret nào vào bundle frontend. Sau khi có domain web, đặt `WEB_ORIGIN` ở Render thành origin đầy đủ, ví dụ `https://workshop.example.com`.
 
 ## 3. Biến môi trường API
 

@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useMyStudios } from '../../hooks/useManagement';
+import { useMyStudios } from '../../hooks/useOwnedStudios';
 import {
   hasDashboardRole,
   type DashboardRole,
@@ -58,9 +58,11 @@ export function RequireRole({
   if (!user) return <Navigate to="/" replace />;
   if (role === 'admin')
     return hasDashboardRole(user, undefined, role) ? (
-      (children ?? <Outlet />)
+      <Fragment key={user.id}>{children ?? <Outlet />}</Fragment>
     ) : (
       <Navigate to="/" replace />
     );
-  return <StudioOwnerGate>{children ?? <Outlet />}</StudioOwnerGate>;
+  return (
+    <StudioOwnerGate key={user.id}>{children ?? <Outlet />}</StudioOwnerGate>
+  );
 }

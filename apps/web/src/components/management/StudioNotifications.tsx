@@ -1,3 +1,6 @@
+import { useDeferredStartup } from '../../hooks/useDeferredStartup';
+import { useAuth } from '../../hooks/useAuth';
+import { queryKeys } from '../../lib/query-keys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
@@ -20,20 +23,24 @@ const schema = z.object({
   ),
 });
 export function StudioNotifications({ studioId }: { studioId: string }) {
+  const userId = useAuth().user?.id;
   const client = useQueryClient();
+  const foregroundReady = useDeferredStartup(!!userId);
   const notifications = useQuery({
-    queryKey: ['management', 'studio-notifications'],
+    queryKey: queryKeys.notifications.lists(userId),
     queryFn: async ({ signal }) =>
       schema.parse(await apiFetch('/me/notifications', { signal }))
         .notifications,
-    refetchInterval: 60000,
+    enabled: foregroundReady,
+    refetchInterval: foregroundReady ? 60000 : false,
+    refetchIntervalInBackground: false,
   });
   const mark = useMutation({
     mutationFn: (id: string) =>
       apiFetch(`/me/notifications/${id}/read`, { method: 'PATCH' }),
     onSuccess: () =>
       client.invalidateQueries({
-        queryKey: ['management', 'studio-notifications'],
+        queryKey: queryKeys.notifications.lists(userId),
       }),
   });
   const unread =

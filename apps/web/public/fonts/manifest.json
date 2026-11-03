@@ -1,0 +1,108 @@
+{
+  "format": "woff2",
+  "style": "normal",
+  "fonts": [
+    {
+      "family": "Lora",
+      "subset": "vietnamese",
+      "weight": "500 700",
+      "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB",
+      "sourceBytes": 8992,
+      "sha256": "98c22de85f6e83bcd6ae1a443e12e256fbc8de7142bec4f76b059f8ff9c2797e",
+      "file": "lora-vietnamese.98c22de85f6e.woff2"
+    },
+    {
+      "family": "Lora",
+      "subset": "latin",
+      "weight": "500 700",
+      "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+      "sourceBytes": 37788,
+      "sha256": "ddb8c66035104e233fc024669183aad3738b6daa16deee2ebb1241bd0f98ace1",
+      "file": "lora-latin.ddb8c6603510.woff2"
+    },
+    {
+      "family": "Open Sans",
+      "subset": "vietnamese",
+      "weight": "400 700",
+      "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB",
+      "sourceBytes": 16496,
+      "sha256": "cc762462ea67b7815649ea3cc005699e3b95b3244b59eb2ce2d22e3ad33497c2",
+      "file": "open-sans-vietnamese.cc762462ea67.woff2"
+    },
+    {
+      "family": "Open Sans",
+      "subset": "latin",
+      "weight": "400 700",
+      "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+      "sourceBytes": 48320,
+      "sha256": "d8e4fe0452aa2076429a9bb5d8757d00a994dd95986cf950e9a1a371b9a072a0",
+      "file": "open-sans-latin.d8e4fe0452aa.woff2"
+    },
+    {
+      "family": "Source Code Pro",
+      "subset": "vietnamese",
+      "weight": "400",
+      "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB",
+      "sourceBytes": 4752,
+      "sha256": "f5b750378942176e44bea71f7fb99346b59d4c356aee6ed6cedcef44df9959e7",
+      "file": "source-code-pro-vietnamese.f5b750378942.woff2"
+    },
+    {
+      "family": "Source Code Pro",
+      "subset": "latin",
+      "weight": "400",
+      "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+      "sourceBytes": 11656,
+      "sha256": "75aa8cacfd459d58d7c093f3ff0ab8745cc878dfc93c5d4cda052791aeace878",
+      "file": "source-code-pro-latin.75aa8cacfd45.woff2"
+    }
+  ],
+  "fallbackMetrics": [
+    {
+      "family": "Open Sans Fallback",
+      "local": "Arial",
+      "weight": "400 500",
+      "sizeAdjust": 104.3366,
+      "ascent": 102.4422,
+      "descent": 28.0792,
+      "lineGap": 0.0
+    },
+    {
+      "family": "Open Sans Fallback",
+      "local": "Arial Bold",
+      "weight": "600 700",
+      "sizeAdjust": 103.4122,
+      "ascent": 103.3579,
+      "descent": 28.3302,
+      "lineGap": 0.0
+    },
+    {
+      "family": "Lora Fallback",
+      "local": "Georgia",
+      "weight": "500",
+      "sizeAdjust": 108.1228,
+      "ascent": 93.0423,
+      "descent": 25.3416,
+      "lineGap": 0.0
+    },
+    {
+      "family": "Lora Fallback",
+      "local": "Georgia Bold",
+      "weight": "600 700",
+      "sizeAdjust": 94.9442,
+      "ascent": 105.957,
+      "descent": 28.8591,
+      "lineGap": 0.0
+    },
+    {
+      "family": "Source Code Pro Fallback",
+      "local": "Consolas",
+      "weight": "400",
+      "sizeAdjust": 109.1297,
+      "ascent": 90.168,
+      "descent": 25.0161,
+      "lineGap": 0.0
+    }
+  ],
+  "notes": "Original Google Fonts WOFF2 files retained unchanged. CSS restricts weights; no RFN font has been modified."
+}

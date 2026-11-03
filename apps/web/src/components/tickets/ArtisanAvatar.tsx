@@ -1,3 +1,4 @@
+import { Img } from '../ui/Img';
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
 
@@ -36,7 +37,8 @@ export function ArtisanAvatar({
     >
       {characters[0]?.toLocaleUpperCase('vi') ?? '?'}
       {src && failed !== src && (
-        <img
+        <Img
+          variant="thumbnail"
           src={src}
           alt=""
           width={28}

@@ -19,6 +19,7 @@ const decision = {
 let adminCookie: string;
 let ownerCookie: string;
 let studioId: string;
+let studioName: string;
 
 beforeAll(async () => {
   assertSafeTestDatabase();
@@ -53,6 +54,7 @@ beforeAll(async () => {
   expect(created.status).toBe(201);
   expect(created.body.studio.trustLevel).toBe('unapproved');
   studioId = created.body.studio.id;
+  studioName = created.body.studio.name;
 });
 afterAll(async () => {
   await closePool();
@@ -126,11 +128,16 @@ describe('two studio trust tiers', () => {
       ).trustLevel,
     ).toBe('verified');
     const admin = await request(app)
-      .get('/admin/studios?status=approved')
+      .get('/admin/studios')
+      .query({ status: 'approved', q: studioName })
       .set('Cookie', adminCookie);
-    const history = admin.body.studios.find(
-      (studio: { id: string }) => studio.id === studioId,
-    ).verificationHistory;
+    expect(
+      admin.body.items.some((studio: { id: string }) => studio.id === studioId),
+    ).toBe(true);
+    const adminDetail = await request(app)
+      .get(`/admin/studios/${studioId}`)
+      .set('Cookie', adminCookie);
+    const history = adminDetail.body.studio.verificationHistory;
     expect(history).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -165,7 +172,10 @@ describe('two studio trust tiers', () => {
     const removed = await request(app)
       .patch(`/admin/studios/${studioId}/status`)
       .set('Cookie', adminCookie)
-      .send({ status: 'rejected' });
+      .send({
+        status: 'suspended',
+        reason: 'Temporary suspension for verification review',
+      });
     expect(removed.status).toBe(200);
     expect(removed.body.studio.trustLevel).toBe('unapproved');
     const row = await query(

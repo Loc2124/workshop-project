@@ -1,13 +1,15 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { catalogService } from '../services/catalogService';
 import type { CatalogFilters } from '../types/catalog';
 
 export const catalogKeys = {
   all: ['catalog'] as const,
-  list: (filters: CatalogFilters) => [...catalogKeys.all, filters] as const,
+  list: (filters: CatalogFilters) =>
+    [...catalogKeys.all, 'workshops', 'lists', filters] as const,
   studios: (filters: CatalogFilters) =>
     [...catalogKeys.all, 'studios', filters] as const,
-  detail: (id: string) => [...catalogKeys.all, 'detail', id] as const,
+  detail: (id: string) =>
+    [...catalogKeys.all, 'workshops', 'detail', id] as const,
 };
 
 export function useCatalog(filters: CatalogFilters, enabled = true) {
@@ -15,6 +17,7 @@ export function useCatalog(filters: CatalogFilters, enabled = true) {
     queryKey: catalogKeys.list(filters),
     queryFn: ({ signal }) => catalogService.list(filters, signal),
     enabled,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -23,6 +26,7 @@ export function useCatalogStudios(filters: CatalogFilters, enabled = true) {
     queryKey: catalogKeys.studios(filters),
     queryFn: ({ signal }) => catalogService.listStudios(filters, signal),
     enabled,
+    placeholderData: keepPreviousData,
   });
 }
 

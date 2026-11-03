@@ -35,13 +35,11 @@ describe('studio image storage boundary', () => {
   });
   it('prefers the configured service_role key when both key types are present', async () => {
     vi.stubEnv('SUPABASE_SECRET_KEY', 'sb_secret_backend_only_test_key');
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        Response.json({
-          url: '/object/upload/sign/studio-images/photo.webp?token=scoped',
-        }),
-      );
+    const fetch = vi.fn().mockResolvedValue(
+      Response.json({
+        url: '/object/upload/sign/studio-images/photo.webp?token=scoped',
+      }),
+    );
     vi.stubGlobal('fetch', fetch);
     await createSignedUploadUrl('photo.webp');
     expect(fetch.mock.calls[0][1].headers.apikey).toBe(

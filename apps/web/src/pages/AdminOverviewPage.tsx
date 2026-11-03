@@ -1,3 +1,5 @@
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
 import { lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -95,8 +97,9 @@ const actions: Record<string, string> = {
   'verification.revoked': 'đã thu hồi xác minh studio',
 };
 export default function AdminOverviewPage() {
+  const userId = useAuth().user?.id;
   const overview = useQuery({
-    queryKey: ['management', 'admin-overview'],
+    queryKey: queryKeys.overview.config(userId),
     queryFn: ({ signal }) => getAdminOverview(signal),
     staleTime: 30000,
   });

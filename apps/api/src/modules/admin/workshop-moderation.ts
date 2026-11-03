@@ -4,7 +4,7 @@ import type { PoolClient } from 'pg';
 import { z } from 'zod';
 import { query, withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
-import { imagePublicUrl } from '../images/image-storage.js';
+import { presentImage } from '../images/images.service.js';
 
 export const moderationQuery = z
   .object({
@@ -48,17 +48,22 @@ const columns = `w.id,w.title,w.description,w.studio_id AS "studioId",st.name AS
  w.visibility_status AS status,w.hidden_reason AS "hiddenReason",w.created_at AS "createdAt",
  (SELECT count(*)::integer FROM sessions s WHERE s.workshop_id=w.id AND s.starts_at>now() AND s.status='scheduled') AS "upcomingSlots",
  (SELECT count(*)::integer FROM bookings b JOIN sessions s ON s.id=b.session_id WHERE s.workshop_id=w.id AND b.status NOT IN ('cancelled','expired')) AS "bookingCount",
- COALESCE((SELECT json_agg(json_build_object('id',i.id,'key',i.key) ORDER BY i.created_at,i.id) FROM images i WHERE i.workshop_id=w.id AND i.state='ready'),'[]'::json) AS images`;
+ COALESCE((SELECT json_agg(json_build_object('id',i.id,'key',i.key,'thumbnailKey',i.thumbnail_key,'mediumKey',i.medium_key) ORDER BY i.created_at,i.id) FROM images i WHERE i.workshop_id=w.id AND i.state='ready'),'[]'::json) AS images`;
 const joins =
   'FROM workshops w JOIN studios st ON st.id=w.studio_id LEFT JOIN categories c ON c.id=w.category_id';
 type Row = {
   id: string;
-  images: { id: string; key: string }[];
+  images: {
+    id: string;
+    key: string;
+    thumbnailKey: string | null;
+    mediumKey: string | null;
+  }[];
   [key: string]: unknown;
 };
 const withImages = (row: Row) => ({
   ...row,
-  images: row.images.map((i) => ({ ...i, url: imagePublicUrl(i.key) })),
+  images: row.images.map(presentImage),
 });
 export async function listModeratedWorkshops(
   filters: z.infer<typeof moderationQuery>,

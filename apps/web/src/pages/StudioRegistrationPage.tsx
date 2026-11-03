@@ -16,8 +16,6 @@ import { AuthField } from '../components/ui/auth-field';
 import { Button } from '../components/ui/button';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
-import { SiteFooter } from '../components/layout/SiteFooter';
-import { SiteHeader } from '../components/layout/SiteHeader';
 import { useAuth } from '../hooks/useAuth';
 import { useCategoriesQuery } from '../hooks/useCategories';
 import { useCreateStudio, useMyStudios } from '../hooks/useManagement';
@@ -155,8 +153,7 @@ function StudioRegistrationForm() {
   }
   const steps = ['Thông tin studio', 'Kiểm tra và gửi', 'Hoàn tất'];
   return (
-    <div className="flex min-h-svh flex-col bg-paper text-ink">
-      <SiteHeader />
+    <>
       <main className="flex-1">
         <PageContainer className="py-6 md:py-10">
           <PageBreadcrumb
@@ -732,8 +729,7 @@ function StudioRegistrationForm() {
           </div>
         </PageContainer>
       </main>
-      <SiteFooter />
-    </div>
+    </>
   );
 }
 

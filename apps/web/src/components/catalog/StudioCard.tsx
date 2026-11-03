@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import { formatCategoryLabel } from '../../lib/format';
@@ -6,7 +7,13 @@ import { TicketAction } from '../tickets/TicketPrimitives';
 import { TicketStub } from '../tickets/TicketStub';
 import type { StudioListing } from '../../types/studio';
 
-export function StudioCard({ studio }: { studio: StudioListing }) {
+export const StudioCard = memo(function StudioCard({
+  studio,
+  priority = false,
+}: {
+  studio: StudioListing;
+  priority?: boolean;
+}) {
   return (
     <Link
       to={`/studios/${studio.slug ?? studio.id}`}
@@ -16,6 +23,8 @@ export function StudioCard({ studio }: { studio: StudioListing }) {
       <article className="flex h-full min-w-0 overflow-hidden rounded-ticket border border-stone-200 bg-stone-50">
         <TicketStub
           imageUrl={studio.imageUrl}
+          thumbnailUrl={studio.thumbnailUrl}
+          priority={priority}
           categoryId={studio.categoryId}
           alt={`Không gian ${studio.name}`}
         >
@@ -77,4 +86,4 @@ export function StudioCard({ studio }: { studio: StudioListing }) {
       </article>
     </Link>
   );
-}
+});

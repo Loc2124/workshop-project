@@ -33,6 +33,9 @@ export type Studio = StudioDetailsContent & {
   instagramUrl?: string | null;
   googleMapsUrl?: string | null;
   photoUrls?: string[];
+  photoImages?: { url: string; thumbnailUrl?: string; mediumUrl?: string }[];
+  thumbnailUrl?: string;
+  mediumUrl?: string;
   slug?: string;
   name: string;
   description: string;

@@ -30,6 +30,10 @@ export async function assertImageOwner(
 export type ImageRow = {
   id: string;
   key: string;
+  thumbnailKey: string | null;
+  thumbnailByteSize: number | null;
+  mediumKey: string | null;
+  mediumByteSize: number | null;
   studioId: string;
   workshopId: string | null;
   byteSize: number;
@@ -43,10 +47,25 @@ export async function reserveImage(
   userId: string,
   key: string,
   size: number,
+  thumbnailKey: string | null = null,
+  thumbnailByteSize: number | null = null,
+  mediumKey: string | null = null,
+  mediumByteSize: number | null = null,
 ) {
   await query(
-    `INSERT INTO images(id, studio_id, workshop_id, uploaded_by, key, byte_size) VALUES ($1,$2,$3,$4,$5,$6)`,
-    [id, studioId, workshopId, userId, key, size],
+    `INSERT INTO images(id, studio_id, workshop_id, uploaded_by, key, byte_size, thumbnail_key, thumbnail_byte_size, medium_key, medium_byte_size) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [
+      id,
+      studioId,
+      workshopId,
+      userId,
+      key,
+      size,
+      thumbnailKey,
+      thumbnailByteSize,
+      mediumKey,
+      mediumByteSize,
+    ],
   );
 }
 export async function getOwnedImage(
@@ -54,7 +73,7 @@ export async function getOwnedImage(
   userId: string,
 ): Promise<ImageRow> {
   const result = await query<ImageRow>(
-    `SELECT i.id, i.key, i.studio_id AS "studioId", i.workshop_id AS "workshopId", i.byte_size AS "byteSize", i.state, i.expires_at < now() AS expired FROM images i JOIN studio_members sm ON sm.studio_id = i.studio_id AND sm.user_id = $2 AND sm.role = 'owner' WHERE i.id = $1`,
+    `SELECT i.id, i.key, i.medium_key AS "mediumKey", i.medium_byte_size AS "mediumByteSize", i.thumbnail_key AS "thumbnailKey", i.thumbnail_byte_size AS "thumbnailByteSize", i.studio_id AS "studioId", i.workshop_id AS "workshopId", i.byte_size AS "byteSize", i.state, i.expires_at < now() AS expired FROM images i JOIN studio_members sm ON sm.studio_id = i.studio_id AND sm.user_id = $2 AND sm.role = 'owner' WHERE i.id = $1`,
     [id, userId],
   );
   if (!result.rows[0])
@@ -95,8 +114,13 @@ export async function markImageDeleted(id: string) {
   await query(`UPDATE images SET state = 'deleted' WHERE id = $1`, [id]);
 }
 export async function getImageUrlsForIds(ids: string[]) {
-  const result = await query<{ id: string; key: string }>(
-    `SELECT id, key FROM images WHERE id = ANY($1::uuid[]) AND state = 'ready' ORDER BY array_position($1::uuid[], id)`,
+  const result = await query<{
+    id: string;
+    key: string;
+    thumbnailKey: string | null;
+    mediumKey: string | null;
+  }>(
+    `SELECT id, key, medium_key AS "mediumKey", thumbnail_key AS "thumbnailKey" FROM images WHERE id = ANY($1::uuid[]) AND state = 'ready' ORDER BY array_position($1::uuid[], id)`,
     [ids],
   );
   return result.rows;
@@ -106,16 +130,27 @@ export async function listStudioImages(
   workshopId?: string | null,
 ) {
   return (
-    await query<{ id: string; key: string }>(
-      `SELECT id,key FROM images WHERE studio_id=$1 AND workshop_id IS NOT DISTINCT FROM $2::uuid AND state='ready' ORDER BY created_at,id`,
+    await query<{
+      id: string;
+      key: string;
+      thumbnailKey: string | null;
+      mediumKey: string | null;
+    }>(
+      `SELECT id,key,medium_key AS "mediumKey", thumbnail_key AS "thumbnailKey" FROM images WHERE studio_id=$1 AND workshop_id IS NOT DISTINCT FROM $2::uuid AND state='ready' ORDER BY created_at,id`,
       [studioId, workshopId ?? null],
     )
   ).rows;
 }
 export async function expiredImages() {
   return (
-    await query<{ id: string; key: string; state: string }>(
-      `SELECT id,key,state FROM images i WHERE (state IN ('pending','deleted') AND expires_at < now()) OR state = 'deleting' OR (state='ready' AND workshop_id IS NULL AND created_at < now()-interval '7 days' AND NOT EXISTS(SELECT 1 FROM studios st WHERE i.id=ANY(st.photo_ids))) ORDER BY created_at LIMIT 100`,
+    await query<{
+      id: string;
+      key: string;
+      thumbnailKey: string | null;
+      mediumKey: string | null;
+      state: string;
+    }>(
+      `SELECT id,key,medium_key AS "mediumKey", thumbnail_key AS "thumbnailKey",state FROM images i WHERE (state IN ('pending','deleted') AND expires_at < now()) OR state = 'deleting' OR (state='ready' AND workshop_id IS NULL AND created_at < now()-interval '7 days' AND NOT EXISTS(SELECT 1 FROM studios st WHERE i.id=ANY(st.photo_ids))) ORDER BY created_at LIMIT 100`,
     )
   ).rows;
 }

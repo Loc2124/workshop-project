@@ -1,3 +1,4 @@
+import { defaultSiteSettings } from '@workshop/shared';
 import { randomUUID } from 'node:crypto';
 import * as argon2 from 'argon2';
 import request from 'supertest';
@@ -109,7 +110,10 @@ describe('studio evidence and owner deposit settings', () => {
         await request(app)
           .post('/images/upload-url')
           .set('Cookie', ownerCookie)
-          .send({ studioId, byteSize: 1048577 })
+          .send({
+            studioId,
+            byteSize: defaultSiteSettings.studio.maxImageMb * 1024 * 1024 + 1,
+          })
       ).status,
     ).toBe(422);
     expect(

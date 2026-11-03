@@ -1,5 +1,7 @@
 import { getImageUrlsForIds } from '../images/images.repository.js';
 import { imagePublicUrl } from '../images/image-storage.js';
+import { attachCoverImages } from '../images/image-variants.js';
+import { presentImage } from '../images/images.service.js';
 import { AppError } from '../../errors/app-error.js';
 import {
   findCandidates,
@@ -12,14 +14,16 @@ import {
 } from './catalog.repository.js';
 import type { CatalogFilters } from './catalog.schemas.js';
 
-export function listPublicWorkshops(
+export async function listPublicWorkshops(
   filters: CatalogFilters,
 ): Promise<CatalogPage> {
-  return findCandidates(filters);
+  const page = await findCandidates(filters);
+  return { ...page, items: await attachCoverImages(page.items, 'workshop') };
 }
 
-export function listPublicStudios(filters: CatalogFilters) {
-  return findStudioCandidates(filters);
+export async function listPublicStudios(filters: CatalogFilters) {
+  const page = await findStudioCandidates(filters);
+  return { ...page, items: await attachCoverImages(page.items, 'studio') };
 }
 
 export async function readPublicWorkshop(workshopId: string) {
@@ -27,7 +31,7 @@ export async function readPublicWorkshop(workshopId: string) {
   if (!workshop) {
     throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy workshop.');
   }
-  return { workshop };
+  return { workshop: (await attachCoverImages([workshop], 'workshop'))[0] };
 }
 
 export async function readPublicStudio(studioId: string) {
@@ -43,6 +47,15 @@ export async function readPublicStudio(studioId: string) {
     studio: {
       ...publicStudio,
       photoUrls: photos.map((photo) => imagePublicUrl(photo.key)),
+      photoImages: photos.map((photo) => {
+        const image = presentImage(photo);
+        return {
+          url: image.url,
+          ...(image.thumbnailUrl ? { thumbnailUrl: image.thumbnailUrl } : {}),
+          ...(image.mediumUrl ? { mediumUrl: image.mediumUrl } : {}),
+        };
+      }),
+      workshops: await attachCoverImages(publicStudio.workshops, 'workshop'),
     },
   };
 }

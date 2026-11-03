@@ -1,3 +1,10 @@
+import { Img } from '../components/ui/Img';
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
+import {
+  invalidateResources,
+  invalidatePublicCatalog,
+} from '../lib/query-invalidation';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -76,13 +83,14 @@ const fetcher: DataTableFetcher<Report> = createAdminTableFetcher(
   schema,
 );
 export function AdminReportsPage() {
+  const userId = useAuth().user?.id;
   const client = useQueryClient();
   const [row, setRow] = useState<Report | null>(null);
   const [action, setAction] = useState<Action | null>(null);
   const [note, setNote] = useState('');
   const [imageIndex, setImageIndex] = useState<number | null>(null);
   const detail = useQuery({
-    queryKey: ['management', 'report-detail', row?.id],
+    queryKey: queryKeys.reports.detail(userId, row?.id),
     enabled: !!row,
     refetchInterval: 240000,
     queryFn: async ({ signal }) =>
@@ -105,8 +113,18 @@ export function AdminReportsPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        client.invalidateQueries({ queryKey: ['management'] }),
-        client.invalidateQueries({ queryKey: ['catalog'] }),
+        row
+          ? client.invalidateQueries({
+              queryKey: queryKeys.reports.detail(userId, row.id),
+              exact: true,
+            })
+          : Promise.resolve(),
+        invalidateResources(client, userId, [
+          'reports',
+          'studios',
+          'workshops',
+        ]),
+        invalidatePublicCatalog(client),
       ]);
       toast.success('Đã cập nhật báo cáo và ghi nhật ký.');
       setAction(null);
@@ -203,7 +221,7 @@ export function AdminReportsPage() {
       <DataTable
         columns={columns}
         fetcher={fetcher}
-        queryKey={['management', 'admin-report-table']}
+        queryKey={queryKeys.reports.lists(userId)}
         tabs={[
           { value: 'all', label: 'Tất cả' },
           ...Object.entries(labels).map(([value, label]) => ({ value, label })),
@@ -300,7 +318,8 @@ export function AdminReportsPage() {
                         aria-label={`Xem ảnh bằng chứng ${i + 1}`}
                         onClick={() => setImageIndex(i)}
                       >
-                        <img
+                        <Img
+                          variant="thumbnail"
                           src={image.url}
                           alt={`Bằng chứng ${i + 1}`}
                           className="aspect-square w-full rounded-sm object-cover"

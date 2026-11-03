@@ -36,9 +36,10 @@ function renderPage() {
     defaultOptions: { queries: { staleTime: Infinity, retryOnMount: false } },
   });
   const queryKey = [
-    'management',
-    'admin-studios',
-    'table',
+    'private',
+    'anonymous',
+    'studios',
+    'lists',
     {
       page: 1,
       pageSize: 20,

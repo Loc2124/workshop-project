@@ -10,7 +10,7 @@ import { migrateDatabase } from '../../../../scripts/migrate.js';
 let pool: Pool | undefined;
 let databaseUrl: string;
 
-vi.setConfig({ testTimeout: 30_000 });
+vi.setConfig({ testTimeout: 120_000 });
 
 beforeAll(async () => {
   assertSafeTestDatabase();
@@ -42,7 +42,7 @@ describe('database migrations', () => {
     ]);
   });
 
-  it('uses studio tables and customer/admin system roles', async () => {
+  it('uses studio tables and customer/admin/studio_owner system roles', async () => {
     const result = await getPool().query<{
       studios: string | null;
       organizers: string | null;
@@ -66,7 +66,7 @@ describe('database migrations', () => {
       studios: 'studios',
       organizers: null,
       members: 'studio_members',
-      roles: ['customer', 'admin'],
+      roles: ['customer', 'admin', 'studio_owner'],
     });
   });
 

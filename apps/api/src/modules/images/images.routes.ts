@@ -32,7 +32,19 @@ router.post(
     z
       .object({
         studioId: z.string().uuid(),
+        mediumByteSize: z
+          .number()
+          .int()
+          .positive()
+          .max(600 * 1024)
+          .optional(),
         workshopId: z.string().uuid().nullable().optional(),
+        thumbnailByteSize: z
+          .number()
+          .int()
+          .positive()
+          .max(200 * 1024)
+          .optional(),
         byteSize: z
           .number()
           .int()

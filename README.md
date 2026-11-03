@@ -1,4 +1,6 @@
-# Bộ file chuẩn bị vibe coding: nền tảng đặt chỗ workshop
+# Open Slot — nền tảng khám phá và đặt chỗ workshop
+
+Cập nhật theo mã nguồn ngày 03/11/2026. Tiến độ dưới đây phản ánh mã trong repository; chưa xác nhận deployment production hoặc toàn bộ luồng mua vé.
 
 ## Bắt đầu nhanh
 
@@ -9,9 +11,9 @@
 5. Trước khi chạy test hoặc thao tác trên database test, bật opt-in trong PowerShell: `$env:ALLOW_DESTRUCTIVE_TESTS = "true"`. Sau đó chạy `npm test` hoặc `npm run migrate:test`. Guard sẽ từ chối nếu biến khác `"true"`, thiếu URL, URL sai định dạng, hoặc host và username của hai URL trùng nhau.
 6. `npm run migrate` áp các file SQL trong `db/migrations` lên project dev/demo; `npm run migrate:test` áp chúng lên project test sau khi guard an toàn thông qua. Runner ghi checksum, từ chối migration đã bị sửa và bật RLS cho bảng `schema_migrations`.
 7. `npm run seed:sample` nạp studio, workshop và buổi mẫu mô phỏng vào `DATABASE_URL`; không chạy lệnh này với dữ liệu production.
-8. Xem `docs/deploy.md` để triển khai: API có cấu hình Render; frontend hiện chỉ có khung React/Vite và cấu trúc thư mục, chưa có giao diện. Chưa xác nhận URL công khai và chưa chạy migration lên dev/demo.
+8. Xem `docs/deploy.md` để triển khai: API có cấu hình Render, frontend có cấu hình Vercel. Xác minh URL công khai, biến môi trường và migration thực tế trước khi phát hành.
 
-API mặc định ở `http://localhost:4000` (`GET /health`). Web React/Vite khi được khởi tạo sẽ dùng cổng dev server theo cấu hình Vite (mặc định thường là `5173`).
+API mặc định ở `http://localhost:4000` (`GET /health`). Web React/Vite dùng cổng hiển thị khi chạy dev server (mặc định `5173`). Điền đầy đủ cấu hình bắt buộc trong `.env.example`, bao gồm JWT secret và API URL cho web. Catalog mặc định dùng API; chỉ đặt `VITE_DATA_MODE=demo` khi chủ đích dùng dữ liệu mô phỏng.
 
 ## Kết nối Supabase
 
@@ -47,11 +49,22 @@ Test và script thao tác dữ liệu test dùng chung guard tại `scripts/asse
 ## Trạng thái tiến độ roadmap
 
 - Bước 1: nền tảng API/test/schema — hoàn thành.
-- Bước 2: đăng ký, đăng nhập, JWT cookie, vai hệ thống `customer|admin` — hoàn thành.
+- Bước 2: đăng ký, đăng nhập, JWT cookie, refresh token xoay vòng và thu hồi phiên; vai hệ thống `customer|studio_owner|admin` — đã triển khai.
 - Bước 3: hồ sơ studio, vai thành viên `owner|staff` và duyệt admin (`pending|approved|rejected`) — đã triển khai.
 - Bước 4: tạo/xem/sửa workshop và buổi, kiểm soát membership theo studio; owner tạo workshop/đặt giá, staff tạo buổi theo giá cơ sở và không tự đặt giá — đã triển khai. Danh sách đăng ký sẽ được nối khi triển khai booking.
 - Bước 5: danh mục workshop công khai, lọc cứng, chi tiết và seed mẫu — đã triển khai; kiểm thử tích hợp liên quan đã qua.
-- Frontend React/Vite hiện có cấu hình nền và các lớp data/query cho catalog; chưa có màn hình giao diện. Việc có mã trong repository không đồng nghĩa đã deploy công khai.
+- Frontend React/Vite: trang chủ, khám phá/lọc, chi tiết workshop/studio, giới thiệu, trang nghệ nhân, đăng ký/đăng nhập và đăng ký studio.
+- Không gian studio: hồ sơ/minh chứng, workshop, lịch tổ chức và danh sách đặt chỗ; kiểm soát quyền theo studio.
+- Admin: tổng quan, duyệt studio/workshop, người dùng, danh mục và đề xuất danh mục, đặt chỗ, báo cáo nội dung, nội dung nổi bật, mẫu thông báo, cấu hình và nhật ký thao tác. Xem các tài liệu nghiệp vụ trong `docs/`.
+- Ảnh: upload, nén phía trình duyệt, thumbnail và biến thể kích thước vừa; có migration `029` và `030`. Cần áp migration đúng môi trường trước khi dùng tính năng liên quan.
+- Hiệu năng: tải trang/thành phần theo nhu cầu, cache phiên và query, font tự host, ảnh responsive và ngân sách bundle. Số đo và giới hạn phép đo nằm trong [web-performance](docs/web-performance.md) và [mobile-performance](docs/mobile-performance.md).
+- Kiểm thử: có unit/integration test API và test frontend. Có mã kiểm thử không đồng nghĩa tất cả đã chạy qua ở môi trường hiện tại.
+
+## Phần cần hoàn thiện hoặc xác minh
+
+- Luồng khách đặt chỗ, giữ chỗ, thanh toán PayOS, nhận vé và check-in cần hoàn thiện/kiểm chứng xuyên suốt. Quản lý đơn của admin và giao diện vé demo không xác nhận luồng mua vé đã hoàn chỉnh.
+- Dịch vụ xếp hạng/gợi ý theo `docs/05-ranking-spec.md` chưa được triển khai thành luồng sử dụng hoàn chỉnh.
+- Xác minh deployment thực tế, cookie/CORS, migration, storage và smoke test trên HTTPS. Theo dõi [checklist production](docs/production-readiness-checklist.md); kết quả rà soát cũ là bằng chứng tại thời điểm ghi nhận.
 
 ## Lưu ý
 
@@ -59,5 +72,5 @@ Test và script thao tác dữ liệu test dùng chung guard tại `scripts/asse
 - Phần chữ ký webhook PayOS không được viết sẵn: Bước 9 yêu cầu dán tài liệu chính thức của PayOS cho AI.
 - Dữ liệu mẫu chỉ có vài dòng; cần mở rộng lên 100-200 workshop và hàng trăm câu nhu cầu.
 - Bước 5B: có cấu hình Render cho API; web có trang khám phá/catalog bằng React + Vite + Tailwind CSS. URL công khai và cấu hình production vẫn cần xác nhận.
-- Theo dõi hướng dẫn tại `docs/deploy.md`; cần hoàn thiện frontend, cấu hình hosting và API CORS/secrets, rồi kiểm tra URL HTTPS và smoke test.
+- Theo dõi hướng dẫn tại `docs/deploy.md`; cấu hình hosting và API CORS/secrets, rồi kiểm tra URL HTTPS và smoke test.
 - Hoàn tất triển khai ban đầu API/web ở Bước 5B; hoàn thiện cấu hình ranker, dữ liệu demo và checklist ở Bước 18.

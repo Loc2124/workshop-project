@@ -1,3 +1,6 @@
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
+import { invalidateResources } from '../lib/query-invalidation';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -45,9 +48,10 @@ type Selection = z.infer<typeof featuredSelectionSchema>;
 const same = (a: Selection, b: Selection) =>
   JSON.stringify(a) === JSON.stringify(b);
 export function AdminContentPage() {
+  const userId = useAuth().user?.id;
   const client = useQueryClient();
   const config = useQuery({
-    queryKey: ['management', 'featured-config'],
+    queryKey: queryKeys.featured.config(userId),
     queryFn: async ({ signal }) =>
       featuredConfigSchema.parse(await apiFetch('/admin/noi-dung', { signal })),
   });
@@ -73,10 +77,13 @@ export function AdminContentPage() {
         }),
       ),
     onSuccess: async (data) => {
-      client.setQueryData(['management', 'featured-config'], data);
+      client.setQueryData(queryKeys.featured.config(userId), data);
       setDraft(null);
       setBase(null);
-      await client.invalidateQueries({ queryKey: ['catalog'] });
+      await Promise.all([
+        client.invalidateQueries({ queryKey: queryKeys.public.home }),
+        invalidateResources(client, userId, ['featured']),
+      ]);
       toast.success('Đã lưu nội dung nổi bật trên trang chủ.');
     },
     onError: (error) => toast.error(error.message),

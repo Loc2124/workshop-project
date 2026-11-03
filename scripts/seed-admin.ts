@@ -42,7 +42,9 @@ async function main(): Promise<void> {
   console.log(`Seeded admin user for ${email}`);
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
-}).finally(closePool);
+main()
+  .catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  })
+  .finally(closePool);

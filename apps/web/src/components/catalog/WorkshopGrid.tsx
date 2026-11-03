@@ -55,11 +55,15 @@ export function WorkshopGrid({
   return (
     <div className={gridClass}>
       {view === 'studios'
-        ? studios.map((studio) => (
-            <StudioCard key={studio.id} studio={studio} />
+        ? studios.map((studio, index) => (
+            <StudioCard key={studio.id} studio={studio} priority={index < 2} />
           ))
-        : workshops.map((workshop) => (
-            <WorkshopCard key={workshop.id} workshop={workshop} />
+        : workshops.map((workshop, index) => (
+            <WorkshopCard
+              key={workshop.id}
+              workshop={workshop}
+              priority={index < 2}
+            />
           ))}
     </div>
   );

@@ -1,0 +1,235 @@
+{
+  "viewport": {
+    "width": 390,
+    "height": 844,
+    "dpr": 2
+  },
+  "bundle": {
+    "entry": {
+      "before": {
+        "bytes": 449409,
+        "gzipBytes": 130548
+      },
+      "after": {
+        "bytes": 213547,
+        "gzipBytes": 62480
+      }
+    },
+    "initial": {
+      "before": {
+        "bytes": 866546,
+        "gzipBytes": 263690
+      },
+      "after": {
+        "bytes": 630684,
+        "gzipBytes": 195622
+      }
+    },
+    "totalJs": {
+      "before": {
+        "bytes": 1671913,
+        "gzipBytes": 524662
+      },
+      "after": {
+        "bytes": 1831960,
+        "gzipBytes": 608205
+      }
+    }
+  },
+  "images": [
+    {
+      "path": "/",
+      "beforeInitialBytes": 128304,
+      "afterInitialBytes": 82759,
+      "beforeTotalBytes": 477214,
+      "afterTotalBytes": 232251
+    },
+    {
+      "path": "/kham-pha",
+      "beforeInitialBytes": 73935,
+      "afterInitialBytes": 73935,
+      "beforeTotalBytes": 124411,
+      "afterTotalBytes": 124411
+    },
+    {
+      "path": "/kham-pha?view=studio",
+      "beforeInitialBytes": 14367,
+      "afterInitialBytes": 14367,
+      "beforeTotalBytes": 14367,
+      "afterTotalBytes": 14367
+    },
+    {
+      "path": "/studios/studio-test",
+      "beforeInitialBytes": 85618,
+      "afterInitialBytes": 60415,
+      "beforeTotalBytes": 584600,
+      "afterTotalBytes": 106537
+    },
+    {
+      "path": "/workshop/workshop-1",
+      "beforeInitialBytes": 11081,
+      "afterInitialBytes": 14367,
+      "beforeTotalBytes": 11081,
+      "afterTotalBytes": 25517
+    },
+    {
+      "path": "/danh-cho-nghe-nhan",
+      "beforeInitialBytes": 47398,
+      "afterInitialBytes": 22195,
+      "beforeTotalBytes": 47398,
+      "afterTotalBytes": 22195
+    },
+    {
+      "path": "/ve-open-slot",
+      "beforeInitialBytes": 47398,
+      "afterInitialBytes": 22195,
+      "beforeTotalBytes": 47398,
+      "afterTotalBytes": 22195
+    },
+    {
+      "path": "/dang-nhap",
+      "beforeInitialBytes": 11081,
+      "afterInitialBytes": 11081,
+      "beforeTotalBytes": 11081,
+      "afterTotalBytes": 11081
+    },
+    {
+      "path": "/dang-ky",
+      "beforeInitialBytes": 11081,
+      "afterInitialBytes": 11081,
+      "beforeTotalBytes": 11081,
+      "afterTotalBytes": 11081
+    },
+    {
+      "path": "/dang-ky-studio",
+      "beforeInitialBytes": 11081,
+      "afterInitialBytes": 11081,
+      "beforeTotalBytes": 11081,
+      "afterTotalBytes": 11081
+    },
+    {
+      "path": "/demo/ve",
+      "beforeInitialBytes": 38714,
+      "afterInitialBytes": 38714,
+      "beforeTotalBytes": 55103,
+      "afterTotalBytes": 55103
+    }
+  ],
+  "changedFiles": [
+    "apps/api/src/modules/admin/featured.repository.ts",
+    "apps/api/src/modules/admin/workshop-moderation.ts",
+    "apps/api/src/modules/catalog/catalog.service.ts",
+    "apps/api/src/modules/images/image-variants.ts",
+    "apps/api/src/modules/images/images.repository.ts",
+    "apps/api/src/modules/images/images.routes.ts",
+    "apps/api/src/modules/images/images.service.ts",
+    "apps/api/tests/integration/admin-audit.test.ts",
+    "apps/api/tests/integration/admin-categories.test.ts",
+    "apps/api/tests/integration/migrations.test.ts",
+    "apps/api/tests/integration/studio-admin.test.ts",
+    "apps/api/tests/integration/studio-evidence-deposits.test.ts",
+    "apps/api/tests/integration/studio-trust.test.ts",
+    "apps/api/tests/integration/studio-workshops.test.ts",
+    "apps/api/tests/unit/admin-list-query.test.ts",
+    "apps/api/tests/unit/categories.test.ts",
+    "apps/api/tests/unit/category-proposals.test.ts",
+    "apps/api/tests/unit/image-thumbnails.test.ts",
+    "apps/api/tests/unit/studio-trust.test.ts",
+    "apps/api/vitest.config.ts",
+    "apps/web/build/bundle-metrics.ts",
+    "apps/web/build/performance-budget.json",
+    "apps/web/build/storage-preconnect.ts",
+    "apps/web/build/thumbnails.mjs",
+    "apps/web/index.html",
+    "apps/web/package.json",
+    "apps/web/public/fonts/README.md",
+    "apps/web/public/images/workshops/artPhoto.medium.webp",
+    "apps/web/public/images/workshops/artPhoto.webp",
+    "apps/web/public/images/workshops/candlePhoto.medium.webp",
+    "apps/web/public/images/workshops/candlePhoto.webp",
+    "apps/web/public/images/workshops/craftPhoto.medium.webp",
+    "apps/web/public/images/workshops/craftPhoto.webp",
+    "apps/web/public/images/workshops/flowerPhoto.medium.webp",
+    "apps/web/public/images/workshops/flowerPhoto.webp",
+    "apps/web/public/images/workshops/jewelryPhoto.medium.webp",
+    "apps/web/public/images/workshops/jewelryPhoto.webp",
+    "apps/web/public/images/workshops/perfumePhoto.medium.webp",
+    "apps/web/public/images/workshops/perfumePhoto.webp",
+    "apps/web/public/images/workshops/soapPhoto.medium.webp",
+    "apps/web/public/images/workshops/soapPhoto.webp",
+    "apps/web/public/images/workshops/stampPhoto.medium.webp",
+    "apps/web/public/images/workshops/stampPhoto.webp",
+    "apps/web/public/images/workshops/terrazzoPhoto.medium.webp",
+    "apps/web/public/images/workshops/terrazzoPhoto.webp",
+    "apps/web/src/App.tsx",
+    "apps/web/src/components/admin/ImageGalleryDialog.tsx",
+    "apps/web/src/components/auth/RequireRole.tsx",
+    "apps/web/src/components/catalog/ExploreFilters.tsx",
+    "apps/web/src/components/catalog/HorizontalFilterBar.tsx",
+    "apps/web/src/components/catalog/StudioCard.tsx",
+    "apps/web/src/components/catalog/WorkshopCard.tsx",
+    "apps/web/src/components/catalog/WorkshopGrid.tsx",
+    "apps/web/src/components/details/ArtisanCard.tsx",
+    "apps/web/src/components/details/DeferredSchedule.tsx",
+    "apps/web/src/components/details/DetailPrimitives.tsx",
+    "apps/web/src/components/details/StudioHero.tsx",
+    "apps/web/src/components/details/StudioPhotoGrid.tsx",
+    "apps/web/src/components/details/WorkshopDetails.tsx",
+    "apps/web/src/components/home/HomeFeaturedStudios.tsx",
+    "apps/web/src/components/home/HomeSearchHero.tsx",
+    "apps/web/src/components/layout/HeaderSearch.tsx",
+    "apps/web/src/components/layout/HeaderSearchPanel.tsx",
+    "apps/web/src/components/layout/NotificationsMenu.tsx",
+    "apps/web/src/components/layout/PublicShell.tsx",
+    "apps/web/src/components/layout/SiteHeader.tsx",
+    "apps/web/src/components/layout/StudioSwitcher.tsx",
+    "apps/web/src/components/management/StudioEvidenceFields.tsx",
+    "apps/web/src/components/management/StudioNotifications.tsx",
+    "apps/web/src/components/reports/ReportButton.tsx",
+    "apps/web/src/components/reports/ReportDialog.tsx",
+    "apps/web/src/components/tickets/ArtisanAvatar.tsx",
+    "apps/web/src/components/tickets/TicketCard.tsx",
+    "apps/web/src/components/tickets/TicketStub.tsx",
+    "apps/web/src/components/tickets/types.ts",
+    "apps/web/src/components/ui/Deferred.tsx",
+    "apps/web/src/components/ui/ImagePreload.tsx",
+    "apps/web/src/components/ui/Img.test.tsx",
+    "apps/web/src/components/ui/Img.tsx",
+    "apps/web/src/components/ui/MediaImage.tsx",
+    "apps/web/src/data/mockWorkshops.ts",
+    "apps/web/src/hooks/useCatalog.ts",
+    "apps/web/src/hooks/useDeferredStartup.ts",
+    "apps/web/src/hooks/useManagement.ts",
+    "apps/web/src/hooks/useOwnedStudios.ts",
+    "apps/web/src/lib/compress-studio-image.ts",
+    "apps/web/src/lib/image-sources.ts",
+    "apps/web/src/lib/image-thumbnails.json",
+    "apps/web/src/lib/image-variants.json",
+    "apps/web/src/lib/session-cache.ts",
+    "apps/web/src/pages/AboutPage.tsx",
+    "apps/web/src/pages/AdminReportsPage.tsx",
+    "apps/web/src/pages/AdminStudioProfilesPage.tsx",
+    "apps/web/src/pages/AdminWorkshopPage.tsx",
+    "apps/web/src/pages/ArtisanPage.test.tsx",
+    "apps/web/src/pages/ArtisanPage.tsx",
+    "apps/web/src/pages/ExplorePage.tsx",
+    "apps/web/src/pages/HomePage.tsx",
+    "apps/web/src/pages/StudioPage.tsx",
+    "apps/web/src/pages/StudioRegistrationPage.tsx",
+    "apps/web/src/pages/WorkshopPage.tsx",
+    "apps/web/src/services/authSchemas.ts",
+    "apps/web/src/services/authService.ts",
+    "apps/web/src/services/featuredService.ts",
+    "apps/web/src/services/imageService.ts",
+    "apps/web/src/services/managementService.ts",
+    "apps/web/src/styles.css",
+    "apps/web/src/types/management.ts",
+    "apps/web/src/types/studio.ts",
+    "apps/web/src/types/workshop.ts",
+    "apps/web/vite.config.ts",
+    "db/migrations/030_image_medium_variants.sql",
+    "package-lock.json",
+    "packages/shared/src/index.ts"
+  ],
+  "fontChanges": false
+}

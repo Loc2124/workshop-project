@@ -5,8 +5,6 @@ import { HomeProcessSection } from '../components/home/HomeProcessSection';
 import { HomeArtisanSection } from '../components/home/HomeArtisanSection';
 import { PageContainer } from '../components/layout/PageContainer';
 import { SectionHeading } from '../components/layout/SectionHeading';
-import { SiteHeader } from '../components/layout/SiteHeader';
-import { SiteFooter } from '../components/layout/SiteFooter';
 import { useHomeCatalog } from '../hooks/useHomeCatalog';
 import { useCategoryCatalog } from '../hooks/useCategoryCatalog';
 import { HomeFeaturedStudios } from '../components/home/HomeFeaturedStudios';
@@ -15,8 +13,7 @@ export function HomePage() {
   const home = useHomeCatalog();
   const { items: categoryWorkshops } = useCategoryCatalog();
   return (
-    <div className="home-page min-h-screen bg-paper text-ink">
-      <SiteHeader />
+    <>
       {home.preview && (
         <div
           className="border-b border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-900"
@@ -46,7 +43,6 @@ export function HomePage() {
         <HomeProcessSection browseUrl={home.browseUrl} />
         <HomeArtisanSection />
       </main>
-      <SiteFooter />
-    </div>
+    </>
   );
 }

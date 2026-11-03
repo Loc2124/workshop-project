@@ -4,7 +4,7 @@ import {
   updateStudioEvidence,
 } from './studios.repository.js';
 import { getImageUrlsForIds } from '../images/images.repository.js';
-import { imagePublicUrl } from '../images/image-storage.js';
+import { presentImage } from '../images/images.service.js';
 import { AppError } from '../../errors/app-error.js';
 import { assertCategoryId } from '../catalog/categories.repository.js';
 import { createStudio, listMemberStudios } from './studios.repository.js';
@@ -42,10 +42,7 @@ export async function withStudioImages<T extends { photoIds?: string[] }>(
   const images = await getImageUrlsForIds(studio.photoIds ?? []);
   return {
     ...studio,
-    images: images.map((image) => ({
-      ...image,
-      url: imagePublicUrl(image.key),
-    })),
+    images: images.map(presentImage),
   };
 }
 export async function startStudioDraft(userId: string) {

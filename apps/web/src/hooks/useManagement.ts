@@ -1,3 +1,8 @@
+import { queryKeys } from '../lib/query-keys';
+import {
+  invalidateResources,
+  invalidatePublicCatalog,
+} from '../lib/query-invalidation';
 import type { StudioVerificationDecision } from '@workshop/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
@@ -16,48 +21,36 @@ import type {
 } from '../types/management';
 
 export const managementKeys = {
-  all: ['management'] as const,
-  myStudios: (userId: string | undefined) =>
-    [...managementKeys.all, 'my-studios', userId] as const,
-  studioWorkshops: (studioId: string) =>
-    [...managementKeys.all, 'studio-workshops', studioId] as const,
-  studioSessions: (studioId: string) =>
-    [...managementKeys.all, 'studio-sessions', studioId] as const,
-  adminStudios: (status?: StudioApprovalStatus) =>
-    [...managementKeys.all, 'admin-studios', status ?? 'all'] as const,
-  adminWorkshops: (filters: AdminWorkshopFilters) =>
-    [...managementKeys.all, 'admin-workshops', filters] as const,
+  myStudios: queryKeys.studios.mine,
+  studioWorkshops: (studio: string, userId?: string) =>
+    queryKeys.workshops.forStudio(userId, studio),
+  studioSessions: (studio: string, userId?: string) =>
+    queryKeys.bookings.slots(userId, studio),
+  adminStudios: (status?: StudioApprovalStatus, userId?: string) =>
+    queryKeys.studios.list(userId, { status: status ?? 'all' }),
+  adminWorkshops: (filters: AdminWorkshopFilters, userId?: string) =>
+    queryKeys.workshops.reviews.list(userId, filters),
 };
 
-export function useMyStudios() {
-  const { user, isLoading } = useAuth();
-  return useQuery({
-    queryKey: managementKeys.myStudios(user?.id),
-    queryFn: ({ signal }) => managementService.listMyStudios(signal),
-    enabled: !isLoading && Boolean(user),
-  });
-}
+export { useMyStudios } from './useOwnedStudios';
 
 export function useCreateStudio() {
+  const userId = useAuth().user?.id;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: StudioProfileInput) =>
       managementService.createStudio(input),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ['management', 'admin-overview'],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: [...managementKeys.all, 'my-studios'],
-      });
+      await invalidateResources(queryClient, userId, ['studios']);
     },
   });
 }
 
 export function useStudioWorkshops(studioId: string) {
   const { user, isLoading } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: managementKeys.studioWorkshops(studioId),
+    queryKey: managementKeys.studioWorkshops(studioId, userId),
     queryFn: ({ signal }) =>
       managementService.listStudioWorkshops(studioId, signal),
     enabled: !isLoading && Boolean(user && studioId),
@@ -65,6 +58,7 @@ export function useStudioWorkshops(studioId: string) {
 }
 
 export function useSaveStudioWorkshop() {
+  const userId = useAuth().user?.id;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -78,16 +72,11 @@ export function useSaveStudioWorkshop() {
     }) => managementService.saveStudioWorkshop(studioId, workshopId, input),
     onSuccess: async (_result, { studioId }) => {
       await Promise.all([
+        invalidateResources(queryClient, userId, ['workshops']),
         queryClient.invalidateQueries({
-          queryKey: ['management', 'admin-overview'],
+          queryKey: managementKeys.studioWorkshops(studioId, userId),
         }),
-        queryClient.invalidateQueries({
-          queryKey: managementKeys.studioWorkshops(studioId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: [...managementKeys.all, 'admin-workshops'],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+        invalidatePublicCatalog(queryClient),
       ]);
     },
   });
@@ -95,8 +84,9 @@ export function useSaveStudioWorkshop() {
 
 export function useStudioSessions(studioId: string) {
   const { user, isLoading } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: managementKeys.studioSessions(studioId),
+    queryKey: managementKeys.studioSessions(studioId, userId),
     queryFn: ({ signal }) =>
       managementService.listStudioSessions(studioId, signal),
     enabled: !isLoading && Boolean(user && studioId),
@@ -104,6 +94,7 @@ export function useStudioSessions(studioId: string) {
 }
 
 export function useSaveStudioSession() {
+  const userId = useAuth().user?.id;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -125,22 +116,21 @@ export function useSaveStudioSession() {
       ),
     onSuccess: async (_result, { studioId }) => {
       await Promise.all([
+        invalidateResources(queryClient, userId, ['workshops', 'bookings']),
         queryClient.invalidateQueries({
-          queryKey: ['management', 'admin-overview'],
+          queryKey: managementKeys.studioSessions(studioId, userId),
         }),
         queryClient.invalidateQueries({
-          queryKey: managementKeys.studioSessions(studioId),
+          queryKey: managementKeys.studioWorkshops(studioId, userId),
         }),
-        queryClient.invalidateQueries({
-          queryKey: managementKeys.studioWorkshops(studioId),
-        }),
-        queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+        invalidatePublicCatalog(queryClient),
       ]);
     },
   });
 }
 
 export function useCancelStudioSession() {
+  const userId = useAuth().user?.id;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -152,13 +142,11 @@ export function useCancelStudioSession() {
     }) => managementService.cancelStudioSession(studioId, sessionId),
     onSuccess: async (_result, { studioId }) => {
       await Promise.all([
+        invalidateResources(queryClient, userId, ['bookings']),
         queryClient.invalidateQueries({
-          queryKey: ['management', 'admin-overview'],
+          queryKey: managementKeys.studioSessions(studioId, userId),
         }),
-        queryClient.invalidateQueries({
-          queryKey: managementKeys.studioSessions(studioId),
-        }),
-        queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+        invalidatePublicCatalog(queryClient),
       ]);
     },
   });
@@ -166,16 +154,18 @@ export function useCancelStudioSession() {
 
 export function useAdminStudios(status?: StudioApprovalStatus, enabled = true) {
   const { user, isLoading } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: managementKeys.adminStudios(status),
+    queryKey: managementKeys.adminStudios(status, userId),
     queryFn: ({ signal }) => managementService.listAdminStudios(status, signal),
     enabled: enabled && !isLoading && user?.role === 'admin',
   });
 }
 export function useAdminStudioDetail(studioId: string) {
   const { user, isLoading } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: ['management', 'admin-studio-detail', studioId],
+    queryKey: queryKeys.studios.detail(userId, studioId),
     queryFn: ({ signal }) => managementService.getAdminStudio(studioId, signal),
     enabled: !isLoading && user?.role === 'admin' && Boolean(studioId),
   });
@@ -186,8 +176,9 @@ export function useAdminWorkshops(
   enabled = true,
 ) {
   const { user, isLoading } = useAuth();
+  const userId = user?.id;
   return useQuery({
-    queryKey: managementKeys.adminWorkshops(filters),
+    queryKey: managementKeys.adminWorkshops(filters, userId),
     queryFn: ({ signal }) =>
       managementService.listAdminWorkshops(filters, signal),
     enabled: enabled && !isLoading && user?.role === 'admin',
@@ -195,6 +186,7 @@ export function useAdminWorkshops(
 }
 
 export function useSetStudioStatus() {
+  const userId = useAuth().user?.id;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -206,28 +198,30 @@ export function useSetStudioStatus() {
       status: StudioApprovalStatus;
       reason?: string;
     }) => managementService.setStudioStatus(studioId, status, reason),
-    onSuccess: async (_studio, { studioId }) => {
+    onSuccess: async (studio, { studioId }) => {
+      const key = queryKeys.studios.detail(userId, studioId);
+      queryClient.setQueryData(key, (old: unknown) => ({
+        ...((old ?? {}) as object),
+        ...studio,
+      }));
       await Promise.all([
+        invalidateResources(queryClient, userId, [
+          'studios',
+          'workshops',
+          'notifications',
+        ]),
+        queryClient.invalidateQueries({ queryKey: key, exact: true }),
         queryClient.invalidateQueries({
-          queryKey: ['management', 'admin-studio-detail', studioId],
+          queryKey: queryKeys.public.categories,
         }),
-        queryClient.invalidateQueries({ queryKey: ['catalog'] }),
-        queryClient.invalidateQueries({
-          queryKey: ['management', 'admin-overview'],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['categories'] }),
-        queryClient.invalidateQueries({
-          queryKey: [...managementKeys.all, 'admin-studios'],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: [...managementKeys.all, 'my-studios'],
-        }),
+        invalidatePublicCatalog(queryClient),
       ]);
     },
   });
 }
 
 export function useDecideWorkshop() {
+  const userId = useAuth().user?.id;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -238,26 +232,26 @@ export function useDecideWorkshop() {
       decision: WorkshopDecision;
     }) => managementService.decideWorkshop(workshopId, decision),
     onSuccess: async (workshop) => {
+      queryClient.setQueryData(
+        queryKeys.workshops.reviews.detail(userId, workshop.id),
+        workshop,
+      );
       await Promise.all([
+        invalidateResources(queryClient, userId, ['workshops']),
         queryClient.invalidateQueries({
-          queryKey: ['management', 'admin-overview'],
-        }),
-        queryClient.invalidateQueries({ queryKey: ['categories'] }),
-        queryClient.invalidateQueries({
-          queryKey: [...managementKeys.all, 'admin-workshops'],
+          queryKey: managementKeys.studioWorkshops(workshop.studioId, userId),
         }),
         queryClient.invalidateQueries({
-          queryKey: managementKeys.studioWorkshops(workshop.studioId),
+          queryKey: queryKeys.public.categories,
         }),
-        queryClient.invalidateQueries({
-          queryKey: ['catalog'],
-        }),
+        invalidatePublicCatalog(queryClient),
       ]);
     },
   });
 }
 
 export function useSetStudioVerification() {
+  const userId = useAuth().user?.id;
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
@@ -267,10 +261,14 @@ export function useSetStudioVerification() {
       studioId: string;
       decision: StudioVerificationDecision;
     }) => managementService.setStudioVerification(studioId, decision),
-    onSuccess: async () => {
+    onSuccess: async (_result, { studioId }) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: managementKeys.all }),
-        queryClient.invalidateQueries({ queryKey: ['catalog'] }),
+        invalidateResources(queryClient, userId, ['studios', 'workshops']),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.studios.detail(userId, studioId),
+          exact: true,
+        }),
+        invalidatePublicCatalog(queryClient),
       ]);
     },
   });

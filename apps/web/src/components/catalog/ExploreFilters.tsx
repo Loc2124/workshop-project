@@ -1,9 +1,4 @@
-import {
-  useLayoutEffect,
-  useRef,
-  type ComponentProps,
-  type ReactNode,
-} from 'react';
+import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { CategoryShortcuts } from './CategoryShortcuts';
 import { countActiveFilters, MobileFilterSheet } from './MobileFilterSheet';
 import { CatalogFilterFields } from './CatalogFilterFields';
@@ -16,17 +11,17 @@ export function ExploreFilters(
   const count = countActiveFilters(filters);
   const categoryQuery = useCategoriesQuery(true);
   const barRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
+  useEffect(() => {
     const bar = barRef.current;
     const main = bar?.closest('main');
     if (!bar || !main) return;
-    const measure = () =>
-      main.style.setProperty(
-        '--filter-bar-height',
-        `${bar.getBoundingClientRect().height}px`,
-      );
-    measure();
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver((entries) => {
+      const height =
+        entries[0]?.borderBoxSize?.[0]?.blockSize ??
+        entries[0]?.contentRect.height;
+      if (height !== undefined)
+        main.style.setProperty('--filter-bar-height', `${height}px`);
+    });
     observer.observe(bar);
     return () => {
       observer.disconnect();

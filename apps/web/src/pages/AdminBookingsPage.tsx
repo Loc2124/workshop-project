@@ -1,3 +1,9 @@
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
+import {
+  invalidateResources,
+  invalidatePublicCatalog,
+} from '../lib/query-invalidation';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -113,12 +119,13 @@ const filters: DataTableFilter[] = [
   },
 ];
 export function AdminBookingsPage() {
+  const userId = useAuth().user?.id;
   const client = useQueryClient();
   const [row, setRow] = useState<Booking | null>(null);
   const [action, setAction] = useState<'cancel' | 'change' | null>(null);
   const [target, setTarget] = useState<Status>('confirmed');
   const detail = useQuery({
-    queryKey: ['management', 'admin-booking-detail', row?.id],
+    queryKey: queryKeys.bookings.detail(userId, row?.id),
     enabled: !!row,
     queryFn: async ({ signal }) =>
       z
@@ -140,8 +147,14 @@ export function AdminBookingsPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        client.invalidateQueries({ queryKey: ['management'] }),
-        client.invalidateQueries({ queryKey: ['catalog'] }),
+        row
+          ? client.invalidateQueries({
+              queryKey: queryKeys.bookings.detail(userId, row.id),
+              exact: true,
+            })
+          : Promise.resolve(),
+        invalidateResources(client, userId, ['bookings']),
+        invalidatePublicCatalog(client),
       ]);
       toast.success('Đã cập nhật đặt chỗ và lưu lịch sử.');
       setAction(null);
@@ -151,7 +164,7 @@ export function AdminBookingsPage() {
       toast.error(error.message);
       if (row)
         void client.invalidateQueries({
-          queryKey: ['management', 'admin-booking-detail', row.id],
+          queryKey: queryKeys.bookings.detail(userId, row.id),
         });
     },
   });
@@ -247,7 +260,7 @@ export function AdminBookingsPage() {
       <DataTable
         columns={columns}
         fetcher={fetcher}
-        queryKey={['management', 'admin-bookings', 'table']}
+        queryKey={queryKeys.bookings.lists(userId)}
         tabs={[
           { value: 'all', label: 'Tất cả' },
           ...Object.entries(labels).map(([value, label]) => ({ value, label })),

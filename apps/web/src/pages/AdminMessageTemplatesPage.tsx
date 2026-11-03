@@ -1,3 +1,6 @@
+import { invalidateResources } from '../lib/query-invalidation';
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -40,9 +43,10 @@ type Draft = {
   baseBody: string;
 };
 export function AdminMessageTemplatesPage() {
+  const userId = useAuth().user?.id;
   const client = useQueryClient();
   const templates = useQuery({
-    queryKey: ['management', 'message-templates'],
+    queryKey: queryKeys.templates.config(userId),
     queryFn: async ({ signal }) =>
       z
         .object({ items: z.array(schema), total: z.number() })
@@ -119,7 +123,7 @@ export function AdminMessageTemplatesPage() {
       ).templates;
     },
     onSuccess: async (data, action) => {
-      client.setQueryData(['management', 'message-templates'], data);
+      client.setQueryData(queryKeys.templates.config(userId), data);
       setDrafts((old) => {
         const next = { ...old };
         delete next[selected];
@@ -127,9 +131,7 @@ export function AdminMessageTemplatesPage() {
       });
       setReset(false);
       setError('');
-      await client.invalidateQueries({
-        queryKey: ['management', 'admin-overview'],
-      });
+      await invalidateResources(client, userId, ['templates']);
       toast.success(
         action === 'reset'
           ? 'Đã khôi phục mẫu mặc định.'

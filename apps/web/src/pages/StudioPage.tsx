@@ -1,3 +1,4 @@
+import { StudioPhotoGrid } from '../components/details/StudioPhotoGrid';
 import { ReportButton } from '../components/reports/ReportButton';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -14,8 +15,6 @@ import {
 } from '../components/details/StudioSections';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
-import { SiteFooter } from '../components/layout/SiteFooter';
-import { SiteHeader } from '../components/layout/SiteHeader';
 import { StudioHero } from '../components/details/StudioHero';
 import { TicketCard, toTicketProps } from '../components/tickets';
 import { mockStudios } from '../data/mockStudios';
@@ -93,18 +92,11 @@ function StudioDetails({
           <StudioArtists workshops={workshops} />
           {!!studio.photoUrls?.length && (
             <DetailSection id="studio-photos-heading" title="Không gian studio">
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {studio.photoUrls.map((url, index) => (
-                  <a key={url} href={url} target="_blank" rel="noreferrer">
-                    <img
-                      src={url}
-                      alt={`Không gian ${studio.name}, ảnh ${index + 1}`}
-                      loading="lazy"
-                      className="aspect-4/3 w-full rounded-lg object-cover"
-                    />
-                  </a>
-                ))}
-              </div>
+              <StudioPhotoGrid
+                name={studio.name}
+                urls={studio.photoUrls}
+                images={studio.photoImages}
+              />
             </DetailSection>
           )}
           <StudioExtras studio={studio} />
@@ -129,7 +121,7 @@ export function StudioPage() {
       )
     : undefined;
   const query = useQuery({
-    queryKey: ['catalog', 'studio', identifier],
+    queryKey: ['catalog', 'studios', 'detail', identifier],
     queryFn: ({ signal }) => catalogService.getStudioById(identifier, signal),
     enabled: Boolean(identifier) && !isDemoDataMode,
   });
@@ -140,8 +132,7 @@ export function StudioPage() {
   const notFound =
     query.error instanceof ApiError && query.error.status === 404;
   return (
-    <div className="min-h-screen bg-paper pb-28 text-ink md:pb-0">
-      <SiteHeader />
+    <>
       <PageContainer as="main" className="pb-6 md:pb-8">
         <PageBreadcrumb
           className="py-4"
@@ -165,7 +156,6 @@ export function StudioPage() {
           />
         )}
       </PageContainer>
-      <SiteFooter />
-    </div>
+    </>
   );
 }

@@ -44,12 +44,12 @@ function makeWorkshop(seed: WorkshopSeed): Workshop {
   };
 }
 
-const craftPhoto = '/images/workshops/craftPhoto.jpg';
-const candlePhoto = '/images/workshops/candlePhoto.jpg';
-const artPhoto = '/images/workshops/artPhoto.jpg';
-const flowerPhoto = '/images/workshops/flowerPhoto.jpg';
+const craftPhoto = '/images/workshops/craftPhoto.webp';
+const candlePhoto = '/images/workshops/candlePhoto.webp';
+const artPhoto = '/images/workshops/artPhoto.webp';
+const flowerPhoto = '/images/workshops/flowerPhoto.webp';
 const perfumePhoto = '/images/workshops/perfume-neutral.svg';
-const jewelryPhoto = '/images/workshops/jewelryPhoto.jpg';
+const jewelryPhoto = '/images/workshops/jewelryPhoto.webp';
 const artistPhotos = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
@@ -229,7 +229,7 @@ export const mockWorkshops: Workshop[] = [
   }),
   makeWorkshop({
     id: 'mock-007',
-    imageUrl: '/images/workshops/stampPhoto.jpg',
+    imageUrl: '/images/workshops/stampPhoto.webp',
     title: 'Khắc con dấu cao su của riêng bạn',
     description:
       'Phác họa mẫu đơn giản, chuyển hình và tự tay khắc con dấu cá nhân.',
@@ -285,7 +285,7 @@ export const mockWorkshops: Workshop[] = [
   }),
   makeWorkshop({
     id: 'mock-009',
-    imageUrl: '/images/workshops/soapPhoto.jpg',
+    imageUrl: '/images/workshops/soapPhoto.webp',
     title: 'Làm xà phòng thiên nhiên',
     description:
       'Tìm hiểu dầu nền, chọn tinh dầu và tạo hình bánh xà phòng thủ công.',
@@ -369,7 +369,7 @@ export const mockWorkshops: Workshop[] = [
   }),
   makeWorkshop({
     id: 'mock-012',
-    imageUrl: '/images/workshops/terrazzoPhoto.jpg',
+    imageUrl: '/images/workshops/terrazzoPhoto.webp',
     title: 'Làm khay terrazzo nhiều màu',
     description:
       'Phối màu, đổ khuôn và mài nhẵn chiếc khay trang trí với hiệu ứng terrazzo.',

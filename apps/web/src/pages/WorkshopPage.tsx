@@ -5,8 +5,6 @@ import { apiFetch } from '../lib/api-client';
 import { ReportButton } from '../components/reports/ReportButton';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
-import { SiteFooter } from '../components/layout/SiteFooter';
-import { SiteHeader } from '../components/layout/SiteHeader';
 import { DetailState } from '../components/details/DetailPrimitives';
 import { WorkshopDetails } from '../components/details/WorkshopDetails';
 import type { WorkshopBookingHandler } from '../components/details/WorkshopSchedule';
@@ -79,8 +77,7 @@ export function WorkshopPage({
   const notFound =
     query.error instanceof ApiError && query.error.status === 404;
   return (
-    <div className="min-h-screen bg-paper pb-28 text-ink lg:pb-0">
-      <SiteHeader />
+    <>
       <PageContainer as="main" className="pb-12">
         <PageBreadcrumb
           className="py-4"
@@ -122,7 +119,6 @@ export function WorkshopPage({
           />
         )}
       </PageContainer>
-      <SiteFooter />
-    </div>
+    </>
   );
 }

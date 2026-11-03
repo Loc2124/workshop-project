@@ -1,3 +1,5 @@
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -61,14 +63,15 @@ function Target({ row }: { row: AuditRow }) {
   );
 }
 export function AdminAuditPage() {
+  const userId = useAuth().user?.id;
   const [selected, setSelected] = useState<AuditRow | null>(null);
   const options = useQuery({
-    queryKey: ['management', 'audit-filters'],
+    queryKey: queryKeys.audit.config(userId),
     queryFn: async ({ signal }) =>
       optionsSchema.parse(await apiFetch('/admin/nhat-ky/filters', { signal })),
   });
   const detail = useQuery({
-    queryKey: ['management', 'audit-detail', selected?.id],
+    queryKey: queryKeys.audit.detail(userId, selected?.id),
     enabled: !!selected,
     queryFn: async ({ signal }) =>
       z
@@ -164,7 +167,7 @@ export function AdminAuditPage() {
       <DataTable
         columns={columns}
         fetcher={fetcher}
-        queryKey={['management', 'audit-logs']}
+        queryKey={queryKeys.audit.lists(userId)}
         filters={filters}
         defaultSort="createdAt:desc"
         getRowId={(r) => r.id}

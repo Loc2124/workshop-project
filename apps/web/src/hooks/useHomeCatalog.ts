@@ -1,3 +1,5 @@
+import { queryKeys } from '../lib/query-keys';
+import { useAuth } from './useAuth';
 import {
   useCallback,
   useEffect,
@@ -17,6 +19,7 @@ const preferenceKey = 'open-slot.province';
 const attemptKey = 'open-slot.location-attempted';
 
 export function useHomeCatalog() {
+  const userId = useAuth().user?.id;
   const navigate = useNavigate();
   const {
     provinces,
@@ -34,7 +37,9 @@ export function useHomeCatalog() {
   const [params] = useSearchParams();
   const preview = params.get('featuredPreview') ?? undefined;
   const featured = useQuery({
-    queryKey: ['catalog', 'home-featured', preview ?? 'public'],
+    queryKey: preview
+      ? queryKeys.featured.detail(userId, preview)
+      : queryKeys.public.home,
     queryFn: ({ signal }) => getPublicFeatured(signal, preview),
     staleTime: 30000,
   });

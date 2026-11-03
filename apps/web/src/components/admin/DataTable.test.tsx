@@ -11,6 +11,8 @@ function render(state: 'loading' | 'empty' | 'error' | 'ready') {
     defaultOptions: { queries: { staleTime: Infinity, retryOnMount: false } },
   });
   const queryKey = [
+    'private',
+    'anonymous',
     'test-table',
     { page: 1, pageSize: 20, q: '', tab: 'all', sort: 'name:asc', filters: {} },
   ];

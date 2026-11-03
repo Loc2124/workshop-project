@@ -22,7 +22,13 @@ async function account(role: 'admin' | 'customer') {
   const config = loadConfig();
   await query(
     'INSERT INTO users(id,email,password_hash,full_name,role) VALUES($1,$2,$3,$4,$5)',
-    [id, `${id}@example.test`, 'unused-test-hash', 'Moderation account', role],
+    [
+      id,
+      `${id}@example.test`,
+      'unused-test-hash',
+      'Moderation account ' + id,
+      role,
+    ],
   );
   await query(
     "INSERT INTO auth_sessions(id,user_id,refresh_token_hash,expires_at) VALUES($1,$2,$3,now()+interval '1 day')",
@@ -247,6 +253,7 @@ it('keeps immutable, transactional snapshots with admin-only filtered reads', as
   ).toBe(0);
   const opts = await request(app)
     .get(`${endpoint}/filters`)
+    .query({ q: admin.id })
     .set('Cookie', admin.cookie);
   expect(opts.status).toBe(200);
   expect(

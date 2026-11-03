@@ -29,6 +29,8 @@ export const publicFeaturedSchema = z.object({
         province: z.string(),
         categoryIds: z.array(z.string()),
         imageUrl: z.string().optional(),
+        thumbnailUrl: z.string().optional(),
+        mediumUrl: z.string().optional(),
       }),
     )
     .max(6),

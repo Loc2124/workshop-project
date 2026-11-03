@@ -46,11 +46,25 @@ let refreshPromise: Promise<unknown> | undefined;
 
 function refreshSession(): Promise<unknown> {
   if (!refreshPromise) {
-    refreshPromise = apiFetch('/auth/refresh', { method: 'POST' }).finally(
-      () => {
+    const epoch = sessionEpoch();
+    refreshPromise = apiFetch<{ user: unknown }>('/auth/refresh', {
+      method: 'POST',
+    })
+      .then(async (result) => {
+        if (sessionEpoch() !== epoch) throw new ApiAbortError();
+        await emitSessionEvent({ type: 'refreshed', user: result.user, epoch });
+        // Never replay an old request with another account's refreshed cookies.
+        if (sessionEpoch() !== epoch) throw new ApiAbortError();
+        return result;
+      })
+      .catch(async (error) => {
+        if (sessionEpoch() === epoch && !(error instanceof ApiAbortError))
+          await emitSessionEvent({ type: 'expired', epoch });
+        throw error;
+      })
+      .finally(() => {
         refreshPromise = undefined;
-      },
-    );
+      });
   }
   return refreshPromise;
 }
@@ -215,3 +229,4 @@ function isNamedError(value: unknown, name: string): boolean {
     value.name === name
   );
 }
+import { emitSessionEvent, sessionEpoch } from './session-events';

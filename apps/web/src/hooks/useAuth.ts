@@ -1,30 +1,41 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSyncExternalStore } from 'react';
+import {
+  onSessionCacheChange,
+  sessionCacheVersion,
+} from '../lib/session-events';
+import { authQueryKey, synchronizeSession } from '../lib/session-cache';
 import {
   authService,
   type LoginInput,
   type RegisterInput,
 } from '../services/authService';
 
-export const authQueryKey = ['auth', 'me'] as const;
+export { authQueryKey } from '../lib/session-cache';
 
 export function useAuth() {
+  useSyncExternalStore(onSessionCacheChange, sessionCacheVersion, () => 0);
   const queryClient = useQueryClient();
   const currentUserQuery = useQuery({
     queryKey: authQueryKey,
-    queryFn: ({ signal }) => authService.currentUser(signal),
+    queryFn: async ({ signal }) => {
+      const user = await authService.currentUser(signal);
+      if (!signal.aborted) await synchronizeSession(queryClient, user);
+      return user;
+    },
     retry: false,
     staleTime: Infinity,
   });
   const loginMutation = useMutation({
     mutationFn: (input: LoginInput) => authService.login(input),
-    onSuccess: (user) => queryClient.setQueryData(authQueryKey, user),
+    onSuccess: (user) => synchronizeSession(queryClient, user),
   });
   const registerMutation = useMutation({
     mutationFn: (input: RegisterInput) => authService.register(input),
   });
   const logoutMutation = useMutation({
     mutationFn: authService.logout,
-    onSuccess: () => queryClient.setQueryData(authQueryKey, null),
+    onSettled: () => synchronizeSession(queryClient, null, true),
   });
 
   return {

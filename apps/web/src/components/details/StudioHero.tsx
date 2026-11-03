@@ -168,10 +168,18 @@ export function StudioHero({
             {coverImage && (
               <MediaImage
                 src={coverImage}
+                mediumUrl={
+                  studio.photoImages?.find((image) => image.url === coverImage)
+                    ?.mediumUrl ?? studio.mediumUrl
+                }
+                thumbnailUrl={
+                  studio.photoImages?.find((image) => image.url === coverImage)
+                    ?.thumbnailUrl ?? studio.thumbnailUrl
+                }
                 alt={`Ảnh bìa studio ${studio.name}`}
                 placeholder={`Ảnh bìa studio ${studio.name}`}
                 showPlaceholderText={false}
-                loading="eager"
+                priority
                 width={800}
                 height={600}
                 className="absolute inset-0 bg-transparent"

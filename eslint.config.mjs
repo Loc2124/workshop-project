@@ -10,5 +10,9 @@ export default defineConfig([
     '**/.next/**',
     '**/dist/**',
     '**/coverage/**',
+    'output/**',
+    '.playwright-cli/**',
+    '.playwright-mcp/**',
+    '.taste-skill/**',
   ]),
 ]);

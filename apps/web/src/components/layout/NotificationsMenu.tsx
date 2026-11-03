@@ -1,3 +1,5 @@
+import { useDeferredStartup } from '../../hooks/useDeferredStartup';
+import { queryKeys } from '../../lib/query-keys';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Popover from '@radix-ui/react-popover';
 import { z } from 'zod';
@@ -23,24 +25,24 @@ const schema = z.object({
 });
 export function NotificationsMenu({ userId }: { userId: string }) {
   const client = useQueryClient();
+  const foregroundReady = useDeferredStartup(!!userId);
   const notifications = useQuery({
-    queryKey: ['notifications', userId],
+    queryKey: queryKeys.notifications.lists(userId),
     queryFn: async ({ signal }) =>
       schema.parse(await apiFetch('/me/notifications', { signal }))
         .notifications,
-    refetchInterval: 60000,
+    enabled: foregroundReady,
+    refetchInterval: foregroundReady ? 60000 : false,
+    refetchIntervalInBackground: false,
   });
   const unread = notifications.data?.filter((n) => !n.readAt).length ?? 0;
   const read = useMutation({
     mutationFn: (id: string) =>
       apiFetch(`/me/notifications/${id}/read`, { method: 'PATCH' }),
     onSuccess: () =>
-      Promise.all([
-        client.invalidateQueries({ queryKey: ['notifications', userId] }),
-        client.invalidateQueries({
-          queryKey: ['management', 'studio-notifications'],
-        }),
-      ]),
+      client.invalidateQueries({
+        queryKey: queryKeys.notifications.lists(userId),
+      }),
   });
   return (
     <Popover.Root>

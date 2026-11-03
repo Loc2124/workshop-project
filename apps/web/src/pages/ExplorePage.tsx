@@ -1,9 +1,11 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { catalogService } from '../services/catalogService';
 import { PageContainer } from '../components/layout/PageContainer';
 import { useProvinces } from '../hooks/useProvinces';
 import { categories, getCategoryMeta } from '../constants/categories';
 import { useCategoriesQuery } from '../hooks/useCategories';
 import { provinceSlug } from '../lib/catalog';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { ArrowDownWideNarrow } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import type { AreaOption } from '../components/catalog/AreaMultiSelect';
@@ -12,12 +14,14 @@ import { rankWorkshops } from '../lib/rankWorkshops';
 import { Pagination } from '../components/catalog/Pagination';
 import { ViewToggle, type CatalogView } from '../components/catalog/ViewToggle';
 import { WorkshopGrid } from '../components/catalog/WorkshopGrid';
-import { SiteFooter } from '../components/layout/SiteFooter';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
-import { SiteHeader } from '../components/layout/SiteHeader';
 import { mockStudios } from '../data/mockStudios';
 import { mockWorkshops } from '../data/mockWorkshops';
-import { useCatalog, useCatalogStudios } from '../hooks/useCatalog';
+import {
+  useCatalog,
+  useCatalogStudios,
+  catalogKeys,
+} from '../hooks/useCatalog';
 import { detectProvinceId } from '../services/locationService';
 import type { CatalogFilters, SortOption } from '../types/catalog';
 import type { Studio, StudioListing } from '../types/studio';
@@ -226,6 +230,8 @@ function toStudioListings(
 }
 
 export function ExplorePage() {
+  const nextPageMarker = useRef<HTMLDivElement>(null);
+  const client = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const usingMockData = isDemoDataMode;
   const categoryQuery = useCategoriesQuery(true);
@@ -420,9 +426,57 @@ export function ExplorePage() {
     'TP.HCM',
   );
 
+  useEffect(() => {
+    const selected = view === 'studios' ? studiosCatalog : catalog;
+    if (
+      usingMockData ||
+      !nextPageMarker.current ||
+      selected.isPlaceholderData ||
+      !selected.data ||
+      requestFilters.page * requestFilters.pageSize >=
+        selected.data.pagination.total
+    )
+      return;
+    const connection = (
+      navigator as Navigator & {
+        connection?: { saveData?: boolean; effectiveType?: string };
+      }
+    ).connection;
+    if (connection?.saveData || connection?.effectiveType === 'slow-2g') return;
+    const next = { ...requestFilters, page: requestFilters.page + 1 };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        if (view === 'studios')
+          void client.prefetchQuery({
+            queryKey: catalogKeys.studios(next),
+            queryFn: ({ signal }) => catalogService.listStudios(next, signal),
+            staleTime: 30000,
+          });
+        else
+          void client.prefetchQuery({
+            queryKey: catalogKeys.list(next),
+            queryFn: ({ signal }) => catalogService.list(next, signal),
+            staleTime: 30000,
+          });
+      },
+      { rootMargin: '400px' },
+    );
+    observer.observe(nextPageMarker.current);
+    return () => observer.disconnect();
+  }, [
+    client,
+    view,
+    requestFilters,
+    usingMockData,
+    catalog.data,
+    studiosCatalog.data,
+    catalog.isPlaceholderData,
+    studiosCatalog.isPlaceholderData,
+  ]);
   return (
-    <div className="explore-page min-h-screen bg-paper text-ink">
-      <SiteHeader />
+    <>
       <PageContainer as="main" className="max-w-6xl pb-12">
         <PageBreadcrumb className="pt-3" items={[{ label: 'Khám phá' }]} />
         <section
@@ -507,10 +561,10 @@ export function ExplorePage() {
             view={view}
             workshops={visibleWorkshops}
           />
+          <div ref={nextPageMarker} aria-hidden="true" />
           <Pagination page={page} totalPages={totalPages} onChange={setPage} />
         </section>
       </PageContainer>
-      <SiteFooter />
-    </div>
+    </>
   );
 }

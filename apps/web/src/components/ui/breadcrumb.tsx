@@ -6,9 +6,7 @@ import { cn } from '../../lib/utils';
 const Breadcrumb = React.forwardRef<
   HTMLElement,
   React.ComponentPropsWithoutRef<'nav'>
->(({ ...props }, ref) => (
-  <nav aria-label="Đường dẫn" ref={ref} {...props} />
-));
+>(({ ...props }, ref) => <nav aria-label="Đường dẫn" ref={ref} {...props} />);
 Breadcrumb.displayName = 'Breadcrumb';
 
 const BreadcrumbList = React.forwardRef<
@@ -42,19 +40,18 @@ type BreadcrumbLinkProps = React.ComponentPropsWithoutRef<'a'> & {
   asChild?: boolean;
 };
 
-const BreadcrumbLink = React.forwardRef<
-  HTMLAnchorElement,
-  BreadcrumbLinkProps
->(({ asChild, className, ...props }, ref) => {
-  const Comp = asChild ? Slot : 'a';
-  return (
-    <Comp
-      className={cn('transition-colors hover:text-ink', className)}
-      ref={ref}
-      {...props}
-    />
-  );
-});
+const BreadcrumbLink = React.forwardRef<HTMLAnchorElement, BreadcrumbLinkProps>(
+  ({ asChild, className, ...props }, ref) => {
+    const Comp = asChild ? Slot : 'a';
+    return (
+      <Comp
+        className={cn('transition-colors hover:text-ink', className)}
+        ref={ref}
+        {...props}
+      />
+    );
+  },
+);
 BreadcrumbLink.displayName = 'BreadcrumbLink';
 
 const BreadcrumbPage = React.forwardRef<

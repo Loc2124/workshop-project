@@ -1,12 +1,11 @@
+import { ImagePreload } from '../components/ui/ImagePreload';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { SiteFooter } from '../components/layout/SiteFooter';
-import { SiteHeader } from '../components/layout/SiteHeader';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
 import { MediaImage } from '../components/ui/MediaImage';
 import { Button } from '../components/ui/button';
-import { useMyStudios } from '../hooks/useManagement';
+import { useMyStudios } from '../hooks/useOwnedStudios';
 import { useAuth } from '../hooks/useAuth';
 import { authHref } from '../lib/auth-navigation';
 import { useSiteInformation } from '../hooks/useSiteInformation';
@@ -24,8 +23,8 @@ export function ArtisanPage() {
     ) ?? [];
   const hasStudios = Boolean(studios.data?.length);
   return (
-    <div className="min-h-svh bg-paper text-ink">
-      <SiteHeader />
+    <>
+      <ImagePreload src="/images/workshops/craftPhoto.webp" />
       <main>
         <PageContainer className="pb-12 pt-6 md:pb-20">
           <PageBreadcrumb items={[{ label: 'Dành cho nghệ nhân' }]} />
@@ -83,13 +82,13 @@ export function ArtisanPage() {
             </div>
             <figure className="m-0">
               <MediaImage
-                src="/images/workshops/craftPhoto.jpg"
+                src="/images/workshops/craftPhoto.webp"
                 alt="Những chiếc bình gốm thủ công"
                 placeholder="Thành phẩm thủ công"
                 className="aspect-4/3 rounded-2xl lg:aspect-5/4"
                 width={900}
                 height={720}
-                loading="eager"
+                priority
               />
               <figcaption className="mt-3 text-sm text-muted">
                 Một không gian để chia sẻ nghề và tạo nên những trải nghiệm mới.
@@ -231,7 +230,6 @@ export function ArtisanPage() {
           </section>
         </PageContainer>
       </main>
-      <SiteFooter />
-    </div>
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import { Img } from '../ui/Img';
 import { useState, type ReactNode } from 'react';
 import {
   DEFAULT_CATEGORY,
@@ -8,12 +9,16 @@ import { cn } from '../../lib/utils';
 
 export function TicketStub({
   imageUrl,
+  thumbnailUrl,
+  priority = false,
   alt,
   categoryId,
   featured = false,
   children,
 }: {
   imageUrl?: string | null;
+  thumbnailUrl?: string | null;
+  priority?: boolean;
   alt: string;
   categoryId?: string;
   featured?: boolean;
@@ -38,7 +43,10 @@ export function TicketStub({
       )}
     >
       {displaySource && (
-        <img
+        <Img
+          thumbnail
+          thumbnailUrl={displaySource === imageUrl ? thumbnailUrl : undefined}
+          priority={priority}
           src={displaySource}
           alt={imageUrl && displaySource === imageUrl ? alt : ''}
           loading="lazy"
@@ -50,7 +58,7 @@ export function TicketStub({
           style={{ objectPosition }}
           className={cn(
             'absolute inset-0 size-full object-cover',
-            !hasImage && 'opacity-0',
+            !hasImage && !priority && 'opacity-0',
           )}
         />
       )}

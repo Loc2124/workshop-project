@@ -2,6 +2,8 @@ import { defaultSiteSettings } from '@workshop/shared';
 export async function compressStudioImage(
   file: File,
   maxMb = defaultSiteSettings.studio.maxImageMb,
+  maxSide = 1600,
+  outputLimit = maxMb * 1024 * 1024,
 ): Promise<Blob> {
   if (
     !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
@@ -10,33 +12,22 @@ export async function compressStudioImage(
     throw new Error(
       `Chọn ảnh JPG, PNG hoặc WebP, tối đa ${maxMb} MB trước khi nén.`,
     );
-  const bitmap = await createImageBitmap(file);
-  try {
-    const ratio = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
-    canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
-    canvas
-      .getContext('2d')!
-      .drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    let lastBlob: Blob | null = null;
-    for (const quality of [0.82, 0.7, 0.58]) {
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/webp', quality),
-      );
-      lastBlob = blob;
-      if (
-        blob?.type === 'image/webp' &&
-        blob.size <= Math.min(maxMb, 1) * 1024 * 1024
-      )
-        return blob;
-    }
-    if (lastBlob?.type === 'image/webp' && lastBlob.size <= maxMb * 1024 * 1024)
-      return lastBlob;
+  const [{ default: compress }, { default: workerUrl }] = await Promise.all([
+    import('browser-image-compression'),
+    import('browser-image-compression/dist/browser-image-compression.js?url'),
+  ]);
+  const blob = await compress(file, {
+    maxSizeMB: Math.min(outputLimit, 1024 * 1024) / (1024 * 1024),
+    maxWidthOrHeight: maxSide,
+    fileType: 'image/webp',
+    initialQuality: 0.82,
+    useWebWorker: true,
+    libURL: workerUrl,
+    maxIteration: 8,
+  });
+  if (blob.type !== 'image/webp' || blob.size > outputLimit)
     throw new Error(
       `Chưa nén được ảnh dưới ${maxMb} MB. Chọn ảnh nhỏ hơn để thử lại.`,
     );
-  } finally {
-    bitmap.close();
-  }
+  return blob;
 }

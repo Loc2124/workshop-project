@@ -1,3 +1,4 @@
+import { Img } from '../ui/Img';
 import {
   formatCategoryLabel,
   formatSessionDate,
@@ -46,6 +47,8 @@ export function TicketCard(
       >
         <TicketStub
           imageUrl={workshop.imageUrl}
+          thumbnailUrl={workshop.thumbnailUrl}
+          priority={props.priority}
           alt={`${workshop.title} tại ${studio.name}`}
           categoryId={workshop.categoryId}
           featured={featured}
@@ -105,7 +108,8 @@ export function TicketCard(
               {artisan && (
                 <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
                   {artisan.avatarUrl && (
-                    <img
+                    <Img
+                      variant="thumbnail"
                       src={artisan.avatarUrl}
                       alt=""
                       loading="lazy"

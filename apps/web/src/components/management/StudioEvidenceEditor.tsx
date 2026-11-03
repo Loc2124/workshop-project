@@ -1,3 +1,8 @@
+import { useAuth } from '../../hooks/useAuth';
+import {
+  invalidateResources,
+  invalidatePublicCatalog,
+} from '../../lib/query-invalidation';
 import { useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -17,6 +22,7 @@ import { Button } from '../ui/button';
 import { imageService } from '../../services/imageService';
 
 export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
+  const userId = useAuth().user?.id;
   const settings = useSiteSettings();
   const policy = (settings.data ?? defaultSiteSettings).studio;
   const [search, setSearch] = useSearchParams();
@@ -60,8 +66,8 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
       );
       await Promise.allSettled(removed.map((id) => imageService.remove(id)));
       await Promise.all([
-        client.invalidateQueries({ queryKey: ['management'] }),
-        client.invalidateQueries({ queryKey: ['catalog'] }),
+        invalidateResources(client, userId, ['studios', 'workshops']),
+        invalidatePublicCatalog(client),
       ]);
       setOpen(false);
       setSearch(

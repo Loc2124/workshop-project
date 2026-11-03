@@ -1,3 +1,5 @@
+import { useAuth } from '../../hooks/useAuth';
+import { queryKeys } from '../../lib/query-keys';
 import { useEffect, useId, useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { useQuery } from '@tanstack/react-query';
@@ -25,6 +27,7 @@ export function SearchableFilterSelect({
   excludedValues?: string[];
   searchPlaceholder?: string;
 }) {
+  const userId = useAuth().user?.id;
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
@@ -35,7 +38,7 @@ export function SearchableFilterSelect({
     return () => clearTimeout(timer);
   }, [search]);
   const options = useQuery({
-    queryKey: ['admin-filter-options', label, q],
+    queryKey: queryKeys.options.list(userId, { label, q }),
     queryFn: ({ signal }) => loadOptions(q, signal),
     enabled: open,
   });

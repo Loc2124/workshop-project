@@ -1,3 +1,10 @@
+import { Img } from '../components/ui/Img';
+import { useAuth } from '../hooks/useAuth';
+import { queryKeys } from '../lib/query-keys';
+import {
+  invalidateResources,
+  invalidatePublicCatalog,
+} from '../lib/query-invalidation';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,7 +48,13 @@ const workshopSchema = z.object({
   createdAt: z.string(),
   upcomingSlots: z.number(),
   bookingCount: z.number(),
-  images: z.array(z.object({ id: z.string(), url: z.string() })),
+  images: z.array(
+    z.object({
+      id: z.string(),
+      url: z.string(),
+      thumbnailUrl: z.string().optional(),
+    }),
+  ),
 });
 type Workshop = z.infer<typeof workshopSchema>;
 const detailSchema = workshopSchema.extend({
@@ -79,9 +92,10 @@ const loadStudios = async (q: string, signal: AbortSignal) =>
     )
     .items.map((s) => ({ value: s.id, label: s.name }));
 export function AdminWorkshopPage() {
+  const userId = useAuth().user?.id;
   const client = useQueryClient();
   const categories = useQuery({
-    queryKey: ['admin-workshop-categories'],
+    queryKey: [...queryKeys.public.categories, 'options'],
     queryFn: async ({ signal }) =>
       z
         .object({
@@ -93,7 +107,7 @@ export function AdminWorkshopPage() {
   const [decision, setDecision] = useState<'hidden' | 'removed' | null>(null);
   const [imageIndex, setImageIndex] = useState<number | null>(null);
   const detail = useQuery({
-    queryKey: ['management', 'workshop-moderation-detail', row?.id],
+    queryKey: queryKeys.workshops.detail(userId, row?.id),
     queryFn: async ({ signal }) =>
       z
         .object({ workshop: detailSchema })
@@ -115,8 +129,14 @@ export function AdminWorkshopPage() {
     },
     onSuccess: async () => {
       await Promise.all([
-        client.invalidateQueries({ queryKey: ['management'] }),
-        client.invalidateQueries({ queryKey: ['catalog'] }),
+        row
+          ? client.invalidateQueries({
+              queryKey: queryKeys.workshops.detail(userId, row.id),
+              exact: true,
+            })
+          : Promise.resolve(),
+        invalidateResources(client, userId, ['workshops']),
+        invalidatePublicCatalog(client),
       ]);
       toast.success('Đã cập nhật workshop và thông báo cho chủ studio.');
       setDecision(null);
@@ -132,8 +152,10 @@ export function AdminWorkshopPage() {
         enableSorting: false,
         cell: ({ row }) =>
           row.original.images[0] ? (
-            <img
+            <Img
+              variant="thumbnail"
               src={row.original.images[0].url}
+              thumbnailUrl={row.original.images[0].thumbnailUrl}
               alt=""
               className="size-12 min-w-12 rounded-sm object-cover"
             />
@@ -238,7 +260,7 @@ export function AdminWorkshopPage() {
       <DataTable
         columns={columns}
         fetcher={fetcher}
-        queryKey={['management', 'workshop-moderation-table']}
+        queryKey={queryKeys.workshops.lists(userId)}
         tabs={tabs}
         defaultTab="all"
         defaultSort="createdAt:desc"
@@ -299,8 +321,10 @@ export function AdminWorkshopPage() {
                       aria-label={`Xem lớn ảnh ${i + 1}`}
                       onClick={() => setImageIndex(i)}
                     >
-                      <img
+                      <Img
+                        variant="thumbnail"
                         src={image.url}
+                        thumbnailUrl={image.thumbnailUrl}
                         alt={`Ảnh workshop ${i + 1}`}
                         className="aspect-square w-full rounded-sm object-cover"
                       />

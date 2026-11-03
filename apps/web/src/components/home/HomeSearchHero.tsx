@@ -131,11 +131,11 @@ export function HomeSearchHero(props: Props) {
       </div>
       <figure className="min-w-0 overflow-hidden rounded-2xl bg-beige">
         <MediaImage
-          src="/images/workshops/stampPhoto.jpg"
+          src="/images/workshops/stampPhoto.webp"
           alt="Bàn làm thủ công với kéo, bút chì và dụng cụ cắt giấy"
           width={900}
           height={1100}
-          fetchPriority="high"
+          priority
           placeholder="Dụng cụ thủ công"
           loading="eager"
           imageClassName="object-center motion-safe:animate-home-photo-drift"

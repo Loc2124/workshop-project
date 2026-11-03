@@ -1,30 +1,10 @@
-import { z } from 'zod';
-import { registrationInputSchema } from '@workshop/shared';
 import { ApiError, apiFetch } from '../lib/api-client';
-
-const authUserSchema = z
-  .object({
-    id: z.string().uuid(),
-    email: z.string().email(),
-    fullName: z.string(),
-    role: z.enum(['customer', 'studio_owner', 'admin']),
-  })
-  .strict();
-
-const authResponseSchema = z.object({ user: authUserSchema }).strict();
-
-export type AuthUser = z.infer<typeof authUserSchema>;
-export type LoginInput = {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
-};
-export const registerInputSchema = registrationInputSchema.strict();
-export type RegisterInput = z.infer<typeof registerInputSchema>;
-
+export type { AuthUser, RegisterInput, LoginInput } from './authSchemas';
+import type { AuthUser, RegisterInput, LoginInput } from './authSchemas';
 async function requestCurrentUser(signal?: AbortSignal): Promise<AuthUser> {
   const response = await apiFetch<unknown>('/me', { signal });
-  return authResponseSchema.parse(response).user;
+  return (await import('./authSchemas')).authResponseSchema.parse(response)
+    .user;
 }
 
 function isUnauthorized(error: unknown): error is ApiError {
@@ -46,16 +26,20 @@ export const authService = {
       method: 'POST',
       body: JSON.stringify(input),
     });
-    return authResponseSchema.parse(response).user;
+    return (await import('./authSchemas')).authResponseSchema.parse(response)
+      .user;
   },
 
   async register(input: RegisterInput): Promise<AuthUser> {
-    const body = registerInputSchema.parse(input);
+    const body = (await import('./authSchemas')).registerInputSchema.parse(
+      input,
+    );
     const response = await apiFetch<unknown>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(body),
     });
-    return authResponseSchema.parse(response).user;
+    return (await import('./authSchemas')).authResponseSchema.parse(response)
+      .user;
   },
 
   logout(): Promise<void> {
