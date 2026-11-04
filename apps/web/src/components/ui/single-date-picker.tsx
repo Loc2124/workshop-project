@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import * as Popover from '@radix-ui/react-popover';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -47,9 +48,7 @@ export function SingleDatePicker({
         >
           <Suspense
             fallback={
-              <p role="status" className="p-6 text-base">
-                Đang tải lịch…
-              </p>
+              <LoadingState label="Đang tải lịch…" className="p-6 text-base" />
             }
           >
             <Calendar

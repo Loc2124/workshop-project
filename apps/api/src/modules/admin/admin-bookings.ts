@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getSiteSettings } from '../settings/settings.repository.js';
 import { query, withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
+import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
 const status = z.enum(['pending', 'confirmed', 'cancelled', 'completed']);
 const date = z.iso.date();
 export const adminBookingsQuery = z
@@ -51,7 +52,7 @@ export const adminBookingDecision = z
   .strict();
 const joins =
   'FROM bookings b JOIN users u ON u.id=b.user_id JOIN sessions s ON s.id=b.session_id JOIN workshops w ON w.id=s.workshop_id JOIN studios st ON st.id=w.studio_id';
-const columns = `b.id,b.order_code::text AS code,u.full_name AS "customerName",u.email AS "customerEmail",u.phone AS "customerPhone",w.id AS "workshopId",w.title AS "workshopTitle",w.description AS "workshopDescription",st.id AS "studioId",st.name AS "studioName",st.address,s.id AS "sessionId",s.starts_at AS "startsAt",s.ends_at AS "endsAt",s.status AS "slotStatus",b.quantity,b.unit_price AS "unitPrice",b.total_amount AS "totalAmount",b.reservation_status AS status,b.status AS "paymentStatus",b.created_at AS "createdAt",b.hold_expires_at AS "holdExpiresAt"`;
+const columns = `b.id,b.order_code::text AS code,u.full_name AS "customerName",u.email AS "customerEmail",u.phone AS "customerPhone",w.id AS "workshopId",w.title AS "workshopTitle",w.description AS "workshopDescription",st.id AS "studioId",st.name AS "studioName",st.address,s.id AS "sessionId",s.starts_at AS "startsAt",s.ends_at AS "endsAt",s.status AS "slotStatus",b.quantity,b.unit_price AS "unitPrice",b.total_amount AS "totalAmount",b.deposit_amount AS "depositAmount",b.paid_amount AS "paidAmount",b.total_amount-b.paid_amount AS "balanceAmount",b.payment_mode AS "paymentMode",b.reservation_status AS status,b.status AS "paymentStatus",b.created_at AS "createdAt",b.hold_expires_at AS "holdExpiresAt"`;
 export async function listAdminBookings(
   filters: z.infer<typeof adminBookingsQuery>,
   countsOnly = false,
@@ -156,6 +157,7 @@ export async function changeAdminBooking(
         [lookup.session_id],
       )
     ).rows[0];
+    await releaseExpiredHolds(client, [lookup.session_id]);
     if (customerId) {
       const policy = (await getSiteSettings(client)).booking;
       if (input.status !== 'cancelled')
@@ -184,8 +186,12 @@ export async function changeAdminBooking(
         reservation_status: string;
         quantity: number;
         expired: boolean;
+        paid_amount: number;
+        total_amount: number;
+        payment_mode: string;
+        deposit_amount: number;
       }>(
-        'SELECT session_id,status,reservation_status,quantity,hold_expires_at<=now() AS expired FROM bookings WHERE id=$1 FOR UPDATE',
+        'SELECT session_id,status,reservation_status,quantity,paid_amount,total_amount,payment_mode,deposit_amount,hold_expires_at<=now() AS expired FROM bookings WHERE id=$1 FOR UPDATE',
         [id],
       )
     ).rows[0];
@@ -205,6 +211,16 @@ export async function changeAdminBooking(
       pending: ['confirmed', 'cancelled'],
       confirmed: ['completed', 'cancelled'],
     };
+    if (
+      input.status === 'confirmed' &&
+      b.payment_mode === 'payos_deposit' &&
+      b.paid_amount < b.deposit_amount
+    )
+      throw new AppError(
+        409,
+        'CONFLICT',
+        'Chưa nhận đủ tiền cọc để xác nhận đặt chỗ.',
+      );
     if (!allowed[b.reservation_status]?.includes(input.status))
       throw new AppError(
         409,
@@ -223,7 +239,12 @@ export async function changeAdminBooking(
         'CONFLICT',
         'Đặt chỗ hoặc slot không còn hiệu lực.',
       );
-    if (input.status === 'confirmed' && b.status === 'pending' && b.expired)
+    if (
+      input.status === 'confirmed' &&
+      b.reservation_status === 'pending' &&
+      b.status === 'pending' &&
+      b.expired
+    )
       throw new AppError(
         409,
         'CONFLICT',
@@ -235,38 +256,69 @@ export async function changeAdminBooking(
         'BAD_REQUEST',
         'Chỉ hoàn tất sau khi slot kết thúc.',
       );
-    if (input.status === 'cancelled') {
-      const counter =
-        b.status === 'pending'
+    const counterToRelease =
+      input.status !== 'cancelled'
+        ? null
+        : b.reservation_status === 'pending'
           ? 'seats_held'
-          : b.status === 'paid'
+          : b.reservation_status === 'confirmed'
             ? 'seats_sold'
             : null;
-      if (counter) {
-        const released = await client.query(
-          `UPDATE sessions SET ${counter}=${counter}-$2 WHERE id=$1 AND ${counter}>=$2 RETURNING id`,
-          [b.session_id, b.quantity],
-        );
-        if (!released.rowCount)
-          throw new AppError(
-            409,
-            'CONFLICT',
-            'Số chỗ không khớp. Chưa hủy đặt chỗ.',
-          );
-      }
-      await client.query(
-        "UPDATE tickets SET status='void' WHERE booking_id=$1 AND status='valid'",
-        [id],
-      );
-    }
+    const shouldConfirmHeldReservation =
+      input.status === 'confirmed' && b.reservation_status === 'pending';
     await client.query(
       "SELECT set_config('app.booking_actor',$1,true),set_config('app.booking_reason',$2,true)",
       [actor, input.reason],
     );
     await client.query(
-      `UPDATE bookings SET reservation_status=$2,status=CASE WHEN $2='cancelled' AND status='paid' THEN 'refund_needed'::booking_status WHEN $2='cancelled' THEN 'cancelled'::booking_status ELSE status END WHERE id=$1`,
+      `UPDATE bookings
+       SET reservation_status = $2,
+           status = CASE
+             WHEN $2 = 'cancelled'
+               AND (paid_amount > 0 OR (status = 'paid' AND total_amount > 0))
+               THEN 'refund_needed'::booking_status
+             WHEN $2 = 'cancelled' THEN 'cancelled'::booking_status
+             ELSE status
+           END
+       WHERE id = $1`,
       [id, input.status],
     );
+    if (counterToRelease) {
+      const released = await client.query(
+        `UPDATE sessions SET ${counterToRelease}=${counterToRelease}-$2 WHERE id=$1 AND ${counterToRelease}>=$2 RETURNING id`,
+        [b.session_id, b.quantity],
+      );
+      if (!released.rowCount)
+        throw new AppError(
+          409,
+          'CONFLICT',
+          'Số chỗ không khớp. Chưa hủy đặt chỗ.',
+        );
+      await client.query(
+        "UPDATE tickets SET status='void' WHERE booking_id=$1 AND status='valid'",
+        [id],
+      );
+      await client.query(
+        "UPDATE payments SET status='cancelled' WHERE booking_id=$1 AND status='created'",
+        [id],
+      );
+    } else if (shouldConfirmHeldReservation) {
+      const transferred = await client.query(
+        `UPDATE sessions
+         SET seats_held = seats_held - $2,
+             seats_sold = seats_sold + $2
+         WHERE id = $1 AND seats_held >= $2
+         RETURNING id`,
+        [b.session_id, b.quantity],
+      );
+      if (!transferred.rowCount) {
+        throw new AppError(
+          409,
+          'CONFLICT',
+          'Số chỗ giữ không khớp. Chưa xác nhận đặt chỗ.',
+        );
+      }
+    }
   });
   return customerId ? { ok: true } : getAdminBooking(id);
 }

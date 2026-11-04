@@ -10,7 +10,7 @@ import { useForm, useWatch, type FieldPathByValue } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { siteSettingsSchema, type SiteSettings } from '@workshop/shared';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import { apiFetch } from '../lib/api-client';
 import {
   Form,
@@ -29,7 +29,7 @@ import {
   CardContent,
 } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { Skeleton } from '../components/ui/skeleton';
+import { LoadingState } from '../components/ui/LoadingState';
 import { formatReviewDate } from '../lib/studio-review';
 
 const response = z.object({
@@ -159,7 +159,7 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
       toast.success('Đã lưu cài đặt.');
     },
     onError: (e) =>
-      setError(e instanceof Error ? e.message : 'Chưa lưu được cài đặt.'),
+      toast.error(e instanceof Error ? e.message : 'Chưa lưu được cài đặt.'),
   });
   const reload = useMutation({
     mutationFn: async () => response.parse(await apiFetch('/admin/cai-dat')),
@@ -273,22 +273,17 @@ export function AdminSettingsPage() {
       response.parse(await apiFetch('/admin/cai-dat', { signal })),
     refetchOnWindowFocus: false,
   });
+  if (query.isPending)
+    return <LoadingState label="Đang tải cài đặt…" variant="page" />;
   return (
     <div className="space-y-5">
-      <Toaster richColors />
       <header className="space-y-2">
         <h1 className="font-heading text-2xl font-semibold">Cài đặt</h1>
         <p className="text-sm text-muted">
           Quản lý yêu cầu hồ sơ studio, thông tin hỗ trợ và chính sách đặt lịch.
         </p>
       </header>
-      {query.isPending ? (
-        <div aria-label="Đang tải cài đặt" className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-52 w-full" />
-          ))}
-        </div>
-      ) : query.isError ? (
+      {query.isError ? (
         <div role="alert" className="space-y-3 text-sm text-brick">
           <p>Chưa tải được cài đặt.</p>
           <Button variant="outline" onClick={() => void query.refetch()}>

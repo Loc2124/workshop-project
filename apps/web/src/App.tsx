@@ -5,12 +5,15 @@ import {
   useLocation,
   useParams,
 } from 'react-router-dom';
-import { lazy, Suspense, useSyncExternalStore } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { lazy, Suspense, useEffect, useSyncExternalStore } from 'react';
 import {
   onSessionCacheChange,
   sessionCacheVersion,
 } from './lib/session-events';
+import { prefetchPublicHome } from './lib/prefetch-public-home';
 import { RequireRole } from './components/auth/RequireRole';
+import { RequireCustomer } from './components/auth/RequireCustomer';
 import { DashboardSkeleton } from './components/layout/DashboardSkeleton';
 import {
   AdminSettingsPage,
@@ -24,19 +27,12 @@ import {
   AdminReportsPage,
   AdminWorkshopPage,
   AdminStudioProfilesPage,
-  AdminApprovalPage,
   StudioOverviewPage,
   StudioWorkspacePage,
   StudioDashboard,
   AdminDashboard,
 } from './lib/dashboard-routes';
 import { useCategories } from './hooks/useCategories';
-
-const TicketDemoPage = lazy(() =>
-  import('./pages/TicketDemoPage').then((module) => ({
-    default: module.TicketDemoPage,
-  })),
-);
 
 import { PublicShell } from './components/layout/PublicShell';
 import { AuthLayout } from './components/layout/AuthLayout';
@@ -75,6 +71,31 @@ const RegisterPage = lazy(() =>
     default: module.RegisterPage,
   })),
 );
+const CustomerBookingsPage = lazy(() =>
+  import('./pages/CustomerBookingsPage').then((module) => ({
+    default: module.CustomerBookingsPage,
+  })),
+);
+const CustomerBookingDetailPage = lazy(() =>
+  import('./pages/CustomerBookingDetailPage').then((module) => ({
+    default: module.CustomerBookingDetailPage,
+  })),
+);
+const MockPaymentPage = lazy(() =>
+  import('./pages/MockPaymentPage').then((module) => ({
+    default: module.MockPaymentPage,
+  })),
+);
+const PaymentReturnPage = lazy(() =>
+  import('./pages/PaymentReturnPage').then((module) => ({
+    default: module.PaymentReturnPage,
+  })),
+);
+const PaymentCancelPage = lazy(() =>
+  import('./pages/PaymentReturnPage').then((module) => ({
+    default: () => <module.PaymentReturnPage cancelled />,
+  })),
+);
 const StudioRegistrationPage = lazy(() =>
   import('./pages/StudioRegistrationPage').then((module) => ({
     default: module.StudioRegistrationPage,
@@ -104,6 +125,13 @@ function App() {
   // A session reset removes observed Queries. Public routes rebind too, while
   // their content continues to render independently from the auth bootstrap.
   useSyncExternalStore(onSessionCacheChange, sessionCacheVersion, () => 0);
+  const { pathname, search } = useLocation();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (pathname !== '/' || new URLSearchParams(search).has('featuredPreview'))
+      return;
+    void prefetchPublicHome(queryClient);
+  }, [pathname, queryClient, search]);
   useCategories();
   return (
     <Suspense fallback={<DashboardSkeleton />}>
@@ -118,8 +146,26 @@ function App() {
           <Route path="/studios/:slug" element={<StudioPage />} />
           <Route path="/workshop/:slug" element={<WorkshopPage />} />
           <Route path="/workshops/:id" element={<WorkshopPage />} />
+          <Route element={<RequireCustomer />}>
+            <Route path="/me/bookings" element={<CustomerBookingsPage />} />
+            <Route
+              path="/me/bookings/:id"
+              element={<CustomerBookingDetailPage />}
+            />
+            <Route
+              path="/payment/mock"
+              element={
+                import.meta.env.MODE === 'production' ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <MockPaymentPage />
+                )
+              }
+            />
+            <Route path="/payment/return" element={<PaymentReturnPage />} />
+            <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+          </Route>
         </Route>
-        <Route path="/demo/ve" element={<TicketDemoPage />} />
         <Route
           path="/dang-nhap"
           element={
@@ -251,7 +297,10 @@ function App() {
             />
             <Route path="workshop" element={<AdminWorkshopPage />} />
             <Route path="workshops" element={<AdminWorkshopPage />} />
-            <Route path="workshop-review" element={<AdminApprovalPage />} />
+            <Route
+              path="workshop-review"
+              element={<Navigate to="/admin/workshop" replace />}
+            />
             <Route path="users" element={<AdminUsersPage />} />
             <Route
               path="danh-muc"

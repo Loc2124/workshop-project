@@ -77,6 +77,7 @@ export const publicWorkshopDtoSchema = z
     isSimulated: z.boolean(),
     studioName: z.string(),
     studioDescription: z.string().nullable(),
+    studioTrustLevel: studioTrustLevelSchema.optional(),
     imageUrl: z.string().optional(),
     thumbnailUrl: z.string().optional(),
     mediumUrl: z.string().optional(),

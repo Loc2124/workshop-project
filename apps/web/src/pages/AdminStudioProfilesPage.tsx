@@ -9,7 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { Store, ExternalLink } from 'lucide-react';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import {
   type StudioReviewDecision,
   defaultSiteSettings,
@@ -187,7 +187,6 @@ export function AdminStudioProfilesPage({
   const [decision, setDecision] = useState<
     'needs_changes' | 'rejected' | 'suspended' | null
   >(null);
-  const [actionError, setActionError] = useState('');
   const [imageIndex, setImageIndex] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const missing = selected ? studioReviewMissing(selected, photoPolicy) : [];
@@ -206,7 +205,6 @@ export function AdminStudioProfilesPage({
   );
   async function submit(input: StudioReviewDecision) {
     if (!selected || pending) return;
-    setActionError('');
     const restoring =
       selected.status === 'suspended' && input.status === 'approved';
     try {
@@ -229,19 +227,16 @@ export function AdminStudioProfilesPage({
         error instanceof Error
           ? error.message
           : 'Chưa cập nhật được hồ sơ. Vui lòng thử lại.';
-      setActionError(message);
-      toast.error(message);
+      if (!decision) toast.error(message);
       throw error;
     }
   }
   function openReason(value: 'needs_changes' | 'rejected' | 'suspended') {
     setDecision(value);
-    setActionError('');
   }
 
   return (
     <div className="space-y-5">
-      <Toaster richColors position="top-right" closeButton />
       <header className="border-b border-line pb-4">
         <h1 className="font-heading text-2xl font-semibold">
           {showAllTab ? 'Tất cả studio' : 'Hồ sơ studio'}
@@ -262,7 +257,6 @@ export function AdminStudioProfilesPage({
           getRowId={(row) => row.id}
           onRowClick={(row) => {
             setSelected(row);
-            setActionError('');
           }}
           onRowsChange={updateSelected}
         />
@@ -440,6 +434,22 @@ export function AdminStudioProfilesPage({
                     </p>
                   </section>
                 )}
+                {selected.paymentQrImageUrl && (
+                  <section className="space-y-2 border-y border-line py-4">
+                    <h3 className="font-semibold">QR nhận tiền của studio</h3>
+                    <p className="text-sm text-muted">
+                      Kiểm tra tài khoản nhận tiền trước khi duyệt hồ sơ.
+                    </p>
+                    <a
+                      href={selected.paymentQrImageUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex min-h-11 items-center underline"
+                    >
+                      Mở ảnh QR để kiểm tra
+                    </a>
+                  </section>
+                )}
                 {(selected.status === 'approved' ||
                   Boolean(selected.verificationHistory?.length)) && (
                   <StudioVerificationPanel
@@ -451,11 +461,6 @@ export function AdminStudioProfilesPage({
                   <StudioStatusTimeline
                     entries={selected.statusHistory ?? []}
                   />
-                )}
-                {actionError && !decision && (
-                  <p role="alert" className="text-sm text-brick">
-                    {actionError}
-                  </p>
                 )}
               </div>
               <StudioDecisionFooter

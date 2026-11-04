@@ -34,7 +34,23 @@ router.get('/notifications', async (request, response) => {
   response.json({
     notifications: (
       await query(
-        `SELECT id,studio_id AS "studioId",workshop_id AS "workshopId",booking_id AS "bookingId",template_key AS "templateKey",title,body,reason,created_at AS "createdAt",read_at AS "readAt" FROM studio_notifications WHERE user_id=$1 ORDER BY created_at DESC,id DESC LIMIT 100`,
+        `SELECT id, "studioId", "workshopId", "bookingId", title, body, reason,
+           "createdAt", "readAt"
+         FROM (
+           SELECT id, studio_id AS "studioId", workshop_id AS "workshopId",
+             booking_id AS "bookingId", title, body, reason,
+             created_at AS "createdAt", read_at AS "readAt"
+           FROM studio_notifications
+           WHERE user_id = $1
+           UNION ALL
+           SELECT id, NULL::uuid AS "studioId", NULL::uuid AS "workshopId",
+             booking_id AS "bookingId", title, body, NULL::text AS reason,
+             created_at AS "createdAt", read_at AS "readAt"
+           FROM user_notifications
+           WHERE user_id = $1
+         ) items
+         ORDER BY "createdAt" DESC, id DESC
+         LIMIT 100`,
         [request.user!.sub],
       )
     ).rows,
@@ -48,8 +64,14 @@ router.patch(
       'UPDATE studio_notifications SET read_at=COALESCE(read_at,now()) WHERE id=$1 AND user_id=$2 RETURNING id',
       [request.params.id, request.user!.sub],
     );
-    if (!result.rowCount)
-      throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy thông báo.');
+    if (!result.rowCount) {
+      const bookingNotification = await query(
+        'UPDATE user_notifications SET read_at=COALESCE(read_at,now()) WHERE id=$1 AND user_id=$2 RETURNING id',
+        [request.params.id, request.user!.sub],
+      );
+      if (!bookingNotification.rowCount)
+        throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy thông báo.');
+    }
     response.json({ ok: true });
   },
 );

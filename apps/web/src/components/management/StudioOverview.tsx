@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import { AuthLink } from '../ui/auth-link';
 import { Link } from 'react-router-dom';
@@ -34,9 +35,7 @@ export function StudioOverview({
 }: Props) {
   if (authLoading) {
     return (
-      <section aria-busy="true" className="py-16 text-center" role="status">
-        Đang kiểm tra phiên đăng nhập…
-      </section>
+      <LoadingState label="Đang kiểm tra phiên đăng nhập…" variant="page" />
     );
   }
 
@@ -73,11 +72,7 @@ export function StudioOverview({
   }
 
   if (studiosLoading) {
-    return (
-      <section aria-busy="true" className="py-16 text-center" role="status">
-        Đang tải danh sách studio…
-      </section>
-    );
+    return <LoadingState label="Đang tải danh sách studio…" variant="page" />;
   }
 
   if (studiosError) {

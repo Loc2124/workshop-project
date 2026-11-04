@@ -1,9 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { MapPin } from 'lucide-react';
 import { Deferred } from '../ui/Deferred';
-import { Skeleton } from '../ui/skeleton';
+import { LoadingState } from '../ui/LoadingState';
 import { WorkshopRating } from './WorkshopRating';
-import { SimulatedDataBadge } from '../ui/SimulatedDataBadge';
 import type { Workshop } from '../../types/workshop';
 import type { WorkshopBookingHandler } from './WorkshopSchedule';
 const Schedule = lazy(() =>
@@ -31,7 +30,6 @@ export function DeferredSchedule({
         >
           {workshop.title}
         </h1>
-        {workshop.isSimulated && <SimulatedDataBadge />}
       </div>
       <div className="mt-3">
         <WorkshopRating workshop={workshop} />
@@ -40,11 +38,7 @@ export function DeferredSchedule({
         <MapPin size={16} />
         {workshop.province}
       </p>
-      <div className="mt-5 space-y-5" role="status" aria-label="Đang tải lịch">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-11 w-full" />
-        <Skeleton className="h-11 w-full" />
-      </div>
+      <LoadingState label="Đang tải lịch…" className="mt-5" />
     </section>
   );
   return (

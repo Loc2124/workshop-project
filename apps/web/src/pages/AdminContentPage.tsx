@@ -23,7 +23,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X, ExternalLink } from 'lucide-react';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import {
   Tabs,
   TabsList,
@@ -137,7 +137,6 @@ export function AdminContentPage() {
   const ready = !!config.data && !config.error;
   return (
     <div className="space-y-5">
-      <Toaster richColors position="top-right" />
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <h1 className="font-heading text-2xl font-semibold">
           Nội dung trang chủ

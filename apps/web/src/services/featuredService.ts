@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { publicWorkshopDtoSchema } from '@workshop/shared';
+import { z } from 'zod';
 import { apiFetch } from '../lib/api-client';
 export const featuredSelectionSchema = z.object({
   studioIds: z.array(z.string().uuid()).max(6),
@@ -22,12 +22,26 @@ export const publicFeaturedSchema = z.object({
   studios: z
     .array(
       z.object({
-        id: z.string().uuid(),
-        slug: z.string(),
+        id: z.string().min(1),
+        slug: z.string().optional(),
         name: z.string(),
-        description: z.string().nullable(),
+        description: z
+          .string()
+          .nullable()
+          .transform((value) => value ?? ''),
         province: z.string(),
+        provinceId: z.string(),
+        areaId: z.string().nullable(),
+        areaName: z.string().nullable(),
+        address: z.string(),
+        categoryId: z.string(),
         categoryIds: z.array(z.string()),
+        trustLevel: z.enum(['unapproved', 'approved', 'verified']).optional(),
+        workshopCount: z.number().int().nonnegative(),
+        availableSessions: z.number().int().nonnegative(),
+        startingPrice: z.number().int().nonnegative().nullable(),
+        rating: z.number().optional(),
+        reviewCount: z.number().int().nonnegative().optional(),
         imageUrl: z.string().optional(),
         thumbnailUrl: z.string().optional(),
         mediumUrl: z.string().optional(),

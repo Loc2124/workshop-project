@@ -1,8 +1,6 @@
 import { MediaImage } from '../ui/MediaImage';
-import { formatCategoryLabel } from '../../lib/format';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { mockWorkshops } from '../../data/mockWorkshops';
 import { PageContainer } from '../layout/PageContainer';
 import { Button } from '../ui/button';
 
@@ -15,20 +13,18 @@ export function HomeArtisanSection() {
       className="grid items-center gap-8 pb-16 md:grid-cols-2 lg:gap-16 lg:pb-28"
     >
       <div className="grid grid-cols-2 grid-rows-[repeat(2,8.75rem)] gap-4 md:grid-rows-[repeat(2,10.625rem)]">
-        {[mockWorkshops[2], mockWorkshops[3], mockWorkshops[1]]
-          .filter(Boolean)
-          .map((workshop, index) => (
-            <MediaImage
-              key={workshop.id}
-              src={workshop.imageUrl}
-              alt={`Chất liệu cho workshop ${formatCategoryLabel(workshop.categoryId)}`}
-              placeholder={formatCategoryLabel(workshop.categoryId)}
-              loading="lazy"
-              width={500}
-              height={600}
-              className={`size-full min-w-0 rounded-lg object-cover ${index === 0 ? 'row-span-2' : ''}`}
-            />
-          ))}
+        {['artPhoto', 'flowerPhoto', 'candlePhoto'].map((photo, index) => (
+          <MediaImage
+            key={photo}
+            src={`/images/workshops/${photo}.webp`}
+            alt="Chất liệu sáng tạo"
+            placeholder="Không gian sáng tạo"
+            loading="lazy"
+            width={500}
+            height={600}
+            className={`size-full min-w-0 rounded-lg object-cover ${index === 0 ? 'row-span-2' : ''}`}
+          />
+        ))}
       </div>
       <div>
         <h2

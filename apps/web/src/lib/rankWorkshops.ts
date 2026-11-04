@@ -18,6 +18,10 @@ export function rankWorkshops(list: Workshop[], query = ''): Workshop[] {
         ? workshopSearchScore(b, query) - workshopSearchScore(a, query)
         : 0;
       if (relevance) return relevance;
+      const trust =
+        Number(b.studioTrustLevel === 'verified') -
+        Number(a.studioTrustLevel === 'verified');
+      if (trust) return trust;
       const first = time(a.sessions[0]?.startsAt ?? a.nextStartsAt);
       const second = time(b.sessions[0]?.startsAt ?? b.nextStartsAt);
       return first === second ? 0 : first - second;

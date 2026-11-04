@@ -56,7 +56,7 @@ describe('studio workshop and session endpoints', () => {
       expect.objectContaining({
         id: owner.studioId,
         role: 'owner',
-        status: 'pending',
+        status: 'approved',
         provinceId: 'ho-chi-minh',
         province: 'TP. Hồ Chí Minh',
       }),
@@ -155,7 +155,7 @@ describe('studio workshop and session endpoints', () => {
 
     const createdWorkshop = await createWorkshop(owner);
     expect(createdWorkshop.status).toBe(201);
-    expect(createdWorkshop.body.workshop.status).toBe('pending');
+    expect(createdWorkshop.body.workshop.status).toBe('approved');
     expect(createdWorkshop.body.workshop.provinceId).toBe('ho-chi-minh');
     expect(createdWorkshop.body.workshop.address).toBe('Địa chỉ thử nghiệm');
     const invalidWorkshopId = await request(app)
@@ -231,7 +231,7 @@ describe('studio workshop and session endpoints', () => {
     expect(editedWorkshop.body.workshop.paymentPolicy).toBe(
       'Thanh toán trước khi tham gia.',
     );
-    expect(editedWorkshop.body.workshop.status).toBe('pending');
+    expect(editedWorkshop.body.workshop.status).toBe('approved');
 
     const createdSession = await createSession(
       owner,
@@ -625,113 +625,106 @@ describe('studio workshop and session endpoints', () => {
     expect(response.status).toBe(404);
   });
 
-  it('rejects and reapproves edited workshops with admin-only decisions', async () => {
+  it('blocks unapproved studios and preserves drafts, admin hides, and mutation audits', async () => {
     const owner = await createAccount(true);
-    const suffix = randomUUID();
-    const created = await createWorkshop(owner);
-    const uniquelyNamed = await request(app)
-      .patch(`/studios/${owner.studioId}/workshops/${created.body.workshop.id}`)
+    await query(`UPDATE studios SET status='pending' WHERE id=$1`, [
+      owner.studioId,
+    ]);
+    expect((await createWorkshop(owner)).status).toBe(403);
+    await query(`UPDATE studios SET status='approved' WHERE id=$1`, [
+      owner.studioId,
+    ]);
+    const draft = await request(app)
+      .post(`/studios/${owner.studioId}/workshops`)
       .set('Cookie', owner.cookie)
-      .send({ title: `Workshop ${suffix}` });
-    expect(uniquelyNamed.status).toBe(200);
-    expect(uniquelyNamed.body.workshop.status).toBe('pending');
-    await query(
-      `INSERT INTO sessions
-         (workshop_id, starts_at, ends_at, price, capacity, status)
-       VALUES ($1, now() + interval '7 days', now() + interval '8 days',
-               10000, 10, 'scheduled')`,
-      [created.body.workshop.id],
+      .send({ ...workshopInput(), publicationStatus: 'draft' });
+    expect(draft.status).toBe(201);
+    const id = draft.body.workshop.id;
+    expect(
+      (await query('SELECT is_simulated FROM workshops WHERE id=$1', [id]))
+        .rows[0].is_simulated,
+    ).toBe(false);
+    expect(draft.body.workshop.publicationStatus).toBe('draft');
+    await createSession(owner, id);
+    expect((await request(app).get(`/workshops/${id}`)).status).toBe(404);
+    const published = await request(app)
+      .patch(`/studios/${owner.studioId}/workshops/${id}`)
+      .set('Cookie', owner.cookie)
+      .send({ publicationStatus: 'published' });
+    expect(published.body.workshop.status).toBe('approved');
+    expect((await request(app).get(`/workshops/${id}`)).status).toBe(200);
+    await query(`UPDATE workshops SET visibility_status='hidden' WHERE id=$1`, [
+      id,
+    ]);
+    const edited = await request(app)
+      .patch(`/studios/${owner.studioId}/workshops/${id}`)
+      .set('Cookie', owner.cookie)
+      .send({ title: 'Tên mới', publicationStatus: 'published' });
+    expect(edited.body.workshop.publicationStatus).toBe('hidden');
+    expect((await request(app).get(`/workshops/${id}`)).status).toBe(404);
+    const logs = await query(
+      `SELECT action FROM audit_logs WHERE target_id=$1 AND action IN ('workshop.created','workshop.updated') ORDER BY created_at,id`,
+      [id],
     );
+    expect(logs.rows.map((row) => row.action)).toEqual([
+      'workshop.created',
+      'workshop.updated',
+      'workshop.updated',
+    ]);
+  });
 
+  it('publishes verified workshops and deposit edits without an admin decision', async () => {
+    const owner = await createAccount(true);
     const admin = await createAdmin();
-    const forbidden = await request(app)
-      .get('/admin/workshops')
-      .set('Cookie', owner.cookie);
-    expect(forbidden.status).toBe(403);
-
-    const pending = await request(app)
-      .get('/admin/workshops')
-      .query({ pageSize: 100 })
+    const verification = await request(app)
+      .patch(`/admin/studios/${owner.studioId}/verification`)
+      .set('Cookie', admin.cookie)
+      .send({ verified: true, method: 'identity_address', confirmed: true });
+    expect(verification.status).toBe(200);
+    const created = await createWorkshop(owner);
+    expect(created.status).toBe(201);
+    expect(created.body.workshop.status).toBe('approved');
+    expect(created.body.workshop.depositPercent).toBe(20);
+    const id = created.body.workshop.id;
+    await createSession(owner, id);
+    expect((await request(app).get(`/workshops/${id}`)).status).toBe(200);
+    const edited = await request(app)
+      .patch(`/studios/${owner.studioId}/workshops/${id}`)
+      .set('Cookie', owner.cookie)
+      .send({ depositPercent: 10, title: `Workshop ${randomUUID()}` });
+    expect(edited.status).toBe(200);
+    expect(edited.body.workshop.status).toBe('approved');
+    expect((await request(app).get(`/workshops/${id}`)).status).toBe(200);
+    const review = await query(
+      'SELECT id FROM workshop_review_history WHERE workshop_id=$1',
+      [id],
+    );
+    expect(review.rows).toHaveLength(0);
+    const visible = await request(app)
+      .get('/admin/workshop')
+      .query({ studioId: owner.studioId, status: 'active' })
       .set('Cookie', admin.cookie);
-    expect(pending.status).toBe(200);
-    expect(pending.body.items).toEqual(
+    expect(visible.status).toBe(200);
+    expect(visible.body.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          id: created.body.workshop.id,
-          status: 'pending',
-          reviewHistory: [],
+          id,
+          status: 'active',
+          publicationStatus: 'published',
         }),
       ]),
     );
-
-    const missingReason = await request(app)
-      .patch(`/admin/workshops/${created.body.workshop.id}/status`)
-      .set('Cookie', admin.cookie)
-      .send({ status: 'rejected' });
-    expect(missingReason.status).toBe(422);
-
-    const reason = 'Bổ sung thông tin vật liệu sử dụng.';
-    const rejected = await request(app)
-      .patch(`/admin/workshops/${created.body.workshop.id}/status`)
-      .set('Cookie', admin.cookie)
-      .send({ status: 'rejected', reason });
-    expect(rejected.status).toBe(200);
-    expect(rejected.body.workshop.status).toBe('rejected');
-    expect(rejected.body.workshop.reviewHistory).toEqual([
-      expect.objectContaining({
-        decision: 'rejected',
-        reason,
-        reviewerName: 'MOD1 admin',
-      }),
-    ]);
-
-    const duplicateDecision = await request(app)
-      .patch(`/admin/workshops/${created.body.workshop.id}/status`)
-      .set('Cookie', admin.cookie)
-      .send({ status: 'approved' });
-    expect(duplicateDecision.status).toBe(409);
-
-    const resubmitted = await request(app)
-      .patch(`/studios/${owner.studioId}/workshops/${created.body.workshop.id}`)
+    const draft = await request(app)
+      .patch(`/studios/${owner.studioId}/workshops/${id}`)
       .set('Cookie', owner.cookie)
-      .send({ description: `Nội dung đã bổ sung ${suffix}.` });
-    expect(resubmitted.status).toBe(200);
-    expect(resubmitted.body.workshop.status).toBe('pending');
-
-    const pendingAgain = await request(app)
-      .get('/admin/workshops')
-      .query({ pageSize: 100 })
+      .send({ publicationStatus: 'draft' });
+    expect(draft.status).toBe(200);
+    const detail = await request(app)
+      .get(`/admin/workshop/${id}`)
       .set('Cookie', admin.cookie);
-    const listedAgain = pendingAgain.body.items.find(
-      (workshop: { id: string }) => workshop.id === created.body.workshop.id,
-    );
-    expect(listedAgain.reviewHistory).toHaveLength(1);
-    expect(listedAgain.reviewHistory[0].reason).toBe(reason);
-
-    const approved = await request(app)
-      .patch(`/admin/workshops/${created.body.workshop.id}/status`)
-      .set('Cookie', admin.cookie)
-      .send({ status: 'approved' });
-    expect(approved.status).toBe(200);
-    expect(approved.body.workshop.reviewHistory).toHaveLength(2);
-
-    const hiddenUntilStudioApproval = await request(app)
-      .get('/workshops')
-      .query({ q: suffix, category_id: 'ceramics' });
-    expect(hiddenUntilStudioApproval.body.pagination.total).toBe(0);
-
-    const studioApproval = await request(app)
-      .patch(`/admin/studios/${owner.studioId}/status`)
-      .set('Cookie', admin.cookie)
-      .send({ status: 'approved' });
-    expect(studioApproval.status).toBe(200);
-
-    const publicWorkshop = await request(app)
-      .get('/workshops')
-      .query({ q: suffix, category_id: 'ceramics' });
-    expect(publicWorkshop.status).toBe(200);
-    expect(publicWorkshop.body.pagination.total).toBe(1);
-    expect(publicWorkshop.body.items[0].id).toBe(created.body.workshop.id);
+    expect(detail.body.workshop.status).toBe('draft');
+    expect(detail.body.workshop.visibilityStatus).toBe('active');
+    expect((await request(app).get(`/workshops/${id}`)).status).toBe(404);
   });
 });
 
@@ -748,8 +741,8 @@ async function createAccount(createOwnedStudio: boolean): Promise<TestAccount> {
 
   if (createOwnedStudio) {
     const studio = await query<{ id: string }>(
-      `INSERT INTO studios (name, province_id, address)
-       VALUES ($1, 'ho-chi-minh', 'Địa chỉ thử nghiệm')
+      `INSERT INTO studios (name, province_id, address, status)
+       VALUES ($1, 'ho-chi-minh', 'Địa chỉ thử nghiệm', 'approved')
        RETURNING id`,
       [`Test studio ${suffix}`],
     );

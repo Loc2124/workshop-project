@@ -1,7 +1,7 @@
 import { Img } from '../ui/Img';
 import { prefetchDashboardRoute } from '../../lib/dashboard-routes';
 import { DashboardSkeleton } from './DashboardSkeleton';
-import { Fragment, Suspense, useState, type ReactNode } from 'react';
+import { Fragment, Suspense, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { AuthUser } from '../../services/authService';
 import { useAuth } from '../../hooks/useAuth';
+import { toast } from 'sonner';
 import {
   Sidebar,
   SidebarProvider,
@@ -206,7 +207,6 @@ export function DashboardLayout({
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { logout, isLoggingOut } = useAuth();
-  const [logoutError, setLogoutError] = useState('');
   const root = roleLabel === 'Quản trị' ? '/admin' : '/studio';
   const selected = activeDashboardItem(menuItems, pathname);
   const detail = pathname.startsWith('/studio/studios/');
@@ -231,12 +231,12 @@ export function DashboardLayout({
       .join('') || user.email.slice(0, 2)
   ).toUpperCase();
   async function signOut() {
-    setLogoutError('');
     try {
       await logout();
+      toast.success('Đã đăng xuất.');
       navigate('/', { replace: true });
     } catch (error) {
-      setLogoutError(
+      toast.error(
         error instanceof Error
           ? error.message
           : 'Chưa đăng xuất được. Vui lòng thử lại.',
@@ -244,7 +244,7 @@ export function DashboardLayout({
     }
   }
   return (
-    <SidebarProvider className="dashboard-shell bg-[#f7f7f5] text-sm text-ink">
+    <SidebarProvider className="dashboard-shell bg-[#f7f7f5] text-sm text-ink [--loading-height:calc(100svh-5.5rem)] md:[--loading-height:calc(100svh-6.5rem)] lg:[--loading-height:calc(100svh-7rem)]">
       <a
         href="#dashboard-content"
         className="sr-only fixed left-20 top-2 z-60 rounded-sm bg-surface p-3 focus:not-sr-only"
@@ -334,14 +334,6 @@ export function DashboardLayout({
             </DropdownMenu>
           </div>
         </header>
-        {logoutError && (
-          <p
-            role="alert"
-            className="border-b border-line bg-surface px-4 py-3 text-sm text-brick"
-          >
-            {logoutError}
-          </p>
-        )}
         <main
           id="dashboard-content"
           tabIndex={-1}

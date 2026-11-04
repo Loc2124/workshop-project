@@ -469,7 +469,7 @@
 }
 
 @supports (content-visibility: auto) {
-  .home-page main > section:not(:first-child),
+  .home-page main > section:not(:first-child):not(.home-schedule),
   .marketing-page main section:not(:first-of-type),
   .defer-render {
     content-visibility: auto;

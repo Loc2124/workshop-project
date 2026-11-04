@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import { StudioEvidenceEditor } from './StudioEvidenceEditor';
 import { AuthLink } from '../ui/auth-link';
@@ -55,11 +56,16 @@ export function StudioManagementContent({
 }: Props) {
   const { siteContact } = useSiteInformation();
   const categories = useCategories();
-  if (authLoading || studiosLoading) {
+  if (authLoading || studiosLoading || workshopsLoading || sessionsLoading) {
     return (
-      <section aria-busy="true" className="py-16 text-center" role="status">
-        Đang kiểm tra quyền truy cập studio…
-      </section>
+      <LoadingState
+        label={
+          authLoading || studiosLoading
+            ? 'Đang kiểm tra quyền truy cập studio…'
+            : 'Đang tải thông tin studio…'
+        }
+        variant="page"
+      />
     );
   }
 

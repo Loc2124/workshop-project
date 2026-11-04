@@ -36,13 +36,17 @@ export async function listStudiosForUser(userId: string) {
   };
 }
 
-export async function withStudioImages<T extends { photoIds?: string[] }>(
-  studio: T,
-) {
+export async function withStudioImages<
+  T extends { photoIds?: string[]; paymentQrImageId?: string | null },
+>(studio: T) {
   const images = await getImageUrlsForIds(studio.photoIds ?? []);
+  const qr = await getImageUrlsForIds(
+    studio.paymentQrImageId ? [studio.paymentQrImageId] : [],
+  );
   return {
     ...studio,
     images: images.map(presentImage),
+    paymentQrImageUrl: qr[0] ? presentImage(qr[0]).url : null,
   };
 }
 export async function startStudioDraft(userId: string) {

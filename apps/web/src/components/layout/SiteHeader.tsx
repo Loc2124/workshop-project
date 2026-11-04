@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { AuthLink } from '../ui/auth-link';
 import { NotificationsMenu } from './NotificationsMenu';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -8,6 +9,7 @@ import { Logo } from './Logo';
 import { HeaderSearch } from './HeaderSearch';
 import { useAuth } from '../../hooks/useAuth';
 import { useMyStudios } from '../../hooks/useOwnedStudios';
+import { toast } from 'sonner';
 
 const links = [
   { to: '/', label: 'Trang chủ' },
@@ -24,7 +26,6 @@ export function SiteHeader() {
   const accountRef = useRef<HTMLDivElement>(null);
   const accountTriggerRef = useRef<HTMLButtonElement>(null);
   const studiosQuery = useMyStudios();
-  const [logoutError, setLogoutError] = useState<string | null>(null);
   const { user, isLoading, authError, retryAuth, logout, isLoggingOut } =
     useAuth();
   const { pathname } = useLocation();
@@ -78,12 +79,12 @@ export function SiteHeader() {
       </Link>
     ));
   async function handleLogout() {
-    setLogoutError(null);
     try {
       await logout();
+      toast.success('Đã đăng xuất.');
       closeMenus();
     } catch (error) {
-      setLogoutError(
+      toast.error(
         error instanceof Error
           ? error.message
           : 'Không thể đăng xuất. Vui lòng thử lại.',
@@ -111,9 +112,11 @@ export function SiteHeader() {
         <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <HeaderSearch open={searchOpen} onOpenChange={changeSearch} />
           {isLoading && (
-            <span role="status" className="px-2 text-sm text-muted">
-              Đang tải…
-            </span>
+            <LoadingState
+              label="Đang tải…"
+              variant="inline"
+              className="px-2 text-sm text-muted"
+            />
           )}
           {!isLoading && !authError && !user && (
             <>
@@ -177,17 +180,15 @@ export function SiteHeader() {
                     </p>
                   </div>
                   <div className="mt-2">
-                    <button
-                      type="button"
-                      className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
-                      onClick={() =>
-                        setAccountNotice(
-                          'Lịch đặt của tôi chưa được hỗ trợ trong phiên bản này.',
-                        )
-                      }
-                    >
-                      Lịch đặt của tôi
-                    </button>
+                    {user.role === 'customer' && (
+                      <Link
+                        to="/me/bookings"
+                        onClick={closeMenus}
+                        className="flex min-h-11 w-full items-center rounded-lg px-3 text-sm hover:bg-soft"
+                      >
+                        Lịch đặt của tôi
+                      </Link>
+                    )}
                     <button
                       type="button"
                       className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
@@ -200,9 +201,10 @@ export function SiteHeader() {
                       Tài khoản
                     </button>
                     {studiosQuery.isPending ? (
-                      <p role="status" className="px-3 py-3 text-sm text-muted">
-                        Đang kiểm tra studio…
-                      </p>
+                      <LoadingState
+                        label="Đang kiểm tra studio…"
+                        className="px-3 py-3 text-sm text-muted"
+                      />
                     ) : studiosQuery.error ? (
                       <button
                         type="button"
@@ -316,14 +318,12 @@ export function SiteHeader() {
           )}
         </nav>
       )}
-      {(authError || logoutError) && (
+      {authError && (
         <p
           className="bg-soft px-4 py-2 text-center text-sm text-brick"
           role="alert"
         >
-          {authError
-            ? `Không thể kiểm tra phiên đăng nhập: ${authError.message}`
-            : logoutError}
+          {`Không thể kiểm tra phiên đăng nhập: ${authError.message}`}
         </p>
       )}
     </header>

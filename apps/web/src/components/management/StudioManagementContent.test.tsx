@@ -52,7 +52,8 @@ const workshop: StudioWorkshop = {
   provinceId: 'ho-chi-minh',
   areaId: null,
   address: studio.address,
-  status: 'pending',
+  status: 'approved',
+  publicationStatus: 'published',
   createdAt: '2026-11-02T00:00:00.000Z',
 };
 
@@ -121,13 +122,14 @@ describe('StudioManagementContent', () => {
     expect(html).not.toContain('Lịch workshop');
   });
 
-  it('shows workshop approval and session availability from the API data', () => {
+  it('shows self-published workshops and session availability from the API data', () => {
     const html = renderContent();
 
     expect(html).toContain('Studio gốm An');
     expect(html).toContain('Chủ studio');
     expect(html).toContain('Buổi làm gốm');
-    expect(html).toContain('Chờ duyệt');
+    expect(html).toContain('Công khai');
+    expect(html).not.toContain('Chờ duyệt');
     expect(html).toContain('Còn 7 / 10 chỗ');
     expect(html).toContain('href="/studios/studio-gom-an"');
     expect(html).toContain('Tạo workshop');

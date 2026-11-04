@@ -170,7 +170,7 @@ describe('AdminApprovalPage', () => {
         <StudioVerificationPanel studio={current} />
       </MemoryRouter>,
     );
-    expect(html).toContain('Bậc 1 · Đã duyệt');
+    expect(html).toContain('Đã duyệt hồ sơ');
     expect(html).toContain('Căn cứ đối chiếu');
     expect(html).toContain('Cấp xác minh bậc 2');
     expect(html).not.toContain('Thu hồi huy hiệu xác minh');
@@ -209,7 +209,7 @@ describe('AdminApprovalPage', () => {
         <StudioVerificationPanel studio={current} />
       </MemoryRouter>,
     );
-    expect(html).toContain('Bậc 2 · Đã xác minh');
+    expect(html).toContain('Đã xác minh');
     expect(html).toContain('Thu hồi huy hiệu xác minh');
     expect(html).toContain('Nguyễn Admin');
     expect(html).not.toContain('Cấp xác minh bậc 2');

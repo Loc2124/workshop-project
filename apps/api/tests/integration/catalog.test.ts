@@ -567,7 +567,9 @@ describe('public workshop catalog', () => {
       [areaBookingId],
     );
     expect(areaBooking.rows[0].status).toBe('expired');
-  });
+    // This case sets up several independent booking/location fixtures over a
+    // remote test database; allow their round trips without weakening assertions.
+  }, 90_000);
 
   it('returns public studio details with its available workshops', async () => {
     const suffix = randomUUID();

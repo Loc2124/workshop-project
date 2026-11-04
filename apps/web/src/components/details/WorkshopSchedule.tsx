@@ -1,13 +1,14 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { CalendarDays, CalendarPlus, MapPin, Minus, Plus } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import type { Workshop, WorkshopSession } from '../../types/workshop';
 import { formatPrice } from '../../lib/format';
 import { sessionCalendar, upcomingSessions } from '../../lib/workshopDetails';
 import { cn } from '../../lib/utils';
 import { WorkshopRating } from './WorkshopRating';
-import { SimulatedDataBadge } from '../ui/SimulatedDataBadge';
 import { workshopText, workshopSessionRange } from './workshopPresentation';
 import { bookingFormSchema } from '../../lib/form-validation';
+import { toast } from 'sonner';
 
 const MAX_BOOKING_QUANTITY = 10;
 
@@ -29,7 +30,7 @@ export type WorkshopBookingRequest = {
 };
 export type WorkshopBookingHandler = (
   request: WorkshopBookingRequest,
-) => Promise<{ id: string }>;
+) => Promise<{ id: string; checkoutUrl?: string | null }>;
 // Inject the booking API through onBook; never treat a calendar download as a booking.
 
 export function WorkshopSchedule({
@@ -59,6 +60,7 @@ export function WorkshopSchedule({
   const [error, setError] = useState('');
   const submitting = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
+  const locationPath = useLocation();
   const selected =
     confirmed?.session ??
     sessions.find(
@@ -91,7 +93,7 @@ export function WorkshopSchedule({
       availableSeats: selected.availableSeats,
     });
     if (!parsed.success) {
-      setError('Kiểm tra lại buổi trải nghiệm và số người tham gia.');
+      setError('Kiểm tra lại buổi và số người tham gia.');
       return;
     }
     if (!onBook) {
@@ -104,10 +106,26 @@ export function WorkshopSchedule({
     try {
       const result = await onBook(parsed.data);
       if (!result?.id?.trim()) throw new Error('Missing booking confirmation');
+      if (result.checkoutUrl) {
+        const checkout = new URL(result.checkoutUrl);
+        if (
+          checkout.protocol !== 'https:' &&
+          checkout.origin !== window.location.origin
+        ) {
+          throw new Error('Đường dẫn thanh toán không an toàn.');
+        }
+        window.location.assign(checkout.toString());
+        return;
+      }
       setConfirmed({ id: result.id, session: snapshot, quantity: seats });
-      setNotice('Đã đặt chỗ thành công. Bạn có thể thêm buổi hẹn vào lịch.');
-    } catch {
-      setError('Chưa đặt được chỗ. Vui lòng kiểm tra lại số chỗ và thử lại.');
+      setNotice('Đã nhận đặt chỗ. Mở lịch sử đặt chỗ để xem vé và thanh toán.');
+    } catch (cause) {
+      const message =
+        cause instanceof Error
+          ? cause.message
+          : 'Chưa đặt được chỗ. Vui lòng thử lại.';
+      setError(message);
+      toast.error(message);
     } finally {
       submitting.current = false;
       setPending(false);
@@ -170,7 +188,6 @@ export function WorkshopSchedule({
           >
             {workshop.title}
           </h1>
-          {workshop.isSimulated && <SimulatedDataBadge />}
         </div>
         <div className="mt-3">
           <WorkshopRating workshop={workshop} />
@@ -235,6 +252,9 @@ export function WorkshopSchedule({
           )}
           {selected && (
             <>
+              <p className="text-sm text-stone-600">
+                Thông tin liên hệ được lấy từ tài khoản đã đăng nhập.
+              </p>
               <div
                 role="group"
                 aria-labelledby="booking-quantity-label"
@@ -297,6 +317,11 @@ export function WorkshopSchedule({
                     {formatPrice(total!)} đ
                   </dd>
                 </dl>
+                <p className="mt-2 text-sm text-stone-700">
+                  Studio đủ điều kiện sẽ thu tiền cọc qua cổng thanh toán; các
+                  trường hợp còn lại thanh toán tại studio. Số tiền cần trả được
+                  xác nhận sau khi đặt chỗ.
+                </p>
               </div>
             </>
           )}
@@ -311,6 +336,17 @@ export function WorkshopSchedule({
           {error && (
             <p id="booking-error" role="alert" className="text-sm text-brick">
               {error}
+              {!onBook && (
+                <>
+                  {' '}
+                  <Link
+                    to={`/dang-nhap?redirect=${encodeURIComponent(locationPath.pathname + locationPath.search)}`}
+                    className="font-semibold underline"
+                  >
+                    Đăng nhập để đặt chỗ
+                  </Link>
+                </>
+              )}
             </p>
           )}
           {notice && (

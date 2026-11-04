@@ -265,11 +265,21 @@ export async function cancelSession(
     }
 
     await releaseExpiredHolds(client, [sessionId]);
-    const pending = await client.query<{ quantity: number }>(
-      `UPDATE bookings b
-       SET status = 'cancelled'
+    const active = await client.query<{
+      id: string;
+      userId: string;
+      quantity: number;
+      reservationStatus: string;
+      paidAmount: number;
+      status: string;
+    }>(
+      `SELECT b.id, b.user_id AS "userId", b.quantity,
+         b.reservation_status AS "reservationStatus",
+         b.paid_amount AS "paidAmount", b.status
+       FROM bookings b
        WHERE b.session_id = $1
-         AND b.status = 'pending'
+         AND b.reservation_status IN ('pending', 'confirmed')
+         AND b.status IN ('pending', 'paid')
          AND EXISTS (
            SELECT 1
            FROM sessions s
@@ -281,51 +291,90 @@ export async function cancelSession(
                WHERE sm.studio_id = $2 AND sm.user_id = $3
              )
          )
-       RETURNING quantity`,
+       FOR UPDATE OF b`,
       [sessionId, studioId, userId],
     );
-    const heldSeatsToRelease = pending.rows.reduce(
-      (total, booking) => total + booking.quantity,
+    const activeBookings = active.rows;
+    const heldSeatsToRelease = activeBookings.reduce(
+      (total, booking) =>
+        booking.reservationStatus === 'pending'
+          ? total + booking.quantity
+          : total,
       0,
     );
-
-    await client.query(
-      `UPDATE bookings b
-       SET status = 'refund_needed'
-       WHERE b.session_id = $1
-         AND b.status = 'paid'
-         AND EXISTS (
-           SELECT 1
-           FROM sessions s
-           JOIN workshops w ON w.id = s.workshop_id
-           WHERE s.id = b.session_id
-             AND w.studio_id = $2
-             AND EXISTS (
-               SELECT 1 FROM studio_members sm
-               WHERE sm.studio_id = $2 AND sm.user_id = $3
-             )
-         )`,
-      [sessionId, studioId, userId],
+    const soldSeatsToRelease = activeBookings.reduce(
+      (total, booking) =>
+        booking.reservationStatus === 'confirmed'
+          ? total + booking.quantity
+          : total,
+      0,
     );
+    const bookingIds = activeBookings.map((booking) => booking.id);
+    if (bookingIds.length) {
+      await client.query(
+        `UPDATE bookings
+         SET status = CASE
+           WHEN paid_amount > 0 OR (status = 'paid' AND total_amount > 0)
+             THEN 'refund_needed'::booking_status
+           ELSE 'cancelled'::booking_status
+         END,
+         reservation_status = 'cancelled'
+         WHERE id = ANY($1::uuid[])`,
+        [bookingIds],
+      );
+      await client.query(
+        `UPDATE payments SET status = 'cancelled'
+         WHERE booking_id = ANY($1::uuid[]) AND status = 'created'`,
+        [bookingIds],
+      );
+      await client.query(
+        `UPDATE tickets SET status = 'void'
+         WHERE booking_id = ANY($1::uuid[]) AND status = 'valid'`,
+        [bookingIds],
+      );
+      await client.query(
+        `INSERT INTO user_notifications
+           (user_id, booking_id, type, title, body, href)
+         SELECT b.user_id, b.id,
+           CASE WHEN b.status = 'refund_needed'
+             THEN 'session_cancelled_refund_needed'
+             ELSE 'session_cancelled'
+           END,
+           CASE WHEN b.status = 'refund_needed'
+             THEN 'Buổi bị hủy, cần xử lý hoàn tiền'
+             ELSE 'Buổi workshop đã bị hủy'
+           END,
+           CASE WHEN b.status = 'refund_needed'
+             THEN 'Khoản đã thanh toán cần được studio xử lý hoàn thủ công.'
+             ELSE 'Đặt chỗ của bạn đã được hủy và chỗ được trả lại.'
+           END,
+           '/me/bookings/' || b.id::text
+         FROM bookings b
+         WHERE b.id = ANY($1::uuid[])`,
+        [bookingIds],
+      );
+    }
 
     const result = await client.query<SessionRow>(
       `UPDATE sessions
        SET status = 'cancelled',
-           seats_held = seats_held - $1
-       WHERE id = $2
+           seats_held = seats_held - $1,
+           seats_sold = seats_sold - $2
+       WHERE id = $3
          AND seats_held >= $1
+         AND seats_sold >= $2
          AND EXISTS (
            SELECT 1
            FROM workshops w
            WHERE w.id = sessions.workshop_id
-             AND w.studio_id = $3
+             AND w.studio_id = $4
              AND EXISTS (
                SELECT 1 FROM studio_members sm
-               WHERE sm.studio_id = $3 AND sm.user_id = $4
+               WHERE sm.studio_id = $4 AND sm.user_id = $5
              )
          )
        RETURNING ${sessionColumns}`,
-      [heldSeatsToRelease, sessionId, studioId, userId],
+      [heldSeatsToRelease, soldSeatsToRelease, sessionId, studioId, userId],
     );
     if (!result.rows[0]) {
       throw new Error(

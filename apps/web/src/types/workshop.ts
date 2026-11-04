@@ -43,6 +43,7 @@ export type Workshop = {
   address: string | null;
   isSimulated: boolean;
   studioName: string;
+  studioTrustLevel?: 'unapproved' | 'approved' | 'verified';
   studioDescription: string | null;
   rating?: number;
   reviewCount?: number;

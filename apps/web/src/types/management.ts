@@ -28,6 +28,7 @@ const studioWorkshopFieldsSchema = z
     durationMinutes: z.number().int().positive().max(2_147_483_647),
     basePrice: z.number().int().min(0).max(2_147_483_647),
     depositPercent: z.number().int().min(0).max(30).optional(),
+    publicationStatus: z.enum(['draft', 'published']).optional(),
     requirements: z.string().trim().max(5000).nullable().optional(),
     cancellationPolicy: z.string().trim().max(5000).nullable().optional(),
     paymentPolicy: z.string().trim().max(5000).nullable().optional(),
@@ -82,6 +83,8 @@ export const memberStudioSchema = z
     facebookUrl: z.string().nullable().optional(),
     instagramUrl: z.string().nullable().optional(),
     googleMapsUrl: z.string().nullable().optional(),
+    paymentQrImageId: uuidSchema.nullable().optional(),
+    paymentQrImageUrl: z.string().nullable().optional(),
     images: z
       .array(
         z
@@ -133,6 +136,7 @@ export const studioWorkshopSchema = z
     areaId: uuidSchema.nullable(),
     address: z.string(),
     status: approvalStatusSchema,
+    publicationStatus: z.enum(['draft', 'published', 'hidden']).optional(),
     createdAt: z.string(),
   })
   .strict();
@@ -184,6 +188,8 @@ export const adminStudioSchema = z
     facebookUrl: z.string().nullable().optional(),
     instagramUrl: z.string().nullable().optional(),
     googleMapsUrl: z.string().nullable().optional(),
+    paymentQrImageId: uuidSchema.nullable().optional(),
+    paymentQrImageUrl: z.string().nullable().optional(),
     images: z
       .array(
         z

@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch } from '../../lib/api-client';
 import { formatReviewDate } from '../../lib/studio-review';
 import { Button } from '../ui/button';
+import { toast } from 'sonner';
 const schema = z.object({
   notifications: z.array(
     z.object({
@@ -38,10 +39,13 @@ export function StudioNotifications({ studioId }: { studioId: string }) {
   const mark = useMutation({
     mutationFn: (id: string) =>
       apiFetch(`/me/notifications/${id}/read`, { method: 'PATCH' }),
-    onSuccess: () =>
-      client.invalidateQueries({
+    onSuccess: async () => {
+      await client.invalidateQueries({
         queryKey: queryKeys.notifications.lists(userId),
-      }),
+      });
+      toast.success('Đã đánh dấu thông báo đã đọc.');
+    },
+    onError: (error) => toast.error(error.message),
   });
   const unread =
     notifications.data?.filter((n) => n.studioId === studioId && !n.readAt) ??
@@ -92,11 +96,6 @@ export function StudioNotifications({ studioId }: { studioId: string }) {
           </li>
         ))}
       </ul>
-      {mark.error && (
-        <p role="alert" className="text-sm text-brick">
-          Chưa đánh dấu được thông báo. Vui lòng thử lại.
-        </p>
-      )}
     </section>
   );
 }

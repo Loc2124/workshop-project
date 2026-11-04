@@ -13,6 +13,7 @@ import {
   CardDescription,
 } from '../components/ui/card';
 import { Skeleton } from '../components/ui/skeleton';
+import { LoadingState } from '../components/ui/LoadingState';
 import { Button } from '../components/ui/button';
 import { formatReviewDate } from '../lib/studio-review';
 const BookingsChart = lazy(
@@ -104,6 +105,8 @@ export default function AdminOverviewPage() {
     staleTime: 30000,
   });
   const data = overview.data;
+  if (overview.isPending)
+    return <LoadingState label="Đang tải tổng quan…" variant="page" />;
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
@@ -124,9 +127,7 @@ export default function AdminOverviewPage() {
           {overview.isFetching ? 'Đang tải…' : 'Làm mới'}
         </Button>
       </header>
-      {overview.isPending ? (
-        <OverviewSkeleton />
-      ) : overview.error ? (
+      {overview.error ? (
         <Card>
           <CardContent className="space-y-3 pt-5">
             <p role="alert" className="text-sm text-brick">
@@ -286,37 +287,6 @@ export default function AdminOverviewPage() {
           </>
         )
       )}
-    </div>
-  );
-}
-function OverviewSkeleton() {
-  return (
-    <div role="status" aria-label="Đang tải Tổng quan" className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <Card key={i}>
-            <CardContent className="space-y-4 p-5">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-9 w-16" />
-              <Skeleton className="h-3 w-36" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <Card className="space-y-5 p-5">
-        <Skeleton className="h-5 w-44" />
-        <Skeleton className="h-64 w-full" />
-      </Card>
-      <div className="grid gap-4 lg:grid-cols-2">
-        {[0, 1].map((i) => (
-          <Card key={i} className="space-y-5 p-5">
-            <Skeleton className="h-5 w-36" />
-            {[0, 1, 2].map((j) => (
-              <Skeleton key={j} className="h-10 w-full" />
-            ))}
-          </Card>
-        ))}
-      </div>
     </div>
   );
 }

@@ -75,11 +75,11 @@ export async function createReport(
             )
           : input.targetType === 'workshop'
             ? await client.query(
-                "SELECT w.id FROM workshops w JOIN studios st ON st.id=w.studio_id WHERE w.id=$1 AND w.status='approved' AND w.visibility_status='active' AND st.status='approved' AND NOT st.is_draft AND NOT st.is_hidden AND studio_profile_complete(st)",
+                "SELECT w.id FROM workshops w JOIN studios st ON st.id=w.studio_id WHERE w.id=$1 AND w.status='approved' AND NOT w.is_simulated AND w.visibility_status='active' AND w.publication_status='published' AND st.status='approved' AND NOT st.is_draft AND NOT st.is_hidden AND studio_profile_complete(st)",
                 [input.targetId],
               )
             : await client.query(
-                "SELECT rev.id FROM reviews rev JOIN workshops w ON w.id=rev.workshop_id JOIN studios st ON st.id=w.studio_id WHERE rev.id=$1 AND NOT rev.is_hidden AND w.status='approved' AND w.visibility_status='active' AND st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)",
+                "SELECT rev.id FROM reviews rev JOIN workshops w ON w.id=rev.workshop_id JOIN studios st ON st.id=w.studio_id WHERE rev.id=$1 AND NOT rev.is_hidden AND w.status='approved' AND NOT w.is_simulated AND w.visibility_status='active' AND w.publication_status='published' AND st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)",
                 [input.targetId],
               );
       if (!visible.rowCount)

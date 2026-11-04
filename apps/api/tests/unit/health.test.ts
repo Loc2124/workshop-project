@@ -36,6 +36,11 @@ describe('API foundation', () => {
         NODE_ENV: 'production',
         COOKIE_SECURE: 'true',
         WEB_ORIGIN: 'https://workshop.example.com',
+        PAYMENT_PROVIDER: 'payos',
+        PAYOS_CLIENT_ID: 'test-client',
+        PAYOS_API_KEY: 'test-api-key',
+        PAYOS_CHECKSUM_KEY: 'test-checksum-key',
+        PAYOS_WEBHOOK_URL: 'https://api.example.com/webhooks/payos',
       }).COOKIE_SECURE,
     ).toBe('true');
   });

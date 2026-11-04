@@ -99,7 +99,7 @@ export async function markImageDeleting(id: string) {
       [id],
     );
     const result = await client.query(
-      `UPDATE images i SET state = 'deleting' WHERE i.id = $1 AND i.state <> 'deleted' AND NOT EXISTS (SELECT 1 FROM studios st WHERE i.id = ANY(st.photo_ids) AND NOT st.is_draft) RETURNING i.id`,
+      `UPDATE images i SET state = 'deleting' WHERE i.id = $1 AND i.state <> 'deleted' AND NOT EXISTS (SELECT 1 FROM studios st WHERE (i.id = ANY(st.photo_ids) OR i.id = st.payment_qr_image_id) AND NOT st.is_draft) RETURNING i.id`,
       [id],
     );
     if (!result.rowCount)
@@ -150,7 +150,7 @@ export async function expiredImages() {
       mediumKey: string | null;
       state: string;
     }>(
-      `SELECT id,key,medium_key AS "mediumKey", thumbnail_key AS "thumbnailKey",state FROM images i WHERE (state IN ('pending','deleted') AND expires_at < now()) OR state = 'deleting' OR (state='ready' AND workshop_id IS NULL AND created_at < now()-interval '7 days' AND NOT EXISTS(SELECT 1 FROM studios st WHERE i.id=ANY(st.photo_ids))) ORDER BY created_at LIMIT 100`,
+      `SELECT id,key,medium_key AS "mediumKey", thumbnail_key AS "thumbnailKey",state FROM images i WHERE (state IN ('pending','deleted') AND expires_at < now()) OR state = 'deleting' OR (state='ready' AND workshop_id IS NULL AND created_at < now()-interval '7 days' AND NOT EXISTS(SELECT 1 FROM studios st WHERE (i.id=ANY(st.photo_ids) OR i.id=st.payment_qr_image_id))) ORDER BY created_at LIMIT 100`,
     )
   ).rows;
 }

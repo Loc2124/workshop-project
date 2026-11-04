@@ -10,7 +10,6 @@ import { GreenSection } from '../components/layout/GreenSection';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
 import { Button } from '../components/ui/button';
-import { SimulatedDataBadge } from '../components/ui/SimulatedDataBadge';
 import { useSiteInformation } from '../hooks/useSiteInformation';
 
 const aboutContent = {
@@ -68,7 +67,6 @@ export function AboutPage() {
               <h1 className="font-heading text-3xl font-semibold leading-tight sm:text-4xl">
                 Về Open Slot
               </h1>
-              {aboutContent.isSimulated && <SimulatedDataBadge />}
             </div>
             <p className="mt-5 max-w-prose text-base leading-7 text-stone-700">
               Open Slot kết nối bạn với studio thủ công và người làm nghề. Tìm

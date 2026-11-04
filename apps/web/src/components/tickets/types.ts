@@ -16,7 +16,12 @@ export type TicketData = {
     takeaway?: string | null;
     requirements?: string | null;
   };
-  studio: { name: string; provinceName: string; address?: string | null };
+  studio: {
+    name: string;
+    provinceName: string;
+    address?: string | null;
+    trustLevel?: Workshop['studioTrustLevel'];
+  };
   session: {
     startAt: string | null;
     durationMinutes: number;
@@ -69,6 +74,7 @@ export function toTicketProps(workshop: Workshop): TicketProps {
     },
     studio: {
       name: workshop.studioName,
+      trustLevel: workshop.studioTrustLevel,
       provinceName: workshop.province,
       address: workshop.address,
     },

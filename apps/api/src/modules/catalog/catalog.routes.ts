@@ -23,7 +23,7 @@ router.get('/home/featured', async (_req, res) =>
 );
 router.get('/workshops/:id/reviews', async (request, response) => {
   const result = await query(
-    `SELECT rev.id,u.full_name AS author,rev.rating,coalesce(rev.comment,'') AS comment,rev.created_at AS "createdAt" FROM reviews rev JOIN users u ON u.id=rev.user_id JOIN workshops w ON w.id=rev.workshop_id JOIN studios st ON st.id=w.studio_id WHERE (w.id::text=$1 OR w.slug=$1) AND NOT rev.is_hidden AND w.status='approved' AND w.visibility_status='active' AND st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st) ORDER BY rev.created_at DESC,rev.id LIMIT 100`,
+    `SELECT rev.id,u.full_name AS author,rev.rating,coalesce(rev.comment,'') AS comment,rev.created_at AS "createdAt" FROM reviews rev JOIN users u ON u.id=rev.user_id JOIN workshops w ON w.id=rev.workshop_id JOIN studios st ON st.id=w.studio_id WHERE (w.id::text=$1 OR w.slug=$1) AND NOT rev.is_hidden AND w.status='approved' AND NOT w.is_simulated AND w.visibility_status='active' AND w.publication_status='published' AND st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st) ORDER BY rev.created_at DESC,rev.id LIMIT 100`,
     [String(request.params.id)],
   );
   response.json({ reviews: result.rows });

@@ -12,6 +12,6 @@ Các endpoint yêu cầu admin:
 
 Chuyển trạng thái: pending → confirmed/cancelled; confirmed → completed/cancelled. Cancelled và completed chỉ xem, không mở lại đơn. Chỉ completed khi slot đã kết thúc; không xác nhận giữ chỗ hết hạn hoặc slot bị hủy. Lỗi dữ liệu đầu vào trả 422, xung đột trả 409, hoàn tất sớm trả 400.
 
-Xác nhận xử lý không ghi nhận thu tiền. Đơn chưa thanh toán vẫn chiếm `seats_held`; sau xác nhận không bị job hết hạn tự giải phóng. Đơn đã thanh toán chiếm `seats_sold`. Khi hủy, khóa session trước booking theo cùng thứ tự với xử lý hết hạn/hủy slot, giảm đúng bộ đếm và vô hiệu hóa vé còn valid. Đơn paid chuyển sang refund_needed; đơn chưa thanh toán chuyển cancelled. Không tự thực hiện hoàn tiền qua nhà cung cấp thanh toán.
+Xác nhận xử lý không ghi nhận thu tiền. Đơn chờ cọc chiếm `seats_held`; đơn xác nhận chiếm `seats_sold`, kể cả còn phải thanh toán tại studio. Admin không được xác nhận đơn cọc mới khi chưa nhận đủ cọc. Khi hủy, khóa session trước booking theo cùng thứ tự với xử lý hết hạn/hủy slot, giảm đúng bộ đếm và vô hiệu hóa vé còn valid. Đơn đã thu tiền chuyển sang `refund_needed`; đơn chưa thu tiền chuyển `cancelled`. Không tự thực hiện hoàn tiền qua nhà cung cấp thanh toán.
 
 Trả chỗ, đổi trạng thái, vô hiệu hóa vé, timeline và admin_activity_log cùng transaction. Bộ đếm không đủ thì rollback toàn bộ. Hủy lặp hoặc hai admin cùng thao tác không trả chỗ hai lần. Trigger ghi cả thay đổi từ hệ thống (hết hạn/hủy slot); actor không có dữ liệu được ghi rõ là Hệ thống. Timeline giữ cả trạng thái thanh toán trước/sau.

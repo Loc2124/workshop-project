@@ -7,7 +7,7 @@ import { Logo } from './Logo';
 export function AuthLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   return (
-    <div className="flex min-h-svh flex-col bg-paper text-ink">
+    <div className="flex min-h-svh flex-col bg-paper text-ink [--loading-height:0px]">
       <div className="relative flex min-h-24 items-center justify-center px-4 pb-4 pt-16 sm:min-h-24 sm:py-6">
         <button
           type="button"

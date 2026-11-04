@@ -6,6 +6,7 @@ import {
 import type { StudioVerificationDecision } from '@workshop/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
+import { toast } from 'sonner';
 import {
   managementService,
   type AdminWorkshopFilters,
@@ -40,9 +41,9 @@ export function useCreateStudio() {
   return useMutation({
     mutationFn: (input: StudioProfileInput) =>
       managementService.createStudio(input),
-    onSuccess: async () => {
-      await invalidateResources(queryClient, userId, ['studios']);
-    },
+    onSuccess: () => invalidateResources(queryClient, userId, ['studios']),
+    onError: (error) =>
+      toast.error(`${error.message} Bản nháp vẫn được giữ lại để bạn thử lại.`),
   });
 }
 
@@ -70,7 +71,7 @@ export function useSaveStudioWorkshop() {
       workshopId: string | null;
       input: StudioWorkshopInput | StudioWorkshopUpdateInput;
     }) => managementService.saveStudioWorkshop(studioId, workshopId, input),
-    onSuccess: async (_result, { studioId }) => {
+    onSuccess: async (_result, { studioId, workshopId }) => {
       await Promise.all([
         invalidateResources(queryClient, userId, ['workshops']),
         queryClient.invalidateQueries({
@@ -78,7 +79,9 @@ export function useSaveStudioWorkshop() {
         }),
         invalidatePublicCatalog(queryClient),
       ]);
+      toast.success(workshopId ? 'Đã cập nhật workshop.' : 'Đã tạo workshop.');
     },
+    onError: (error) => toast.error(error.message),
   });
 }
 
@@ -114,7 +117,7 @@ export function useSaveStudioSession() {
         sessionId,
         input,
       ),
-    onSuccess: async (_result, { studioId }) => {
+    onSuccess: async (_result, { studioId, sessionId }) => {
       await Promise.all([
         invalidateResources(queryClient, userId, ['workshops', 'bookings']),
         queryClient.invalidateQueries({
@@ -125,7 +128,11 @@ export function useSaveStudioSession() {
         }),
         invalidatePublicCatalog(queryClient),
       ]);
+      toast.success(
+        sessionId ? 'Đã cập nhật lịch buổi.' : 'Đã tạo buổi workshop.',
+      );
     },
+    onError: (error) => toast.error(error.message),
   });
 }
 
@@ -148,7 +155,9 @@ export function useCancelStudioSession() {
         }),
         invalidatePublicCatalog(queryClient),
       ]);
+      toast.success('Đã hủy buổi workshop.');
     },
+    onError: (error) => toast.error(error.message),
   });
 }
 
@@ -261,7 +270,7 @@ export function useSetStudioVerification() {
       studioId: string;
       decision: StudioVerificationDecision;
     }) => managementService.setStudioVerification(studioId, decision),
-    onSuccess: async (_result, { studioId }) => {
+    onSuccess: async (_result, { studioId, decision }) => {
       await Promise.all([
         invalidateResources(queryClient, userId, ['studios', 'workshops']),
         queryClient.invalidateQueries({
@@ -270,6 +279,12 @@ export function useSetStudioVerification() {
         }),
         invalidatePublicCatalog(queryClient),
       ]);
+      toast.success(
+        decision.verified
+          ? 'Đã cấp xác minh cho studio.'
+          : 'Đã thu hồi xác minh studio.',
+      );
     },
+    onError: (error) => toast.error(error.message),
   });
 }

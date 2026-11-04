@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { useAuth } from '../../hooks/useAuth';
 import { queryKeys } from '../../lib/query-keys';
 import { useEffect, useId, useState } from 'react';
@@ -139,7 +140,10 @@ export function SearchableFilterSelect({
               ))}
           </div>
           {options.isPending && (
-            <p className="p-3 text-xs text-muted">Đang tải…</p>
+            <LoadingState
+              label="Đang tải…"
+              className="p-3 text-xs text-muted"
+            />
           )}
           {options.error && (
             <Button variant="outline" onClick={() => void options.refetch()}>

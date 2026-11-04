@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { shouldRetryApiQuery } from '../../lib/api-client';
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -304,9 +305,7 @@ export function DataTable<T, V = unknown>({
       ) : (
         <>
           {loading && (
-            <p role="status" className="sr-only">
-              Đang tải danh sách…
-            </p>
+            <LoadingState label="Đang tải danh sách…" className="sr-only" />
           )}
           <Table aria-busy={result.isFetching || loading}>
             <TableHeader>

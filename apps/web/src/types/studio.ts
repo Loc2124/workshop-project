@@ -52,7 +52,7 @@ export type Studio = StudioDetailsContent & {
 export type StudioListing = Studio & {
   workshopCount: number;
   categoryIds: string[];
-  startingPrice: number;
+  startingPrice: number | null;
   availableSessions: number;
 };
 

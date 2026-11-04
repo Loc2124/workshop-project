@@ -8,7 +8,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import {
   DataTable,
   type DataTableFetcher,
@@ -160,8 +160,7 @@ export function AdminBookingsPage() {
       setAction(null);
       setRow(null);
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: () => {
       if (row)
         void client.invalidateQueries({
           queryKey: queryKeys.bookings.detail(userId, row.id),
@@ -250,7 +249,6 @@ export function AdminBookingsPage() {
   const ready = !!detail.data && !detail.error && !mutation.isPending;
   return (
     <div className="space-y-5">
-      <Toaster richColors position="top-right" />
       <header className="border-b border-line pb-4">
         <h1 className="font-heading text-2xl font-semibold">Đặt chỗ</h1>
         <p className="mt-1 text-xs text-muted">

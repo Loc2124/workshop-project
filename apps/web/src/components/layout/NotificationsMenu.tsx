@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { useDeferredStartup } from '../../hooks/useDeferredStartup';
 import { queryKeys } from '../../lib/query-keys';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,11 +9,12 @@ import { Bell } from 'lucide-react';
 import { apiFetch } from '../../lib/api-client';
 import { formatReviewDate } from '../../lib/studio-review';
 import { Button } from '../ui/button';
+import { toast } from 'sonner';
 const schema = z.object({
   notifications: z.array(
     z.object({
       id: z.string(),
-      studioId: z.string(),
+      studioId: z.string().nullable(),
       workshopId: z.string().nullable(),
       bookingId: z.string().nullable().optional(),
       title: z.string(),
@@ -39,10 +41,13 @@ export function NotificationsMenu({ userId }: { userId: string }) {
   const read = useMutation({
     mutationFn: (id: string) =>
       apiFetch(`/me/notifications/${id}/read`, { method: 'PATCH' }),
-    onSuccess: () =>
-      client.invalidateQueries({
+    onSuccess: async () => {
+      await client.invalidateQueries({
         queryKey: queryKeys.notifications.lists(userId),
-      }),
+      });
+      toast.success('Đã đánh dấu thông báo đã đọc.');
+    },
+    onError: (error) => toast.error(error.message),
   });
   return (
     <Popover.Root>
@@ -69,7 +74,10 @@ export function NotificationsMenu({ userId }: { userId: string }) {
           <h2 className="font-heading text-lg font-semibold">Thông báo</h2>
           <div className="mt-3 max-h-[65dvh] overflow-y-auto">
             {notifications.isPending ? (
-              <p className="py-4 text-sm text-muted">Đang tải thông báo…</p>
+              <LoadingState
+                label="Đang tải thông báo…"
+                className="py-4 text-sm text-muted"
+              />
             ) : notifications.error ? (
               <div role="alert" className="space-y-2 text-sm text-brick">
                 <p>Chưa tải được thông báo.</p>
@@ -91,8 +99,10 @@ export function NotificationsMenu({ userId }: { userId: string }) {
                       className="block hover:underline"
                       to={
                         n.bookingId
-                          ? `/workshops/${n.workshopId}`
-                          : `/studio/${n.studioId}/${n.workshopId ? 'workshops' : 'profile'}`
+                          ? `/me/bookings/${n.bookingId}`
+                          : n.studioId
+                            ? `/studio/${n.studioId}/${n.workshopId ? 'workshops' : 'profile'}`
+                            : '/me/bookings'
                       }
                     >
                       {n.title}
@@ -125,11 +135,6 @@ export function NotificationsMenu({ userId }: { userId: string }) {
               </ul>
             ) : (
               <p className="py-4 text-sm text-muted">Chưa có thông báo.</p>
-            )}
-            {read.error && (
-              <p role="alert" className="text-xs text-brick">
-                Chưa đánh dấu được thông báo. Vui lòng thử lại.
-              </p>
             )}
           </div>
         </Popover.Content>

@@ -10,7 +10,7 @@ import {
   messageTemplateEditSchema,
   type MessageTemplateKey,
 } from '@workshop/shared';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import { Eye, RotateCcw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Skeleton } from '../components/ui/skeleton';
@@ -63,7 +63,7 @@ export function AdminMessageTemplatesPage() {
     sample: Record<string, string>;
   } | null>(null);
   const [reset, setReset] = useState(false);
-  const [error, setError] = useState('');
+  const [actionError, setActionError] = useState(false);
   const subjectRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const field = useRef<'subject' | 'body'>('body');
@@ -79,7 +79,7 @@ export function AdminMessageTemplatesPage() {
   const valid = messageTemplateEditSchema.safeParse(current).success;
   function change(partial: Partial<{ subject: string; body: string }>) {
     if (!saved) return;
-    setError('');
+    setActionError(false);
     setDrafts((old) => ({
       ...old,
       [selected]: {
@@ -130,7 +130,7 @@ export function AdminMessageTemplatesPage() {
         return next;
       });
       setReset(false);
-      setError('');
+      setActionError(false);
       await invalidateResources(client, userId, ['templates']);
       toast.success(
         action === 'reset'
@@ -139,7 +139,7 @@ export function AdminMessageTemplatesPage() {
       );
     },
     onError: (e) => {
-      setError(e.message);
+      setActionError(true);
       toast.error(e.message);
     },
   });
@@ -158,15 +158,11 @@ export function AdminMessageTemplatesPage() {
         ),
     onSuccess: (result) =>
       setPreview({ ...result.preview, sample: result.sample }),
-    onError: (e) => {
-      setError(e.message);
-      toast.error(e.message);
-    },
+    onError: (e) => toast.error(e.message),
   });
   const busy = mutation.isPending || previewMutation.isPending;
   return (
     <div className="space-y-5">
-      <Toaster richColors position="top-right" />
       <header className="border-b border-line pb-4">
         <h1 className="font-heading text-2xl font-semibold">Mẫu thông báo</h1>
         <p className="mt-1 text-xs text-muted">
@@ -200,7 +196,7 @@ export function AdminMessageTemplatesPage() {
                   disabled={busy}
                   onClick={() => {
                     setSelected(key);
-                    setError('');
+                    setActionError(false);
                   }}
                   className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-sm px-3 py-2 text-left text-sm ${selected === key ? 'bg-soft font-semibold' : 'hover:bg-soft/60'}`}
                 >
@@ -282,27 +278,24 @@ export function AdminMessageTemplatesPage() {
                   Biến ngoài danh sách sẽ bị bỏ khi hiển thị hoặc gửi thông báo.
                 </p>
               </section>
-              {error && (
-                <div role="alert" className="space-y-2 text-sm text-brick">
-                  <p>{error}</p>
-                  <Button
-                    variant="outline"
-                    disabled={busy}
-                    onClick={async () => {
-                      const result = await templates.refetch();
-                      if (!result.error) {
-                        setDrafts((old) => {
-                          const next = { ...old };
-                          delete next[selected];
-                          return next;
-                        });
-                        setError('');
-                      }
-                    }}
-                  >
-                    Bỏ bản sửa và tải lại mẫu
-                  </Button>
-                </div>
+              {actionError && (
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={async () => {
+                    const result = await templates.refetch();
+                    if (!result.error) {
+                      setDrafts((old) => {
+                        const next = { ...old };
+                        delete next[selected];
+                        return next;
+                      });
+                      setActionError(false);
+                    }
+                  }}
+                >
+                  Bỏ bản sửa và tải lại mẫu
+                </Button>
               )}
               <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
                 <p className="text-xs text-muted">

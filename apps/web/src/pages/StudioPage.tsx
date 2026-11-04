@@ -1,13 +1,13 @@
-import { StudioPhotoGrid } from '../components/details/StudioPhotoGrid';
-import { ReportButton } from '../components/reports/ReportButton';
-import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { CategoryShortcuts } from '../components/catalog/CategoryShortcuts';
 import {
   DetailSection,
   DetailState,
 } from '../components/details/DetailPrimitives';
+import { StudioHero } from '../components/details/StudioHero';
+import { StudioPhotoGrid } from '../components/details/StudioPhotoGrid';
 import {
   StudioArtists,
   StudioExtras,
@@ -15,17 +15,13 @@ import {
 } from '../components/details/StudioSections';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
-import { StudioHero } from '../components/details/StudioHero';
+import { ReportButton } from '../components/reports/ReportButton';
 import { TicketCard, toTicketProps } from '../components/tickets';
-import { mockStudios } from '../data/mockStudios';
-import { mockWorkshops } from '../data/mockWorkshops';
+import { ApiError } from '../lib/api-client';
 import { rankWorkshops } from '../lib/rankWorkshops';
 import { catalogService } from '../services/catalogService';
 import type { PublicStudio, Studio } from '../types/studio';
 import type { Workshop } from '../types/workshop';
-import { isDemoDataMode } from '../lib/data-mode';
-import { ApiError } from '../lib/api-client';
-
 function StudioDetails({
   studio,
   workshops,
@@ -111,24 +107,16 @@ function StudioDetails({
     </>
   );
 }
-
 export function StudioPage() {
   const { id, slug } = useParams();
   const identifier = slug ?? id ?? '';
-  const sampleStudio = isDemoDataMode
-    ? mockStudios.find(
-        (studio) => studio.id === identifier || studio.slug === identifier,
-      )
-    : undefined;
   const query = useQuery({
     queryKey: ['catalog', 'studios', 'detail', identifier],
     queryFn: ({ signal }) => catalogService.getStudioById(identifier, signal),
-    enabled: Boolean(identifier) && !isDemoDataMode,
+    enabled: Boolean(identifier) && true,
   });
-  const studio = sampleStudio ?? query.data?.studio;
-  const workshops = sampleStudio
-    ? mockWorkshops.filter((workshop) => workshop.studioId === sampleStudio.id)
-    : (query.data?.studio.workshops ?? []);
+  const studio = query.data?.studio;
+  const workshops = query.data?.studio.workshops ?? [];
   const notFound =
     query.error instanceof ApiError && query.error.status === 404;
   return (

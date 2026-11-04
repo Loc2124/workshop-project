@@ -34,6 +34,16 @@ export const bookingFormSchema = z
     quantity: input.quantity,
   }));
 
+export const bookingContactSchema = z.object({
+  contactName: z.string().trim().min(1).max(120),
+  contactPhone: z
+    .string()
+    .trim()
+    .min(8)
+    .max(30)
+    .regex(/^\+?[0-9\s().-]+$/),
+});
+
 export const requiredPriceFormSchema = z
   .string()
   .trim()

@@ -1,9 +1,7 @@
-import { Link } from 'react-router-dom';
-import { ArrowUpRight } from 'lucide-react';
 import type { FeaturedStudio } from '../../services/featuredService';
 import { PageContainer } from '../layout/PageContainer';
 import { SectionHeading } from '../layout/SectionHeading';
-import { MediaImage } from '../ui/MediaImage';
+import { StudioCard } from '../catalog/StudioCard';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 export function HomeFeaturedStudios({
@@ -29,9 +27,9 @@ export function HomeFeaturedStudios({
         description="Những không gian để gặp gỡ, khám phá và tự tay làm điều mình thích."
       />
       {loading ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-64 w-full rounded-lg" />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-64 w-full rounded-ticket" />
           ))}
         </div>
       ) : error ? (
@@ -46,40 +44,9 @@ export function HomeFeaturedStudios({
           Chưa có studio công khai để giới thiệu.
         </p>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
           {studios.map((studio) => (
-            <Link
-              key={studio.id}
-              to={`/studios/${studio.slug}`}
-              className="group overflow-hidden rounded-lg border border-line bg-surface focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <MediaImage
-                thumbnail
-                src={studio.imageUrl}
-                thumbnailUrl={studio.thumbnailUrl}
-                alt={`Không gian ${studio.name}`}
-                placeholder={studio.name}
-                className="aspect-[4/3] w-full"
-                loading="lazy"
-              />
-              <div className="space-y-2 p-4">
-                <p className="text-xs text-muted">{studio.province}</p>
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-heading text-xl font-semibold group-hover:text-primary">
-                    {studio.name}
-                  </h3>
-                  <ArrowUpRight
-                    size={17}
-                    className="mt-1 shrink-0 text-muted"
-                  />
-                </div>
-                {studio.description && (
-                  <p className="line-clamp-2 text-sm leading-6 text-muted">
-                    {studio.description}
-                  </p>
-                )}
-              </div>
-            </Link>
+            <StudioCard key={studio.id} studio={studio} />
           ))}
         </div>
       )}

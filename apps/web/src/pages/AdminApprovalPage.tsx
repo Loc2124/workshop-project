@@ -3,7 +3,7 @@ import { queryKeys } from '../lib/query-keys';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { studioProvinces } from '@workshop/shared';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import { DataTable } from '../components/admin/DataTable';
 import { ConfirmReasonDialog } from '../components/admin/ConfirmReasonDialog';
 import { StatusBadge } from '../components/ui/status-badge';
@@ -116,31 +116,23 @@ export function AdminApprovalPage() {
   ];
   async function confirm(reason: string) {
     if (!selected || !decision || mutation.isPending) return;
-    try {
-      await mutation.mutateAsync({
-        workshopId: selected.id,
-        decision:
-          decision === 'approved'
-            ? { status: 'approved' }
-            : { status: 'rejected', reason },
-      });
-      toast.success(
+    await mutation.mutateAsync({
+      workshopId: selected.id,
+      decision:
         decision === 'approved'
-          ? 'Đã duyệt workshop.'
-          : 'Đã từ chối workshop và ghi nhận lý do.',
-      );
-      setSelected(null);
-      setDecision(null);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : 'Chưa xử lý được workshop.',
-      );
-      throw error;
-    }
+          ? { status: 'approved' }
+          : { status: 'rejected', reason },
+    });
+    toast.success(
+      decision === 'approved'
+        ? 'Đã duyệt workshop.'
+        : 'Đã từ chối workshop và ghi nhận lý do.',
+    );
+    setSelected(null);
+    setDecision(null);
   }
   return (
     <div className="space-y-5" ref={container}>
-      <Toaster richColors position="top-right" closeButton />
       <header className="border-b border-line pb-4">
         <h1 className="font-heading text-2xl font-semibold">Workshop</h1>
       </header>

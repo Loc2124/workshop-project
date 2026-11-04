@@ -1,17 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { ProvinceOption } from '../components/catalog/ProvinceCombobox';
-import { mockProvinceOptions } from '../lib/catalog';
 import { catalogService } from '../services/catalogService';
-import { isDemoDataMode } from '../lib/data-mode';
-
 export function useProvinces() {
-  const [provinces, setProvinces] = useState<ProvinceOption[]>(() =>
-    isDemoDataMode ? mockProvinceOptions() : [],
-  );
+  const [provinces, setProvinces] = useState<ProvinceOption[]>(() => []);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(!isDemoDataMode);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
-    if (isDemoDataMode) return;
     const controller = new AbortController();
     catalogService
       .provinces(controller.signal)

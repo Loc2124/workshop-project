@@ -1,6 +1,6 @@
 # Vé Open Slot
 
-Demo: `/demo/ve`. `TicketRow` được dùng cho tối đa năm workshop trên trang chủ; `TicketCard` được dùng trong lưới khám phá.
+Trang chủ dùng `TicketRow` cho tối đa tám workshop theo cấu hình nội dung; trang khám phá dùng `WorkshopCard` bọc `TicketCard`. `TicketRow` cũng dùng `TicketCard` với biến thể nổi bật cho vé đầu tiên. Studio trên cả hai trang dùng chung `StudioCard` dạng ticket.
 
 ## Cấu trúc code
 
@@ -11,7 +11,9 @@ Demo: `/demo/ve`. `TicketRow` được dùng cho tối đa năm workshop trên t
 - `useBookingTicketActions`: logic tải PNG và in; phần JSX của `BookingTicket` chỉ ghép nội dung.
 - `booking.ts`: danh sách trạng thái dùng chung giữa vé và trang demo.
 
-Layout, khoảng cách, cỡ chữ, màu và responsive dùng Tailwind. Trang chủ dùng lưới cùng container với tiêu đề: hai cột từ 1024px, vé đầu `featured` trải hai cột; bốn vé thường chia hai hàng. Cuống ảnh rộng khoảng 28%, tối thiểu 120px từ `md`. Dưới `md` vé vẫn chuyển dọc.
+Layout, khoảng cách, cỡ chữ, màu và responsive dùng Tailwind. Trang chủ dùng lưới cùng container với tiêu đề: hai cột từ 1024px, vé workshop đầu `featured` trải hai cột; các vé còn lại và studio chia hai cột. Cuống ảnh dùng cùng `TicketStub` trên mọi trang.
+
+Dữ liệu API và bản xem trước admin lấy từ `/home/featured` và `/admin/noi-dung/preview` với cùng hợp đồng: studio có loại, địa chỉ, cấp xác minh, số workshop/buổi còn chỗ và giá thấp nhất của buổi sắp diễn ra. Studio chưa có buổi còn chỗ nhận `startingPrice: null` và hiển thị “Chưa có lịch tổ chức”. Chỉ dùng dữ liệu từ API; mock chỉ dành cho kiểm thử.
 
 ```tsx
 import { TicketRow, TicketCard, BookingTicket, toTicketProps } from './components/tickets';

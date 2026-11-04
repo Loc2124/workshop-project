@@ -6,15 +6,15 @@
 - Web: React + TypeScript + Vite + Tailwind CSS, build thành static site; có cấu hình Vercel tại `apps/web/vercel.json`.
 - Database: Supabase PostgreSQL.
 
-Web là SPA độc lập, gọi API bằng biến build-time `VITE_API_BASE_URL` (ví dụ `https://workshop-api.onrender.com`). `VITE_DATA_MODE` mặc định là `api` ở cả development lẫn production; chỉ đặt `VITE_DATA_MODE=demo` trong build muốn chủ đích dùng catalog mô phỏng. Chế độ API không chuyển sang mock khi API lỗi hoặc trả 404. API giới hạn CORS theo origin `WEB_ORIGIN`, cho phép credentials, và từ chối request thay đổi dữ liệu từ origin trình duyệt khác. Request đăng nhập và các request cần phiên gửi cookie bằng `credentials: 'include'`; production dùng cookie `HttpOnly`, `Secure`, `SameSite=None` để hoạt động giữa domain Vercel và Render. Local dùng `SameSite=Lax`.
+Web là SPA độc lập, gọi API bằng biến build-time `VITE_API_BASE_URL` (ví dụ `https://workshop-api.onrender.com`). Web chỉ dùng dữ liệu API và không thay thế bằng mock khi API lỗi. API giới hạn CORS theo origin `WEB_ORIGIN`, cho phép credentials, và từ chối request thay đổi dữ liệu từ origin trình duyệt khác. Request đăng nhập và các request cần phiên gửi cookie bằng `credentials: 'include'`; production dùng cookie `HttpOnly`, `Secure`, `SameSite=None` để hoạt động giữa domain Vercel và Render. Local dùng `SameSite=Lax`.
 
 Trang khám phá có thể xin quyền vị trí trình duyệt để chọn tỉnh/thành mặc định. Tọa độ được gửi trực tiếp tới reverse-geocoding endpoint cấu hình bằng `VITE_REVERSE_GEOCODE_URL`; mặc định là Nominatim/OpenStreetMap. Người dùng có thể đổi tỉnh hoặc từ chối quyền vị trí. Chỉ bật tính năng này trên HTTPS khi deploy.
 
 ## Trạng thái hiện tại
 
 - API có cấu hình deploy trên Render và endpoint `GET /health`.
-- Frontend trong `apps/web` có giao diện khách, xác thực, đăng ký/quản lý studio và quản trị. Xem README để biết phạm vi đã triển khai và phần còn thiếu.
-- Chưa xác nhận URL công khai, giá trị `WEB_ORIGIN` production hoặc các migration mới nhất trên database dev/demo. Repository có migration đến `030_image_medium_variants.sql`; kiểm tra lịch sử migration từng môi trường trước khi triển khai.
+- Frontend trong `apps/web` có giao diện khách, xác thực, đặt chỗ, lịch sử và vé; xem README để biết phạm vi còn thiếu.
+- Migration booking/thanh toán mới nhất trong repository là `034_customer_booking_payments.sql`. Chưa xác nhận URL công khai, giá trị `WEB_ORIGIN` production hoặc migration đã chạy ở từng database; kiểm tra lịch sử trước khi triển khai.
 - `packages/shared` chưa có script build; API chưa cần build package này riêng.
 - `JWT_SECRET` phải là chuỗi base64url ngẫu nhiên dài ít nhất 43 ký tự, có tối thiểu 16 ký tự khác nhau. Sinh bằng `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`; đặt trực tiếp trong secret manager/dashboard, không ghi vào Git hoặc log.
 - Production yêu cầu `WEB_ORIGIN` dùng HTTPS. Nếu thay `JWT_SECRET`, access token hiện hành không còn hợp lệ nhưng phiên có refresh token còn hạn có thể lấy access token mới; để thu hồi mọi phiên, thu hồi các dòng `auth_sessions` của user.
@@ -36,7 +36,6 @@ Cấu hình static site với root repository hoặc thư mục phù hợp monor
 - Build: `npm run build --workspace @workshop/web`.
 - Publish directory: thư mục output Vite, thường là `apps/web/dist`.
 - Build environment: `VITE_API_BASE_URL=https://<api-domain>`.
-- Data mode: để `VITE_DATA_MODE` không đặt hoặc đặt `api` cho web thật; chỉ đặt `demo` trong build demo có chủ đích.
 - Reverse geocoding: `VITE_REVERSE_GEOCODE_URL=https://nominatim.openstreetmap.org/reverse` (tọa độ trình duyệt được gửi tới endpoint này khi người dùng cho phép định vị).
 - SPA fallback: mọi đường dẫn frontend cần được rewrite về `/index.html`.
 
@@ -58,7 +57,15 @@ Output hiện tại là `apps/web/dist`; dùng cấu hình rewrite/cache trong `
 | `REFRESH_COOKIE_NAME`      | `workshop_refresh`                                           |
 | `DB_POOL_MAX`              | Mặc định `5`, giảm nếu giới hạn kết nối database thấp        |
 | `TRUST_PROXY_HOPS`         | `1` khi API chạy sau load balancer Render                    |
-| `PAYMENT_PROVIDER`         | `mock` cho giai đoạn demo hiện tại                           |
+| `HOLD_MINUTES`             | Thời gian giữ chỗ chờ cọc; mặc định `15` phút                 |
+| `EXPIRY_JOB_INTERVAL_SECONDS` | Chu kỳ worker giải phóng hold quá hạn; mặc định `60` giây |
+| `PAYMENT_PROVIDER`         | Production bắt buộc `payos`; `mock` chỉ cho local/test       |
+| `PAYOS_CLIENT_ID`          | Client ID trong PayOS dashboard                               |
+| `PAYOS_API_KEY`            | API key trong PayOS dashboard                                 |
+| `PAYOS_CHECKSUM_KEY`       | Checksum key để xác thực webhook                              |
+| `PAYOS_RETURN_URL`         | HTTPS URL web nhận chuyển hướng sau thanh toán                |
+| `PAYOS_CANCEL_URL`         | HTTPS URL web nhận chuyển hướng khi rời checkout             |
+| `PAYOS_WEBHOOK_URL`        | HTTPS URL API webhook đã đăng ký trong PayOS                  |
 | `RANKER_URL`               | URL dịch vụ ranker; hiện chưa triển khai                     |
 | `PORT`                     | Render cấp tự động                                           |
 
@@ -83,8 +90,17 @@ Không chạy test hoặc `migrate:test` trên project dev/demo. Migration đã 
 
 1. Mở `https://<api-domain>/health`; cần nhận HTTP 200 và `{"ok":true}`.
 2. Mở web production và kiểm tra assets được tải, các route SPA tải lại trực tiếp được.
-3. Khi giao diện catalog được triển khai, gọi API từ web và kiểm tra CORS chỉ cho phép origin đã cấu hình.
-4. Khi luồng đăng nhập UI sẵn sàng, đăng nhập và xác nhận cookie được lưu với thuộc tính phù hợp; không chia sẻ giá trị cookie.
+3. Gọi API catalog/booking từ web và kiểm tra CORS chỉ cho phép origin đã cấu hình.
+4. Đăng nhập và xác nhận cookie được lưu với thuộc tính phù hợp; không chia sẻ giá trị cookie.
 5. Ghi lại URL HTTPS, thời điểm và kết quả smoke test; không ghi secret.
 
 Migration dev/demo, URL công khai, kết nối API tới Supabase và giá trị `WEB_ORIGIN` production chưa được xác nhận trong repository.
+
+## 7. Booking, thanh toán và đối soát
+
+- Production dùng `PAYMENT_PROVIDER=payos`; nhập ba credential PayOS qua secret manager, không đưa chúng vào `VITE_*` hoặc repository.
+- Đặt `PAYOS_RETURN_URL` và `PAYOS_CANCEL_URL` tới web production (lần lượt `/payment/return` và `/payment/cancel`), và đặt `PAYOS_WEBHOOK_URL` là `https://<api-domain>/webhooks/payos`; đăng ký URL webhook chính xác trong PayOS. Chỉ webhook hợp lệ mới xác nhận thanh toán; URL return/cancel của trình duyệt không phải bằng chứng đã trả tiền.
+- PayOS thu tiền cọc về một tài khoản nền tảng. MVP chưa hỗ trợ split settlement; studio tự đối soát/chuyển tiền thủ công.
+- `EXPIRY_JOB_INTERVAL_SECONDS` mặc định 60 giây. Worker dùng advisory lock; cleanup theo yêu cầu vẫn chạy trước thao tác đặt chỗ và trước khi trả chỗ còn trống.
+- Mock checkout và nút xác nhận mô phỏng chỉ hoạt động khi API không ở production và `PAYMENT_PROVIDER=mock`.
+- Hủy booking đã thu tiền chuyển sang `refund_needed`; studio cần xử lý hoàn thủ công. Không có API hoàn tiền tự động.

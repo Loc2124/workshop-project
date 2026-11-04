@@ -41,7 +41,7 @@ export function StudioVerificationPanel({ studio }: { studio: AdminStudio }) {
         decision: parsed.data,
       });
     } catch {
-      /* Render mutation error below. */
+      /* Mutation errors are reported through the global toast. */
     }
   }
   return (
@@ -101,9 +101,9 @@ export function StudioVerificationPanel({ studio }: { studio: AdminStudio }) {
               </p>
             </>
           )}
-          {(error || mutation.error) && (
+          {error && (
             <p role="alert" className="text-sm text-brick">
-              {error || mutation.error?.message}
+              {error}
             </p>
           )}
           <Button

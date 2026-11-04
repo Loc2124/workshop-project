@@ -1,4 +1,3 @@
-import { attachCoverImages } from '../images/image-variants.js';
 import { writeAuditLog } from './audit-log.js';
 import { z } from 'zod';
 import { adminListFields } from './admin-list-query.js';
@@ -7,7 +6,10 @@ import { query, withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
 import { imagePublicUrl } from '../images/image-storage.js';
 import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
-import { studioDepositEligibleSql } from '../studios/studio-profile-sql.js';
+import {
+  studioDepositEligibleSql,
+  studioTrustSql,
+} from '../studios/studio-profile-sql.js';
 const ids = (max: number) =>
   z
     .array(z.string().uuid())
@@ -33,8 +35,8 @@ export const featuredSearch = z
   })
   .strict();
 const studioEligible =
-  "st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)";
-const workshopEligible = `w.status='approved' AND w.visibility_status='active' AND ${studioEligible}`;
+  "st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st) AND (NOT EXISTS (SELECT 1 FROM workshops demo WHERE demo.studio_id=st.id AND demo.is_simulated) OR EXISTS (SELECT 1 FROM workshops real WHERE real.studio_id=st.id AND NOT real.is_simulated))";
+const workshopEligible = `w.status='approved' AND NOT w.is_simulated AND w.visibility_status='active' AND w.publication_status='published' AND ${studioEligible}`;
 type Item = {
   type: 'studio' | 'workshop';
   targetId: string;
@@ -222,48 +224,157 @@ export async function publicFeatured(
         };
       })());
     // Invalid/hidden choices are excluded before ranking; latest eligible records fill every gap.
-    const selectedWorkshops = (
-      await client.query<{ id: string }>(
-        `SELECT w.id FROM workshops w JOIN studios st ON st.id=w.studio_id WHERE ${workshopEligible} ORDER BY (w.id=ANY($1::uuid[])) DESC,array_position($1::uuid[],w.id),w.created_at DESC,w.id LIMIT 8`,
-        [saved.workshopIds],
-      )
-    ).rows.map((w) => w.id);
-    const sessionIds = (
-      await client.query<{ id: string }>(
-        "SELECT id FROM sessions WHERE workshop_id=ANY($1::uuid[]) AND status='scheduled' AND starts_at>now()",
-        [selectedWorkshops],
-      )
-    ).rows.map((s) => s.id);
-    await releaseExpiredHolds(client, sessionIds);
-    const studios = (
+    const selection = (
       await client.query<{
-        id: string;
-        imageKey: string | null;
-        [key: string]: unknown;
+        studioIds: string[];
+        workshopIds: string[];
+        sessionIds: string[];
       }>(
-        `SELECT st.id,st.slug,st.name,st.description,p.name AS province,ARRAY(SELECT category_id FROM studio_categories WHERE deleted_at IS NULL AND studio_id=st.id ORDER BY category_id) AS "categoryIds",${studioCover} AS "imageKey" FROM studios st JOIN provinces p ON p.id=st.province_id WHERE ${studioEligible} ORDER BY (st.id=ANY($1::uuid[])) DESC,array_position($1::uuid[],st.id),st.created_at DESC,st.id LIMIT 6`,
-        [saved.studioIds],
+        `WITH selected_workshops AS MATERIALIZED (
+           SELECT w.id, row_number() OVER (
+             ORDER BY (w.id=ANY($1::uuid[])) DESC,array_position($1::uuid[],w.id),
+               w.created_at DESC,w.id
+           ) AS position
+           FROM workshops w JOIN studios st ON st.id=w.studio_id
+           WHERE ${workshopEligible}
+           ORDER BY (w.id=ANY($1::uuid[])) DESC,array_position($1::uuid[],w.id),
+             w.created_at DESC,w.id
+           LIMIT 8
+         ), selected_studios AS MATERIALIZED (
+           SELECT st.id, row_number() OVER (
+             ORDER BY (st.id=ANY($2::uuid[])) DESC,array_position($2::uuid[],st.id),
+               st.created_at DESC,st.id
+           ) AS position
+           FROM studios st
+           WHERE ${studioEligible}
+           ORDER BY (st.id=ANY($2::uuid[])) DESC,array_position($2::uuid[],st.id),
+             st.created_at DESC,st.id
+           LIMIT 6
+         )
+         SELECT
+           COALESCE((SELECT array_agg(id ORDER BY position) FROM selected_studios),ARRAY[]::uuid[]) AS "studioIds",
+           COALESCE((SELECT array_agg(id ORDER BY position) FROM selected_workshops),ARRAY[]::uuid[]) AS "workshopIds",
+           ARRAY(
+             SELECT s.id
+             FROM sessions s JOIN workshops w ON w.id=s.workshop_id
+             WHERE (w.id IN (SELECT id FROM selected_workshops)
+               OR w.studio_id IN (SELECT id FROM selected_studios))
+               AND s.status='scheduled' AND s.starts_at>now()
+           ) AS "sessionIds"`,
+        [saved.workshopIds, saved.studioIds],
       )
-    ).rows.map(({ imageKey, ...studio }) => ({
-      ...studio,
-      imageUrl: imageKey ? imagePublicUrl(imageKey) : undefined,
-    }));
-    const workshops = (
+    ).rows[0];
+    await releaseExpiredHolds(client, selection.sessionIds);
+
+    const result = (
       await client.query<{
-        id: string;
-        imageKey: string | null;
-        [key: string]: unknown;
+        studios: Array<
+          Record<string, unknown> & {
+            imageKey: string | null;
+            thumbnailKey: string | null;
+            mediumKey: string | null;
+          }
+        >;
+        workshops: Array<
+          Record<string, unknown> & {
+            imageKey: string | null;
+            thumbnailKey: string | null;
+            mediumKey: string | null;
+          }
+        >;
       }>(
-        `SELECT w.id,w.slug,st.id AS "studioId",st.slug AS "studioSlug",w.title,w.description,w.category_id AS "categoryId",w.level,w.audience,w.takeaway,w.duration_minutes AS "durationMinutes",w.base_price AS "basePrice",CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",w.requirements,w.cancellation_policy AS "cancellationPolicy",w.payment_policy AS "paymentPolicy",st.district,p.name AS province,st.province_id AS "provinceId",st.area_id AS "areaId",st.address,w.is_simulated AS "isSimulated",st.name AS "studioName",st.description AS "studioDescription",${workshopCover} AS "imageKey",coalesce((SELECT json_agg(json_build_object('id',s.id,'startsAt',s.starts_at,'endsAt',s.ends_at,'price',s.price,'availableSeats',s.capacity-s.seats_held-s.seats_sold) ORDER BY s.starts_at,s.id) FROM sessions s WHERE s.workshop_id=w.id AND s.status='scheduled' AND s.starts_at>now() AND s.capacity>s.seats_held+s.seats_sold),'[]'::json) AS sessions FROM workshops w JOIN studios st ON st.id=w.studio_id JOIN provinces p ON p.id=st.province_id WHERE ${workshopEligible} ORDER BY (w.id=ANY($1::uuid[])) DESC,array_position($1::uuid[],w.id),w.created_at DESC,w.id LIMIT 8`,
-        [saved.workshopIds],
+        `WITH selected_studios AS (
+           SELECT id,position FROM unnest($1::uuid[]) WITH ORDINALITY AS selected(id,position)
+         ), selected_workshops AS (
+           SELECT id,position FROM unnest($2::uuid[]) WITH ORDINALITY AS selected(id,position)
+         ), studio_items AS (
+           SELECT ss.position,st.id,st.slug,st.name,coalesce(st.description,'') AS description,
+             st.category_id AS "categoryId",${studioTrustSql} AS "trustLevel",
+             p.name AS province,st.province_id AS "provinceId",st.area_id AS "areaId",
+             a.name AS "areaName",st.address,
+             ARRAY(SELECT category_id FROM studio_categories WHERE deleted_at IS NULL AND studio_id=st.id ORDER BY category_id) AS "categoryIds",
+             stats."workshopCount",stats."availableSessions",stats."startingPrice",
+             cover.key AS "imageKey",cover.thumbnail_key AS "thumbnailKey",
+             cover.medium_key AS "mediumKey"
+           FROM selected_studios ss
+           JOIN studios st ON st.id=ss.id
+           JOIN provinces p ON p.id=st.province_id
+           LEFT JOIN areas a ON a.id=st.area_id AND a.province_id=st.province_id
+           LEFT JOIN LATERAL (
+             SELECT count(DISTINCT w.id) FILTER (WHERE s.id IS NOT NULL)::integer AS "workshopCount",
+               count(s.id)::integer AS "availableSessions",min(s.price)::integer AS "startingPrice"
+             FROM workshops w LEFT JOIN sessions s ON s.workshop_id=w.id
+               AND s.status='scheduled' AND s.starts_at>now()
+               AND s.capacity>s.seats_held+s.seats_sold
+             WHERE w.studio_id=st.id AND w.status='approved' AND NOT w.is_simulated
+               AND w.visibility_status='active' AND w.publication_status='published'
+           ) stats ON true
+           LEFT JOIN LATERAL (
+             SELECT i.key,i.thumbnail_key,i.medium_key
+             FROM images i
+             WHERE i.id=ANY(st.photo_ids) AND i.state='ready'
+             ORDER BY array_position(st.photo_ids,i.id)
+             LIMIT 1
+           ) cover ON true
+           WHERE ${studioEligible}
+         ), workshop_items AS (
+           SELECT sw.position,w.id,w.slug,st.id AS "studioId",st.slug AS "studioSlug",
+             w.title,w.description,w.category_id AS "categoryId",w.level,w.audience,w.takeaway,
+             w.duration_minutes AS "durationMinutes",w.base_price AS "basePrice",
+             CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",
+             w.requirements,w.cancellation_policy AS "cancellationPolicy",
+             w.payment_policy AS "paymentPolicy",st.district,p.name AS province,
+             st.province_id AS "provinceId",st.area_id AS "areaId",st.address,
+             w.is_simulated AS "isSimulated",st.name AS "studioName",
+             st.description AS "studioDescription",${studioTrustSql} AS "studioTrustLevel",
+             cover.key AS "imageKey",cover.thumbnail_key AS "thumbnailKey",
+             cover.medium_key AS "mediumKey",
+             coalesce((
+               SELECT json_agg(json_build_object('id',s.id,'startsAt',s.starts_at,
+                 'endsAt',s.ends_at,'price',s.price,
+                 'availableSeats',s.capacity-s.seats_held-s.seats_sold)
+                 ORDER BY s.starts_at,s.id)
+               FROM sessions s
+               WHERE s.workshop_id=w.id AND s.status='scheduled' AND s.starts_at>now()
+                 AND s.capacity>s.seats_held+s.seats_sold
+             ),'[]'::json) AS sessions
+           FROM selected_workshops sw
+           JOIN workshops w ON w.id=sw.id
+           JOIN studios st ON st.id=w.studio_id
+           JOIN provinces p ON p.id=st.province_id
+           LEFT JOIN LATERAL (
+             SELECT i.key,i.thumbnail_key,i.medium_key
+             FROM images i
+             WHERE i.workshop_id=w.id AND i.state='ready'
+             ORDER BY i.created_at,i.id
+             LIMIT 1
+           ) cover ON true
+           WHERE ${workshopEligible}
+         )
+         SELECT
+           COALESCE((SELECT jsonb_agg(to_jsonb(item)-'position' ORDER BY position) FROM studio_items item),'[]'::jsonb) AS studios,
+           COALESCE((SELECT jsonb_agg(to_jsonb(item)-'position' ORDER BY position) FROM workshop_items item),'[]'::jsonb) AS workshops`,
+        [selection.studioIds, selection.workshopIds],
       )
-    ).rows.map(({ imageKey, ...workshop }) => ({
-      ...workshop,
-      imageUrl: imageKey ? imagePublicUrl(imageKey) : undefined,
-    }));
+    ).rows[0];
+    const withImageUrls = <
+      T extends {
+        imageKey: string | null;
+        thumbnailKey: string | null;
+        mediumKey: string | null;
+      },
+    >(
+      items: T[],
+    ) =>
+      items.map(({ imageKey, thumbnailKey, mediumKey, ...item }) => ({
+        ...item,
+        ...(imageKey ? { imageUrl: imagePublicUrl(imageKey) } : {}),
+        ...(thumbnailKey ? { thumbnailUrl: imagePublicUrl(thumbnailKey) } : {}),
+        ...(mediumKey ? { mediumUrl: imagePublicUrl(mediumKey) } : {}),
+      }));
     return {
-      studios: await attachCoverImages(studios, 'studio', client),
-      workshops: await attachCoverImages(workshops, 'workshop', client),
+      studios: withImageUrls(result.studios),
+      workshops: withImageUrls(result.workshops),
     };
   });
 }

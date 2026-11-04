@@ -40,6 +40,9 @@ export const createStudioEvidenceSchema = (
 ) =>
   z
     .object({
+      name: z.string().trim().min(2).max(120).optional(),
+      address: z.string().trim().min(1).max(500).optional(),
+      paymentQrImageId: z.string().uuid().nullable().optional(),
       contactPhone: studioPhoneSchema,
       contactEmail: z
         .string()

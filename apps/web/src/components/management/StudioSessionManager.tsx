@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { useState, type FormEvent } from 'react';
 import { formatPrice, formatSessionDate } from '../../lib/format';
 import {
@@ -113,7 +114,7 @@ function SessionEditor({
       });
       onCancel();
     } catch {
-      // Mutation error is rendered below with the server message.
+      // The mutation reports server errors through the global toast.
     }
   }
 
@@ -197,11 +198,9 @@ function SessionEditor({
           </label>
         )}
       </div>
-      {(validationError || saveSession.error) && (
+      {validationError && (
         <p className="text-sm text-brick" role="alert">
-          {validationError ||
-            saveSession.error?.message ||
-            'Không thể lưu lịch buổi.'}
+          {validationError}
         </p>
       )}
       <div className="flex flex-wrap gap-3">
@@ -249,7 +248,7 @@ export function StudioSessionManager({
       });
       setCanceling(undefined);
     } catch {
-      // Mutation error is rendered beside the affected session.
+      // The mutation reports server errors through the global toast.
     }
   }
 
@@ -294,9 +293,7 @@ export function StudioSessionManager({
         </div>
       )}
       {isLoading ? (
-        <p aria-busy="true" className="py-8 text-muted" role="status">
-          Đang tải lịch…
-        </p>
+        <LoadingState label="Đang tải lịch…" className="py-8 text-muted" />
       ) : error ? (
         <div className="mt-5 space-y-3">
           <p className="text-brick" role="alert">
@@ -393,11 +390,6 @@ export function StudioSessionManager({
                     )}{' '}
                     / {session.capacity} chỗ
                   </p>
-                  {cancelSession.error && canceling?.id === session.id && (
-                    <p className="mt-2 text-sm text-brick" role="alert">
-                      {cancelSession.error.message}
-                    </p>
-                  )}
                 </>
               )}
             </li>

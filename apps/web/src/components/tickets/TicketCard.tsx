@@ -1,4 +1,5 @@
 import { Img } from '../ui/Img';
+import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import {
   formatCategoryLabel,
   formatSessionDate,
@@ -105,6 +106,9 @@ export function TicketCard(
               >
                 {studio.name} · {studio.provinceName}
               </span>
+              {studio.trustLevel === 'verified' && (
+                <StudioTrustBadge level="verified" />
+              )}
               {artisan && (
                 <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
                   {artisan.avatarUrl && (

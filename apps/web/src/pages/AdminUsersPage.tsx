@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 import { MoreHorizontal } from 'lucide-react';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import {
   DataTable,
   type DataTableFetcher,
@@ -85,8 +85,7 @@ export function AdminUsersPage() {
       setSelected(null);
       setAction(null);
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: () => {
       void client.invalidateQueries({
         queryKey: queryKeys.users.lists(userId),
       });
@@ -224,7 +223,6 @@ export function AdminUsersPage() {
   );
   return (
     <div className="space-y-5">
-      <Toaster richColors position="top-right" />
       <header className="border-b border-line pb-4">
         <h1 className="font-heading text-2xl font-semibold">Người dùng</h1>
       </header>

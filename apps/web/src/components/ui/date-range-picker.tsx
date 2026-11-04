@@ -1,3 +1,4 @@
+import { LoadingState } from './LoadingState';
 import * as Popover from '@radix-ui/react-popover';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -136,9 +137,10 @@ export function DateRangePicker({
         >
           <Suspense
             fallback={
-              <p className="w-64 max-w-full py-10 text-center text-sm text-muted">
-                Đang tải lịch...
-              </p>
+              <LoadingState
+                label="Đang tải lịch..."
+                className="w-64 max-w-full py-10 text-center text-sm text-muted"
+              />
             }
           >
             <Calendar

@@ -10,7 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import {
   reportReasons,
   reportStatusSchema,
@@ -130,8 +130,7 @@ export function AdminReportsPage() {
       setAction(null);
       setRow(null);
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: () => {
       void detail.refetch();
     },
   });
@@ -212,7 +211,6 @@ export function AdminReportsPage() {
     selected && ['resolved', 'dismissed'].includes(selected.status);
   return (
     <div className="space-y-5">
-      <Toaster richColors position="top-right" />
       <header className="border-b border-line pb-4">
         <h1 className="font-heading text-2xl font-semibold">
           Báo cáo nội dung

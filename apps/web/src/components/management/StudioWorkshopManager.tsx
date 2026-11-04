@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { useState, type FormEvent } from 'react';
 import {
   categories as localCategories,
@@ -38,6 +39,7 @@ type WorkshopValues = {
   requirements: string;
   cancellationPolicy: string;
   paymentPolicy: string;
+  publicationStatus: 'draft' | 'published';
 };
 
 function toValues(workshop?: StudioWorkshop): WorkshopValues {
@@ -55,6 +57,8 @@ function toValues(workshop?: StudioWorkshop): WorkshopValues {
     requirements: workshop?.requirements ?? '',
     cancellationPolicy: workshop?.cancellationPolicy ?? '',
     paymentPolicy: workshop?.paymentPolicy ?? '',
+    publicationStatus:
+      workshop?.publicationStatus === 'draft' ? 'draft' : 'published',
   };
 }
 
@@ -83,7 +87,7 @@ function StudioWorkshopEditor({
   onCancel: () => void;
 }) {
   const saveWorkshop = useSaveStudioWorkshop();
-  const remoteCategories = useCategories(true);
+  const remoteCategories = useCategories();
   const categories = (remoteCategories ?? localCategories).filter(
     (category) =>
       (category.status === 'active' && category.isVisible !== false) ||
@@ -135,6 +139,7 @@ function StudioWorkshopEditor({
     }
     const common = {
       title: values.title,
+      publicationStatus: values.publicationStatus,
       description: values.description,
       categoryId: values.categoryId,
       proposedCategoryName:
@@ -186,7 +191,7 @@ function StudioWorkshopEditor({
       });
       onCancel();
     } catch {
-      // Mutation error is rendered below with the server message.
+      // The mutation reports server errors through the global toast.
     }
   }
 
@@ -201,7 +206,8 @@ function StudioWorkshopEditor({
           {workshop ? 'Sửa workshop' : 'Tạo workshop'}
         </h3>
         <p className="mt-1 text-sm text-muted">
-          Workshop mới và các thay đổi sau khi duyệt sẽ được gửi chờ xét duyệt.
+          Studio đã duyệt được đăng workshop ngay, không cần admin duyệt từng
+          bài. Chọn bản nháp nếu chưa muốn công khai.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -285,8 +291,8 @@ function StudioWorkshopEditor({
                   </span>
                 )}
                 <span className="block font-normal text-muted">
-                  Admin sẽ xét danh mục cùng workshop. Danh mục chỉ xuất hiện
-                  công khai sau khi được duyệt.
+                  Workshop được đăng ngay trong nhóm Khác. Admin xét riêng đề
+                  xuất danh mục mới.
                 </span>
               </label>
             )}
@@ -389,14 +395,28 @@ function StudioWorkshopEditor({
           </label>
         ))}
       </div>
-      {(validationError || saveWorkshop.error) && (
+      {validationError && (
         <p className="text-sm text-brick" role="alert">
-          {validationError ||
-            saveWorkshop.error?.message ||
-            'Không thể lưu workshop.'}
+          {validationError}
         </p>
       )}
       <div className="flex flex-wrap gap-3">
+        <label className="space-y-2 text-sm font-semibold">
+          <span className="block">Hiển thị workshop</span>
+          <select
+            className="min-h-11 rounded-lg border border-line bg-paper px-3"
+            value={values.publicationStatus}
+            onChange={(event) =>
+              update(
+                'publicationStatus',
+                event.target.value as 'draft' | 'published',
+              )
+            }
+          >
+            <option value="draft">Bản nháp</option>
+            <option value="published">Công khai</option>
+          </select>
+        </label>
         <Button disabled={saveWorkshop.isPending} type="submit">
           {saveWorkshop.isPending ? 'Đang lưu…' : 'Lưu workshop'}
         </Button>
@@ -414,10 +434,16 @@ function StudioWorkshopEditor({
 }
 
 const statusLabels = {
-  pending: 'Chờ duyệt',
-  approved: 'Đã duyệt',
+  pending: 'Cần lưu lại workshop',
+  approved: 'Công khai',
   rejected: 'Cần cập nhật',
 } as const;
+
+function workshopStatus(workshop: StudioWorkshop) {
+  if (workshop.publicationStatus === 'hidden') return 'Đã bị admin ẩn';
+  if (workshop.publicationStatus === 'draft') return 'Bản nháp';
+  return statusLabels[workshop.status];
+}
 
 export function StudioWorkshopManager({
   studio,
@@ -440,24 +466,34 @@ export function StudioWorkshopManager({
             Workshop
           </h2>
           <p className="mt-1 text-muted">
-            Nội dung workshop và trạng thái xét duyệt.
+            Quản lý bản nháp và workshop công khai. Admin hậu kiểm nội dung và
+            báo cáo.
           </p>
         </div>
-        {studio.role === 'owner' && !creating && !editing && (
-          <Button
-            onClick={() => setCreating(true)}
-            type="button"
-            variant="outline"
-          >
-            Tạo workshop
-          </Button>
-        )}
+        {studio.role === 'owner' &&
+          studio.status === 'approved' &&
+          !creating &&
+          !editing && (
+            <Button
+              onClick={() => setCreating(true)}
+              type="button"
+              variant="outline"
+            >
+              Tạo workshop
+            </Button>
+          )}
         {!isLoading && !error && (
           <span className="text-sm text-muted">
             {workshops?.length ?? 0} workshop
           </span>
         )}
       </div>
+
+      {studio.status !== 'approved' && (
+        <p className="mt-4 text-sm text-muted">
+          Studio cần được duyệt trước khi tạo hoặc cập nhật workshop.
+        </p>
+      )}
 
       {creating && (
         <div className="mt-5">
@@ -471,9 +507,7 @@ export function StudioWorkshopManager({
         </div>
       )}
       {isLoading ? (
-        <p aria-busy="true" className="py-8 text-muted" role="status">
-          Đang tải workshop…
-        </p>
+        <LoadingState label="Đang tải workshop…" className="py-8 text-muted" />
       ) : error ? (
         <div className="mt-5 space-y-3">
           <p className="text-brick" role="alert">
@@ -516,11 +550,12 @@ export function StudioWorkshopManager({
                   <div className="flex flex-wrap items-center gap-3">
                     <span
                       className="w-fit rounded-full bg-soft px-3 py-1 text-sm font-semibold"
-                      aria-label={`Trạng thái workshop: ${statusLabels[workshop.status]}`}
+                      aria-label={`Trạng thái workshop: ${workshopStatus(workshop)}`}
                     >
-                      {statusLabels[workshop.status]}
+                      {workshopStatus(workshop)}
                     </span>
                     <Button
+                      disabled={studio.status !== 'approved'}
                       onClick={() => {
                         setCreating(false);
                         setEditing(workshop);

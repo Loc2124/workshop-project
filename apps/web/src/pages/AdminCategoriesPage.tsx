@@ -26,7 +26,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Plus } from 'lucide-react';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import {
   Table,
   TableHeader,
@@ -43,7 +43,7 @@ import {
 } from '../components/ui/dialog';
 import { Button } from '../components/ui/button';
 import { StatusBadge } from '../components/ui/status-badge';
-import { Skeleton } from '../components/ui/skeleton';
+import { LoadingState } from '../components/ui/LoadingState';
 import { apiFetch } from '../lib/api-client';
 const categorySchema = z.object({
   id: z.string(),
@@ -96,7 +96,6 @@ export function AdminCategoriesPage() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugEdited, setSlugEdited] = useState(false);
-  const [formError, setFormError] = useState('');
   const [order, setOrder] = useState<string[] | null>(null);
   const save = useMutation({
     mutationFn: async (input: {
@@ -140,12 +139,10 @@ export function AdminCategoriesPage() {
     setName(category === 'new' ? '' : category.name);
     setSlug(category === 'new' ? '' : category.slug);
     setSlugEdited(category !== 'new');
-    setFormError('');
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (save.isPending) return;
-    setFormError('');
     if (!editor) return;
     try {
       await save.mutateAsync({
@@ -157,10 +154,8 @@ export function AdminCategoriesPage() {
         body: { name: name.trim(), slug: slug.trim() },
       });
       setEditor(null);
-    } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : 'Chưa lưu được danh mục.',
-      );
+    } catch {
+      // The mutation reports server errors through the global toast.
     }
   }
   async function dragEnd(event: DragEndEvent) {
@@ -191,9 +186,10 @@ export function AdminCategoriesPage() {
       setOrder(null);
     }
   }
+  if (query.isPending)
+    return <LoadingState label="Đang tải danh mục…" variant="page" />;
   return (
     <div className="space-y-5">
-      <Toaster richColors position="top-right" />
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <div>
           <h1 className="font-heading text-2xl font-semibold">
@@ -211,13 +207,7 @@ export function AdminCategoriesPage() {
           Thêm loại workshop
         </Button>
       </header>
-      {query.isPending ? (
-        <div className="space-y-3" aria-label="Đang tải danh mục">
-          {[1, 2, 3, 4].map((n) => (
-            <Skeleton key={n} className="h-12 w-full" />
-          ))}
-        </div>
-      ) : query.error ? (
+      {query.error ? (
         <div role="alert" className="space-y-3 text-sm text-brick">
           <p>Chưa tải được danh mục workshop.</p>
           <Button variant="outline" onClick={() => void query.refetch()}>
@@ -347,11 +337,6 @@ export function AdminCategoriesPage() {
                 className="min-h-11 w-full rounded-sm border border-line px-3"
               />
             </label>
-            {formError && (
-              <p role="alert" className="text-sm text-brick">
-                {formError}
-              </p>
-            )}
             <footer className="flex justify-end gap-2">
               <Button
                 variant="outline"

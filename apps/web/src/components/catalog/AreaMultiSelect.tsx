@@ -1,21 +1,16 @@
 import { useEffect, useId, useState } from 'react';
 import { catalogService } from '../../services/catalogService';
-import { mockAreas } from '../../data/mockStudios';
-import { isDemoDataMode } from '../../lib/data-mode';
-
 type Props = {
   provinceId?: string;
   selectedIds: string[];
   onChange: (areaIds: string[]) => void;
   onOptionsChange?: (areas: AreaOption[]) => void;
 };
-
 export type AreaOption = {
   id: string;
   name: string;
   studioCount: number;
 };
-
 export function AreaMultiSelect({
   provinceId,
   selectedIds,
@@ -25,7 +20,6 @@ export function AreaMultiSelect({
   const id = useId();
   const [areas, setAreas] = useState<AreaOption[]>([]);
   const [loadError, setLoadError] = useState<string>();
-
   useEffect(() => {
     if (!provinceId) {
       setAreas([]);
@@ -33,19 +27,6 @@ export function AreaMultiSelect({
       setLoadError(undefined);
       return;
     }
-    if (isDemoDataMode) {
-      const mockOptions = mockAreas
-        .filter((area) => area.provinceId === provinceId)
-        .map((area) => ({
-          ...area,
-          studioCount: 2,
-        }));
-      setAreas(mockOptions);
-      onOptionsChange?.(mockOptions);
-      setLoadError(undefined);
-      return;
-    }
-
     const controller = new AbortController();
     setAreas([]);
     setLoadError(undefined);
@@ -64,9 +45,7 @@ export function AreaMultiSelect({
       });
     return () => controller.abort();
   }, [onOptionsChange, provinceId]);
-
   if (!provinceId || (areas.length === 0 && !loadError)) return null;
-
   return (
     <fieldset className="min-w-0">
       <legend className="mb-2 text-sm font-semibold text-ink">Khu vực</legend>

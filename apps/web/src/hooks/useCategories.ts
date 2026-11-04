@@ -1,9 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 import { registerCategories, type Category } from '../constants/categories';
 import { apiFetch } from '../lib/api-client';
-import { isDemoDataMode } from '../lib/data-mode';
-import { z } from 'zod';
-
 const schema = z.object({
   categories: z.array(
     z.object({
@@ -25,11 +23,9 @@ const schema = z.object({
     }),
   ),
 });
-
-export function useCategoriesQuery(alwaysFetch = false) {
+export function useCategoriesQuery() {
   return useQuery({
     queryKey: ['categories'],
-    enabled: alwaysFetch || !isDemoDataMode,
     staleTime: 60000,
     queryFn: async ({ signal }) =>
       registerCategories(
@@ -38,7 +34,6 @@ export function useCategoriesQuery(alwaysFetch = false) {
       ),
   });
 }
-
-export function useCategories(alwaysFetch = false) {
-  return useCategoriesQuery(alwaysFetch).data;
+export function useCategories() {
+  return useCategoriesQuery().data;
 }

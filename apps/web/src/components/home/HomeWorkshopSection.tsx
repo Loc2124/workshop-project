@@ -4,13 +4,13 @@ import type { useHomeCatalog } from '../../hooks/useHomeCatalog';
 import { PageContainer } from '../layout/PageContainer';
 import { SectionHeading } from '../layout/SectionHeading';
 import { Button } from '../ui/button';
-import { WorkshopGrid } from '../catalog/WorkshopGrid';
-import { WorkshopCard } from '../catalog/WorkshopCard';
+import { TicketRow, toTicketProps } from '../tickets';
+import type { Workshop } from '../../types/workshop';
 
 type Props = Pick<
   ReturnType<typeof useHomeCatalog>,
-  'featuredWorkshops' | 'browseUrl' | 'loading' | 'error' | 'refetch'
->;
+  'browseUrl' | 'loading' | 'error' | 'refetch'
+> & { featuredWorkshops: Workshop[] };
 
 export function HomeWorkshopSection({
   featuredWorkshops,
@@ -40,7 +40,16 @@ export function HomeWorkshopSection({
         }
       />
       {loading ? (
-        <WorkshopGrid workshops={[]} columns="home" loading error={false} />
+        <div className="home-workshop-list grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
+          {Array.from({ length: 5 }, (_, index) => (
+            <div
+              key={index}
+              className={index === 0 ? 'lg:col-span-2' : undefined}
+            >
+              <TicketRow loading />
+            </div>
+          ))}
+        </div>
       ) : error || !featuredWorkshops.length ? (
         <div className="rounded-2xl bg-soft p-6" role="status">
           <p>
@@ -55,10 +64,17 @@ export function HomeWorkshopSection({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {featuredWorkshops.map((workshop) => (
-            <div key={workshop.id}>
-              <WorkshopCard workshop={workshop} variant="default" />
+        <div className="home-workshop-list grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
+          {featuredWorkshops.map((workshop, index) => (
+            <div
+              key={workshop.id}
+              className={index === 0 ? 'lg:col-span-2' : undefined}
+            >
+              <TicketRow
+                {...toTicketProps(workshop)}
+                featured={index === 0}
+                priority={index === 0}
+              />
             </div>
           ))}
         </div>

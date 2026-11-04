@@ -6,11 +6,10 @@ import {
   invalidatePublicCatalog,
 } from '../lib/query-invalidation';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
-import { toast, Toaster } from 'sonner';
+import { toast } from 'sonner';
 import { ImageIcon } from 'lucide-react';
 import {
   DataTable,
@@ -43,7 +42,15 @@ const workshopSchema = z.object({
   basePrice: z.number(),
   reviewStatus: z.string(),
   studioStatus: z.string(),
-  status: z.enum(['active', 'hidden', 'removed']),
+  status: z.enum([
+    'active',
+    'draft',
+    'studio_unavailable',
+    'hidden',
+    'removed',
+  ]),
+  visibilityStatus: z.enum(['active', 'hidden', 'removed']),
+  publicationStatus: z.enum(['draft', 'published']),
   hiddenReason: z.string().nullable(),
   createdAt: z.string(),
   upcomingSlots: z.number(),
@@ -72,7 +79,9 @@ const detailSchema = workshopSchema.extend({
 });
 const tabs = [
   { value: 'all', label: 'Tất cả' },
-  { value: 'active', label: 'Đang mở' },
+  { value: 'active', label: 'Công khai' },
+  { value: 'draft', label: 'Bản nháp' },
+  { value: 'studio_unavailable', label: 'Studio chưa công khai' },
   { value: 'hidden', label: 'Đã ẩn' },
   { value: 'removed', label: 'Bị gỡ' },
 ];
@@ -142,7 +151,6 @@ export function AdminWorkshopPage() {
       setDecision(null);
       setRow(null);
     },
-    onError: (e) => toast.error(e.message),
   });
   const columns = useMemo<ColumnDef<Workshop>[]>(
     () => [
@@ -242,12 +250,11 @@ export function AdminWorkshopPage() {
   );
   return (
     <div className="space-y-5">
-      <Toaster richColors position="top-right" />
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <h1 className="font-heading text-2xl font-semibold">Workshop</h1>
-        <Button variant="outline" asChild>
-          <Link to="/admin/workshop-review">Hồ sơ workshop chờ duyệt</Link>
-        </Button>
+        <p className="text-sm text-muted">
+          Studio đã duyệt tự đăng workshop. Admin hậu kiểm và xử lý báo cáo.
+        </p>
       </header>
       {categories.error && (
         <p role="alert" className="text-sm text-brick">
@@ -358,11 +365,22 @@ export function AdminWorkshopPage() {
                     </dd>
                   </div>
                 </dl>
-                {(selected.reviewStatus !== 'approved' ||
-                  selected.studioStatus !== 'approved') && (
+                {selected.status === 'studio_unavailable' && (
                   <p className="rounded-sm bg-amber-50 p-3 text-sm text-amber-900">
-                    Workshop chỉ hiển thị công khai khi cả workshop và studio
-                    được duyệt.
+                    Studio chưa đủ điều kiện công khai. Chỉ cần duyệt hồ sơ
+                    studio; workshop không có bước duyệt riêng.
+                  </p>
+                )}
+                {selected.publicationStatus === 'draft' && (
+                  <p className="text-sm text-muted">
+                    Chủ studio đang lưu bản nháp. Bài chỉ công khai khi studio
+                    chọn đăng.
+                  </p>
+                )}
+                {selected.upcomingSlots === 0 && (
+                  <p className="text-sm text-muted">
+                    Chưa có buổi sắp diễn ra. Studio cần thêm lịch để workshop
+                    xuất hiện trong danh sách khám phá.
                   </p>
                 )}
                 {selected.hiddenReason && (
@@ -406,7 +424,7 @@ export function AdminWorkshopPage() {
                 </section>
               </div>
               <footer className="flex shrink-0 flex-wrap gap-2 border-t border-line p-5">
-                {selected.status === 'active' && (
+                {selected.visibilityStatus === 'active' && (
                   <Button
                     variant="outline"
                     disabled={
@@ -417,7 +435,7 @@ export function AdminWorkshopPage() {
                     Ẩn
                   </Button>
                 )}
-                {selected.status !== 'removed' && (
+                {selected.visibilityStatus !== 'removed' && (
                   <Button
                     variant="destructive"
                     disabled={
@@ -428,12 +446,17 @@ export function AdminWorkshopPage() {
                     Gỡ
                   </Button>
                 )}
-                {selected.status !== 'active' && (
+                {selected.visibilityStatus !== 'active' && (
                   <Button
                     disabled={
                       mutation.isPending || !detail.data || !!detail.error
                     }
-                    onClick={() => mutation.mutate({ status: 'active' })}
+                    onClick={() =>
+                      mutation.mutate(
+                        { status: 'active' },
+                        { onError: (error) => toast.error(error.message) },
+                      )
+                    }
                   >
                     Khôi phục
                   </Button>

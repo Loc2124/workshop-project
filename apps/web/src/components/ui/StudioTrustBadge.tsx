@@ -9,7 +9,7 @@ export function StudioTrustBadge({
 }) {
   if (!level || level === 'unapproved') return null;
   const verified = level === 'verified';
-  const label = verified ? 'Bậc 2 · Đã xác minh' : 'Bậc 1 · Đã duyệt';
+  const label = verified ? 'Đã xác minh' : 'Đã duyệt hồ sơ';
   const description = verified
     ? 'Admin đã đối chiếu danh tính người đại diện và địa chỉ studio, hoặc giấy đăng ký kinh doanh. Đây không phải cam kết về chất lượng mọi trải nghiệm.'
     : 'Hồ sơ studio đã được admin duyệt. Studio chưa được cấp xác minh danh tính.';

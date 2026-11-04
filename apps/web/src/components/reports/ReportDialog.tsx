@@ -23,6 +23,7 @@ import {
   DialogDescription,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { toast } from 'sonner';
 export function ReportButton({
   targetType,
   targetId,
@@ -77,6 +78,10 @@ export function ReportButton({
       });
       setImages([]);
     },
+    onError: (cause) =>
+      toast.error(
+        cause instanceof Error ? cause.message : 'Chưa gửi được báo cáo.',
+      ),
   });
   async function upload(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []);
@@ -119,7 +124,9 @@ export function ReportButton({
         }
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Chưa tải được ảnh.');
+      toast.error(
+        error instanceof Error ? error.message : 'Chưa tải được ảnh.',
+      );
     } finally {
       setProgress(null);
     }
@@ -137,7 +144,9 @@ export function ReportButton({
         }),
       );
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Chưa xóa được ảnh.');
+      toast.error(
+        error instanceof Error ? error.message : 'Chưa xóa được ảnh.',
+      );
     }
   }
   async function submit(event: FormEvent) {
@@ -145,10 +154,8 @@ export function ReportButton({
     setError('');
     try {
       await mutation.mutateAsync();
-    } catch (error) {
-      setError(
-        error instanceof Error ? error.message : 'Chưa gửi được báo cáo.',
-      );
+    } catch {
+      // The mutation reports server errors through the global toast.
     }
   }
   return (

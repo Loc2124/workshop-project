@@ -1,40 +1,32 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { catalogService } from '../services/catalogService';
-import { PageContainer } from '../components/layout/PageContainer';
-import { useProvinces } from '../hooks/useProvinces';
-import { categories, getCategoryMeta } from '../constants/categories';
-import { useCategoriesQuery } from '../hooks/useCategories';
-import { provinceSlug } from '../lib/catalog';
-import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { ArrowDownWideNarrow } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { AreaOption } from '../components/catalog/AreaMultiSelect';
 import { ExploreFilters } from '../components/catalog/ExploreFilters';
-import { rankWorkshops } from '../lib/rankWorkshops';
 import { Pagination } from '../components/catalog/Pagination';
+import type { ProvinceOption } from '../components/catalog/ProvinceCombobox';
 import { ViewToggle, type CatalogView } from '../components/catalog/ViewToggle';
 import { WorkshopGrid } from '../components/catalog/WorkshopGrid';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
-import { mockStudios } from '../data/mockStudios';
-import { mockWorkshops } from '../data/mockWorkshops';
+import { PageContainer } from '../components/layout/PageContainer';
+import { categories, getCategoryMeta } from '../constants/categories';
 import {
+  catalogKeys,
   useCatalog,
   useCatalogStudios,
-  catalogKeys,
 } from '../hooks/useCatalog';
+import { useCategoriesQuery } from '../hooks/useCategories';
+import { useProvinces } from '../hooks/useProvinces';
+import { provinceSlug } from '../lib/catalog';
+import { parseExploreUrl } from '../lib/explore-url';
+import { catalogService } from '../services/catalogService';
 import { detectProvinceId } from '../services/locationService';
 import type { CatalogFilters, SortOption } from '../types/catalog';
-import type { Studio, StudioListing } from '../types/studio';
-import type { Workshop } from '../types/workshop';
-import type { ProvinceOption } from '../components/catalog/ProvinceCombobox';
-import { isDemoDataMode } from '../lib/data-mode';
-import { parseExploreUrl } from '../lib/explore-url';
-
 const pageSize = 12;
 const provincePreferenceKey = 'open-slot.province';
 const locationAttemptKey = 'open-slot.location-attempted';
 const defaultFilters: CatalogFilters = { page: 1, pageSize };
-
 function writeFilters(
   params: URLSearchParams,
   filters: CatalogFilters,
@@ -84,157 +76,11 @@ function writeFilters(
   if (filters.takeawaySameDay) params.set('same_day', 'true');
   if (filters.page > 1) params.set('page', String(filters.page));
 }
-
-function normalizeText(value: string) {
-  return value
-    .toLocaleLowerCase('vi')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd');
-}
-
-function filterWorkshops(
-  workshops: Workshop[],
-  filters: CatalogFilters,
-  query: string,
-) {
-  const normalizedQuery = normalizeText(query.trim());
-  const hasSessionFilters =
-    filters.priceMin !== undefined ||
-    filters.priceMax !== undefined ||
-    Boolean(filters.dateFrom || filters.dateTo);
-
-  return workshops.flatMap((workshop) => {
-    if (filters.categoryId && workshop.categoryId !== filters.categoryId)
-      return [];
-    if (filters.provinceId && workshop.provinceId !== filters.provinceId)
-      return [];
-    if (
-      filters.areaIds?.length &&
-      (!workshop.areaId || !filters.areaIds.includes(workshop.areaId))
-    )
-      return [];
-    if (filters.level && workshop.level !== filters.level) return [];
-    if (filters.audience && !workshop.audience.includes(filters.audience))
-      return [];
-    if (filters.takeawaySameDay && !/ngay|ngày/i.test(workshop.takeaway ?? ''))
-      return [];
-
-    const sessions = workshop.sessions
-      .filter((session) => {
-        if (filters.priceMin !== undefined && session.price < filters.priceMin)
-          return false;
-        if (filters.priceMax !== undefined && session.price > filters.priceMax)
-          return false;
-        const date = new Intl.DateTimeFormat('en-CA', {
-          timeZone: 'Asia/Ho_Chi_Minh',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        }).format(new Date(session.startsAt));
-        if (filters.dateFrom && date < filters.dateFrom) return false;
-        if (filters.dateTo && date > filters.dateTo) return false;
-        return true;
-      })
-      .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
-    if (hasSessionFilters && sessions.length === 0) return [];
-
-    if (normalizedQuery) {
-      const searchable = normalizeText(
-        [
-          workshop.title,
-          workshop.description,
-          getCategoryMeta(workshop.categoryId).name,
-          getCategoryMeta(workshop.categoryId).description,
-          ...getCategoryMeta(workshop.categoryId).keywords,
-          workshop.province,
-          workshop.studioName,
-          workshop.artistName ?? '',
-          ...workshop.audience,
-        ].join(' '),
-      );
-      const matchesQuery = normalizedQuery
-        .split(/\s+/)
-        .some((word) => searchable.includes(word));
-      if (!matchesQuery) return [];
-    }
-
-    return [
-      {
-        ...workshop,
-        sessions,
-        nextStartsAt: sessions[0]?.startsAt ?? workshop.nextStartsAt,
-      },
-    ];
-  });
-}
-
-function getWorkshopPrice(workshop: Workshop) {
-  return workshop.sessions.length > 0
-    ? Math.min(...workshop.sessions.map((session) => session.price))
-    : workshop.basePrice;
-}
-
-function toStudioListings(
-  studios: Studio[],
-  workshops: Workshop[],
-): StudioListing[] {
-  const grouped = new Map<string, Workshop[]>();
-  workshops.forEach((workshop) => {
-    const group = grouped.get(workshop.studioId) ?? [];
-    group.push(workshop);
-    grouped.set(workshop.studioId, group);
-  });
-
-  return [...grouped].flatMap(([studioId, matches]) => {
-    const first = matches[0];
-    if (!first) return [];
-    const sampleStudio = studios.find((studio) => studio.id === studioId);
-    const prices = matches.flatMap((workshop) =>
-      workshop.sessions.length > 0
-        ? workshop.sessions.map((session) => session.price)
-        : [workshop.basePrice],
-    );
-    return [
-      {
-        id: studioId,
-        slug: sampleStudio?.slug ?? first.studioSlug,
-        name: sampleStudio?.name ?? first.studioName,
-        description: sampleStudio?.description ?? first.studioDescription ?? '',
-        province: sampleStudio?.province ?? first.province,
-        provinceId: sampleStudio?.provinceId ?? first.provinceId ?? '',
-        areaId: sampleStudio?.areaId ?? first.areaId ?? null,
-        areaName: sampleStudio?.areaName ?? null,
-        address: sampleStudio?.address ?? first.address ?? '',
-        imageUrl:
-          sampleStudio?.imageUrl ??
-          matches.find((workshop) => workshop.imageUrl)?.imageUrl,
-        rating: sampleStudio?.rating,
-        reviewCount: sampleStudio?.reviewCount,
-        workshopCount: matches.length,
-        categoryId: sampleStudio?.categoryId ?? first.categoryId,
-        categoryIds: [
-          ...new Set(matches.map((workshop) => workshop.categoryId)),
-        ],
-        startingPrice: Math.min(...prices),
-        availableSessions: matches.reduce(
-          (total, workshop) =>
-            total +
-            workshop.sessions.filter((session) => session.availableSeats > 0)
-              .length,
-          0,
-        ),
-      },
-    ];
-  });
-}
-
 export function ExplorePage() {
   const nextPageMarker = useRef<HTMLDivElement>(null);
   const client = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const usingMockData = isDemoDataMode;
-  const categoryQuery = useCategoriesQuery(true);
+  const categoryQuery = useCategoriesQuery();
   const categoriesReady = categoryQuery.isSuccess;
   const { provinces: provinceOptions, error: provinceError } = useProvinces();
   const parsedUrl = useMemo(
@@ -245,7 +91,6 @@ export function ExplorePage() {
   const [, setAreaOptions] = useState<AreaOption[]>([]);
   const [locationError, setLocationError] = useState('');
   const [isLocating, setIsLocating] = useState(false);
-
   const requestFilters = useMemo(
     () => ({
       ...filters,
@@ -256,75 +101,35 @@ export function ExplorePage() {
     }),
     [filters, appliedQuery, sort],
   );
-  const catalog = useCatalog(
-    requestFilters,
-    !usingMockData && view === 'workshops',
-  );
-  const studiosCatalog = useCatalogStudios(
-    requestFilters,
-    !usingMockData && view === 'studios',
-  );
-  const source = usingMockData ? mockWorkshops : (catalog.data?.items ?? []);
+  const catalog = useCatalog(requestFilters, view === 'workshops');
+  const studiosCatalog = useCatalogStudios(requestFilters, view === 'studios');
+  const source = catalog.data?.items ?? [];
   const filteredWorkshops = useMemo(
-    () =>
-      usingMockData ? filterWorkshops(source, filters, appliedQuery) : source,
-    [source, filters, appliedQuery, usingMockData],
+    () => source,
+    [source, filters, appliedQuery, false],
   );
-
   const sortedWorkshops = useMemo(() => {
-    if (!usingMockData) return filteredWorkshops;
-    const sorted = [...filteredWorkshops];
-    if (sort === 'price-asc')
-      sorted.sort((a, b) => getWorkshopPrice(a) - getWorkshopPrice(b));
-    if (sort === 'price-desc')
-      sorted.sort((a, b) => getWorkshopPrice(b) - getWorkshopPrice(a));
-    if (sort === 'soonest')
-      sorted.sort((a, b) =>
-        (a.nextStartsAt ?? '').localeCompare(b.nextStartsAt ?? ''),
-      );
-    if (sort === 'recommended') return rankWorkshops(sorted, appliedQuery);
-    return sorted;
-  }, [filteredWorkshops, appliedQuery, sort, usingMockData]);
-
+    return filteredWorkshops;
+  }, [filteredWorkshops, appliedQuery, sort, false]);
   const studioListings = useMemo(
-    () =>
-      usingMockData
-        ? toStudioListings(mockStudios, sortedWorkshops)
-        : (studiosCatalog.data?.items ?? []),
-    [sortedWorkshops, usingMockData, studiosCatalog.data?.items],
+    () => studiosCatalog.data?.items ?? [],
+    [sortedWorkshops, false, studiosCatalog.data?.items],
   );
   const sortedStudios = useMemo(() => {
-    if (!usingMockData) return studioListings;
-    if (sort !== 'price-asc' && sort !== 'price-desc') return studioListings;
-    return [...studioListings].sort((a, b) =>
-      sort === 'price-asc'
-        ? a.startingPrice - b.startingPrice
-        : b.startingPrice - a.startingPrice,
-    );
-  }, [sort, studioListings, usingMockData]);
+    return studioListings;
+  }, [sort, studioListings, false]);
   const apiPagination =
     view === 'studios'
       ? studiosCatalog.data?.pagination
       : catalog.data?.pagination;
-  const totalCount = usingMockData
-    ? view === 'studios'
-      ? sortedStudios.length
-      : sortedWorkshops.length
-    : (apiPagination?.total ?? 0);
+  const totalCount = apiPagination?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const page = usingMockData
-    ? Math.min(filters.page, totalPages)
-    : filters.page;
-  const visibleWorkshops = usingMockData
-    ? sortedWorkshops.slice((page - 1) * pageSize, page * pageSize)
-    : sortedWorkshops;
-  const visibleStudios = usingMockData
-    ? sortedStudios.slice((page - 1) * pageSize, page * pageSize)
-    : sortedStudios;
+  const page = filters.page;
+  const visibleWorkshops = sortedWorkshops;
+  const visibleStudios = sortedStudios;
   const selectedProvince = provinceOptions.find(
     (province) => province.id === filters.provinceId,
   );
-
   const updateFilters = useCallback(
     (next: CatalogFilters, switchToWorkshops = false) => {
       const params = new URLSearchParams(searchParams);
@@ -340,7 +145,6 @@ export function ExplorePage() {
     },
     [searchParams, setSearchParams, provinceOptions],
   );
-
   const updateSort = (next: SortOption) => {
     const params = new URLSearchParams(searchParams);
     params.set('sort', next);
@@ -388,7 +192,6 @@ export function ExplorePage() {
     },
     [filters, provinceOptions, updateFilters],
   );
-
   useEffect(() => {
     if (
       !filters.provinceId &&
@@ -412,7 +215,6 @@ export function ExplorePage() {
       }
     }
   }, [filters, provinceOptions, requestLocation, updateFilters, searchParams]);
-
   useEffect(() => {
     const params = new URLSearchParams(parsedUrl.normalizedParams);
     const expectedView = view === 'studios' ? 'studio' : 'workshop';
@@ -420,16 +222,13 @@ export function ExplorePage() {
     if (params.toString() !== searchParams.toString())
       setSearchParams(params, { replace: true });
   }, [parsedUrl.normalizedParams, searchParams, setSearchParams, view]);
-
   const titleLocation = selectedProvince?.name.replace(
     'TP. Hồ Chí Minh',
     'TP.HCM',
   );
-
   useEffect(() => {
     const selected = view === 'studios' ? studiosCatalog : catalog;
     if (
-      usingMockData ||
       !nextPageMarker.current ||
       selected.isPlaceholderData ||
       !selected.data ||
@@ -439,7 +238,10 @@ export function ExplorePage() {
       return;
     const connection = (
       navigator as Navigator & {
-        connection?: { saveData?: boolean; effectiveType?: string };
+        connection?: {
+          saveData?: boolean;
+          effectiveType?: string;
+        };
       }
     ).connection;
     if (connection?.saveData || connection?.effectiveType === 'slow-2g') return;
@@ -469,7 +271,7 @@ export function ExplorePage() {
     client,
     view,
     requestFilters,
-    usingMockData,
+    false,
     catalog.data,
     studiosCatalog.data,
     catalog.isPlaceholderData,
@@ -548,14 +350,10 @@ export function ExplorePage() {
           </div>
           <WorkshopGrid
             error={
-              !usingMockData &&
-              (view === 'studios' ? studiosCatalog.isError : catalog.isError)
+              view === 'studios' ? studiosCatalog.isError : catalog.isError
             }
             loading={
-              !usingMockData &&
-              (view === 'studios'
-                ? studiosCatalog.isLoading
-                : catalog.isLoading)
+              view === 'studios' ? studiosCatalog.isLoading : catalog.isLoading
             }
             studios={visibleStudios}
             view={view}

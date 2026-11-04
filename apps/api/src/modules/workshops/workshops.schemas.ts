@@ -20,6 +20,7 @@ export const workshopInputSchema = z
     durationMinutes: z.number().int().positive().max(2_147_483_647),
     basePrice: postgresInteger,
     depositPercent: depositPercentSchema.optional(),
+    publicationStatus: z.enum(['draft', 'published']).optional(),
     requirements: z.string().trim().max(5000).nullable().optional(),
   })
   .extend(workshopPolicyFieldsSchema.shape)

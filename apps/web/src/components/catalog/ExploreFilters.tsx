@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { CategoryShortcuts } from './CategoryShortcuts';
 import { countActiveFilters, MobileFilterSheet } from './MobileFilterSheet';
@@ -9,7 +10,7 @@ export function ExploreFilters(
 ) {
   const { filters, onChange, onClear, children, ...rest } = props;
   const count = countActiveFilters(filters);
-  const categoryQuery = useCategoriesQuery(true);
+  const categoryQuery = useCategoriesQuery();
   const barRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const bar = barRef.current;
@@ -56,9 +57,10 @@ export function ExploreFilters(
         </div>
       </div>
       {categoryQuery.isPending && (
-        <p role="status" className="py-2 text-xs text-muted">
-          Đang tải loại workshop…
-        </p>
+        <LoadingState
+          label="Đang tải loại workshop…"
+          className="py-2 text-xs text-muted"
+        />
       )}
       {categoryQuery.error && (
         <div role="alert" className="py-2 text-sm text-brick">

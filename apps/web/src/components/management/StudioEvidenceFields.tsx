@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { Img } from '../ui/Img';
 import { queryKeys } from '../../lib/query-keys';
 import { useEffect, useRef, useState } from 'react';
@@ -9,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { imageService, type UploadedImage } from '../../services/imageService';
 import { AuthField } from '../ui/auth-field';
+import { toast } from 'sonner';
 
 export type EvidenceValues = {
   contactPhone: string;
@@ -98,7 +100,9 @@ export function StudioEvidenceFields({
         queryKey: queryKeys.studios.images(user?.id, id),
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Chưa tải được ảnh.');
+      toast.error(
+        cause instanceof Error ? cause.message : 'Chưa tải được ảnh.',
+      );
     } finally {
       setBusy(false);
       onBusyChange?.(false);
@@ -116,7 +120,9 @@ export function StudioEvidenceFields({
         values.photoIds.filter((item) => item !== id),
       );
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Chưa xóa được ảnh.');
+      toast.error(
+        cause instanceof Error ? cause.message : 'Chưa xóa được ảnh.',
+      );
     } finally {
       setBusy(false);
       onBusyChange?.(false);
@@ -226,9 +232,10 @@ export function StudioEvidenceFields({
                     loading="lazy"
                   />
                 ) : (
-                  <p className="flex size-full items-center justify-center text-sm text-muted">
-                    Đang tải ảnh…
-                  </p>
+                  <LoadingState
+                    label="Đang tải ảnh…"
+                    className="flex size-full items-center justify-center text-sm text-muted"
+                  />
                 )}
                 <button
                   type="button"

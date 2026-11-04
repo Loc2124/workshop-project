@@ -32,9 +32,6 @@ export const StudioCard = memo(function StudioCard({
             {studio.workshopCount}
           </span>
           <span className="mt-2 text-[13px] font-bold">WORKSHOP</span>
-          <span className="mt-2 text-[13px] font-semibold">
-            {studio.availableSessions} buổi còn chỗ
-          </span>
         </TicketStub>
         <div className="@container flex min-w-0 flex-1 flex-col p-3 lg:p-5">
           <p className="text-[13px] font-bold text-stone-700">
@@ -58,18 +55,26 @@ export const StudioCard = memo(function StudioCard({
           </p>
           <footer className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-dashed border-stone-400 pt-3 text-[13px] @min-[22rem]:flex-nowrap">
             <div className="flex flex-col items-start gap-y-1">
-              <span className="text-[13px] text-stone-700">Từ</span>
-              <TicketPrice
-                price={studio.startingPrice}
-                compact
-                className="text-lg tabular-nums [&>span]:hidden"
-              />
+              {studio.startingPrice !== null ? (
+                <>
+                  <span className="text-[13px] text-stone-700">Từ</span>
+                  <TicketPrice
+                    price={studio.startingPrice}
+                    compact
+                    className="text-lg tabular-nums [&>span]:hidden"
+                  />
+                </>
+              ) : (
+                <span className="text-sm text-stone-700">
+                  Chưa có lịch tổ chức
+                </span>
+              )}
               <TicketRating
                 workshop={{
                   id: studio.id,
                   title: studio.name,
                   categoryId: '',
-                  price: studio.startingPrice,
+                  price: studio.startingPrice ?? 0,
                   rating: studio.rating,
                   ratingCount: studio.reviewCount,
                 }}

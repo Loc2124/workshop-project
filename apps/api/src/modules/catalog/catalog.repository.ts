@@ -78,7 +78,7 @@ export async function listProvinces(includeEmpty = false) {
       client,
       `JOIN workshops w ON w.id = s.workshop_id
        JOIN studios st ON st.id = w.studio_id`,
-      `w.status = 'approved' AND w.visibility_status = 'active'
+      `w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
        AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
        AND st.province_id IS NOT NULL`,
     );
@@ -97,7 +97,7 @@ export async function listProvinces(includeEmpty = false) {
           FROM workshops w
           JOIN sessions s ON s.workshop_id = w.id
           WHERE w.studio_id = st.id
-            AND w.status = 'approved' AND w.visibility_status = 'active'
+            AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
             AND s.status = 'scheduled'
             AND s.starts_at > now()
             AND s.capacity - s.seats_held - s.seats_sold >= 1
@@ -117,7 +117,7 @@ export async function listAreas(provinceId: string) {
       client,
       `JOIN workshops w ON w.id = s.workshop_id
        JOIN studios st ON st.id = w.studio_id`,
-      `w.status = 'approved' AND w.visibility_status = 'active'
+      `w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
        AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
        AND st.province_id = $1`,
       [provinceId],
@@ -136,7 +136,7 @@ export async function listAreas(provinceId: string) {
            FROM workshops w
            JOIN sessions s ON s.workshop_id = w.id
            WHERE w.studio_id = st.id
-             AND w.status = 'approved' AND w.visibility_status = 'active'
+             AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
              AND s.status = 'scheduled'
              AND s.starts_at > now()
              AND s.capacity - s.seats_held - s.seats_sold >= 1
@@ -176,7 +176,7 @@ function createCandidateFilters(filters: CatalogFilters) {
     's.capacity - s.seats_held - s.seats_sold >= 1',
   ];
   const workshopConditions = [
-    `w.status = 'approved' AND w.visibility_status = 'active'`,
+    `w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'`,
     `st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
   ];
   const addValue = (value: unknown) => {
@@ -296,7 +296,7 @@ function getCatalogOrderBy(sort: CatalogFilters['sort']): string {
     case 'soonest':
       return '"nextStartsAt" ASC';
     case 'recommended':
-      return '"relevance" DESC, "nextStartsAt" ASC';
+      return '"relevance" DESC, "verifiedPriority" DESC, "nextStartsAt" ASC';
   }
 }
 
@@ -305,7 +305,8 @@ function createFilteredWorkshopCte(
   relevance: string,
 ): string {
   return `filtered_workshops AS (
-    SELECT w.id, w.studio_id AS "studioId", ${relevance} AS relevance
+    SELECT w.id, w.studio_id AS "studioId", ${relevance} AS relevance,
+      CASE WHEN st.verified_at IS NOT NULL THEN 1 ELSE 0 END AS "verifiedPriority"
     FROM workshops w
     JOIN studios st ON st.id = w.studio_id
     JOIN provinces p ON p.id = st.province_id
@@ -363,10 +364,10 @@ export async function findCandidates(
          SELECT fw.id,
            min(es."startsAt") AS "nextStartsAt",
            min(es.price)::integer AS "startingPrice",
-           fw.relevance
+           fw.relevance, fw."verifiedPriority"
          FROM filtered_workshops fw
          JOIN eligible_sessions es ON es."workshopId" = fw.id
-         GROUP BY fw.id, fw.relevance
+         GROUP BY fw.id, fw.relevance, fw."verifiedPriority"
          ORDER BY ${getCatalogOrderBy(filters.sort)}, fw.id
          LIMIT ${pageSizeParameter}
          OFFSET ${offsetParameter}
@@ -395,7 +396,7 @@ export async function findCandidates(
          st.address,
          w.is_simulated AS "isSimulated",
          st.name AS "studioName",
-         st.description AS "studioDescription",
+         st.description AS "studioDescription", ${studioTrustSql} AS "studioTrustLevel",
          page."nextStartsAt",
          json_agg(
            json_build_object(
@@ -414,7 +415,7 @@ export async function findCandidates(
        JOIN eligible_sessions es ON es."workshopId" = w.id
        GROUP BY
          w.id, st.id, p.id, page."nextStartsAt", page."startingPrice",
-         page.relevance
+         page.relevance, page."verifiedPriority"
        ORDER BY ${getCatalogOrderBy(filters.sort)}, w.id`,
       [...values, filters.pageSize, (filters.page - 1) * filters.pageSize],
     );
@@ -503,7 +504,8 @@ export async function findStudioCandidates(
            min(fsw."startingPrice")::integer AS "startingPrice",
            sum(fsw."availableSessions")::integer AS "availableSessions",
            min(fsw."nextStartsAt") AS "nextStartsAt",
-           max(fsw.relevance) AS relevance
+           max(fsw.relevance) AS relevance,
+           CASE WHEN st.verified_at IS NOT NULL THEN 1 ELSE 0 END AS "verifiedPriority"
          FROM filtered_studio_workshops fsw
          JOIN studios st ON st.id = fsw."studioId"
          JOIN provinces p ON p.id = st.province_id
@@ -517,7 +519,7 @@ export async function findStudioCandidates(
          LIMIT ${pageSizeParameter}
          OFFSET ${offsetParameter}
        )
-       SELECT id, slug, "categoryId", name, description, province,
+       SELECT id, slug, "categoryId", name, description, "trustLevel", "canCollectDeposit", province,
          "provinceId", "areaId", "areaName", address, "workshopCount",
          "categoryIds", "startingPrice", "availableSessions"
        FROM page
@@ -545,7 +547,7 @@ export async function getPublicWorkshop(
       `JOIN workshops w ON w.id = s.workshop_id
        JOIN studios st ON st.id = w.studio_id`,
       `(w.id::text = $1 OR w.slug = $1)
-       AND w.status = 'approved' AND w.visibility_status = 'active'
+       AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
        AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
       [workshopId],
     );
@@ -574,7 +576,7 @@ export async function getPublicWorkshop(
          st.address,
          w.is_simulated AS "isSimulated",
          st.name AS "studioName",
-         st.description AS "studioDescription",
+         st.description AS "studioDescription", ${studioTrustSql} AS "studioTrustLevel",
          COALESCE(
            json_agg(
              json_build_object(
@@ -597,7 +599,7 @@ export async function getPublicWorkshop(
         AND s.starts_at > now()
         AND s.capacity - s.seats_held - s.seats_sold >= 1
        WHERE (w.id::text = $1 OR w.slug = $1)
-         AND w.status = 'approved' AND w.visibility_status = 'active'
+         AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
          AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
        GROUP BY w.id, st.id, p.id`,
       [workshopId],
@@ -615,7 +617,7 @@ export async function getPublicStudio(
       `JOIN workshops w ON w.id = s.workshop_id
        JOIN studios st ON st.id = w.studio_id`,
       `(st.id::text = $1 OR st.slug = $1)
-       AND w.status = 'approved' AND w.visibility_status = 'active'
+       AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
        AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
       [studioId],
     );
@@ -638,7 +640,8 @@ export async function getPublicStudio(
        JOIN provinces p ON p.id = st.province_id
        LEFT JOIN areas a ON a.id = st.area_id
        WHERE (st.id::text = $1 OR st.slug = $1)
-         AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
+         AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
+         AND (NOT EXISTS (SELECT 1 FROM workshops demo WHERE demo.studio_id=st.id AND demo.is_simulated) OR EXISTS (SELECT 1 FROM workshops real WHERE real.studio_id=st.id AND NOT real.is_simulated))`,
       [studioId],
     );
     const studio = studioResult.rows[0];
@@ -669,7 +672,7 @@ export async function getPublicStudio(
          st.address,
          w.is_simulated AS "isSimulated",
          st.name AS "studioName",
-         st.description AS "studioDescription",
+         st.description AS "studioDescription", ${studioTrustSql} AS "studioTrustLevel",
          COALESCE(
            json_agg(
              json_build_object(
@@ -692,7 +695,7 @@ export async function getPublicStudio(
         AND s.starts_at > now()
         AND s.capacity - s.seats_held - s.seats_sold >= 1
        WHERE (st.id::text = $1 OR st.slug = $1)
-         AND w.status = 'approved' AND w.visibility_status = 'active'
+         AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
        GROUP BY w.id, st.id, p.id
        ORDER BY min(s.starts_at), w.id`,
       [studioId],

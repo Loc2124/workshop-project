@@ -1,10 +1,6 @@
-import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
 import { z } from 'zod';
-import { apiFetch } from '../lib/api-client';
-import { ReportButton } from '../components/reports/ReportButton';
-import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
-import { PageContainer } from '../components/layout/PageContainer';
 import { DetailState } from '../components/details/DetailPrimitives';
 import { WorkshopDetails } from '../components/details/WorkshopDetails';
 import type { WorkshopBookingHandler } from '../components/details/WorkshopSchedule';
@@ -12,27 +8,31 @@ import {
   workshopSuggestions,
   workshopText,
 } from '../components/details/workshopPresentation';
-import { mockWorkshops } from '../data/mockWorkshops';
+import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
+import { PageContainer } from '../components/layout/PageContainer';
+import { ReportButton } from '../components/reports/ReportButton';
 import { useCatalog, useWorkshop } from '../hooks/useCatalog';
-import { isDemoDataMode } from '../lib/data-mode';
-import { ApiError } from '../lib/api-client';
-
+import { ApiError, apiFetch } from '../lib/api-client';
+import { useAuth } from '../hooks/useAuth';
+import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { customerBookingService } from '../services/customerBookingService';
+import { queryKeys } from '../lib/query-keys';
 export function WorkshopPage({
   onBook,
-}: { onBook?: WorkshopBookingHandler } = {}) {
+}: {
+  onBook?: WorkshopBookingHandler;
+} = {}) {
   const { id, slug } = useParams();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const identifier = slug ?? id ?? '';
-  const sampleWorkshop = isDemoDataMode
-    ? mockWorkshops.find(
-        (workshop) =>
-          workshop.id === identifier || workshop.slug === identifier,
-      )
-    : undefined;
-  const query = useWorkshop(isDemoDataMode && sampleWorkshop ? '' : identifier);
-  const sourceWorkshop = sampleWorkshop ?? query.data?.workshop;
+  const query = useWorkshop(identifier);
+  const sourceWorkshop = query.data?.workshop;
   const reviews = useQuery({
     queryKey: ['catalog', 'reviews', sourceWorkshop?.id],
-    enabled: !!sourceWorkshop && !isDemoDataMode,
+    enabled: !!sourceWorkshop && true,
     queryFn: async ({ signal }) =>
       z
         .object({
@@ -66,16 +66,33 @@ export function WorkshopPage({
       : sourceWorkshop;
   const relatedQuery = useCatalog(
     { page: 1, pageSize: 100 },
-    Boolean(workshop) && !isDemoDataMode,
+    Boolean(workshop) && true,
   );
   const related = workshop
-    ? workshopSuggestions(
-        workshop,
-        sampleWorkshop ? mockWorkshops : (relatedQuery.data?.items ?? []),
-      )
+    ? workshopSuggestions(workshop, relatedQuery.data?.items ?? [])
     : [];
   const notFound =
     query.error instanceof ApiError && query.error.status === 404;
+  const handleBooking: WorkshopBookingHandler | undefined =
+    onBook ??
+    (user?.role === 'customer'
+      ? async ({ sessionId, quantity }) => {
+          const result = await customerBookingService.create({
+            sessionId,
+            quantity,
+          });
+          await queryClient.invalidateQueries({
+            queryKey: queryKeys.bookings.all(user.id),
+          });
+          if (!result.checkoutUrl) {
+            navigate(`/me/bookings/${result.booking.id}`);
+          }
+          return {
+            id: result.booking.id,
+            checkoutUrl: result.checkoutUrl,
+          };
+        }
+      : undefined);
   return (
     <>
       <PageContainer as="main" className="pb-12">
@@ -107,7 +124,7 @@ export function WorkshopPage({
               key={workshop.id}
               workshop={workshop}
               related={related}
-              onBook={onBook}
+              onBook={handleBooking}
             />
           </>
         ) : (

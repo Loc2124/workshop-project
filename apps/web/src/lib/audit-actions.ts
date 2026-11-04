@@ -1,4 +1,8 @@
 const labels: Record<string, string> = {
+  'workshop.created': 'Tạo workshop',
+  'workshop.updated': 'Sửa workshop',
+  'workshop.publication_migrated': 'Chuyển workshop sang tự đăng',
+  'workshop.real_content_corrected': 'Sửa cờ mô phỏng của nội dung thật',
   'settings.updated': 'Sửa cài đặt hệ thống',
   'studio.approved': 'Duyệt studio',
   'studio.needs_changes': 'Yêu cầu bổ sung studio',

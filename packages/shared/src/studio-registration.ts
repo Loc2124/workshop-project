@@ -44,6 +44,7 @@ export const createStudioRegistrationSchema = (
         .max(500, 'Địa chỉ không được quá 500 ký tự.'),
     })
     .extend(createStudioEvidenceSchema(policy).shape)
+    .required({ name: true, address: true })
     .superRefine((input, context) => {
       const hasOther = (input.categoryIds ?? [input.categoryId]).includes(
         'other',

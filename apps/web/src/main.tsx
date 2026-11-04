@@ -6,6 +6,7 @@ import App from './App';
 import { shouldRetryApiQuery } from './lib/api-client';
 import { installSessionLifecycle } from './lib/session-cache';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { AppToaster } from './components/ui/AppToaster';
 import './styles.css';
 
 const queryClient = new QueryClient({
@@ -28,6 +29,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           <App />
         </ErrorBoundary>
       </BrowserRouter>
+      <AppToaster />
     </QueryClientProvider>
   </React.StrictMode>,
 );

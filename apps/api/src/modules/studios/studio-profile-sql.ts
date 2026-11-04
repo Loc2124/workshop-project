@@ -1,3 +1,3 @@
 export const studioTrustSql = `CASE WHEN st.status <> 'approved' OR NOT studio_profile_complete(st) THEN 'unapproved' WHEN st.verified_at IS NOT NULL THEN 'verified' ELSE 'approved' END`;
 export const studioDepositEligibleSql = `(st.status = 'approved' AND st.verified_at IS NOT NULL AND studio_profile_complete(st))`;
-export const studioEvidenceColumns = `st.contact_phone AS "contactPhone", st.contact_email AS "contactEmail", st.photo_ids AS "photoIds", st.facebook_url AS "facebookUrl", st.instagram_url AS "instagramUrl", st.google_maps_url AS "googleMapsUrl", studio_profile_complete(st) AS "profileComplete"`;
+export const studioEvidenceColumns = `st.contact_phone AS "contactPhone", st.contact_email AS "contactEmail", st.photo_ids AS "photoIds", st.payment_qr_image_id AS "paymentQrImageId", st.facebook_url AS "facebookUrl", st.instagram_url AS "instagramUrl", st.google_maps_url AS "googleMapsUrl", studio_profile_complete(st) AS "profileComplete"`;

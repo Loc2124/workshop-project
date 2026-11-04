@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   bookingFormSchema,
+  bookingContactSchema,
   homeSearchFormSchema,
   requiredPriceFormSchema,
   searchQuerySchema,
@@ -55,6 +56,29 @@ describe('booking form', () => {
     ).toBe(false);
     expect(
       bookingFormSchema.safeParse({ ...booking, sessionId: '' }).success,
+    ).toBe(false);
+  });
+  it('requires a valid name and phone number for the reservation', () => {
+    expect(
+      bookingContactSchema.safeParse({
+        contactName: ' Nguyễn An ',
+        contactPhone: '+84 90 123 4567',
+      }),
+    ).toMatchObject({
+      success: true,
+      data: { contactName: 'Nguyễn An' },
+    });
+    expect(
+      bookingContactSchema.safeParse({
+        contactName: '',
+        contactPhone: '0901234567',
+      }).success,
+    ).toBe(false);
+    expect(
+      bookingContactSchema.safeParse({
+        contactName: 'An',
+        contactPhone: 'phone',
+      }).success,
     ).toBe(false);
   });
 });

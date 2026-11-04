@@ -9,7 +9,16 @@ import { presentImage } from '../images/images.service.js';
 export const moderationQuery = z
   .object({
     ...adminListFields,
-    status: z.enum(['all', 'active', 'hidden', 'removed']).default('all'),
+    status: z
+      .enum([
+        'all',
+        'active',
+        'draft',
+        'studio_unavailable',
+        'hidden',
+        'removed',
+      ])
+      .default('all'),
     sort: z
       .enum([
         'title:asc',
@@ -42,10 +51,14 @@ export const moderationDecision = z.discriminatedUnion('status', [
     })
     .strict(),
 ]);
+const displayStatus = `CASE WHEN w.visibility_status <> 'active' THEN w.visibility_status
+ WHEN w.publication_status='draft' THEN 'draft'
+ WHEN w.status <> 'approved' OR st.status <> 'approved' OR st.is_hidden OR st.is_draft OR NOT studio_profile_complete(st) THEN 'studio_unavailable'
+ ELSE 'active' END`;
 const columns = `w.id,w.title,w.description,w.studio_id AS "studioId",st.name AS "studioName",
  w.category_id AS "categoryId",COALESCE(c.name,w.proposed_category_name,'Khác') AS "categoryName",
  w.base_price AS "basePrice",w.status AS "reviewStatus",st.status AS "studioStatus",
- w.visibility_status AS status,w.hidden_reason AS "hiddenReason",w.created_at AS "createdAt",
+ ${displayStatus} AS status,w.visibility_status AS "visibilityStatus",w.publication_status AS "publicationStatus",w.hidden_reason AS "hiddenReason",w.created_at AS "createdAt",
  (SELECT count(*)::integer FROM sessions s WHERE s.workshop_id=w.id AND s.starts_at>now() AND s.status='scheduled') AS "upcomingSlots",
  (SELECT count(*)::integer FROM bookings b JOIN sessions s ON s.id=b.session_id WHERE s.workshop_id=w.id AND b.status NOT IN ('cancelled','expired')) AS "bookingCount",
  COALESCE((SELECT json_agg(json_build_object('id',i.id,'key',i.key,'thumbnailKey',i.thumbnail_key,'mediumKey',i.medium_key) ORDER BY i.created_at,i.id) FROM images i WHERE i.workshop_id=w.id AND i.state='ready'),'[]'::json) AS images`;
@@ -81,12 +94,14 @@ export async function listModeratedWorkshops(
     where.push(`w.category_id=${bind(filters.categoryId)}`);
   if (filters.period) where.push("w.created_at>=now()-interval '7 days'");
   const counts = await query<{ status: string; count: number }>(
-    `SELECT w.visibility_status AS status,count(*)::integer AS count ${joins} WHERE ${where.join(' AND ')} GROUP BY w.visibility_status`,
+    `SELECT ${displayStatus} AS status,count(*)::integer AS count ${joins} WHERE ${where.join(' AND ')} GROUP BY ${displayStatus}`,
     values,
   );
   const statusCounts: Record<string, number> = {
     all: 0,
     active: 0,
+    draft: 0,
+    studio_unavailable: 0,
     hidden: 0,
     removed: 0,
   };
@@ -97,14 +112,14 @@ export async function listModeratedWorkshops(
   if (countsOnly)
     return { rows: [], total: statusCounts.all, statusCounts: statusCounts };
   if (filters.status !== 'all')
-    where.push(`w.visibility_status=${bind(filters.status)}`);
+    where.push(`(${displayStatus})=${bind(filters.status)}`);
   const sorts: Record<string, string> = {
     title: 'w.title',
     studioName: 'st.name',
     categoryName: 'c.name',
     basePrice: 'w.base_price',
     upcomingSlots: '"upcomingSlots"',
-    status: 'w.visibility_status',
+    status: `(${displayStatus})`,
     createdAt: 'w.created_at',
   };
   const [field, direction] = filters.sort.split(':');

@@ -1,3 +1,4 @@
+import { LoadingState } from '../components/ui/LoadingState';
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
@@ -11,6 +12,7 @@ import {
   postLoginDestination,
 } from '../lib/auth-navigation';
 import { AuthLink } from '../components/ui/auth-link';
+import { toast } from 'sonner';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -22,18 +24,15 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [error, setError] = useState('');
   const [forgotNotice, setForgotNotice] = useState(false);
   const registrationComplete = location.state?.registrationComplete === true;
 
   function clearField(field: string) {
     setErrors((current) => ({ ...current, [field]: '' }));
-    setError('');
   }
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isLoggingIn) return;
-    setError('');
     const parsed = loginFormSchema.safeParse({ email, password });
     if (!parsed.success) {
       setErrors(authFieldErrors(parsed.error));
@@ -42,11 +41,12 @@ export function LoginPage() {
     setErrors({});
     try {
       const authenticatedUser = await login({ ...parsed.data, rememberMe });
+      toast.success('Đăng nhập thành công.');
       navigate(postLoginDestination(authenticatedUser, redirect), {
         replace: true,
       });
     } catch (cause) {
-      setError(
+      toast.error(
         cause instanceof Error
           ? cause.message
           : 'Không thể đăng nhập. Vui lòng thử lại.',
@@ -57,9 +57,7 @@ export function LoginPage() {
   return (
     <AuthLayout>
       {isLoading ? (
-        <p role="status" aria-busy="true">
-          Đang kiểm tra phiên đăng nhập…
-        </p>
+        <LoadingState label="Đang kiểm tra phiên đăng nhập…" variant="page" />
       ) : authError ? (
         <div className="space-y-4">
           <h1 className="font-heading text-3xl">Chưa thể kiểm tra tài khoản</h1>
@@ -155,11 +153,6 @@ export function LoginPage() {
               />
               Ghi nhớ đăng nhập
             </label>
-            {error && (
-              <p className="text-sm text-brick" role="alert">
-                {error}
-              </p>
-            )}
             <Button
               type="submit"
               className="min-h-12 w-full text-base"

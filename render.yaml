@@ -23,7 +23,21 @@ services:
       - key: REFRESH_TOKEN_EXPIRES_IN
         value: 14d
       - key: PAYMENT_PROVIDER
-        value: mock
+        value: payos
+      - key: PAYOS_CLIENT_ID
+        sync: false
+      - key: PAYOS_API_KEY
+        sync: false
+      - key: PAYOS_CHECKSUM_KEY
+        sync: false
+      - key: PAYOS_RETURN_URL
+        sync: false
+      - key: PAYOS_CANCEL_URL
+        sync: false
+      - key: PAYOS_WEBHOOK_URL
+        sync: false
+      - key: EXPIRY_JOB_INTERVAL_SECONDS
+        value: '60'
       - key: DB_POOL_MAX
         value: '5'
       - key: TRUST_PROXY_HOPS

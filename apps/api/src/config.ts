@@ -43,6 +43,21 @@ const configSchema = z.object({
   COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).optional(),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
   DB_POOL_MAX: z.coerce.number().int().min(1).max(20).default(5),
+  HOLD_MINUTES: z.coerce.number().int().min(1).max(60).default(15),
+  EXPIRY_JOB_INTERVAL_SECONDS: z.coerce
+    .number()
+    .int()
+    .min(10)
+    .max(3600)
+    .default(60),
+  PAYMENT_PROVIDER: z.enum(['mock', 'payos']).default('mock'),
+  PAYOS_CLIENT_ID: z.string().min(1).optional(),
+  PAYOS_API_KEY: z.string().min(1).optional(),
+  PAYOS_CHECKSUM_KEY: z.string().min(1).optional(),
+  PAYOS_CHECKSUM_KEY_TEST: z.string().min(1).default('local-test-checksum-key'),
+  PAYOS_RETURN_URL: z.url().default('http://localhost:3000/payment/return'),
+  PAYOS_CANCEL_URL: z.url().default('http://localhost:3000/payment/cancel'),
+  PAYOS_WEBHOOK_URL: z.url().optional(),
 });
 
 function isStrongJwtSecret(value: string): boolean {
@@ -83,7 +98,16 @@ export type ApiConfig = Omit<
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
-  const result = configSchema.safeParse(env);
+  const paymentEnv = { ...env };
+  for (const key of [
+    'PAYOS_CLIENT_ID',
+    'PAYOS_API_KEY',
+    'PAYOS_CHECKSUM_KEY',
+    'PAYOS_WEBHOOK_URL',
+  ]) {
+    if (paymentEnv[key] === '') delete paymentEnv[key];
+  }
+  const result = configSchema.safeParse(paymentEnv);
 
   if (!result.success) {
     const details = result.error.issues
@@ -113,6 +137,27 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
   ) {
     throw new Error(
       'Invalid API configuration: WEB_ORIGIN must use HTTPS in production.',
+    );
+  }
+
+  if (
+    result.data.NODE_ENV === 'production' &&
+    result.data.PAYMENT_PROVIDER !== 'payos'
+  ) {
+    throw new Error(
+      'Invalid API configuration: production requires PAYMENT_PROVIDER=payos.',
+    );
+  }
+
+  if (
+    result.data.PAYMENT_PROVIDER === 'payos' &&
+    (!result.data.PAYOS_CLIENT_ID ||
+      !result.data.PAYOS_API_KEY ||
+      !result.data.PAYOS_CHECKSUM_KEY ||
+      !result.data.PAYOS_WEBHOOK_URL)
+  ) {
+    throw new Error(
+      'Invalid API configuration: PayOS credentials and PAYOS_WEBHOOK_URL are required when PAYMENT_PROVIDER is payos.',
     );
   }
 

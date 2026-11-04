@@ -3,25 +3,12 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { SiteHeader } from './SiteHeader';
 import { SiteFooter } from './SiteFooter';
 import { PageContainer } from './PageContainer';
-import { Skeleton } from '../ui/skeleton';
+import { LoadingState } from '../ui/LoadingState';
 
 export function PublicPageSkeleton() {
   return (
-    <PageContainer
-      as="main"
-      className="min-h-[calc(100svh-5rem)] py-8"
-      role="status"
-      aria-label="Đang tải trang"
-    >
-      <Skeleton className="mb-6 h-8 w-2/3" />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Skeleton className="aspect-4/3 w-full" />
-        <div className="space-y-5">
-          <Skeleton className="h-12 w-3/4" />
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-11 w-40" />
-        </div>
-      </div>
+    <PageContainer as="main">
+      <LoadingState label="Đang tải trang…" variant="page" />
     </PageContainer>
   );
 }
@@ -41,7 +28,7 @@ export function PublicShell() {
               : 'min-h-svh';
   return (
     <div
-      className={`${classes} ${['/danh-cho-nghe-nhan', '/ve-open-slot'].includes(pathname) ? 'marketing-page' : ''} public-shell bg-paper text-ink`}
+      className={`${classes} ${['/danh-cho-nghe-nhan', '/ve-open-slot'].includes(pathname) ? 'marketing-page' : ''} public-shell bg-paper text-ink [--loading-height:calc(100svh-5rem)]`}
     >
       <SiteHeader />
       <Suspense fallback={<PublicPageSkeleton />}>

@@ -1,3 +1,4 @@
+import { LoadingState } from '../components/ui/LoadingState';
 import {
   studioProvinces,
   createStudioRegistrationSchema,
@@ -30,7 +31,7 @@ function StudioRegistrationForm() {
   const settingsQuery = useSiteSettings();
   const { user, isLoading: authLoading, authError, retryAuth } = useAuth();
   const draft = useStudioRegistrationDraft(user?.id, authLoading);
-  const categoryQuery = useCategoriesQuery(true);
+  const categoryQuery = useCategoriesQuery();
   const categories = (categoryQuery.data ?? []).filter(
     (category) =>
       category.isVisible !== false &&
@@ -135,7 +136,7 @@ function StudioRegistrationForm() {
       setReceipt(created);
       requestAnimationFrame(() => heading.current?.focus());
     } catch {
-      /* The mutation's error is rendered below. The draft stays available. */
+      // The mutation reports server errors through the global toast.
     } finally {
       sending.current = false;
     }
@@ -415,12 +416,10 @@ function StudioRegistrationForm() {
                               chưa có loại phù hợp.
                             </p>
                             {categoryQuery.isPending && (
-                              <p
-                                role="status"
+                              <LoadingState
+                                label="Đang tải loại workshop…"
                                 className="mt-2 text-sm text-muted"
-                              >
-                                Đang tải loại workshop…
-                              </p>
+                              />
                             )}
                           </div>
                           <div>
@@ -637,15 +636,6 @@ function StudioRegistrationForm() {
                           </div>
                         </div>
                       ) : null}
-                      {createStudio.error && (
-                        <div
-                          role="alert"
-                          className="rounded-lg bg-soft p-4 text-sm text-brick"
-                        >
-                          {createStudio.error.message} Hồ sơ nháp vẫn được giữ
-                          lại để bạn thử lại.
-                        </div>
-                      )}
                       <div className="flex flex-wrap items-center gap-3">
                         {(draft.step === 0 || user) && (
                           <Button
@@ -737,8 +727,8 @@ export function StudioRegistrationPage() {
   const { user, isLoading, authError, retryAuth } = useAuth();
   if (isLoading)
     return (
-      <main className="p-8" role="status">
-        Đang kiểm tra đăng nhập…
+      <main>
+        <LoadingState label="Đang kiểm tra đăng nhập…" variant="page" />
       </main>
     );
   if (authError)

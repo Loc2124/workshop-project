@@ -1,3 +1,5 @@
+import { StudioBookingManager } from '../components/management/StudioBookingManager';
+import { LoadingState } from '../components/ui/LoadingState';
 import { StudioNotifications } from '../components/management/StudioNotifications';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -39,6 +41,15 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
       ? studio.id
       : '',
   );
+  if (
+    studiosQuery.isPending ||
+    (workshopId && workshops.isPending) ||
+    (section === 'sessions' &&
+      studio?.status === 'approved' &&
+      sessions.isPending)
+  ) {
+    return <LoadingState label="Đang tải thông tin studio…" variant="page" />;
+  }
   if (studio?.isDraft)
     return (
       <Navigate
@@ -69,11 +80,7 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
         </div>
       </header>
       {studio && <StudioNotifications studioId={studio.id} />}
-      {studiosQuery.isPending ? (
-        <p role="status" className="text-sm text-muted">
-          Đang tải studio…
-        </p>
-      ) : studiosQuery.error ? (
+      {studiosQuery.error ? (
         <div className="space-y-3">
           <p role="alert">Chưa tải được danh sách studio.</p>
           <Button variant="outline" onClick={() => void studiosQuery.refetch()}>
@@ -128,22 +135,7 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
             </>
           )}
           {section === 'bookings' && (
-            <section className="rounded-md border border-line bg-surface p-5">
-              <h2 className="font-heading text-lg font-semibold">
-                Danh sách đặt chỗ
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                Quản lý đặt chỗ đang được phát triển. Khi luồng đặt chỗ được
-                triển khai, danh sách khách đăng ký theo buổi sẽ xuất hiện tại
-                đây.
-              </p>
-              <Link
-                to={`/studio/${studio.id}/sessions`}
-                className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline"
-              >
-                Xem lịch và slot của studio
-              </Link>
-            </section>
+            <StudioBookingManager studioId={studio.id} />
           )}
           {section === 'profile' && (
             <>

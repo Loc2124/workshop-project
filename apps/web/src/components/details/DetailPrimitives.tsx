@@ -3,6 +3,7 @@ import { ArrowUpRight, MapPin, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { MediaImage } from '../ui/MediaImage';
+import { LoadingState } from '../ui/LoadingState';
 
 export function DetailHero({
   imageUrl,
@@ -148,19 +149,7 @@ export function DetailState({
   onRetry: () => void;
 }) {
   if (loading)
-    return (
-      <div role="status" className="py-8">
-        <h1 className="sr-only">Đang tải {label}</h1>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-72 rounded-2xl bg-beige motion-safe:animate-pulse" />
-          <div className="space-y-5 py-5">
-            <div className="h-10 w-3/4 rounded bg-beige" />
-            <div className="h-24 rounded bg-soft" />
-            <div className="h-11 w-44 rounded-lg bg-beige" />
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState label={`Đang tải ${label}…`} variant="page" />;
   return (
     <div className="flex min-h-80 flex-col items-start justify-center gap-5">
       <h1 className="font-heading text-3xl font-semibold">

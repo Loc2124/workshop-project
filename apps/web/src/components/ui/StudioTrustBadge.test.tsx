@@ -13,14 +13,14 @@ describe('studio trust labels', () => {
     const html = renderToStaticMarkup(
       <StudioTrustBadge level="approved" explain />,
     );
-    expect(html).toContain('Bậc 1 · Đã duyệt');
+    expect(html).toContain('Đã duyệt hồ sơ');
     expect(html).toContain('chưa được cấp xác minh danh tính');
   });
   it('explains the scope of verified identity without promising experience quality', () => {
     const html = renderToStaticMarkup(
       <StudioTrustBadge level="verified" explain />,
     );
-    expect(html).toContain('Bậc 2 · Đã xác minh');
+    expect(html).toContain('Đã xác minh');
     expect(html).toContain('không phải cam kết về chất lượng');
   });
 });

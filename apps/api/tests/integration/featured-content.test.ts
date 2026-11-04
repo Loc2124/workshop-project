@@ -99,6 +99,32 @@ it('publishes ordered eligible selections with latest fallback and keeps preview
         .send({ studioIds: [], workshopIds: [] })
     ).status,
   ).toBe(403);
+  await query(
+    `INSERT INTO sessions(workshop_id,starts_at,ends_at,price,capacity,seats_sold)
+    VALUES ($1,now()+interval '7 days',now()+interval '7 days 2 hours',345000,10,0),
+      ($1,now()+interval '8 days',now()+interval '8 days 2 hours',400000,10,0),
+      ($1,now()-interval '2 days',now()-interval '1 day',1000,10,0),
+      ($1,now()+interval '9 days',now()+interval '9 days 2 hours',2000,10,10)`,
+    [workshops[7]],
+  );
+  const expiredSessionId = randomUUID();
+  await query(
+    `INSERT INTO sessions(id,workshop_id,starts_at,ends_at,price,capacity,seats_held)
+     VALUES($1,$2,now()+interval '10 days',now()+interval '10 days 2 hours',345000,10,1)`,
+    [expiredSessionId, workshops[7]],
+  );
+  const expiredBookingId = randomUUID();
+  await query(
+    `INSERT INTO bookings(
+       id,user_id,session_id,quantity,unit_price,total_amount,hold_expires_at,order_code
+     ) VALUES($1,$2,$3,1,345000,345000,now()-interval '1 minute',$4)`,
+    [
+      expiredBookingId,
+      owner.id,
+      expiredSessionId,
+      Date.now() + Number.parseInt(randomUUID().slice(0, 8), 16),
+    ],
+  );
   const before = await request(app)
     .get('/admin/noi-dung')
     .set('Cookie', admin.cookie);
@@ -122,6 +148,37 @@ it('publishes ordered eligible selections with latest fallback and keeps preview
   expect(published.status).toBe(200);
   expect(published.body.studios).toHaveLength(6);
   expect(published.body.workshops).toHaveLength(8);
+  expect(published.body.studios[0]).toMatchObject({
+    id: studios[7],
+    categoryId: 'other',
+    provinceId: 'ho-chi-minh',
+    address: 'Featured studio address',
+    workshopCount: 1,
+    availableSessions: 3,
+    startingPrice: 345000,
+  });
+  expect(
+    (
+      await query<{ status: string }>(
+        'SELECT status FROM bookings WHERE id=$1',
+        [expiredBookingId],
+      )
+    ).rows[0].status,
+  ).toBe('expired');
+  expect(
+    (
+      await query<{ seats_held: number }>(
+        'SELECT seats_held FROM sessions WHERE id=$1',
+        [expiredSessionId],
+      )
+    ).rows[0].seats_held,
+  ).toBe(0);
+  expect(published.body.studios[1]).toMatchObject({
+    id: studios[5],
+    workshopCount: 0,
+    availableSessions: 0,
+    startingPrice: null,
+  });
   expect(
     published.body.studios.slice(0, 3).map((s: { id: string }) => s.id),
   ).toEqual([studios[7], studios[5], studios[0]]);

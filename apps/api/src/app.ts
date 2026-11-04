@@ -17,6 +17,9 @@ import imageRoutes from './modules/images/images.routes.js';
 import reportRoutes from './modules/reports/reports.routes.js';
 import { loadConfig } from './config.js';
 import { corsForWeb } from './middleware/cors.js';
+import bookingRoutes from './modules/bookings/bookings.routes.js';
+import paymentRoutes from './modules/payments/payments.routes.js';
+import paymentWebhookRoutes from './modules/payments/webhook.routes.js';
 
 export function createApp() {
   const app = express();
@@ -39,9 +42,14 @@ export function createApp() {
       },
     }),
   );
+  app.use(createApiRateLimiter());
+  app.use(
+    '/webhooks',
+    express.raw({ type: 'application/json', limit: '100kb', inflate: false }),
+    paymentWebhookRoutes,
+  );
   app.use(express.json({ limit: '100kb', inflate: false }));
   app.use(cookieParser());
-  app.use(createApiRateLimiter());
 
   app.get('/health', (_request, response) => {
     response.json({ ok: true });
@@ -54,6 +62,8 @@ export function createApp() {
       .json({ settings: await getSiteSettings() }),
   );
   app.use('/me', meRoutes);
+  app.use('/', bookingRoutes);
+  app.use('/payments', paymentRoutes);
   app.use('/', catalogRoutes);
   app.use('/studios', studioRoutes);
   app.use('/images', imageRoutes);

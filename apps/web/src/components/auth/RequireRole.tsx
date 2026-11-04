@@ -1,3 +1,4 @@
+import { LoadingState } from '../ui/LoadingState';
 import { Fragment, type ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -13,13 +14,14 @@ function StudioOwnerGate({ children }: { children: ReactNode }) {
   const studios = useMyStudios();
   if (studios.isPending)
     return (
-      <div role="status" className="p-6 text-sm text-muted">
-        Đang kiểm tra quyền quản lý studio…
-      </div>
+      <LoadingState
+        label="Đang kiểm tra quyền quản lý studio…"
+        variant="page"
+      />
     );
   if (studios.error)
     return (
-      <div className="space-y-3 p-6 text-sm">
+      <div className="space-y-3 p-6 text-sm flex items-center justify-center gap-2">
         <p role="alert">Chưa kiểm tra được quyền sở hữu studio.</p>
         <Button variant="outline" onClick={() => void studios.refetch()}>
           Thử lại
@@ -41,11 +43,7 @@ export function RequireRole({
 }) {
   const { user, isLoading, authError, retryAuth } = useAuth();
   if (isLoading)
-    return (
-      <div role="status" className="p-6 text-sm text-muted">
-        Đang kiểm tra tài khoản…
-      </div>
-    );
+    return <LoadingState label="Đang kiểm tra tài khoản…" variant="page" />;
   if (authError)
     return (
       <div className="space-y-3 p-6 text-sm">

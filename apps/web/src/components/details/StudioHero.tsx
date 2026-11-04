@@ -9,7 +9,6 @@ import { upcomingSessions } from '../../lib/workshopDetails';
 import { MediaImage } from '../ui/MediaImage';
 import { getCategoryIcon, getCategoryMeta } from '../../constants/categories';
 import { studioHeroImage } from './studioHeroMedia';
-import { SimulatedDataBadge } from '../ui/SimulatedDataBadge';
 
 export function StudioHero({
   studio,
@@ -112,9 +111,6 @@ export function StudioHero({
                 {studio.name}
               </h1>
               <StudioTrustBadge level={studio.trustLevel} explain />
-              {workshops.some((item) => item.isSimulated) && (
-                <SimulatedDataBadge />
-              )}
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-stone-700">
               <span>

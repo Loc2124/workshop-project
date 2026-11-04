@@ -10,10 +10,9 @@ Cập nhật theo mã nguồn ngày 03/11/2026. Tiến độ dưới đây phả
 4. Chạy `npm run lint` và `npm run build` để kiểm tra workspace.
 5. Trước khi chạy test hoặc thao tác trên database test, bật opt-in trong PowerShell: `$env:ALLOW_DESTRUCTIVE_TESTS = "true"`. Sau đó chạy `npm test` hoặc `npm run migrate:test`. Guard sẽ từ chối nếu biến khác `"true"`, thiếu URL, URL sai định dạng, hoặc host và username của hai URL trùng nhau.
 6. `npm run migrate` áp các file SQL trong `db/migrations` lên project dev/demo; `npm run migrate:test` áp chúng lên project test sau khi guard an toàn thông qua. Runner ghi checksum, từ chối migration đã bị sửa và bật RLS cho bảng `schema_migrations`.
-7. `npm run seed:sample` nạp studio, workshop và buổi mẫu mô phỏng vào `DATABASE_URL`; không chạy lệnh này với dữ liệu production.
-8. Xem `docs/deploy.md` để triển khai: API có cấu hình Render, frontend có cấu hình Vercel. Xác minh URL công khai, biến môi trường và migration thực tế trước khi phát hành.
+7. Xem `docs/deploy.md` để triển khai: API có cấu hình Render, frontend có cấu hình Vercel. Xác minh URL công khai, biến môi trường và migration thực tế trước khi phát hành.
 
-API mặc định ở `http://localhost:4000` (`GET /health`). Web React/Vite dùng cổng hiển thị khi chạy dev server (mặc định `5173`). Điền đầy đủ cấu hình bắt buộc trong `.env.example`, bao gồm JWT secret và API URL cho web. Catalog mặc định dùng API; chỉ đặt `VITE_DATA_MODE=demo` khi chủ đích dùng dữ liệu mô phỏng.
+API mặc định ở `http://localhost:4000` (`GET /health`). Web React/Vite dùng cổng hiển thị khi chạy dev server (mặc định `5173`). Điền đầy đủ cấu hình bắt buộc trong `.env.example`, bao gồm JWT secret và API URL cho web. Catalog chỉ dùng API; dữ liệu mô phỏng không được đưa vào luồng công khai.
 
 ## Kết nối Supabase
 
@@ -51,7 +50,7 @@ Test và script thao tác dữ liệu test dùng chung guard tại `scripts/asse
 - Bước 1: nền tảng API/test/schema — hoàn thành.
 - Bước 2: đăng ký, đăng nhập, JWT cookie, refresh token xoay vòng và thu hồi phiên; vai hệ thống `customer|studio_owner|admin` — đã triển khai.
 - Bước 3: hồ sơ studio, vai thành viên `owner|staff` và duyệt admin (`pending|approved|rejected`) — đã triển khai.
-- Bước 4: tạo/xem/sửa workshop và buổi, kiểm soát membership theo studio; owner tạo workshop/đặt giá, staff tạo buổi theo giá cơ sở và không tự đặt giá — đã triển khai. Danh sách đăng ký sẽ được nối khi triển khai booking.
+- Bước 4: tạo/xem/sửa workshop và buổi, kiểm soát membership theo studio; owner tạo workshop/đặt giá, staff tạo buổi theo giá cơ sở và không tự đặt giá — đã triển khai.
 - Bước 5: danh mục workshop công khai, lọc cứng, chi tiết và seed mẫu — đã triển khai; kiểm thử tích hợp liên quan đã qua.
 - Frontend React/Vite: trang chủ, khám phá/lọc, chi tiết workshop/studio, giới thiệu, trang nghệ nhân, đăng ký/đăng nhập và đăng ký studio.
 - Không gian studio: hồ sơ/minh chứng, workshop, lịch tổ chức và danh sách đặt chỗ; kiểm soát quyền theo studio.
@@ -62,14 +61,14 @@ Test và script thao tác dữ liệu test dùng chung guard tại `scripts/asse
 
 ## Phần cần hoàn thiện hoặc xác minh
 
-- Luồng khách đặt chỗ, giữ chỗ, thanh toán PayOS, nhận vé và check-in cần hoàn thiện/kiểm chứng xuyên suốt. Quản lý đơn của admin và giao diện vé demo không xác nhận luồng mua vé đã hoàn chỉnh.
+- Luồng khách hàng gồm đặt chỗ nguyên tử, hold hết hạn, tiền cọc PayOS cho studio đủ điều kiện, thanh toán tại studio, webhook chống trùng, hủy/hoàn tiền thủ công, lịch sử đặt và vé QR đã có phần triển khai trong API/web; cần chạy migration `034` đúng môi trường và kiểm chứng bằng bộ test trước khi deploy. Check-in/QR scan chưa triển khai.
 - Dịch vụ xếp hạng/gợi ý theo `docs/05-ranking-spec.md` chưa được triển khai thành luồng sử dụng hoàn chỉnh.
 - Xác minh deployment thực tế, cookie/CORS, migration, storage và smoke test trên HTTPS. Theo dõi [checklist production](docs/production-readiness-checklist.md); kết quả rà soát cũ là bằng chứng tại thời điểm ghi nhận.
 
 ## Lưu ý
 
 - Theo xác nhận, migration `001_init.sql`, `002_rls_lockdown.sql` và `003_geography_catalog.sql` đã chạy trên cả database dev/demo và database test riêng. Migration đã chạy không được sửa; nếu cần thay đổi schema, tạo migration mới.
-- Phần chữ ký webhook PayOS không được viết sẵn: Bước 9 yêu cầu dán tài liệu chính thức của PayOS cho AI.
+- Chữ ký webhook PayOS được xác thực theo tài liệu chính thức; trạng thái thực tế cần xác minh trên cấu hình webhook môi trường trước khi ra mắt.
 - Dữ liệu mẫu chỉ có vài dòng; cần mở rộng lên 100-200 workshop và hàng trăm câu nhu cầu.
 - Bước 5B: có cấu hình Render cho API; web có trang khám phá/catalog bằng React + Vite + Tailwind CSS. URL công khai và cấu hình production vẫn cần xác nhận.
 - Theo dõi hướng dẫn tại `docs/deploy.md`; cấu hình hosting và API CORS/secrets, rồi kiểm tra URL HTTPS và smoke test.

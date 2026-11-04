@@ -1,4 +1,5 @@
 import { AppError } from '../../errors/app-error.js';
+import { writeAuditLog } from '../admin/audit-log.js';
 import { DEFAULT_DEPOSIT_PERCENT } from '@workshop/shared';
 import { studioDepositEligibleSql } from '../studios/studio-profile-sql.js';
 import { query, withTransaction } from '../../db/pool.js';
@@ -30,6 +31,7 @@ export type WorkshopRow = {
   areaId: string | null;
   address: string;
   status: 'pending' | 'approved' | 'rejected';
+  publicationStatus: 'draft' | 'published' | 'hidden';
   createdAt: string;
 };
 
@@ -54,6 +56,7 @@ const workshopColumns = `w.id,
   st.area_id AS "areaId",
   st.address,
   w.status,
+  CASE WHEN w.visibility_status <> 'active' THEN 'hidden' ELSE w.publication_status END AS "publicationStatus",
   w.created_at AS "createdAt"`;
 
 const updateableColumns: Array<[keyof WorkshopUpdateInput, string]> = [
@@ -70,6 +73,7 @@ const updateableColumns: Array<[keyof WorkshopUpdateInput, string]> = [
   ['requirements', 'requirements'],
   ['cancellationPolicy', 'cancellation_policy'],
   ['paymentPolicy', 'payment_policy'],
+  ['publicationStatus', 'publication_status'],
 ];
 
 export async function listWorkshops(
@@ -104,6 +108,7 @@ export async function createWorkshop(
   return withTransaction(async (client) => {
     const state = await lockDepositStudio(client, studioId, userId);
     if (!state) return null;
+    assertApprovedStudio(state);
     const depositPercent =
       input.depositPercent ??
       (state.canCollectDeposit ? DEFAULT_DEPOSIT_PERCENT : 0);
@@ -117,9 +122,9 @@ export async function createWorkshop(
       `INSERT INTO workshops (
        studio_id, slug, title, description, category_id, level, audience, takeaway,
        duration_minutes, base_price, requirements, cancellation_policy,
-       payment_policy, district, address, status, proposed_category_name, deposit_percent
+       payment_policy, district, address, status, proposed_category_name, deposit_percent, publication_status, is_simulated
      )
-     SELECT st.id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NULL, NULL, 'pending', $15, $16
+     SELECT st.id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NULL, NULL, 'approved'::approval_status, $15, $16, $17, false
      FROM studios st
      JOIN studio_members sm
        ON sm.studio_id = st.id AND sm.user_id = $2 AND sm.role = 'owner'
@@ -145,6 +150,7 @@ export async function createWorkshop(
        (SELECT area_id FROM studios WHERE id = studio_id) AS "areaId",
        (SELECT address FROM studios WHERE id = studio_id) AS address,
        status,
+       publication_status AS "publicationStatus",
        created_at AS "createdAt"`,
       [
         studioId,
@@ -163,9 +169,19 @@ export async function createWorkshop(
         input.paymentPolicy ?? null,
         input.proposedCategoryName ?? null,
         depositPercent,
+        input.publicationStatus ?? 'published',
       ],
     );
-    return result.rows[0] ?? null;
+    const workshop = result.rows[0] ?? null;
+    if (workshop)
+      await writeAuditLog(client, {
+        actorId: userId,
+        action: 'workshop.created',
+        targetType: 'workshop',
+        targetId: workshop.id,
+        targetName: workshop.title,
+      });
+    return workshop;
   });
 }
 
@@ -184,6 +200,7 @@ export async function updateWorkshop(
   return withTransaction(async (client) => {
     const state = await lockDepositStudio(client, studioId, userId);
     if (!state) return null;
+    assertApprovedStudio(state);
     if ((input.depositPercent ?? 0) > 0 && !state.canCollectDeposit)
       throw new AppError(
         403,
@@ -205,11 +222,7 @@ export async function updateWorkshop(
     const result = await client.query<WorkshopRow>(
       `UPDATE workshops w
      SET ${assignments.join(', ')},
-        status = CASE
-          WHEN w.status IN ('approved', 'rejected')
-            THEN 'pending'::approval_status
-          ELSE w.status
-        END
+        status = 'approved'::approval_status
      FROM studios st
      JOIN studio_members sm ON sm.studio_id = st.id
      WHERE w.studio_id = st.id
@@ -220,7 +233,16 @@ export async function updateWorkshop(
      RETURNING ${workshopColumns}`,
       values,
     );
-    return result.rows[0] ?? null;
+    const workshop = result.rows[0] ?? null;
+    if (workshop)
+      await writeAuditLog(client, {
+        actorId: userId,
+        action: 'workshop.updated',
+        targetType: 'workshop',
+        targetId: workshop.id,
+        targetName: workshop.title,
+      });
+    return workshop;
   });
 }
 
@@ -229,9 +251,22 @@ async function lockDepositStudio(
   studioId: string,
   userId: string,
 ) {
-  const result = await client.query<{ canCollectDeposit: boolean }>(
-    `SELECT ${studioDepositEligibleSql} AS "canCollectDeposit" FROM studios st JOIN studio_members sm ON sm.studio_id=st.id AND sm.user_id=$2 WHERE st.id=$1 FOR UPDATE OF st`,
+  const result = await client.query<{
+    canCollectDeposit: boolean;
+    status: string;
+    isDraft: boolean;
+  }>(
+    `SELECT ${studioDepositEligibleSql} AS "canCollectDeposit", st.status, st.is_draft AS "isDraft" FROM studios st JOIN studio_members sm ON sm.studio_id=st.id AND sm.user_id=$2 WHERE st.id=$1 FOR UPDATE OF st`,
     [studioId, userId],
   );
   return result.rows[0] ?? null;
+}
+
+function assertApprovedStudio(state: { status: string; isDraft: boolean }) {
+  if (state.status !== 'approved' || state.isDraft)
+    throw new AppError(
+      403,
+      'FORBIDDEN',
+      'Studio cần được duyệt trước khi tạo hoặc cập nhật workshop.',
+    );
 }

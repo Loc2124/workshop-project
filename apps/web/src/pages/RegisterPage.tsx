@@ -1,3 +1,4 @@
+import { LoadingState } from '../components/ui/LoadingState';
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthLink } from '../components/ui/auth-link';
@@ -13,6 +14,7 @@ import {
   authFieldErrors,
   registrationFormSchema,
 } from '../lib/auth-validation';
+import { toast } from 'sonner';
 
 const initialValues = {
   fullName: '',
@@ -39,7 +41,6 @@ export function RegisterPage() {
   const isSubmitting = isRegistering || isLoggingIn;
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [registerError, setRegisterError] = useState('');
   const [policyNotice, setPolicyNotice] = useState('');
   function update<K extends keyof typeof values>(
     key: K,
@@ -47,12 +48,10 @@ export function RegisterPage() {
   ) {
     setValues((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: '' }));
-    setRegisterError('');
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSubmitting) return;
-    setRegisterError('');
     const parsed = registrationFormSchema.safeParse(values);
     if (!parsed.success) {
       setErrors(authFieldErrors(parsed.error));
@@ -64,8 +63,10 @@ export function RegisterPage() {
       await register({ fullName, email, password });
       try {
         await login({ email, password, rememberMe: false });
+        toast.success('Đã tạo tài khoản và đăng nhập thành công.');
         navigate(redirect, { replace: true });
       } catch {
+        toast.success('Tài khoản đã được tạo.');
         navigate(authHref('/dang-nhap', redirect), {
           replace: true,
           state: { registrationComplete: true },
@@ -76,7 +77,7 @@ export function RegisterPage() {
         setErrors((current) => ({ ...current, password: cause.message }));
         return;
       }
-      setRegisterError(
+      toast.error(
         cause instanceof Error
           ? cause.message
           : 'Không thể tạo tài khoản. Vui lòng thử lại.',
@@ -86,9 +87,7 @@ export function RegisterPage() {
   return (
     <AuthLayout>
       {isLoading ? (
-        <p role="status" aria-busy="true">
-          Đang kiểm tra phiên đăng nhập…
-        </p>
+        <LoadingState label="Đang kiểm tra phiên đăng nhập…" variant="page" />
       ) : authError ? (
         <div className="space-y-4">
           <h1 className="font-heading text-3xl">Chưa thể kiểm tra tài khoản</h1>
@@ -254,11 +253,6 @@ export function RegisterPage() {
                 </p>
               )}
             </div>
-            {registerError && (
-              <p role="alert" className="text-sm text-brick">
-                {registerError}
-              </p>
-            )}
             <Button
               type="submit"
               className="min-h-12 w-full text-base"

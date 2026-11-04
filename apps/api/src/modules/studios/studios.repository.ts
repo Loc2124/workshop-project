@@ -27,6 +27,7 @@ export async function getStudioMemberRole(
 }
 
 export type StudioEvidenceRow = {
+  paymentQrImageId?: string | null;
   contactPhone: string | null;
   contactEmail: string | null;
   photoIds: string[];
@@ -138,6 +139,12 @@ export async function createStudio(
       [input.draftStudioId, userId],
     );
     if (!locked.rowCount) return null;
+    await assertPaymentQr(
+      client,
+      input.draftStudioId,
+      userId,
+      input.paymentQrImageId,
+    );
     await assertProfilePhotos(
       client,
       input.draftStudioId,
@@ -145,7 +152,7 @@ export async function createStudio(
       input.photoIds,
     );
     const result = await client.query<StudioRow>(
-      `UPDATE studios st SET name=$3, slug=$4, description=$5, province_id=p.id, area_id=a.id, address=$8, category_id=$9, proposed_category_name=$10, contact_phone=$11, contact_email=$12, photo_ids=$13, facebook_url=$14, instagram_url=$15, google_maps_url=$16, is_draft=false
+      `UPDATE studios st SET name=$3, slug=$4, description=$5, province_id=p.id, area_id=a.id, address=$8, category_id=$9, proposed_category_name=$10, contact_phone=$11, contact_email=$12, photo_ids=$13, facebook_url=$14, instagram_url=$15, google_maps_url=$16, payment_qr_image_id=$17, is_draft=false
       FROM provinces p LEFT JOIN areas a ON a.id=$7::uuid AND a.province_id=p.id
       WHERE st.id=$1 AND p.id=$6 AND ($7::uuid IS NULL OR a.id IS NOT NULL)
         AND EXISTS(SELECT 1 FROM studio_members sm WHERE sm.studio_id=st.id AND sm.user_id=$2 AND sm.role='owner')
@@ -167,6 +174,7 @@ export async function createStudio(
         input.facebookUrl ?? null,
         input.instagramUrl ?? null,
         input.googleMapsUrl ?? null,
+        input.paymentQrImageId ?? null,
       ],
     );
     const studio = result.rows[0];
@@ -217,8 +225,12 @@ export async function updateStudioEvidence(
       role: string;
       status: string;
       verifiedAt: string | null;
+      name: string;
+      address: string;
+      photoIds: string[];
+      paymentQrImageId: string | null;
     }>(
-      `SELECT sm.role,st.status, st.verified_at AS "verifiedAt" FROM studios st JOIN studio_members sm ON sm.studio_id=st.id AND sm.user_id=$2 WHERE st.id=$1 AND NOT st.is_draft FOR UPDATE OF st`,
+      `SELECT sm.role,st.status,st.name,st.address,st.photo_ids AS "photoIds",st.payment_qr_image_id AS "paymentQrImageId", st.verified_at AS "verifiedAt" FROM studios st JOIN studio_members sm ON sm.studio_id=st.id AND sm.user_id=$2 WHERE st.id=$1 AND NOT st.is_draft FOR UPDATE OF st`,
       [studioId, userId],
     );
     if (!locked.rows[0])
@@ -236,13 +248,23 @@ export async function updateStudioEvidence(
         'Studio đang tạm ngưng. Chỉ quản trị có thể khôi phục hoạt động.',
       );
     await assertProfilePhotos(client, studioId, userId, input.photoIds);
-    if (locked.rows[0].verifiedAt)
+    await assertPaymentQr(client, studioId, userId, input.paymentQrImageId);
+    const current = locked.rows[0];
+    const sensitive =
+      (input.name !== undefined && input.name !== current.name) ||
+      (input.address !== undefined && input.address !== current.address) ||
+      input.photoIds[0] !== current.photoIds[0] ||
+      (input.paymentQrImageId !== undefined &&
+        input.paymentQrImageId !== current.paymentQrImageId);
+    const status =
+      current.status === 'approved' && !sensitive ? 'approved' : 'pending';
+    if (sensitive && current.verifiedAt)
       await client.query(
         `INSERT INTO studio_verification_history(studio_id,reviewed_by,action,reason) VALUES($1,$2,'revoked',$3)`,
         [studioId, userId, 'Chủ studio cập nhật hồ sơ; cần xét duyệt lại.'],
       );
     await client.query(
-      `UPDATE studios SET contact_phone=$3,contact_email=$4,photo_ids=$5,facebook_url=$6,instagram_url=$7,google_maps_url=$8,status='pending',verified_at=NULL,verified_by=NULL WHERE id=$1 AND EXISTS(SELECT 1 FROM studio_members WHERE studio_id=$1 AND user_id=$2 AND role='owner')`,
+      `UPDATE studios SET contact_phone=$3,contact_email=$4,photo_ids=$5,facebook_url=$6,instagram_url=$7,google_maps_url=$8,status=$9::approval_status,verified_at=CASE WHEN $10 THEN NULL ELSE verified_at END,verified_by=CASE WHEN $10 THEN NULL ELSE verified_by END,name=COALESCE($11,name),address=COALESCE($12,address),payment_qr_image_id=CASE WHEN $13 THEN $14::uuid ELSE payment_qr_image_id END WHERE id=$1 AND EXISTS(SELECT 1 FROM studio_members WHERE studio_id=$1 AND user_id=$2 AND role='owner')`,
       [
         studioId,
         userId,
@@ -252,8 +274,33 @@ export async function updateStudioEvidence(
         input.facebookUrl ?? null,
         input.instagramUrl ?? null,
         input.googleMapsUrl ?? null,
+        status,
+        sensitive,
+        input.name ?? null,
+        input.address ?? null,
+        input.paymentQrImageId !== undefined,
+        input.paymentQrImageId ?? null,
       ],
     );
-    return { studioId, status: 'pending' as const };
+    return { studioId, status };
   });
+}
+
+async function assertPaymentQr(
+  client: import('pg').PoolClient,
+  studioId: string,
+  userId: string,
+  imageId?: string | null,
+) {
+  if (!imageId) return;
+  const result = await client.query(
+    `SELECT id FROM images WHERE id=$1 AND studio_id=$2 AND uploaded_by=$3 AND workshop_id IS NULL AND state='ready' FOR SHARE`,
+    [imageId, studioId, userId],
+  );
+  if (!result.rowCount)
+    throw new AppError(
+      422,
+      'UNPROCESSABLE_ENTITY',
+      'Mã QR phải là ảnh đã tải lên cho studio của bạn.',
+    );
 }

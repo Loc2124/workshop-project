@@ -94,7 +94,7 @@ const adminLoaders: Record<string, () => Promise<unknown>> = {
   reports: loadAdminReportsPage,
   workshop: loadAdminWorkshopPage,
   workshops: loadAdminWorkshopPage,
-  'workshop-review': loadAdminApprovalPage,
+  'workshop-review': loadAdminWorkshopPage,
   studios: loadAdminStudioProfilesPage,
   'ho-so-studio': loadAdminStudioProfilesPage,
 };
