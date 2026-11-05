@@ -53,6 +53,10 @@ router.get('/workshops', async (request, response) => {
     throw parsed.error;
   }
 
+  response.setHeader(
+    'Cache-Control',
+    'public, max-age=0, s-maxage=60, stale-while-revalidate=300',
+  );
   response.json(await listPublicWorkshops(toCatalogFilters(parsed.data)));
 });
 

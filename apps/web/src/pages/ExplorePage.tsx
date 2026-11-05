@@ -27,6 +27,14 @@ const pageSize = 12;
 const provincePreferenceKey = 'open-slot.province';
 const locationAttemptKey = 'open-slot.location-attempted';
 const defaultFilters: CatalogFilters = { page: 1, pageSize };
+function replaceParamsIfChanged(
+  next: URLSearchParams,
+  current: URLSearchParams,
+  replace: (params: URLSearchParams, options: { replace: true }) => void,
+) {
+  if (next.toString() !== current.toString())
+    replace(next, { replace: true });
+}
 function writeFilters(
   params: URLSearchParams,
   filters: CatalogFilters,
@@ -78,8 +86,13 @@ function writeFilters(
 }
 export function ExplorePage() {
   const nextPageMarker = useRef<HTMLDivElement>(null);
+  const defaultProvinceApplied = useRef(false);
   const client = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const urlQuery = searchParams.get('q') ?? '';
+  const [searchDraft, setSearchDraft] = useState(urlQuery);
+  const paramsRef = useRef(searchParams);
+  paramsRef.current = searchParams;
   const categoryQuery = useCategoriesQuery();
   const categoriesReady = categoryQuery.isSuccess;
   const { provinces: provinceOptions, error: provinceError } = useProvinces();
@@ -88,6 +101,20 @@ export function ExplorePage() {
     [searchParams, provinceOptions, categoriesReady, categories],
   );
   const { filters, sort, view, query: appliedQuery } = parsedUrl;
+  useEffect(() => setSearchDraft(urlQuery), [urlQuery]);
+  useEffect(() => {
+    const normalized = searchDraft.trim();
+    if (normalized === urlQuery) return;
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(paramsRef.current);
+      if (normalized) params.set('q', normalized);
+      else params.delete('q');
+      params.delete('page');
+      if (params.toString() !== paramsRef.current.toString())
+        setSearchParams(params, { replace: true });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchDraft, urlQuery, setSearchParams]);
   const [, setAreaOptions] = useState<AreaOption[]>([]);
   const [locationError, setLocationError] = useState('');
   const [isLocating, setIsLocating] = useState(false);
@@ -135,7 +162,7 @@ export function ExplorePage() {
       const params = new URLSearchParams(searchParams);
       writeFilters(params, { ...next, page: 1, pageSize }, provinceOptions);
       if (switchToWorkshops) params.set('view', 'workshop');
-      setSearchParams(params, { replace: true });
+      replaceParamsIfChanged(params, searchParams, setSearchParams);
       if (next.provinceId) {
         window.localStorage.setItem(provincePreferenceKey, next.provinceId);
         setLocationError('');
@@ -149,13 +176,13 @@ export function ExplorePage() {
     const params = new URLSearchParams(searchParams);
     params.set('sort', next);
     params.delete('page');
-    setSearchParams(params, { replace: true });
+    replaceParamsIfChanged(params, searchParams, setSearchParams);
   };
   const updateView = (next: CatalogView) => {
     const params = new URLSearchParams(searchParams);
     params.set('view', next === 'studios' ? 'studio' : 'workshop');
     params.delete('page');
-    setSearchParams(params, { replace: true });
+    replaceParamsIfChanged(params, searchParams, setSearchParams);
   };
   const clearFilters = () => updateFilters(defaultFilters);
   const setPage = (nextPage: number) => {
@@ -165,7 +192,7 @@ export function ExplorePage() {
       { ...filters, page: nextPage, pageSize },
       provinceOptions,
     );
-    setSearchParams(params, { replace: true });
+    replaceParamsIfChanged(params, searchParams, setSearchParams);
   };
   const requestLocation = useCallback(
     async (showError = false) => {
@@ -192,12 +219,13 @@ export function ExplorePage() {
     },
     [filters, provinceOptions, updateFilters],
   );
+  const searchString = searchParams.toString();
+  const normalizedSearchString = parsedUrl.normalizedParams.toString();
   useEffect(() => {
-    if (
-      !filters.provinceId &&
-      !searchParams.has('province') &&
-      !searchParams.has('province_id')
-    ) {
+    if (defaultProvinceApplied.current || provinceOptions.length === 0) return;
+    defaultProvinceApplied.current = true;
+    const currentParams = new URLSearchParams(searchString);
+    if (!currentParams.has('province') && !currentParams.has('province_id')) {
       const savedProvince = window.localStorage.getItem(provincePreferenceKey);
       if (
         savedProvince &&
@@ -214,14 +242,17 @@ export function ExplorePage() {
         void requestLocation();
       }
     }
-  }, [filters, provinceOptions, requestLocation, updateFilters, searchParams]);
+  }, [filters, provinceOptions, requestLocation, updateFilters, searchString]);
   useEffect(() => {
-    const params = new URLSearchParams(parsedUrl.normalizedParams);
+    // Wait for reference data before canonicalizing aliases; an explicit province
+    // id must survive the initial render while provinces are still loading.
+    if (provinceOptions.length === 0 || !categoriesReady) return;
+    const params = new URLSearchParams(normalizedSearchString);
     const expectedView = view === 'studios' ? 'studio' : 'workshop';
     if (params.get('view') !== expectedView) params.set('view', expectedView);
-    if (params.toString() !== searchParams.toString())
+    if (params.toString() !== searchString)
       setSearchParams(params, { replace: true });
-  }, [parsedUrl.normalizedParams, searchParams, setSearchParams, view]);
+  }, [categoriesReady, provinceOptions.length, normalizedSearchString, searchString, setSearchParams, view]);
   const titleLocation = selectedProvince?.name.replace(
     'TP. Hồ Chí Minh',
     'TP.HCM',
@@ -311,6 +342,15 @@ export function ExplorePage() {
           locating={isLocating}
           view={view}
         >
+          <label className="sr-only" htmlFor="explore-search">Tìm workshop</label>
+          <input
+            id="explore-search"
+            className="min-h-11 w-40 rounded-lg border border-line bg-surface px-3 text-sm md:w-52"
+            type="search"
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
+            placeholder="Tìm workshop"
+          />
           <ViewToggle onChange={updateView} value={view} />
           <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-ink">
             <ArrowDownWideNarrow

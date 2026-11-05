@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { parseExploreUrl } from './explore-url';
 
 describe('parseExploreUrl', () => {
+  it('preserves slug province IDs while province options are loading', () => {
+    const initial = new URLSearchParams('view=workshop&province_id=ha-noi');
+    const pending = parseExploreUrl(initial, []);
+    expect(pending.filters.provinceId).toBe('ha-noi');
+    expect(pending.normalizedParams.get('province_id')).toBe('ha-noi');
+
+    const loaded = parseExploreUrl(initial, [
+      { id: 'ha-noi', name: 'Hà Nội', studioCount: 3 },
+    ]);
+    expect(loaded.filters.provinceId).toBe('ha-noi');
+  });
+
   it('drops invalid dates, reversed ranges, unsafe prices, pages, enums, and area IDs', () => {
     const parsed = parseExploreUrl(
       new URLSearchParams(

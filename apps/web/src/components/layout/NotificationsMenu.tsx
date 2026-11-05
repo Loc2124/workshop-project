@@ -34,7 +34,7 @@ export function NotificationsMenu({ userId }: { userId: string }) {
       schema.parse(await apiFetch('/me/notifications', { signal }))
         .notifications,
     enabled: foregroundReady,
-    refetchInterval: foregroundReady ? 60000 : false,
+    refetchInterval: foregroundReady ? 300000 : false,
     refetchIntervalInBackground: false,
   });
   const unread = notifications.data?.filter((n) => !n.readAt).length ?? 0;

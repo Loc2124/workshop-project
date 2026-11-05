@@ -33,7 +33,7 @@ export function StudioNotifications({ studioId }: { studioId: string }) {
       schema.parse(await apiFetch('/me/notifications', { signal }))
         .notifications,
     enabled: foregroundReady,
-    refetchInterval: foregroundReady ? 60000 : false,
+    refetchInterval: foregroundReady ? 300000 : false,
     refetchIntervalInBackground: false,
   });
   const mark = useMutation({

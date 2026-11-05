@@ -74,7 +74,9 @@ function resolveCategory(params: URLSearchParams, categoriesReady: boolean) {
 
 function resolveProvince(params: URLSearchParams, provinces: ProvinceOption[]) {
   const id = params.get('province_id');
-  if (id !== null && !uuidSchema.safeParse(id).success)
+  // Province ids in the public API are slugs (for example "ha-noi"), not UUIDs.
+  // Keep an explicit id until the province list is available for validation.
+  if (id !== null && !/^[\p{L}\p{N}-]{1,100}$/u.test(id))
     params.delete('province_id');
 
   const value = params.get('province');
