@@ -1,6 +1,16 @@
 import { Link, useParams } from 'react-router-dom';
 import { StudioNotifications } from '../components/management/StudioNotifications';
-import { Check, Circle } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Check,
+  Circle,
+  CalendarDays,
+  PanelsTopLeft,
+  Ticket,
+  ArrowRight,
+  LifeBuoy,
+  Store,
+} from 'lucide-react';
 import {
   useMyStudios,
   useStudioSessions,
@@ -12,13 +22,17 @@ import {
   studioState,
   studioStates,
 } from '../lib/studio-dashboard';
-import { StudioStatusBadge } from '../components/layout/StudioSwitcher';
-import { Button } from '../components/ui/button';
+import {
+  StudioBadge,
+  StudioButton as Button,
+  StudioCard,
+  StudioSkeleton,
+} from '../components/management/StudioPrimitives';
 
-const panel = 'rounded-md border border-line bg-surface p-4 md:p-5';
 export function StudioOverviewPage() {
   const { studioId } = useParams();
-  const studio = useMyStudios().data?.find(
+  const studiosQuery = useMyStudios();
+  const studio = studiosQuery.data?.find(
     (s) => s.id === studioId && s.role === 'owner',
   );
   const workshops = useStudioWorkshops(
@@ -27,7 +41,13 @@ export function StudioOverviewPage() {
   const sessions = useStudioSessions(
     studio && !studio.isDraft ? studio.id : '',
   );
-  if (!studio) return null;
+  if (!studio)
+    return studiosQuery.isPending ? (
+      <div className="space-y-studio-card">
+        <h1 className="font-heading text-3xl font-bold">Tổng quan</h1>
+        <StudioSkeleton label="Đang tải thông tin studio…" />
+      </div>
+    ) : null;
   const state = studioState(studio);
   const stats = studioDashboardStats(workshops.data ?? [], sessions.data ?? []);
   const checklist = [
@@ -55,30 +75,111 @@ export function StudioOverviewPage() {
       pending: sessions.isPending && !studio.isDraft,
     },
   ];
+  const completed = checklist.filter((item) => item.done).length;
+  const progressKnown =
+    !checklist.some((item) => item.pending) &&
+    !workshops.error &&
+    !sessions.error;
   return (
-    <div className="space-y-5">
+    <div className="space-y-studio-card">
       <StudioNotifications studioId={studio.id} />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-heading text-2xl font-semibold">Tổng quan</h1>
+        <StudioCard
+          className="bg-studio-selected"
+          aria-labelledby="studio-status-title"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2
+              id="studio-status-title"
+              className="font-heading text-lg font-semibold"
+            >
+              Trạng thái hồ sơ
+            </h2>
+            <StudioBadge
+              tone={
+                state === 'approved'
+                  ? 'success'
+                  : state === 'pending' || state === 'needs_changes'
+                    ? 'warning'
+                    : state === 'rejected'
+                      ? 'danger'
+                      : 'neutral'
+              }
+            >
+              {studioStates[state].label}
+            </StudioBadge>
+          </div>
+          <p className="mt-4 font-heading text-2xl font-bold text-studio-primary">
+            {studio.isDraft ? 'Hồ sơ nháp' : studio.name}
+          </p>
+          <p className="mt-2 text-sm text-studio-muted">
+            {studio.isDraft
+              ? 'Hồ sơ chưa gửi'
+              : `Đã gửi ngày ${new Date(studio.createdAt).toLocaleDateString('vi-VN')}`}
+          </p>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-studio-muted">
+            {studioStates[state].description}
+          </p>
+          {(state === 'rejected' ||
+            state === 'needs_changes' ||
+            state === 'suspended') && (
+            <>
+              <div className="mt-4 rounded-studio-control bg-studio-danger-soft p-4 text-sm text-studio-danger">
+                <p className="font-medium">
+                  {state === 'suspended'
+                    ? 'Lý do tạm ngưng'
+                    : state === 'needs_changes'
+                      ? 'Nội dung cần bổ sung'
+                      : 'Lý do từ chối'}
+                </p>
+                <p className="mt-1">
+                  {studio.rejectionReason ||
+                    'Chưa có lý do được ghi nhận. Vui lòng liên hệ Open Slot để xác nhận thông tin cần bổ sung.'}
+                </p>
+              </div>
+              {state !== 'suspended' && (
+                <Button asChild className="mt-4">
+                  <Link to={`${studioPage(studio.id, 'profile')}?edit=1`}>
+                    Chỉnh sửa và gửi lại
+                  </Link>
+                </Button>
+              )}
+            </>
+          )}
+          {state === 'draft' && (
+            <Button asChild className="mt-4">
+              <Link to={`/dang-ky-studio?draftStudioId=${studio.id}`}>
+                Tiếp tục hoàn thiện hồ sơ
+              </Link>
+            </Button>
+          )}
+        </StudioCard>
         {state === 'approved' && (
-          <Button asChild variant="outline">
-            <Link to={`/studios/${studio.slug}`}>Xem trang công khai</Link>
+          <Button asChild variant="secondary">
+            <Link to={`/studios/${studio.slug}`}>
+              Xem trang công khai <ArrowUpRight size={16} aria-hidden="true" />
+            </Link>
           </Button>
         )}
       </header>
       {state === 'approved' && (
         <section
           aria-label="Số liệu studio"
-          className="grid gap-3 sm:grid-cols-3"
+          className="grid gap-studio-group sm:grid-cols-3"
         >
           {[
             {
               label: 'Đặt chỗ sắp tới',
+              icon: Ticket,
+              loading: false,
               value: '—',
               note: 'Chưa có dữ liệu đặt chỗ',
             },
             {
               label: 'Workshop đang mở',
+              icon: PanelsTopLeft,
+              loading: workshops.isPending || sessions.isPending,
               value:
                 workshops.isPending ||
                 sessions.isPending ||
@@ -90,6 +191,8 @@ export function StudioOverviewPage() {
             },
             {
               label: 'Slot còn trống',
+              icon: CalendarDays,
+              loading: sessions.isPending,
               value:
                 sessions.isPending || sessions.error
                   ? '—'
@@ -97,107 +200,100 @@ export function StudioOverviewPage() {
               note: 'Số chỗ còn lại trong lịch sắp tới',
             },
           ].map((item) => (
-            <div key={item.label} className={panel}>
-              <p className="text-sm text-muted">{item.label}</p>
-              <div className="mt-2 text-2xl font-semibold tabular-nums">
-                {item.value}
+            <StudioCard
+              key={item.label}
+              className="min-w-0 transition-shadow duration-studio hover:shadow-studio-hover motion-reduce:transition-none"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-medium text-studio-muted">
+                  {item.label}
+                </p>
+                <item.icon
+                  size={20}
+                  aria-hidden="true"
+                  className="shrink-0 text-studio-primary"
+                />
               </div>
-              <p className="mt-1 text-xs text-muted">{item.note}</p>
-            </div>
+              <div className="my-3 min-h-10 text-4xl font-semibold leading-none tabular-nums text-studio-ink">
+                {item.loading ? (
+                  <span role="status" aria-label="Đang tải">
+                    <span
+                      aria-hidden="true"
+                      className="block h-10 w-16 rounded-studio-control bg-studio-subtle motion-safe:animate-pulse"
+                    />
+                  </span>
+                ) : (
+                  item.value
+                )}
+              </div>
+              <p className="text-sm leading-6 text-studio-muted">{item.note}</p>
+            </StudioCard>
           ))}
         </section>
       )}
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <section className={panel} aria-labelledby="studio-status-title">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2
-                id="studio-status-title"
-                className="font-heading text-lg font-semibold"
-              >
-                Trạng thái hồ sơ
-              </h2>
-              <StudioStatusBadge studio={studio} />
-            </div>
-            <p className="mt-3 text-xs text-muted">
-              {studio.isDraft
-                ? 'Hồ sơ chưa gửi'
-                : `Đã gửi ngày ${new Date(studio.createdAt).toLocaleDateString('vi-VN')}`}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              {studioStates[state].description}
-            </p>
-            {(state === 'rejected' ||
-              state === 'needs_changes' ||
-              state === 'suspended') && (
-              <>
-                <div className="mt-4 rounded-sm bg-red-50 p-3 text-sm text-red-800">
-                  <p className="font-medium">
-                    {state === 'suspended'
-                      ? 'Lý do tạm ngưng'
-                      : state === 'needs_changes'
-                        ? 'Nội dung cần bổ sung'
-                        : 'Lý do từ chối'}
-                  </p>
-                  <p className="mt-1">
-                    {studio.rejectionReason ||
-                      'Chưa có lý do được ghi nhận. Vui lòng liên hệ Open Slot để xác nhận thông tin cần bổ sung.'}
-                  </p>
-                </div>
-                {state !== 'suspended' && (
-                  <Button asChild className="mt-4">
-                    <Link to={`${studioPage(studio.id, 'profile')}?edit=1`}>
-                      Chỉnh sửa và gửi lại
-                    </Link>
-                  </Button>
-                )}
-              </>
-            )}
-            {state === 'draft' && (
-              <Button asChild className="mt-4">
-                <Link to={`/dang-ky-studio?draftStudioId=${studio.id}`}>
-                  Tiếp tục hoàn thiện hồ sơ
-                </Link>
-              </Button>
-            )}
-          </section>
-          <section className={panel} aria-labelledby="studio-checklist-title">
+      <div className="grid items-start gap-studio-card lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="space-y-studio-card">
+          <StudioCard aria-labelledby="studio-checklist-title">
             <h2
               id="studio-checklist-title"
               className="font-heading text-lg font-semibold"
             >
               Các bước bắt đầu
             </h2>
-            <ul className="mt-3 divide-y divide-line">
+            {progressKnown ? (
+              <div className="mt-4 flex items-center gap-4">
+                <progress
+                  aria-labelledby="studio-checklist-title"
+                  max={checklist.length}
+                  value={completed}
+                  className="studio-progress h-2 min-w-0 flex-1 overflow-hidden rounded-full"
+                />
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-studio-primary">
+                  {completed}/{checklist.length}
+                </span>
+              </div>
+            ) : !workshops.error && !sessions.error ? (
+              <div
+                role="status"
+                aria-label="Đang tải"
+                className="mt-4 h-2 rounded-full bg-studio-subtle motion-safe:animate-pulse"
+              />
+            ) : null}
+            <ul className="mt-4 divide-y divide-studio-border">
               {checklist.map((item) => (
                 <li
                   key={item.label}
-                  className="flex min-h-12 items-center gap-3 py-2"
+                  className="flex min-h-16 items-center gap-3 py-3"
                 >
                   {item.done ? (
                     <Check
                       size={18}
-                      className="shrink-0 text-primary"
+                      className="size-6 shrink-0 rounded-full bg-studio-success-soft p-1 text-studio-success"
                       aria-label="Hoàn thành"
                     />
                   ) : (
                     <Circle
                       size={18}
-                      className="shrink-0 text-muted"
+                      className="shrink-0 text-studio-muted"
                       aria-label={item.pending ? 'Đang tải' : 'Chưa hoàn thành'}
                     />
                   )}
                   {item.to ? (
                     <Link
                       to={item.to}
-                      className="text-sm underline-offset-4 hover:underline"
+                      className="flex min-h-11 min-w-0 flex-1 items-center justify-between gap-3 rounded-studio-control text-sm font-medium text-studio-ink underline-offset-4 hover:text-studio-primary hover:underline"
                     >
                       {item.label}
+                      <ArrowRight
+                        size={16}
+                        aria-hidden="true"
+                        className="shrink-0 text-studio-muted"
+                      />
                     </Link>
                   ) : (
-                    <span className="text-sm text-muted">
+                    <span className="text-sm text-studio-muted">
                       {item.label}
-                      <span className="block text-xs">
+                      <span className="mt-1 block text-sm">
                         {studio.isDraft
                           ? 'Hoàn thiện và gửi hồ sơ trước'
                           : 'Mở sau khi studio được duyệt'}
@@ -221,32 +317,22 @@ export function StudioOverviewPage() {
                 </button>
               </p>
             )}
-          </section>
+          </StudioCard>
         </div>
-        <aside className="space-y-4">
-          <section className={panel}>
-            <h2 className="font-heading text-lg font-semibold">
-              Liên hệ hỗ trợ
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Cần hỗ trợ hồ sơ hoặc lịch workshop? Xem hướng dẫn đăng ký và các
-              thông tin Open Slot dành cho nghệ nhân.
-            </p>
-            <Link
-              to="/danh-cho-nghe-nhan"
-              className="mt-3 inline-flex min-h-11 items-center text-sm font-medium underline"
-            >
-              Hướng dẫn dành cho nghệ nhân
-            </Link>
-          </section>
-          <section className={panel}>
+        <aside className="space-y-studio-card">
+          <StudioCard>
+            <Store
+              size={22}
+              aria-hidden="true"
+              className="mb-3 text-studio-primary"
+            />
             <h2 className="font-heading text-lg font-semibold">
               Thông tin studio
             </h2>
             <p className="mt-3 font-medium">
               {studio.isDraft ? 'Hồ sơ nháp' : studio.name}
             </p>
-            <dl className="mt-3 space-y-3 text-sm">
+            <dl className="mt-4 space-y-4 text-sm">
               {[
                 [
                   'Địa chỉ',
@@ -256,7 +342,7 @@ export function StudioOverviewPage() {
                 ['Email', studio.contactEmail],
               ].map(([label, value]) => (
                 <div key={label}>
-                  <dt className="text-xs text-muted">{label}</dt>
+                  <dt className="text-sm text-studio-muted">{label}</dt>
                   <dd className="mt-1 break-words">
                     {value || 'Chưa bổ sung'}
                   </dd>
@@ -265,11 +351,33 @@ export function StudioOverviewPage() {
             </dl>
             <Link
               to={studioPage(studio.id, 'profile')}
-              className="mt-3 inline-flex min-h-11 items-center text-sm underline"
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-studio-control text-sm font-semibold text-studio-primary underline-offset-4 hover:underline"
             >
               Xem hồ sơ studio
+              <ArrowRight size={16} aria-hidden="true" />
             </Link>
-          </section>
+          </StudioCard>
+          <StudioCard>
+            <LifeBuoy
+              size={22}
+              aria-hidden="true"
+              className="mb-3 text-studio-accent"
+            />
+            <h2 className="font-heading text-lg font-semibold">
+              Liên hệ hỗ trợ
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-studio-muted">
+              Cần hỗ trợ hồ sơ hoặc lịch workshop? Xem hướng dẫn đăng ký và các
+              thông tin Open Slot dành cho nghệ nhân.
+            </p>
+            <Link
+              to="/danh-cho-nghe-nhan"
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-studio-control text-sm font-semibold text-studio-primary underline-offset-4 hover:underline"
+            >
+              Hướng dẫn dành cho nghệ nhân
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </Link>
+          </StudioCard>
         </aside>
       </div>
     </div>

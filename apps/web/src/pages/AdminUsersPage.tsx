@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+import { prefetchDefaultTable } from '../lib/prefetch-table';
 import { queryKeys } from '../lib/query-keys';
 import { invalidateResources } from '../lib/query-invalidation';
 import { useMemo, useState } from 'react';
@@ -304,3 +306,6 @@ export function AdminUsersPage() {
     </div>
   );
 }
+
+export const prefetchData = (client: QueryClient, userId: string) =>
+  prefetchDefaultTable(client, userId, 'users', fetcher, ['period']);

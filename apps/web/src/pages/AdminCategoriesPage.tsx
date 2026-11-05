@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
 import {
@@ -420,3 +421,10 @@ function CategoryRow({
     </TableRow>
   );
 }
+
+export const prefetchData = (client: QueryClient, userId: string) =>
+  client.prefetchQuery({
+    queryKey: queryKeys.categories.config(userId),
+    queryFn: ({ signal }) => loadAllCategories(signal),
+    staleTime: 30_000,
+  });

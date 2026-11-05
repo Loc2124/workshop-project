@@ -10,6 +10,9 @@ export const catalogKeys = {
     [...catalogKeys.all, 'studios', filters] as const,
   detail: (id: string) =>
     [...catalogKeys.all, 'workshops', 'detail', id] as const,
+  reviews: (id: string) => [...catalogKeys.all, 'reviews', id] as const,
+  studioDetail: (id: string) =>
+    [...catalogKeys.all, 'studios', 'detail', id] as const,
 };
 
 export function useCatalog(filters: CatalogFilters, enabled = true) {
@@ -36,5 +39,13 @@ export function useWorkshop(id: string) {
     queryFn: ({ signal }) => catalogService.getById(id, signal),
     enabled: Boolean(id),
     staleTime: 60_000,
+  });
+}
+
+export function useWorkshopReviews(id: string) {
+  return useQuery({
+    queryKey: catalogKeys.reviews(id),
+    queryFn: ({ signal }) => catalogService.reviews(id, signal),
+    enabled: Boolean(id),
   });
 }

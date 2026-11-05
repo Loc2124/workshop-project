@@ -20,7 +20,10 @@ export async function invalidateResources(
       queryKeys.workshops.reviews.counts(userId),
     );
   if (resources.includes('bookings'))
-    keys.push(queryKeys.bookings.slotLists(userId));
+    keys.push(
+      queryKeys.bookings.slotLists(userId),
+      queryKeys.bookings.studioLists(userId),
+    );
   keys.push(
     queryKeys.overview.config(userId),
     queryKeys.audit.lists(userId),
@@ -37,6 +40,9 @@ export async function invalidatePublicCatalog(client: QueryClient) {
       queryKeys.public.workshops,
       queryKeys.public.home,
       queryKeys.public.categorySource,
+      queryKeys.public.provinces,
+      queryKeys.public.areas,
+      queryKeys.public.reviews,
     ].map((queryKey) => client.invalidateQueries({ queryKey })),
   );
 }

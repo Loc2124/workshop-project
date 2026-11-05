@@ -4,6 +4,7 @@ import {
   publicWorkshopResponseSchema,
 } from '@workshop/shared';
 import { apiFetch } from '../lib/api-client';
+import { z } from 'zod';
 import type { CatalogFilters } from '../types/catalog';
 import type { StudioCatalogResponse } from '../types/studio';
 
@@ -37,6 +38,25 @@ export const catalogService = {
     apiFetch<unknown>(`/workshops/${encodeURIComponent(idOrSlug)}`, {
       signal,
     }).then((response) => publicWorkshopResponseSchema.parse(response)),
+
+  reviews: async (idOrSlug: string, signal?: AbortSignal) =>
+    z
+      .object({
+        reviews: z.array(
+          z.object({
+            id: z.string(),
+            author: z.string(),
+            rating: z.number(),
+            comment: z.string(),
+            createdAt: z.string(),
+          }),
+        ),
+      })
+      .parse(
+        await apiFetch(`/workshops/${encodeURIComponent(idOrSlug)}/reviews`, {
+          signal,
+        }),
+      ).reviews,
 
   getStudioById: (idOrSlug: string, signal?: AbortSignal) =>
     apiFetch<unknown>(`/studios/${encodeURIComponent(idOrSlug)}`, {

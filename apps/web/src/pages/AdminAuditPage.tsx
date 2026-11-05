@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+import { prefetchDefaultTable } from '../lib/prefetch-table';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
 import { useMemo, useState } from 'react';
@@ -271,3 +273,11 @@ export function AdminAuditPage() {
     </div>
   );
 }
+
+export const prefetchData = (client: QueryClient, userId: string) =>
+  prefetchDefaultTable(client, userId, 'audit', fetcher, [
+    'actorId',
+    'action',
+    'dateFrom',
+    'dateTo',
+  ]);

@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+import { prefetchDefaultTable } from '../lib/prefetch-table';
 import { Img } from '../components/ui/Img';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
@@ -513,3 +515,8 @@ export function AdminReportsPage() {
     </div>
   );
 }
+
+export const prefetchData = (client: QueryClient, userId: string) =>
+  prefetchDefaultTable(client, userId, 'reports', fetcher, ['targetType'], {
+    tab: 'new',
+  });

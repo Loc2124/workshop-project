@@ -1,4 +1,6 @@
 import { Img } from '../ui/Img';
+import { cn } from '../../lib/utils';
+import './studio-workspace.css';
 import { prefetchDashboardRoute } from '../../lib/dashboard-routes';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import { Fragment, Suspense, type ReactNode } from 'react';
@@ -92,7 +94,14 @@ function DashboardSidebar({
   const { setOpenMobile } = useSidebar();
   const selected = activeDashboardItem(menuItems, pathname);
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar
+      collapsible="icon"
+      mobileClassName={
+        roleLabel === 'Quản lý studio'
+          ? 'studio-shell studio-sidebar-drawer'
+          : undefined
+      }
+    >
       <DashboardBrand roleLabel={roleLabel} />
       {studioSwitcher}
       <SidebarContent>
@@ -138,7 +147,7 @@ function DashboardSidebar({
                         <span>{label}</span>
                         {attention && (
                           <i
-                            className="size-2 shrink-0 rounded-full bg-red-600"
+                            className="size-2 shrink-0 rounded-full bg-brick"
                             aria-label="Hồ sơ cần chỉnh sửa"
                           />
                         )}
@@ -244,7 +253,12 @@ export function DashboardLayout({
     }
   }
   return (
-    <SidebarProvider className="dashboard-shell bg-[#f7f7f5] text-sm text-ink [--loading-height:calc(100svh-5.5rem)] md:[--loading-height:calc(100svh-6.5rem)] lg:[--loading-height:calc(100svh-7rem)]">
+    <SidebarProvider
+      className={cn(
+        'dashboard-shell text-sm text-ink [--loading-height:calc(100svh-5.5rem)] md:[--loading-height:calc(100svh-6.5rem)] lg:[--loading-height:calc(100svh-7rem)]',
+        roleLabel === 'Quản lý studio' ? 'studio-shell' : 'bg-[#f7f7f5]',
+      )}
+    >
       <a
         href="#dashboard-content"
         className="sr-only fixed left-20 top-2 z-60 rounded-sm bg-surface p-3 focus:not-sr-only"

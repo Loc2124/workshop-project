@@ -1,4 +1,4 @@
-import type { QueryClient } from '@tanstack/react-query';
+import type { QueryClient, Query } from '@tanstack/react-query';
 import type { AuthUser } from '../services/authService';
 import {
   advanceSessionEpoch,
@@ -11,6 +11,12 @@ import { studioDraftKey } from './studio-registration-draft';
 export const authQueryKey = ['auth', 'me'] as const;
 type State = { id: string | null | undefined; pending: Promise<void> };
 const states = new WeakMap<QueryClient, State>();
+// Only these namespaces contain responses independent of the current account.
+// Unknown keys are removed conservatively; admin previews use private/userId.
+const accountQuery = (query: Query) =>
+  !['catalog', 'categories', 'site-settings'].includes(
+    String(query.queryKey[0]),
+  );
 function stateFor(client: QueryClient) {
   let state = states.get(client);
   if (!state) {
@@ -43,14 +49,15 @@ export function synchronizeSession(
     const clearing = force || (state.id !== undefined && state.id !== next);
     if (clearing) {
       const previous = state.id;
-      await client.cancelQueries();
-      client.clear();
+      await client.cancelQueries({ predicate: accountQuery });
+      client.removeQueries({ predicate: accountQuery });
+      client.getMutationCache().clear();
       advanceSessionEpoch();
       removeDraft(previous);
     }
     state.id = next;
     client.setQueryData(authQueryKey, user);
-    // clear() removes the Query observed by useAuth. Rebind its observers to
+    // Removing account Queries also removes the one observed by useAuth. Rebind
     // the new auth entry even when the old /me request itself was cancelled.
     if (clearing) notifySessionCacheChange();
   };

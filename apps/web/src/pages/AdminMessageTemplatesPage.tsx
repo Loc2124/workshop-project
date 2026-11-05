@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { invalidateResources } from '../lib/query-invalidation';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
@@ -379,3 +380,13 @@ export function AdminMessageTemplatesPage() {
     </div>
   );
 }
+
+export const prefetchData = (client: QueryClient, userId: string) =>
+  client.prefetchQuery({
+    queryKey: queryKeys.templates.config(userId),
+    queryFn: async ({ signal }) =>
+      z
+        .object({ items: z.array(schema), total: z.number() })
+        .parse(await apiFetch('/admin/mau-thong-bao', { signal })).items,
+    staleTime: 30_000,
+  });

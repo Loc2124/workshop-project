@@ -29,25 +29,46 @@ export async function registerStudio(
 }
 
 export async function listStudiosForUser(userId: string) {
+  const studios = await listMemberStudios(userId);
   return {
-    studios: await Promise.all(
-      (await listMemberStudios(userId)).map(withStudioImages),
-    ),
+    studios: await withStudiosImages(studios),
   };
 }
 
 export async function withStudioImages<
   T extends { photoIds?: string[]; paymentQrImageId?: string | null },
 >(studio: T) {
-  const images = await getImageUrlsForIds(studio.photoIds ?? []);
-  const qr = await getImageUrlsForIds(
-    studio.paymentQrImageId ? [studio.paymentQrImageId] : [],
-  );
-  return {
-    ...studio,
-    images: images.map(presentImage),
-    paymentQrImageUrl: qr[0] ? presentImage(qr[0]).url : null,
-  };
+  return (await withStudiosImages([studio]))[0]!;
+}
+
+export async function withStudiosImages<
+  T extends { photoIds?: string[]; paymentQrImageId?: string | null },
+>(studios: T[]) {
+  const ids = [
+    ...new Set(
+      studios.flatMap((studio) => [
+        ...(studio.photoIds ?? []),
+        ...(studio.paymentQrImageId ? [studio.paymentQrImageId] : []),
+      ]),
+    ),
+  ];
+  const imageRows = ids.length > 0 ? await getImageUrlsForIds(ids) : [];
+  const imagesById = new Map(imageRows.map((image) => [image.id, image]));
+
+  return studios.map((studio) => {
+    const images = (studio.photoIds ?? [])
+      .map((id) => imagesById.get(id))
+      .filter((image) => image !== undefined);
+    const qr = studio.paymentQrImageId
+      ? imagesById.get(studio.paymentQrImageId)
+      : undefined;
+
+    return {
+      ...studio,
+      images: images.map(presentImage),
+      paymentQrImageUrl: qr ? presentImage(qr).url : null,
+    };
+  });
 }
 export async function startStudioDraft(userId: string) {
   return { studio: await createStudioDraft(userId) };

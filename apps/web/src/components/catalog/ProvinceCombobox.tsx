@@ -1,5 +1,5 @@
-import { useEffect, useId, useState } from 'react';
-import { catalogService } from '../../services/catalogService';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { useProvinces } from '../../hooks/useProvinces';
 import { Input } from '../ui/input';
 
 export type ProvinceOption = {
@@ -33,36 +33,18 @@ export function ProvinceCombobox({
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [provinces, setProvinces] = useState<ProvinceOption[]>([]);
-  const [loadError, setLoadError] = useState<string>();
-
-  useEffect(() => {
-    if (suppliedOptions) {
-      setProvinces(
-        suppliedOptions.filter((province) => province.studioCount > 0),
-      );
-      setLoadError(undefined);
-      return;
-    }
-    const controller = new AbortController();
-    catalogService
-      .provinces(controller.signal)
-      .then(({ provinces: provinceOptions }) => {
-        setProvinces(
-          provinceOptions.filter((province) => province.studioCount > 0),
-        );
-        setLoadError(undefined);
-      })
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return;
-        setLoadError(
-          error instanceof Error
-            ? error.message
-            : 'Không tải được danh sách tỉnh/thành.',
-        );
-      });
-    return () => controller.abort();
-  }, [suppliedOptions]);
+  const remote = useProvinces(suppliedOptions === undefined);
+  const provinces = useMemo(
+    () =>
+      suppliedOptions
+        ? suppliedOptions.filter((province) => province.studioCount > 0)
+        : remote.provinces,
+    [suppliedOptions, remote.provinces],
+  );
+  const loadError = suppliedOptions
+    ? undefined
+    : remote.queryError?.message ||
+      (remote.error ? 'Không tải được danh sách tỉnh/thành.' : undefined);
 
   const selectedProvince = provinces.find((province) => province.id === value);
   const selectedLabel = selectedProvince

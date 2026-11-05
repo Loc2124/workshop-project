@@ -7,12 +7,14 @@ import { shouldRetryApiQuery } from './lib/api-client';
 import { installSessionLifecycle } from './lib/session-cache';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { AppToaster } from './components/ui/AppToaster';
+import { NavigationPrefetch } from './components/NavigationPrefetch';
 import './styles.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
+      gcTime: 10 * 60_000,
       retry: shouldRetryApiQuery,
       refetchOnWindowFocus: false,
     },
@@ -25,6 +27,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+        <NavigationPrefetch />
         <ErrorBoundary>
           <App />
         </ErrorBoundary>

@@ -1,4 +1,4 @@
-import { StudioBookingManager } from '../components/management/StudioBookingManager';
+import { lazy } from 'react';
 import { LoadingState } from '../components/ui/LoadingState';
 import { StudioNotifications } from '../components/management/StudioNotifications';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
@@ -7,12 +7,30 @@ import {
   useStudioWorkshops,
   useStudioSessions,
 } from '../hooks/useManagement';
-import { StudioWorkshopManager } from '../components/management/StudioWorkshopManager';
-import { StudioSessionManager } from '../components/management/StudioSessionManager';
-import { StudioEvidenceEditor } from '../components/management/StudioEvidenceEditor';
 import { StudioTrustBadge } from '../components/ui/StudioTrustBadge';
 import { Button } from '../components/ui/button';
 import { studioApplicationStatus } from '../lib/studio-application-status';
+
+const StudioWorkshopManager = lazy(() =>
+  import('../components/management/StudioWorkshopManager').then((module) => ({
+    default: module.StudioWorkshopManager,
+  })),
+);
+const StudioSessionManager = lazy(() =>
+  import('../components/management/StudioSessionManager').then((module) => ({
+    default: module.StudioSessionManager,
+  })),
+);
+const StudioBookingManager = lazy(() =>
+  import('../components/management/StudioBookingManager').then((module) => ({
+    default: module.StudioBookingManager,
+  })),
+);
+const StudioEvidenceEditor = lazy(() =>
+  import('../components/management/StudioEvidenceEditor').then((module) => ({
+    default: module.StudioEvidenceEditor,
+  })),
+);
 
 type Section = 'workshops' | 'sessions' | 'bookings' | 'profile';
 const titles: Record<Section, string> = {

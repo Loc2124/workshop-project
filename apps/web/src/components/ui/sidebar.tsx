@@ -91,9 +91,13 @@ export function SidebarProvider({
 export function Sidebar({
   children,
   className,
+  mobileClassName,
   collapsible = 'icon',
   ...props
-}: React.ComponentProps<'aside'> & { collapsible?: 'icon' }) {
+}: React.ComponentProps<'aside'> & {
+  collapsible?: 'icon';
+  mobileClassName?: string;
+}) {
   const context = useSidebar();
   const { state, isMobile, openMobile, setOpenMobile } = context;
   return (
@@ -115,6 +119,7 @@ export function Sidebar({
       {isMobile && (
         <Sheet open={openMobile} onOpenChange={setOpenMobile}>
           <SheetContent
+            className={mobileClassName}
             id="dashboard-sidebar-mobile"
             onCloseAutoFocus={(event) => {
               event.preventDefault();

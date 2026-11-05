@@ -4,6 +4,27 @@ export default {
   theme: {
     extend: {
       colors: {
+        studio: {
+          primary,
+          'primary-hover': '#253B0E',
+          selected: '#EDF2E7',
+          accent: '#A74328',
+          canvas: '#FAF8F4',
+          surface: '#FFFFFF',
+          subtle: '#F3F0EA',
+          ink: '#292720',
+          muted: '#686359',
+          border: '#E4DFD6',
+          'input-border': '#999184',
+          success: '#28603C',
+          'success-soft': '#EDF5EE',
+          warning: '#805600',
+          'warning-soft': '#FFF5DA',
+          danger: '#AE302D',
+          'danger-soft': '#FCEFED',
+          neutral: '#605D56',
+          'neutral-soft': '#F0EEEA',
+        },
         primary,
         rating: '#EAB308',
         'primary-hover': '#253B0E',
@@ -55,6 +76,8 @@ export default {
         mono: ['Source Code Pro', 'Source Code Pro Fallback', 'monospace'],
       },
       borderRadius: {
+        'studio-control': '0.75rem',
+        'studio-card': '1rem',
         sm: '0.25rem',
         md: '0.5rem',
         lg: '0.5rem',
@@ -64,8 +87,17 @@ export default {
         ticket: '1rem',
         'ticket-info': '0.5rem',
       },
-      spacing: { 'ticket-notch': '0.875rem' },
-      maxWidth: { page: '90rem', 'ticket-row': '60rem' },
+      spacing: {
+        'ticket-notch': '0.875rem',
+        'studio-field': '0.5rem',
+        'studio-group': '1rem',
+        'studio-card': '1.5rem',
+        'studio-section': '2rem',
+        'studio-control': '2.75rem',
+        'studio-sidebar': '16rem',
+      },
+      maxWidth: { page: '90rem', 'ticket-row': '60rem', studio: '76rem' },
+      transitionDuration: { studio: '180ms' },
       keyframes: {
         'home-rise': {
           from: { opacity: '0.3', transform: 'translateY(24px)' },
@@ -82,6 +114,8 @@ export default {
           'home-photo-drift 18s ease-in-out infinite alternate',
       },
       boxShadow: {
+        'studio-card': '0 2px 8px rgb(41 39 32 / 0.035)',
+        'studio-hover': '0 6px 18px rgb(41 39 32 / 0.07)',
         overlay: '8px 8px 24px rgb(28 25 23 / 0.1)',
       },
     },

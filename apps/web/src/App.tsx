@@ -122,8 +122,8 @@ function LegacyStudioRegistration() {
   return <Navigate to={`/dang-ky-studio${search}${hash}`} replace />;
 }
 function App() {
-  // A session reset removes observed Queries. Public routes rebind too, while
-  // their content continues to render independently from the auth bootstrap.
+  // A session reset rebinds account observers while public queries keep their
+  // data and in-flight requests independently from the auth bootstrap.
   useSyncExternalStore(onSessionCacheChange, sessionCacheVersion, () => 0);
   const { pathname, search } = useLocation();
   const queryClient = useQueryClient();

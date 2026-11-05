@@ -458,7 +458,9 @@
   font-size: 0.875rem;
   line-height: 1.6;
 }
-.dashboard-content :is(.rounded-xl, .rounded-2xl, .rounded-lg) {
+.dashboard-shell:not(.studio-shell)
+  .dashboard-content
+  :is(.rounded-xl, .rounded-2xl, .rounded-lg) {
   border-radius: 0.375rem;
 }
 .dashboard-content :is(input, select, textarea) {

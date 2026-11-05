@@ -25,6 +25,7 @@ export function useAuth() {
     },
     retry: false,
     staleTime: Infinity,
+    gcTime: Infinity,
   });
   const loginMutation = useMutation({
     mutationFn: (input: LoginInput) => authService.login(input),

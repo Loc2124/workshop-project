@@ -49,6 +49,10 @@ export const queryKeys = {
   },
   bookings: {
     ...resource('bookings'),
+    studioLists: (id: string | undefined) =>
+      [...root(id, 'bookings'), 'studio'] as const,
+    forStudio: (id: string | undefined, studio: string) =>
+      [...root(id, 'bookings'), 'studio', studio] as const,
     slots: (id: string | undefined, studio: string) =>
       [...root(id, 'bookings'), 'slots', studio] as const,
     slotLists: (id: string | undefined) =>
@@ -75,6 +79,9 @@ export const queryKeys = {
     categorySource: ['catalog', 'category-source'] as const,
     categories: ['categories'] as const,
     settings: ['site-settings'] as const,
+    reviews: ['catalog', 'reviews'] as const,
+    provinces: ['catalog', 'provinces'] as const,
+    areas: ['catalog', 'areas'] as const,
   },
 };
 export function scopePrivateKey(

@@ -73,9 +73,8 @@ export default defineConfig(async ({ command, mode }) => ({
             )
           )
             return 'admin-charts';
-          if (/\/node_modules\/(@radix-ui|@floating-ui)\//.test(modulePath)) {
-            return 'ui-vendor';
-          }
+          // Let Rollup split UI primitives by actual usage. A single Radix
+          // vendor chunk pulled admin dropdowns/popovers into every public page.
         },
       },
     },

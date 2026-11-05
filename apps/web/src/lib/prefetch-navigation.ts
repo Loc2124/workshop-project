@@ -1,0 +1,225 @@
+import type { QueryClient } from '@tanstack/react-query';
+import type { AuthUser } from '../services/authService';
+import type { MemberStudio } from '../types/management';
+import { authQueryKey } from './session-cache';
+import { sessionEpoch } from './session-events';
+import { queryKeys } from './query-keys';
+import { geographyQueries } from './geography-queries';
+import { catalogKeys } from '../hooks/useCatalog';
+import { catalogService } from '../services/catalogService';
+
+export async function prefetchNavigation(client: QueryClient, url: URL) {
+  const path = url.pathname.split('/').filter(Boolean);
+  const id = path[1] ? decodeURIComponent(path[1]) : '';
+  if (!path.length) {
+    if (url.searchParams.has('featuredPreview')) return;
+    const { prefetchPublicHome } = await import('./prefetch-public-home');
+    await Promise.all([
+      import('../pages/HomePage'),
+      prefetchPublicHome(client),
+      client.prefetchQuery(geographyQueries.provinces()),
+    ]);
+    return;
+  }
+  if (path[0] === 'workshop' || path[0] === 'workshops') {
+    if (!id) return;
+    await Promise.all([
+      import('../pages/WorkshopPage'),
+      client.prefetchQuery({
+        queryKey: catalogKeys.detail(id),
+        queryFn: ({ signal }) => catalogService.getById(id, signal),
+        staleTime: 60_000,
+      }),
+      client.prefetchQuery({
+        queryKey: catalogKeys.reviews(id),
+        queryFn: ({ signal }) => catalogService.reviews(id, signal),
+        staleTime: 30_000,
+      }),
+    ]);
+    return;
+  }
+  if (path[0] === 'studios') {
+    if (!id) return;
+    await Promise.all([
+      import('../pages/StudioPage'),
+      client.prefetchQuery({
+        queryKey: catalogKeys.studioDetail(id),
+        queryFn: ({ signal }) => catalogService.getStudioById(id, signal),
+        staleTime: 30_000,
+      }),
+    ]);
+    return;
+  }
+  if (path[0] === 'kham-pha' || path[0] === 'explore') {
+    const [, provinces] = await Promise.all([
+      import('../pages/ExplorePage'),
+      client.fetchQuery(geographyQueries.provinces()),
+    ]);
+    if (!client.getQueryData(queryKeys.public.categories)) return;
+    const { parseExploreUrl } = await import('./explore-url');
+    const parsed = parseExploreUrl(url.searchParams, provinces.provinces, true);
+    const filters = {
+      ...parsed.filters,
+      query: parsed.query,
+      sort: parsed.sort,
+    };
+    // Match the existing saved-province selection without changing the URL.
+    if (
+      !filters.provinceId &&
+      !url.searchParams.has('province') &&
+      !url.searchParams.has('province_id')
+    ) {
+      try {
+        const saved = localStorage.getItem('open-slot.province');
+        if (
+          saved &&
+          provinces.provinces.some((province) => province.id === saved)
+        )
+          filters.provinceId = saved;
+      } catch {
+        /* Storage may be disabled. */
+      }
+    }
+    if (parsed.view === 'studios')
+      await client.prefetchQuery({
+        queryKey: catalogKeys.studios(filters),
+        queryFn: ({ signal }) => catalogService.listStudios(filters, signal),
+        staleTime: 30_000,
+      });
+    else
+      await client.prefetchQuery({
+        queryKey: catalogKeys.list(filters),
+        queryFn: ({ signal }) => catalogService.list(filters, signal),
+        staleTime: 30_000,
+      });
+    return;
+  }
+
+  const user = client.getQueryData<AuthUser | null>(authQueryKey);
+  if (!user) return;
+  const epoch = sessionEpoch();
+  const current = () =>
+    sessionEpoch() === epoch &&
+    client.getQueryData<AuthUser | null>(authQueryKey)?.id === user.id;
+  if (path[0] === 'admin') {
+    if (user.role !== 'admin' || url.search) return;
+    const { prefetchDashboardRoute } = await import('./dashboard-routes');
+    prefetchDashboardRoute(url.pathname);
+    if (!id) {
+      const { getAdminOverview } =
+        await import('../services/adminOverviewService');
+      if (current())
+        await client.prefetchQuery({
+          queryKey: queryKeys.overview.config(user.id),
+          queryFn: ({ signal }) => getAdminOverview(signal),
+          staleTime: 30_000,
+        });
+    } else if (id === 'ho-so-studio' || id === 'studios') {
+      const module = await import('../pages/AdminStudioProfilesPage');
+      if (current())
+        await module.prefetchData(client, user.id, id === 'studios');
+    } else {
+      const loaders = {
+        'nguoi-dung': () => import('../pages/AdminUsersPage'),
+        users: () => import('../pages/AdminUsersPage'),
+        'dat-cho': () => import('../pages/AdminBookingsPage'),
+        bookings: () => import('../pages/AdminBookingsPage'),
+        workshop: () => import('../pages/AdminWorkshopPage'),
+        workshops: () => import('../pages/AdminWorkshopPage'),
+        'bao-cao': () => import('../pages/AdminReportsPage'),
+        reports: () => import('../pages/AdminReportsPage'),
+        'nhat-ky': () => import('../pages/AdminAuditPage'),
+        'cai-dat': () => import('../pages/AdminSettingsPage'),
+        'noi-dung': () => import('../pages/AdminContentPage'),
+        'danh-muc': () => import('../pages/AdminCategoriesPage'),
+        'mau-thong-bao': () => import('../pages/AdminMessageTemplatesPage'),
+      };
+      const loader = loaders[id as keyof typeof loaders];
+      if (loader) {
+        const module = await loader();
+        if (current()) await module.prefetchData(client, user.id);
+      }
+    }
+    return;
+  }
+  if (path[0] === 'studio') {
+    const { managementService } = await import('../services/managementService');
+    if (!current()) return;
+    const studios = await client.fetchQuery({
+      queryKey: queryKeys.studios.mine(user.id),
+      queryFn: ({ signal }) => managementService.listMyStudios(signal),
+      staleTime: 30_000,
+    });
+    const studio = (studios as MemberStudio[]).find(
+      (item) => item.role === 'owner' && (!id || item.id === id),
+    );
+    if (!current() || !studio || studio.isDraft) return;
+    const section = path[2] ?? '';
+    if (
+      ['sessions', 'bookings'].includes(section) &&
+      studio.status !== 'approved'
+    )
+      return;
+    const { prefetchDashboardRoute } = await import('./dashboard-routes');
+    prefetchDashboardRoute(url.pathname);
+    const tasks: Promise<unknown>[] = [];
+    if (section === 'workshops')
+      tasks.push(import('../components/management/StudioWorkshopManager'));
+    if (section === 'sessions')
+      tasks.push(import('../components/management/StudioSessionManager'));
+    if (section === 'profile')
+      tasks.push(import('../components/management/StudioEvidenceEditor'));
+    if (!section || section === 'workshops' || section === 'sessions')
+      tasks.push(
+        client.prefetchQuery({
+          queryKey: queryKeys.workshops.forStudio(user.id, studio.id),
+          queryFn: ({ signal }) =>
+            managementService.listStudioWorkshops(studio.id, signal),
+          staleTime: 30_000,
+        }),
+      );
+    if (!section || section === 'sessions')
+      tasks.push(
+        client.prefetchQuery({
+          queryKey: queryKeys.bookings.slots(user.id, studio.id),
+          queryFn: ({ signal }) =>
+            managementService.listStudioSessions(studio.id, signal),
+          staleTime: 30_000,
+        }),
+      );
+    if (section === 'bookings') {
+      const module =
+        await import('../components/management/StudioBookingManager');
+      if (current())
+        tasks.push(module.prefetchData(client, user.id, studio.id));
+    }
+    if (section === 'profile') {
+      const { fetchSiteSettings } = await import('../hooks/useSiteSettings');
+      if (current())
+        tasks.push(
+          client.prefetchQuery({
+            queryKey: queryKeys.public.settings,
+            queryFn: ({ signal }) => fetchSiteSettings(signal),
+            staleTime: 60_000,
+          }),
+        );
+    }
+    await Promise.all(tasks);
+    return;
+  }
+  if (
+    path[0] === 'me' &&
+    path[1] === 'bookings' &&
+    !path[2] &&
+    user.role === 'customer'
+  ) {
+    const { customerBookingService } =
+      await import('../services/customerBookingService');
+    if (current())
+      await client.prefetchQuery({
+        queryKey: queryKeys.bookings.list(user.id, { view: 'customer' }),
+        queryFn: ({ signal }) => customerBookingService.list(signal),
+        staleTime: 30_000,
+      });
+  }
+}

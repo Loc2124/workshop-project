@@ -21,3 +21,15 @@ it('invalidates affected lists/counts without discarding detail or another accou
   );
   client.clear();
 });
+
+it('refreshes studio booking rows after a booking or session mutation without touching another account', async () => {
+  const client = new QueryClient();
+  const own = queryKeys.bookings.forStudio('a', 'studio');
+  const other = queryKeys.bookings.forStudio('b', 'studio');
+  client.setQueryData(own, []);
+  client.setQueryData(other, []);
+  await invalidateResources(client, 'a', ['bookings']);
+  expect(client.getQueryState(own)?.isInvalidated).toBe(true);
+  expect(client.getQueryState(other)?.isInvalidated).toBe(false);
+  client.clear();
+});

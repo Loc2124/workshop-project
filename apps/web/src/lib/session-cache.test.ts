@@ -41,6 +41,50 @@ afterEach(() => {
 });
 
 describe('account cache boundary', () => {
+  it('preserves public cache but removes private previews and unknown account data', async () => {
+    const { client } = setup();
+    await synchronizeSession(client, a);
+    const publicKeys = [
+      queryKeys.public.home,
+      queryKeys.public.categories,
+      queryKeys.public.settings,
+      ['catalog', 'provinces', 'available'],
+    ];
+    publicKeys.forEach((key) => client.setQueryData(key, { public: true }));
+    const privatePreview = queryKeys.featured.detail(a.id, 'preview-token');
+    client.setQueryData(privatePreview, { secret: true });
+    client.setQueryData(['legacy-account'], { secret: true });
+    await synchronizeSession(client, null, true);
+    publicKeys.forEach((key) =>
+      expect(client.getQueryData(key)).toEqual({ public: true }),
+    );
+    expect(client.getQueryData(privatePreview)).toBeUndefined();
+    expect(client.getQueryData(['legacy-account'])).toBeUndefined();
+    expect(client.getQueryData(authQueryKey)).toBeNull();
+  });
+
+  it('allows an in-flight public request to finish across an anonymous refresh failure', async () => {
+    const { client } = setup();
+    let finish!: (value: { workshops: string[] }) => void;
+    const aborted = vi.fn();
+    const request = client.fetchQuery({
+      queryKey: queryKeys.public.home,
+      queryFn: ({ signal }) => {
+        signal.addEventListener('abort', aborted);
+        return new Promise<{ workshops: string[] }>((resolve) => {
+          finish = resolve;
+        });
+      },
+    });
+    await synchronizeSession(client, null, true);
+    finish({ workshops: ['public workshop'] });
+    await expect(request).resolves.toEqual({ workshops: ['public workshop'] });
+    expect(aborted).not.toHaveBeenCalled();
+    expect(client.getQueryData(queryKeys.public.home)).toEqual({
+      workshops: ['public workshop'],
+    });
+  });
+
   it('waits for cancellation, clears data and removes only the departing account draft', async () => {
     const { client, storage } = setup();
     await synchronizeSession(client, a);

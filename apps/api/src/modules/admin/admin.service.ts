@@ -1,4 +1,4 @@
-import { withStudioImages } from '../studios/studios.service.js';
+import { withStudioImages, withStudiosImages } from '../studios/studios.service.js';
 import { selectAdminOverview } from './admin-overview.repository.js';
 import { selectAdminRecords } from './admin-records.repository.js';
 export async function getAdminOverview() {
@@ -68,7 +68,7 @@ export async function getStudiosForAdmin(
     countStudiosForAdmin(scopedFilters),
   ]);
   return {
-    studios: await Promise.all(studios.map(withStudioImages)),
+    studios: await withStudiosImages(studios),
     statusCounts,
     pagination: {
       page: scopedFilters.page!,

@@ -1,5 +1,6 @@
-import { useEffect, useId, useState } from 'react';
-import { catalogService } from '../../services/catalogService';
+import { useEffect, useId } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { geographyQueries } from '../../lib/geography-queries';
 type Props = {
   provinceId?: string;
   selectedIds: string[];
@@ -11,6 +12,7 @@ export type AreaOption = {
   name: string;
   studioCount: number;
 };
+const noAreas: AreaOption[] = [];
 export function AreaMultiSelect({
   provinceId,
   selectedIds,
@@ -18,33 +20,17 @@ export function AreaMultiSelect({
   onOptionsChange,
 }: Props) {
   const id = useId();
-  const [areas, setAreas] = useState<AreaOption[]>([]);
-  const [loadError, setLoadError] = useState<string>();
+  const query = useQuery({
+    ...geographyQueries.areas(provinceId ?? ''),
+    enabled: Boolean(provinceId),
+  });
+  const areas = provinceId ? (query.data?.areas ?? noAreas) : noAreas;
+  const loadError = query.error
+    ? query.error.message || 'Không tải được khu vực.'
+    : undefined;
   useEffect(() => {
-    if (!provinceId) {
-      setAreas([]);
-      onOptionsChange?.([]);
-      setLoadError(undefined);
-      return;
-    }
-    const controller = new AbortController();
-    setAreas([]);
-    setLoadError(undefined);
-    catalogService
-      .areas(provinceId, controller.signal)
-      .then(({ areas: availableAreas }) => {
-        setAreas(availableAreas);
-        onOptionsChange?.(availableAreas);
-        setLoadError(undefined);
-      })
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return;
-        setLoadError(
-          error instanceof Error ? error.message : 'Không tải được khu vực.',
-        );
-      });
-    return () => controller.abort();
-  }, [onOptionsChange, provinceId]);
+    onOptionsChange?.(areas);
+  }, [onOptionsChange, areas]);
   if (!provinceId || (areas.length === 0 && !loadError)) return null;
   return (
     <fieldset className="min-w-0">

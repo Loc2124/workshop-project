@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
 import { invalidateResources } from '../lib/query-invalidation';
@@ -416,3 +417,11 @@ function FeaturedRow({
     </li>
   );
 }
+
+export const prefetchData = (client: QueryClient, userId: string) =>
+  client.prefetchQuery({
+    queryKey: queryKeys.featured.config(userId),
+    queryFn: async ({ signal }) =>
+      featuredConfigSchema.parse(await apiFetch('/admin/noi-dung', { signal })),
+    staleTime: 30_000,
+  });

@@ -1,7 +1,13 @@
 import { LoadingState } from '../ui/LoadingState';
 import { AuthLink } from '../ui/auth-link';
-import { NotificationsMenu } from './NotificationsMenu';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
 import { PageContainer } from './PageContainer';
@@ -10,6 +16,12 @@ import { HeaderSearch } from './HeaderSearch';
 import { useAuth } from '../../hooks/useAuth';
 import { useMyStudios } from '../../hooks/useOwnedStudios';
 import { toast } from 'sonner';
+
+const NotificationsMenu = lazy(() =>
+  import('./NotificationsMenu').then((module) => ({
+    default: module.NotificationsMenu,
+  })),
+);
 
 const links = [
   { to: '/', label: 'Trang chủ' },
@@ -140,7 +152,13 @@ export function SiteHeader() {
               )}
             </>
           )}
-          {user && <NotificationsMenu userId={user.id} />}
+          {user && (
+            <Suspense
+              fallback={<span aria-hidden="true" className="block size-11" />}
+            >
+              <NotificationsMenu userId={user.id} />
+            </Suspense>
+          )}
           {user && (
             <div className="relative" ref={accountRef}>
               <button

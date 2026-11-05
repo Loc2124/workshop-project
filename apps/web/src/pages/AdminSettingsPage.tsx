@@ -1,3 +1,4 @@
+import type { QueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
 import {
@@ -296,3 +297,11 @@ export function AdminSettingsPage() {
     </div>
   );
 }
+
+export const prefetchData = (client: QueryClient, userId: string) =>
+  client.prefetchQuery({
+    queryKey: queryKeys.settings.config(userId),
+    queryFn: async ({ signal }) =>
+      response.parse(await apiFetch('/admin/cai-dat', { signal })),
+    staleTime: 30_000,
+  });

@@ -57,7 +57,7 @@ export function StudioSwitcher({
   const location = useLocation();
   const navigate = useNavigate();
   return (
-    <div className="border-b border-line p-2">
+    <div className="studio-switcher border-b border-line p-2">
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label={`Chọn studio: ${studio.name}`}

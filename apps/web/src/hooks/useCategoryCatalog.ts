@@ -9,17 +9,24 @@ export function useCategoryCatalog() {
     staleTime: 60000,
     queryFn: async ({ signal }) => {
       const items: Workshop[] = [];
-      for (let page = 1; ; page++) {
-        const result = await catalogService.list(
-          { page, pageSize: 100 },
-          signal,
+      const first = await catalogService.list(
+        { page: 1, pageSize: 100 },
+        signal,
+      );
+      items.push(...first.items);
+      const lastPage = Math.ceil(
+        first.pagination.total / first.pagination.pageSize,
+      );
+      // Suggestions depend on the complete catalog and its order. Keep those
+      // semantics while bounding parallel requests to avoid flooding the API.
+      for (let page = 2; page <= lastPage; page += 3) {
+        const pages = await Promise.all(
+          Array.from({ length: Math.min(3, lastPage - page + 1) }, (_, index) =>
+            catalogService.list({ page: page + index, pageSize: 100 }, signal),
+          ),
         );
-        items.push(...result.items);
-        if (
-          !result.items.length ||
-          page * result.pagination.pageSize >= result.pagination.total
-        )
-          break;
+        pages.forEach((result) => items.push(...result.items));
+        if (pages.some((result) => !result.items.length)) break;
       }
       return items;
     },

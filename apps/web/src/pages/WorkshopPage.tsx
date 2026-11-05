@@ -1,6 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { z } from 'zod';
 import { DetailState } from '../components/details/DetailPrimitives';
 import { WorkshopDetails } from '../components/details/WorkshopDetails';
 import type { WorkshopBookingHandler } from '../components/details/WorkshopSchedule';
@@ -11,8 +9,12 @@ import {
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
 import { ReportButton } from '../components/reports/ReportButton';
-import { useCatalog, useWorkshop } from '../hooks/useCatalog';
-import { ApiError, apiFetch } from '../lib/api-client';
+import {
+  useCatalog,
+  useWorkshop,
+  useWorkshopReviews,
+} from '../hooks/useCatalog';
+import { ApiError } from '../lib/api-client';
 import { useAuth } from '../hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -30,28 +32,7 @@ export function WorkshopPage({
   const identifier = slug ?? id ?? '';
   const query = useWorkshop(identifier);
   const sourceWorkshop = query.data?.workshop;
-  const reviews = useQuery({
-    queryKey: ['catalog', 'reviews', sourceWorkshop?.id],
-    enabled: !!sourceWorkshop && true,
-    queryFn: async ({ signal }) =>
-      z
-        .object({
-          reviews: z.array(
-            z.object({
-              id: z.string(),
-              author: z.string(),
-              rating: z.number(),
-              comment: z.string(),
-              createdAt: z.string(),
-            }),
-          ),
-        })
-        .parse(
-          await apiFetch(`/workshops/${sourceWorkshop!.id}/reviews`, {
-            signal,
-          }),
-        ).reviews,
-  });
+  const reviews = useWorkshopReviews(identifier);
   const workshop =
     sourceWorkshop && reviews.data
       ? {
@@ -66,7 +47,7 @@ export function WorkshopPage({
       : sourceWorkshop;
   const relatedQuery = useCatalog(
     { page: 1, pageSize: 100 },
-    Boolean(workshop) && true,
+    Boolean(identifier),
   );
   const related = workshop
     ? workshopSuggestions(workshop, relatedQuery.data?.items ?? [])

@@ -1,8 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useRef, type ReactNode } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
+import { lazy, Suspense, useRef, type ReactNode } from 'react';
 
 import { useSiteInformation } from '../../hooks/useSiteInformation';
+
+const loadInformationDialog = () =>
+  import('./FooterInformationDialog').then((module) => ({
+    default: module.FooterInformationDialog,
+  }));
+const InformationDialog = lazy(loadInformationDialog);
 
 const linkClass =
   'inline-flex min-h-11 items-center rounded-lg text-sm hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:min-h-7';
@@ -90,6 +95,10 @@ export function FooterLinks() {
                 key={id}
                 to={`${pathname}${search}#${id}`}
                 aria-haspopup="dialog"
+                onMouseEnter={() =>
+                  void loadInformationDialog().catch(() => {})
+                }
+                onFocus={() => void loadInformationDialog().catch(() => {})}
                 onClick={(event) => {
                   opener.current = event.currentTarget;
                 }}
@@ -118,35 +127,15 @@ export function FooterLinks() {
           )}
         </FooterGroup>
       </nav>
-      <Dialog
-        open={Boolean(selected)}
-        onOpenChange={(open) => {
-          if (!open) navigate(`${pathname}${search}`, { replace: true });
-        }}
-      >
-        <DialogContent
-          aria-describedby="footer-information-description"
-          className="rounded-2xl"
-          onOpenAutoFocus={() => {
-            if (document.activeElement instanceof HTMLAnchorElement)
-              opener.current = document.activeElement;
-          }}
-          onCloseAutoFocus={(event) => {
-            if (opener.current) {
-              event.preventDefault();
-              opener.current.focus();
-            }
-          }}
-        >
-          <DialogTitle>{selected?.label}</DialogTitle>
-          <p
-            id="footer-information-description"
-            className="text-base leading-relaxed text-ink"
-          >
-            {selected?.text}
-          </p>
-        </DialogContent>
-      </Dialog>
+      {selected && (
+        <Suspense fallback={null}>
+          <InformationDialog
+            selected={selected}
+            opener={opener}
+            onClose={() => navigate(`${pathname}${search}`, { replace: true })}
+          />
+        </Suspense>
+      )}
     </>
   );
 }

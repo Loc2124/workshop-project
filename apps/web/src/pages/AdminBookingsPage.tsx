@@ -1,3 +1,5 @@
+import type { QueryClient } from '@tanstack/react-query';
+import { prefetchDefaultTable } from '../lib/prefetch-table';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
 import {
@@ -512,3 +514,11 @@ function Field({
     </div>
   );
 }
+
+export const prefetchData = (client: QueryClient, userId: string) =>
+  prefetchDefaultTable(client, userId, 'bookings', fetcher, [
+    'dateFrom',
+    'dateTo',
+    'studioId',
+    'period',
+  ]);

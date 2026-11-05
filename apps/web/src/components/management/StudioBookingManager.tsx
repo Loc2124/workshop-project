@@ -1,8 +1,14 @@
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { z } from 'zod';
 import { apiFetch } from '../../lib/api-client';
 import { useAuth } from '../../hooks/useAuth';
+import { queryKeys } from '../../lib/query-keys';
 import { formatPrice } from '../../lib/format';
 import { Button } from '../ui/button';
 import { LoadingState } from '../ui/LoadingState';
@@ -38,16 +44,24 @@ const responseSchema = z.object({
 });
 type Booking = z.infer<typeof responseSchema>['bookings'][number];
 
+export const prefetchData = (
+  client: QueryClient,
+  userId: string,
+  studioId: string,
+) =>
+  client.prefetchQuery({
+    queryKey: queryKeys.bookings.forStudio(userId, studioId),
+    queryFn: async ({ signal }) =>
+      responseSchema.parse(
+        await apiFetch(`/studios/${studioId}/bookings`, { signal }),
+      ).bookings,
+    staleTime: 30_000,
+  });
+
 export function StudioBookingManager({ studioId }: { studioId: string }) {
   const { user } = useAuth();
   const client = useQueryClient();
-  const key = [
-    'private',
-    user?.id ?? 'anonymous',
-    'bookings',
-    'studio',
-    studioId,
-  ];
+  const key = queryKeys.bookings.forStudio(user?.id, studioId);
   const [selected, setSelected] = useState<Booking | null>(null);
   const query = useQuery({
     queryKey: key,
