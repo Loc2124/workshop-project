@@ -45,6 +45,8 @@ const responseSchema = z.object({
       contactPhone: z.string().nullable(),
       totalAmount: z.number(),
       paidAmount: z.number(),
+      depositAmount: z.number(),
+      paymentMode: z.string(),
       balanceAmount: z.number(),
       reservationStatus: z.string(),
       paymentStatus: z.string(),
@@ -243,9 +245,35 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
                         <p className="font-semibold tabular-nums text-studio-ink">
                           {formatPrice(booking.totalAmount)} đ
                         </p>
-                        <p className="mt-1 text-sm tabular-nums text-studio-muted">
-                          Đã thu {formatPrice(booking.paidAmount)} đ
-                        </p>
+                        {booking.paymentMode === 'payos_deposit' ? (
+                          <div className="mt-1 space-y-1 text-sm text-studio-muted">
+                            <p className="tabular-nums">
+                              Cọc PayOS: {formatPrice(booking.depositAmount)} đ
+                              ·{' '}
+                              {booking.paidAmount >= booking.depositAmount
+                                ? 'đã thanh toán'
+                                : 'chờ khách thanh toán'}
+                            </p>
+                            <p className="tabular-nums">
+                              Còn lại tại studio:{' '}
+                              {formatPrice(
+                                Math.max(
+                                  0,
+                                  booking.totalAmount -
+                                    Math.max(
+                                      booking.paidAmount,
+                                      booking.depositAmount,
+                                    ),
+                                ),
+                              )}{' '}
+                              đ
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-1 text-sm tabular-nums text-studio-muted">
+                            Khách thanh toán tại studio
+                          </p>
+                        )}
                       </td>
                       <td className="min-w-48 px-2 py-4">
                         <div className="flex flex-col items-start gap-2">
@@ -339,9 +367,30 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-studio-muted">Đã thu</span>
+                      <span className="text-studio-muted">
+                        {booking.paymentMode === 'payos_deposit'
+                          ? `Cọc PayOS (${booking.depositAmount > 0 && booking.paidAmount >= booking.depositAmount ? 'đã trả' : 'đang chờ'})`
+                          : 'Thanh toán'}
+                      </span>
                       <span className="font-medium tabular-nums text-studio-ink">
-                        {formatPrice(booking.paidAmount)} đ
+                        {formatPrice(
+                          booking.paymentMode === 'payos_deposit'
+                            ? booking.depositAmount
+                            : booking.totalAmount,
+                        )}{' '}
+                        đ
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 sm:col-span-2">
+                      <span className="text-studio-muted">
+                        {booking.paymentMode === 'payos_deposit'
+                          ? 'Còn lại tại studio'
+                          : 'Hình thức thu'}
+                      </span>
+                      <span className="font-medium tabular-nums text-studio-ink">
+                        {booking.paymentMode === 'payos_deposit'
+                          ? `${formatPrice(Math.max(0, booking.totalAmount - Math.max(booking.paidAmount, booking.depositAmount)))} đ`
+                          : 'Thu toàn bộ tại studio'}
                       </span>
                     </div>
                   </div>

@@ -181,18 +181,41 @@ export function CustomerBookingDetailPage() {
                 {formatPrice(booking.totalAmount)} đ
               </dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt>Đã thanh toán</dt>
-              <dd className="tabular-nums">
-                {formatPrice(booking.paidAmount)} đ
-              </dd>
-            </div>
-            <div className="flex justify-between gap-3 font-semibold">
-              <dt>Còn phải trả</dt>
-              <dd className="tabular-nums">
-                {formatPrice(booking.balanceAmount)} đ
-              </dd>
-            </div>
+            {booking.paymentMode === 'payos_deposit' ? (
+              <>
+                <div className="flex justify-between gap-3">
+                  <dt>
+                    Cọc PayOS ·{' '}
+                    {booking.paidAmount >= booking.depositAmount
+                      ? 'đã thanh toán'
+                      : 'chờ thanh toán'}
+                  </dt>
+                  <dd className="font-semibold tabular-nums">
+                    {formatPrice(booking.depositAmount)} đ
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3 font-semibold">
+                  <dt>Còn lại trả tại studio</dt>
+                  <dd className="tabular-nums">
+                    {formatPrice(
+                      Math.max(
+                        0,
+                        booking.totalAmount -
+                          Math.max(booking.paidAmount, booking.depositAmount),
+                      ),
+                    )}{' '}
+                    đ
+                  </dd>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between gap-3 font-semibold">
+                <dt>Thanh toán tại studio</dt>
+                <dd className="tabular-nums">
+                  {formatPrice(booking.balanceAmount)} đ
+                </dd>
+              </div>
+            )}
           </dl>
           {depositPayment?.checkoutUrl &&
             booking.paymentStatus === 'pending' &&

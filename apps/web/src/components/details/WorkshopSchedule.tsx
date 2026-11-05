@@ -76,6 +76,13 @@ export function WorkshopSchedule({
     confirmed?.quantity ??
     (selected ? clampBookingQuantity(quantity, selected.availableSeats) : 0);
   const total = selected ? selected.price * seats : undefined;
+  const depositPercent =
+    workshop.effectiveDepositPercent ?? workshop.depositPercent ?? 0;
+  const depositAmount =
+    total !== undefined && depositPercent > 0
+      ? Math.ceil((total * depositPercent) / 100)
+      : 0;
+  const balanceAmount = total === undefined ? 0 : total - depositAmount;
   const locked = pending || Boolean(confirmed);
   const primary =
     'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-600';
@@ -322,17 +329,44 @@ export function WorkshopSchedule({
                 <p className="text-sm text-stone-700">
                   {formatPrice(selected.price)} đ × {seats} người
                 </p>
-                <dl className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
-                  <dt className="text-sm font-semibold">Tổng tiền</dt>
-                  <dd className="text-3xl font-bold tabular-nums">
-                    {formatPrice(total!)} đ
-                  </dd>
+                <dl className="mt-3 space-y-2 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <dt>Tổng tiền</dt>
+                    <dd className="font-semibold tabular-nums">
+                      {formatPrice(total!)} đ
+                    </dd>
+                  </div>
+                  {depositAmount > 0 ? (
+                    <>
+                      <div className="flex justify-between gap-3 text-primary">
+                        <dt className="font-semibold">
+                          Cọc qua PayOS ({depositPercent}%)
+                        </dt>
+                        <dd className="font-bold tabular-nums">
+                          {formatPrice(depositAmount)} đ
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-3 border-t border-primary/15 pt-2">
+                        <dt>Còn lại trả tại studio</dt>
+                        <dd className="font-semibold tabular-nums">
+                          {formatPrice(balanceAmount)} đ
+                        </dd>
+                      </div>
+                      <p className="pt-1 text-xs leading-5 text-stone-600">
+                        Sau khi đặt chỗ, mã QR PayOS cho khoản cọc sẽ hiện trong
+                        chi tiết booking. Chỗ được xác nhận khi PayOS báo đã
+                        thanh toán.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex justify-between gap-3 border-t border-primary/15 pt-2">
+                      <dt>Thanh toán tại studio</dt>
+                      <dd className="font-semibold tabular-nums">
+                        {formatPrice(total!)} đ
+                      </dd>
+                    </div>
+                  )}
                 </dl>
-                <p className="mt-2 text-sm text-stone-700">
-                  Studio đủ điều kiện sẽ thu tiền cọc qua cổng thanh toán; các
-                  trường hợp còn lại thanh toán tại studio. Số tiền cần trả được
-                  xác nhận sau khi đặt chỗ.
-                </p>
               </div>
             </>
           )}
@@ -379,8 +413,15 @@ export function WorkshopSchedule({
       </section>
       <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:hidden">
         {total !== undefined && (
-          <span className="text-lg font-bold tabular-nums">
-            {formatPrice(total)} đ
+          <span className="flex min-w-0 flex-col">
+            <span className="text-lg font-bold tabular-nums">
+              {formatPrice(total)} đ
+            </span>
+            <span className="text-xs text-stone-600">
+              {depositAmount > 0
+                ? `Cọc ${formatPrice(depositAmount)} đ · còn ${formatPrice(balanceAmount)} đ tại studio`
+                : 'Thanh toán tại studio'}
+            </span>
           </span>
         )}
         <a

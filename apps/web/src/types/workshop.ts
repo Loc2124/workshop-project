@@ -35,6 +35,8 @@ export type Workshop = {
   takeaway: string | null;
   durationMinutes: number;
   basePrice: number;
+  depositPercent?: number;
+  effectiveDepositPercent?: number;
   requirements: string | null;
   district: string | null;
   province: string;

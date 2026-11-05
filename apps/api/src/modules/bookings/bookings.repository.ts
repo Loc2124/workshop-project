@@ -430,6 +430,7 @@ export async function listStudioBookings(studioId: string, userId: string) {
        COALESCE(b.contact_name,u.full_name) AS "contactName",
        COALESCE(b.contact_phone,u.phone) AS "contactPhone",
        b.total_amount AS "totalAmount", b.paid_amount AS "paidAmount",
+       b.deposit_amount AS "depositAmount", b.payment_mode AS "paymentMode",
        b.total_amount-b.paid_amount AS "balanceAmount",
        b.status AS "paymentStatus", b.reservation_status AS "reservationStatus",
        s.starts_at AS "startsAt", w.title AS "workshopTitle"

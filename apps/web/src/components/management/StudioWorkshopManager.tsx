@@ -609,6 +609,12 @@ export function StudioWorkshopManager({
         <ul className="grid gap-studio-card sm:grid-cols-2 xl:grid-cols-3">
           {workshops.map((workshop) => {
             const category = getCategoryMeta(workshop.categoryId);
+            const depositPercent =
+              workshop.effectiveDepositPercent ?? workshop.depositPercent ?? 0;
+            const depositPerPerson =
+              depositPercent > 0
+                ? Math.ceil((workshop.basePrice * depositPercent) / 100)
+                : 0;
             const tone =
               workshop.publicationStatus === 'hidden' ||
               workshop.status === 'rejected'
@@ -672,6 +678,29 @@ export function StudioWorkshopManager({
                           <UsersRound aria-hidden="true" className="size-4" />
                           {workshop.audience.length} nhóm
                         </span>
+                      )}
+                    </div>
+                    <div className="rounded-xl bg-studio-selected p-3 text-sm">
+                      {depositPercent > 0 ? (
+                        <>
+                          <p className="font-semibold text-studio-primary">
+                            Khách cọc {depositPercent}% qua PayOS
+                          </p>
+                          <p className="mt-1 text-studio-muted">
+                            Theo giá cơ sở, mỗi khách cọc{' '}
+                            {formatPrice(depositPerPerson)} đ, còn lại{' '}
+                            {formatPrice(workshop.basePrice - depositPerPerson)}{' '}
+                            đ trả tại studio.
+                          </p>
+                          <p className="mt-1 text-xs text-studio-muted">
+                            Số chính xác tính theo giá buổi và số người trong
+                            booking.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="font-medium text-studio-muted">
+                          Khách thanh toán toàn bộ tại studio.
+                        </p>
                       )}
                     </div>
                     <div className="border-t border-studio-border pt-3">
