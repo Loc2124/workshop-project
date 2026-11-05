@@ -23,6 +23,7 @@ type FixtureOptions = {
   audience?: string[];
   studioStatus?: 'pending' | 'approved' | 'rejected';
   workshopStatus?: 'pending' | 'approved' | 'rejected';
+  simulated?: boolean;
 };
 
 type SessionOptions = {
@@ -274,6 +275,11 @@ describe('public workshop catalog', () => {
       categoryId,
       workshopStatus: 'rejected',
     });
+    const simulatedWorkshop = await createWorkshop({
+      district,
+      categoryId,
+      simulated: true,
+    });
     const unavailableWorkshop = await createWorkshop({ district, categoryId });
 
     await addSession(pendingWorkshop, {
@@ -286,6 +292,9 @@ describe('public workshop catalog', () => {
       startsAt: '2032-05-01T17:30:00.000Z',
     });
     await addSession(rejectedWorkshop, {
+      startsAt: '2032-05-01T17:30:00.000Z',
+    });
+    await addSession(simulatedWorkshop, {
       startsAt: '2032-05-01T17:30:00.000Z',
     });
     await addSession(unavailableWorkshop, {
@@ -315,6 +324,7 @@ describe('public workshop catalog', () => {
     const listWorkshopId = await createWorkshop({
       district: `List ${suffix}`,
       categoryId: `List ${suffix}`,
+      simulated: false,
     });
     const listSessionId = await addSession(listWorkshopId, {
       startsAt: '2032-05-01T17:30:00.000Z',
@@ -355,6 +365,7 @@ describe('public workshop catalog', () => {
     const workshopId = await createWorkshop({
       district: `Detail ${suffix}`,
       categoryId: `Detail ${suffix}`,
+      simulated: false,
     });
     await query(
       `UPDATE workshops
@@ -576,6 +587,7 @@ describe('public workshop catalog', () => {
     const workshopId = await createWorkshop({
       district: `Studio ${suffix}`,
       categoryId: `Studio ${suffix}`,
+      simulated: false,
     });
     await query(
       `UPDATE workshops
@@ -777,7 +789,7 @@ async function createLargeCatalogFixture(
          60,
          100,
          'approved'::approval_status,
-         true
+         false
        FROM new_studios
        JOIN generated
          ON new_studios.name =
@@ -829,7 +841,7 @@ async function addWorkshopToExistingStudio(
      )
      SELECT
        studio_id, $2, 'Catalog fixture description', category_id, 'beginner',
-       ARRAY[]::text[], 60, $3, 'approved'::approval_status, true
+       ARRAY[]::text[], 60, $3, 'approved'::approval_status, false
      FROM workshops
      WHERE title = $1
      RETURNING id`,
@@ -880,7 +892,7 @@ async function createWorkshop(options: FixtureOptions): Promise<string> {
     )
     VALUES (
      $1, $2, 'Catalog fixture description', $3, $4::text,
-     $5::text[], 60, 100, $6, true
+     $5::text[], 60, 100, $6, $7
     )
      RETURNING id`,
     [
@@ -890,6 +902,7 @@ async function createWorkshop(options: FixtureOptions): Promise<string> {
       options.level ?? 'beginner',
       options.audience ?? [],
       options.workshopStatus ?? 'approved',
+      options.simulated ?? false,
     ],
   );
   return workshop.rows[0].id;

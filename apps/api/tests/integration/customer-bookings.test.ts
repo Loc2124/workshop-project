@@ -280,6 +280,46 @@ it('allows only studio members to list and collect payments, and releases a canc
   ).toEqual({ seats_held: 0, seats_sold: 0 });
 });
 
+it('does not let a member of another studio access or collect a booking', async () => {
+  const studioA = await publicWorkshop(0);
+  const studioB = await publicWorkshop(0);
+  const customer = await account();
+  const sessionId = await session(studioA.workshopId, 1);
+  const created = await placeBooking(customer, sessionId);
+  expect(created.status).toBe(201);
+
+  expect(
+    (
+      await request(app)
+        .get(`/studios/${studioA.studioId}/bookings`)
+        .set('Cookie', studioB.owner.cookie)
+    ).status,
+  ).toBe(404);
+  expect(
+    (
+      await request(app)
+        .post(
+          `/studios/${studioB.studioId}/bookings/${created.body.booking.id}/confirm-payment`,
+        )
+        .set('Cookie', studioB.owner.cookie)
+        .send({ expectedAmount: 200000 })
+    ).status,
+  ).toBe(404);
+
+  const state = await query(
+    `SELECT b.status, b.paid_amount, s.seats_sold
+     FROM bookings b
+     JOIN sessions s ON s.id = b.session_id
+     WHERE b.id = $1`,
+    [created.body.booking.id],
+  );
+  expect(state.rows[0]).toEqual({
+    status: 'pending',
+    paid_amount: 0,
+    seats_sold: 1,
+  });
+});
+
 it('does not let an invalid signature consume the real transaction reference', async () => {
   const { workshopId } = await publicWorkshop(30);
   const customer = await account();
@@ -318,6 +358,39 @@ it('does not let an invalid signature consume the real transaction reference', a
   });
 });
 
+it('releases an expired hold before reserving a new booking', async () => {
+  const { workshopId } = await publicWorkshop(30);
+  const sessionId = await session(workshopId, 1);
+  const firstCustomer = await account();
+  const nextCustomer = await account();
+  const original = await placeBooking(firstCustomer, sessionId);
+  expect(original.status).toBe(201);
+  await query(
+    `UPDATE bookings SET hold_expires_at = now() - interval '1 minute'
+     WHERE id = $1`,
+    [original.body.booking.id],
+  );
+
+  const next = await placeBooking(nextCustomer, sessionId);
+  expect(next.status).toBe(201);
+
+  const state = await query(
+    `SELECT
+       (SELECT status FROM bookings WHERE id = $1) AS previous_status,
+       (SELECT status FROM bookings WHERE id = $2) AS next_status,
+       seats_held, seats_sold
+     FROM sessions
+     WHERE id = $3`,
+    [original.body.booking.id, next.body.booking.id, sessionId],
+  );
+  expect(state.rows[0]).toEqual({
+    previous_status: 'expired',
+    next_status: 'pending',
+    seats_held: 1,
+    seats_sold: 0,
+  });
+});
+
 it('releases an expired hold and marks a late deposit refund-needed when capacity is taken', async () => {
   const { workshopId } = await publicWorkshop(30);
   const sessionId = await session(workshopId, 1);
@@ -351,6 +424,42 @@ it('releases an expired hold and marks a late deposit refund-needed when capacit
     [sessionId],
   );
   expect(seats.rows[0]).toEqual({ seats_held: 1, seats_sold: 0 });
+});
+
+it('reacquires an available seat for a late deposit and issues tickets once', async () => {
+  const { workshopId } = await publicWorkshop(30);
+  const sessionId = await session(workshopId, 2);
+  const customer = await account();
+  const created = await placeBooking(customer, sessionId);
+  expect(created.status).toBe(201);
+  await query(
+    `UPDATE bookings SET hold_expires_at = now() - interval '1 minute'
+     WHERE id = $1`,
+    [created.body.booking.id],
+  );
+  await withTransaction((client) => releaseExpiredHolds(client, [sessionId]));
+
+  const latePayment = await request(app)
+    .post(`/payments/mock/${created.body.booking.orderCode}/confirm`)
+    .set('Cookie', customer.cookie);
+  expect(latePayment.status).toBe(200);
+  const state = await query(
+    `SELECT b.status, b.reservation_status, b.paid_amount,
+       s.seats_held, s.seats_sold,
+       (SELECT count(*)::integer FROM tickets t WHERE t.booking_id = b.id) AS tickets
+     FROM bookings b
+     JOIN sessions s ON s.id = b.session_id
+     WHERE b.id = $1`,
+    [created.body.booking.id],
+  );
+  expect(state.rows[0]).toEqual({
+    status: 'pending',
+    reservation_status: 'confirmed',
+    paid_amount: 60000,
+    seats_held: 0,
+    seats_sold: 1,
+    tickets: 1,
+  });
 });
 
 it('releases a deposit hold when PayOS fails to create the checkout link', async () => {
