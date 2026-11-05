@@ -10,8 +10,12 @@ import { apiFetch } from '../../lib/api-client';
 import { useAuth } from '../../hooks/useAuth';
 import { queryKeys } from '../../lib/query-keys';
 import { formatPrice } from '../../lib/format';
-import { Button } from '../ui/button';
-import { LoadingState } from '../ui/LoadingState';
+import {
+  CalendarClock,
+  ClipboardList,
+  RefreshCw,
+  UsersRound,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -23,6 +27,13 @@ import {
   paymentLabel,
   reservationLabel,
 } from '../../pages/CustomerBookingsPage';
+import {
+  StudioBadge,
+  StudioButton,
+  StudioCard,
+  StudioEmptyState,
+  StudioSkeleton,
+} from './StudioPrimitives';
 
 const responseSchema = z.object({
   bookings: z.array(
@@ -83,76 +94,288 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
       await client.invalidateQueries({ queryKey: key });
     },
   });
-  if (query.isPending) return <LoadingState label="Đang tải đặt chỗ…" />;
-  if (query.isError)
+  const paymentTone = (status: string) => {
+    if (status === 'paid') return 'success' as const;
+    if (status === 'pending' || status === 'refund_needed')
+      return 'warning' as const;
+    if (['cancelled', 'expired', 'failed'].includes(status))
+      return 'danger' as const;
+    return 'neutral' as const;
+  };
+  const reservationTone = (status: string) => {
+    if (status === 'confirmed') return 'success' as const;
+    if (status === 'pending') return 'warning' as const;
+    if (status === 'cancelled') return 'danger' as const;
+    return 'neutral' as const;
+  };
+
+  if (query.isPending)
     return (
-      <div role="alert">
-        <p>{query.error.message}</p>
-        <Button onClick={() => void query.refetch()}>Thử lại</Button>
+      <div className="space-y-studio-card" aria-label="Đang tải đặt chỗ">
+        {[0, 1, 2].map((item) => (
+          <StudioSkeleton
+            key={item}
+            label="Đang tải đặt chỗ…"
+            className="h-32 animate-pulse"
+          />
+        ))}
       </div>
     );
+  if (query.isError)
+    return (
+      <StudioCard className="space-y-4" role="alert">
+        <p className="text-studio-danger">
+          Không thể tải đặt chỗ: {query.error.message}
+        </p>
+        <StudioButton onClick={() => void query.refetch()} variant="secondary">
+          Thử tải lại
+        </StudioButton>
+      </StudioCard>
+    );
   return (
-    <section className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-heading text-lg font-semibold">
-          Danh sách đặt chỗ
-        </h2>
-        <Button variant="outline" onClick={() => void query.refetch()}>
+    <section aria-label="Quản lý đặt chỗ" className="space-y-studio-section">
+      <div className="flex flex-col gap-4 rounded-studio-card border border-studio-border bg-studio-surface p-studio-card shadow-studio-card sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm leading-6 text-studio-muted">
+            Chỉ xác nhận thu tiền sau khi đã nhận đủ khoản còn lại từ khách.
+            Hiển thị tối đa 200 đơn gần nhất.
+          </p>
+          <p className="mt-2 text-sm font-medium text-studio-primary">
+            {query.data.length} đặt chỗ
+          </p>
+        </div>
+        <StudioButton
+          onClick={() => void query.refetch()}
+          type="button"
+          variant="secondary"
+        >
+          <RefreshCw
+            aria-hidden="true"
+            className={`size-4 ${query.isFetching ? 'animate-spin' : ''}`}
+          />
           Cập nhật
-        </Button>
+        </StudioButton>
       </div>
-      <p className="text-sm text-muted">
-        Chỉ xác nhận thu tiền sau khi đã nhận đủ khoản còn lại từ khách. Hiển
-        thị tối đa 200 đơn gần nhất.
-      </p>
+
       {!query.data.length ? (
-        <p className="py-6 text-muted">Studio chưa có đặt chỗ.</p>
+        <StudioEmptyState
+          icon={ClipboardList}
+          title="Chưa có đặt chỗ nào"
+          description="Khi khách đặt workshop, thông tin đơn và trạng thái thanh toán sẽ hiển thị tại đây."
+        />
       ) : (
-        <ul className="divide-y divide-line border-y border-line">
-          {query.data.map((booking) => (
-            <li
-              key={booking.id}
-              className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_auto]"
-            >
-              <div className="min-w-0 space-y-1">
-                <h3 className="break-words font-semibold">
-                  #{booking.orderCode} · {booking.workshopTitle}
-                </h3>
-                <p className="text-sm">
-                  {dateLabel(booking.startsAt)} · {booking.quantity} người
-                </p>
-                <p className="break-words text-sm">
-                  {booking.contactName} ·{' '}
-                  {booking.contactPhone ?? 'Chưa có số điện thoại'}
-                </p>
-                <p className="text-sm text-muted">
-                  {reservationLabel(booking.reservationStatus)} ·{' '}
-                  {paymentLabel(booking.paymentStatus)}
-                </p>
-              </div>
-              <div className="space-y-2 md:text-right">
-                <p className="text-sm tabular-nums">
-                  Đã thu {formatPrice(booking.paidAmount)} đ /{' '}
-                  {formatPrice(booking.totalAmount)} đ
-                </p>
-                {booking.reservationStatus === 'confirmed' &&
-                  booking.paymentStatus === 'pending' &&
-                  booking.balanceAmount > 0 && (
-                    <Button
-                      variant="outline"
-                      disabled={payment.isPending}
-                      onClick={() => {
-                        payment.reset();
-                        setSelected(booking);
-                      }}
+        <>
+          <div className="hidden overflow-hidden rounded-studio-card border border-studio-border bg-studio-surface shadow-studio-card md:block">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1080px] table-fixed border-collapse text-left">
+                <colgroup>
+                  <col className="w-[14%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[16%]" />
+                  <col className="w-[14%]" />
+                </colgroup>
+                <thead className="bg-studio-subtle text-xs font-semibold uppercase tracking-wide text-studio-muted">
+                  <tr>
+                    <th className="whitespace-nowrap px-3 py-4">
+                      Mã đơn / Workshop
+                    </th>
+                    <th className="whitespace-nowrap px-2 py-4">Khách</th>
+                    <th className="whitespace-nowrap px-2 py-4">Thời gian</th>
+                    <th className="whitespace-nowrap px-2 py-4 text-center">
+                      Số người
+                    </th>
+                    <th className="whitespace-nowrap px-2 py-4">Số tiền</th>
+                    <th className="whitespace-nowrap px-2 py-4">Trạng thái</th>
+                    <th className="whitespace-nowrap px-3 py-4 text-right">
+                      Thao tác
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-studio-border">
+                  {query.data.map((booking) => (
+                    <tr
+                      key={booking.id}
+                      className="transition-colors duration-150 hover:bg-studio-selected/60"
                     >
-                      Ghi nhận thu {formatPrice(booking.balanceAmount)} đ
-                    </Button>
-                  )}
-              </div>
-            </li>
-          ))}
-        </ul>
+                      <td className="max-w-60 px-3 py-4">
+                        <p className="font-semibold text-studio-ink">
+                          #{booking.orderCode}
+                        </p>
+                        <p
+                          className="mt-1 truncate text-sm text-studio-muted"
+                          title={booking.workshopTitle}
+                        >
+                          {booking.workshopTitle}
+                        </p>
+                      </td>
+                      <td className="max-w-52 px-2 py-4">
+                        <p className="font-medium text-studio-ink">
+                          {booking.contactName}
+                        </p>
+                        <p className="mt-1 text-sm text-studio-muted">
+                          {booking.contactPhone ?? 'Chưa có số điện thoại'}
+                        </p>
+                      </td>
+                      <td className="min-w-56 px-2 py-4 text-sm text-studio-muted">
+                        <span className="inline-flex items-start gap-2">
+                          <CalendarClock
+                            aria-hidden="true"
+                            className="mt-0.5 size-4 shrink-0"
+                          />
+                          <time dateTime={booking.startsAt}>
+                            {dateLabel(booking.startsAt)}
+                          </time>
+                        </span>
+                      </td>
+                      <td className="px-2 py-4 text-center">
+                        <span className="inline-flex items-center justify-center gap-1.5 text-sm tabular-nums text-studio-ink">
+                          <UsersRound
+                            aria-hidden="true"
+                            className="size-4 text-studio-muted"
+                          />
+                          {booking.quantity}
+                        </span>
+                      </td>
+                      <td className="min-w-44 px-2 py-4">
+                        <p className="font-semibold tabular-nums text-studio-ink">
+                          {formatPrice(booking.totalAmount)} đ
+                        </p>
+                        <p className="mt-1 text-sm tabular-nums text-studio-muted">
+                          Đã thu {formatPrice(booking.paidAmount)} đ
+                        </p>
+                      </td>
+                      <td className="min-w-48 px-2 py-4">
+                        <div className="flex flex-col items-start gap-2">
+                          <StudioBadge
+                            tone={reservationTone(booking.reservationStatus)}
+                          >
+                            {reservationLabel(booking.reservationStatus)}
+                          </StudioBadge>
+                          <StudioBadge
+                            tone={paymentTone(booking.paymentStatus)}
+                          >
+                            {paymentLabel(booking.paymentStatus)}
+                          </StudioBadge>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4 text-right">
+                        {booking.reservationStatus === 'confirmed' &&
+                        booking.paymentStatus === 'pending' &&
+                        booking.balanceAmount > 0 ? (
+                          <StudioButton
+                            aria-label={`Ghi nhận thu ${formatPrice(booking.balanceAmount)} đồng cho đơn #${booking.orderCode}`}
+                            disabled={payment.isPending}
+                            onClick={() => {
+                              payment.reset();
+                              setSelected(booking);
+                            }}
+                            type="button"
+                            variant="secondary"
+                          >
+                            Ghi nhận
+                          </StudioButton>
+                        ) : (
+                          <span className="text-sm text-studio-muted">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <ul className="space-y-studio-card md:hidden">
+            {query.data.map((booking) => (
+              <li key={booking.id}>
+                <StudioCard className="space-y-4 transition-colors duration-150 hover:border-studio-primary/30">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-studio-primary">
+                        #{booking.orderCode}
+                      </p>
+                      <h2 className="mt-1 font-heading text-lg font-semibold leading-snug text-studio-ink">
+                        {booking.workshopTitle}
+                      </h2>
+                    </div>
+                    <p className="shrink-0 text-right font-semibold tabular-nums text-studio-ink">
+                      {formatPrice(booking.totalAmount)} đ
+                    </p>
+                  </div>
+                  <div className="grid gap-3 border-y border-studio-border py-3 text-sm sm:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-studio-muted">
+                        Khách
+                      </p>
+                      <p className="mt-1 font-medium text-studio-ink">
+                        {booking.contactName}
+                      </p>
+                      <p className="mt-0.5 text-studio-muted">
+                        {booking.contactPhone ?? 'Chưa có số điện thoại'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-studio-muted">
+                        Thời gian
+                      </p>
+                      <time
+                        className="mt-1 block text-studio-ink"
+                        dateTime={booking.startsAt}
+                      >
+                        {dateLabel(booking.startsAt)}
+                      </time>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-studio-muted">Số người</span>
+                      <span className="inline-flex items-center gap-1.5 font-medium tabular-nums text-studio-ink">
+                        <UsersRound
+                          aria-hidden="true"
+                          className="size-4 text-studio-muted"
+                        />
+                        {booking.quantity}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-studio-muted">Đã thu</span>
+                      <span className="font-medium tabular-nums text-studio-ink">
+                        {formatPrice(booking.paidAmount)} đ
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <StudioBadge
+                      tone={reservationTone(booking.reservationStatus)}
+                    >
+                      {reservationLabel(booking.reservationStatus)}
+                    </StudioBadge>
+                    <StudioBadge tone={paymentTone(booking.paymentStatus)}>
+                      {paymentLabel(booking.paymentStatus)}
+                    </StudioBadge>
+                  </div>
+                  {booking.reservationStatus === 'confirmed' &&
+                    booking.paymentStatus === 'pending' &&
+                    booking.balanceAmount > 0 && (
+                      <StudioButton
+                        className="w-full"
+                        disabled={payment.isPending}
+                        onClick={() => {
+                          payment.reset();
+                          setSelected(booking);
+                        }}
+                        type="button"
+                        variant="secondary"
+                      >
+                        Ghi nhận thu {formatPrice(booking.balanceAmount)} đ
+                      </StudioButton>
+                    )}
+                </StudioCard>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       <Dialog
         open={Boolean(selected)}
@@ -163,34 +386,35 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
         {selected && (
           <DialogContent
             closeDisabled={payment.isPending}
-            className="space-y-4"
+            className="space-y-4 border-studio-border bg-studio-surface text-studio-ink"
           >
-            <DialogTitle>
+            <DialogTitle className="font-heading text-xl font-semibold">
               Xác nhận đã nhận tiền đơn #{selected.orderCode}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm leading-6 text-studio-muted">
               Đã nhận đủ {formatPrice(selected.balanceAmount)} đ từ{' '}
               {selected.contactName}?
             </DialogDescription>
             {payment.isError && (
-              <p role="alert" className="text-sm text-brick">
+              <p role="alert" className="text-sm text-studio-danger">
                 {payment.error.message}
               </p>
             )}
-            <div className="flex flex-wrap gap-3">
-              <Button
+            <div className="flex flex-wrap justify-end gap-3">
+              <StudioButton
                 disabled={payment.isPending}
                 onClick={() => payment.mutate(selected)}
+                loading={payment.isPending}
               >
                 {payment.isPending ? 'Đang ghi nhận…' : 'Đã nhận đủ tiền'}
-              </Button>
-              <Button
-                variant="outline"
+              </StudioButton>
+              <StudioButton
+                variant="secondary"
                 disabled={payment.isPending}
                 onClick={() => setSelected(null)}
               >
                 Đóng
-              </Button>
+              </StudioButton>
             </div>
           </DialogContent>
         )}

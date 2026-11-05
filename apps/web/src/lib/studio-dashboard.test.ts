@@ -37,7 +37,7 @@ describe('studio dashboard', () => {
     ] as StudioSession[];
     expect(
       studioDashboardStats(workshops, sessions, Date.parse('2029-01-01')),
-    ).toEqual({ openWorkshops: 1, availableSeats: 5 });
+    ).toEqual({ upcomingSessions: 1, openWorkshops: 1, availableSeats: 5 });
   });
   it('distinguishes drafts from submitted pending profiles', () => {
     expect(studioState({ status: 'pending', isDraft: true })).toBe('draft');

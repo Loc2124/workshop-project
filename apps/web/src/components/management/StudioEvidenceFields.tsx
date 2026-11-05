@@ -4,7 +4,7 @@ import { queryKeys } from '../../lib/query-keys';
 import { useEffect, useRef, useState } from 'react';
 import { defaultSiteSettings } from '@workshop/shared';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
-import { Plus, Trash2, Star } from 'lucide-react';
+import { Trash2, Star, UploadCloud } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -50,6 +50,7 @@ export function StudioEvidenceFields({
   const [progress, setProgress] = useState(0);
   const [uploadLabel, setUploadLabel] = useState('');
   const [preview, setPreview] = useState('');
+  const [dragging, setDragging] = useState(false);
   const previewUrls = useRef(new Set<string>());
   useEffect(
     () => () => {
@@ -128,6 +129,9 @@ export function StudioEvidenceFields({
       onBusyChange?.(false);
     }
   }
+  const coverId = values.photoIds[0];
+  const coverImage = images.data?.find((item) => item.id === coverId);
+  const galleryIds = values.photoIds.slice(1);
   return (
     <section className="space-y-5" aria-label="Liên hệ và ảnh thật của studio">
       <h2 className="font-heading text-2xl font-semibold">
@@ -214,71 +218,122 @@ export function StudioEvidenceFields({
             {errors.photoIds}
           </p>
         )}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {values.photoIds.map((id, index) => {
-            const image = images.data?.find((item) => item.id === id);
-            return (
-              <figure
-                key={id}
-                className="relative aspect-square min-w-0 overflow-hidden rounded-lg bg-soft"
+        <div
+          onDragEnter={(event) => {
+            event.preventDefault();
+            if (!busy) setDragging(true);
+          }}
+          onDragOver={(event) => event.preventDefault()}
+          onDragLeave={(event) => {
+            if (
+              !event.currentTarget.contains(event.relatedTarget as Node | null)
+            )
+              setDragging(false);
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            void upload(Array.from(event.dataTransfer.files));
+          }}
+          className={`space-y-4 rounded-studio-card border p-3 transition-colors duration-studio motion-reduce:transition-none sm:p-4 ${dragging ? 'border-studio-primary bg-studio-selected ring-2 ring-studio-primary/20' : 'border-studio-border bg-studio-subtle'}`}
+        >
+          {coverId && (
+            <figure className="group relative aspect-[16/7] overflow-hidden rounded-studio-card bg-studio-neutral-soft">
+              {coverImage ? (
+                <Img
+                  variant="medium"
+                  src={coverImage.url}
+                  mediumUrl={coverImage.mediumUrl}
+                  alt="Ảnh bìa studio"
+                  className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                />
+              ) : (
+                <LoadingState
+                  label="Đang tải ảnh bìa…"
+                  className="flex size-full items-center justify-center text-sm text-studio-muted"
+                />
+              )}
+              <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-studio-surface/95 px-3 py-2 text-xs font-semibold text-studio-ink shadow-studio-card">
+                <Star
+                  aria-hidden="true"
+                  className="size-3.5 text-studio-accent"
+                />
+                Ảnh bìa hiện tại
+              </span>
+              <button
+                type="button"
+                aria-label="Xóa ảnh bìa"
+                disabled={busy}
+                onClick={() => void remove(coverId)}
+                className="absolute right-3 top-3 grid size-11 place-items-center rounded-full bg-studio-surface/95 text-studio-ink opacity-100 shadow-studio-card transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
               >
-                {image ? (
-                  <Img
-                    variant="thumbnail"
-                    src={image.url}
-                    thumbnailUrl={image.thumbnailUrl}
-                    alt={`Ảnh studio ${index + 1}${index === 0 ? ', ảnh bìa' : ''}`}
-                    className="size-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <LoadingState
-                    label="Đang tải ảnh…"
-                    className="flex size-full items-center justify-center text-sm text-muted"
-                  />
-                )}
-                <button
-                  type="button"
-                  aria-label={`Xóa ảnh ${index + 1}`}
-                  disabled={busy}
-                  onClick={() => void remove(id)}
-                  className="absolute right-1 top-1 flex size-11 items-center justify-center rounded-full bg-paper text-ink focus-visible:outline-2 focus-visible:outline-primary disabled:opacity-50"
-                >
-                  <Trash2 size={18} />
-                </button>
-                {index === 0 ? (
-                  <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-paper px-3 py-2 text-xs font-semibold">
-                    <Star size={14} />
-                    Ảnh bìa
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() =>
-                      onChange('photoIds', [
-                        id,
-                        ...values.photoIds.filter((item) => item !== id),
-                      ])
-                    }
-                    className="absolute bottom-1 left-1 right-1 min-h-11 rounded-full bg-paper px-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-primary"
+                <Trash2 aria-hidden="true" className="size-4" />
+              </button>
+            </figure>
+          )}
+          {galleryIds.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+              {galleryIds.map((id) => {
+                const index = values.photoIds.indexOf(id);
+                const image = images.data?.find((item) => item.id === id);
+                return (
+                  <figure
+                    key={id}
+                    className="group relative aspect-[4/3] min-w-0 overflow-hidden rounded-studio-card bg-studio-neutral-soft"
                   >
-                    Đặt làm ảnh bìa
-                  </button>
-                )}
-              </figure>
-            );
-          })}
+                    {image ? (
+                      <Img
+                        variant="thumbnail"
+                        src={image.url}
+                        thumbnailUrl={image.thumbnailUrl}
+                        alt={`Ảnh studio ${index + 1}`}
+                        className="size-full object-cover transition-transform duration-200 group-hover:scale-[1.04]"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <LoadingState
+                        label="Đang tải ảnh…"
+                        className="flex size-full items-center justify-center text-sm text-studio-muted"
+                      />
+                    )}
+                    <button
+                      type="button"
+                      aria-label={`Xóa ảnh ${index + 1}`}
+                      disabled={busy}
+                      onClick={() => void remove(id)}
+                      className="absolute right-2 top-2 grid size-11 place-items-center rounded-full bg-studio-surface/95 text-studio-ink opacity-100 shadow-studio-card transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                    >
+                      <Trash2 aria-hidden="true" className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() =>
+                        onChange('photoIds', [
+                          id,
+                          ...values.photoIds.filter((item) => item !== id),
+                        ])
+                      }
+                      className="absolute bottom-2 left-2 inline-flex min-h-9 items-center gap-1.5 rounded-full bg-studio-surface/95 px-3 text-xs font-semibold text-studio-ink opacity-100 shadow-studio-card transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                    >
+                      <Star aria-hidden="true" className="size-3.5" />
+                      Đặt làm ảnh bìa
+                    </button>
+                  </figure>
+                );
+              })}
+            </div>
+          )}
           {preview && (
-            <figure className="relative aspect-square overflow-hidden rounded-lg">
+            <figure className="relative aspect-[16/7] overflow-hidden rounded-studio-card">
               <Img
                 variant="thumbnail"
                 src={preview}
                 alt="Ảnh đang tải lên"
                 className="size-full object-cover"
               />
-              <span className="absolute inset-x-0 bottom-0 bg-paper p-2 text-center text-sm">
-                {progress}%
+              <span className="absolute inset-x-0 bottom-0 bg-studio-surface/95 p-2 text-center text-sm text-studio-ink">
+                {uploadLabel} · {progress}%
               </span>
             </figure>
           )}
@@ -286,10 +341,20 @@ export function StudioEvidenceFields({
             settingsQuery.isSuccess &&
             values.photoIds.length < policy.maxPhotos && (
               <label
-                className={`relative flex aspect-square cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-line bg-surface p-3 text-center text-sm font-semibold focus-within:ring-2 focus-within:ring-primary ${busy ? 'opacity-50' : ''}`}
+                className={`flex min-h-32 cursor-pointer flex-col items-center justify-center gap-2 rounded-studio-card border border-dashed px-4 py-5 text-center transition-colors duration-studio focus-within:ring-2 focus-within:ring-studio-primary motion-reduce:transition-none ${dragging ? 'border-studio-primary bg-studio-selected' : 'border-studio-border bg-studio-surface hover:border-studio-primary/60'} ${busy ? 'cursor-wait opacity-60' : ''}`}
               >
-                <Plus size={24} aria-hidden="true" />
-                <span>Chọn ảnh</span>
+                <UploadCloud
+                  aria-hidden="true"
+                  className="size-7 text-studio-primary"
+                />
+                <span className="text-sm font-semibold text-studio-ink">
+                  {dragging
+                    ? 'Thả ảnh để tải lên'
+                    : 'Kéo ảnh vào đây để tải lên'}
+                </span>
+                <span className="text-sm text-studio-muted">
+                  hoặc chọn từ thiết bị · JPG, PNG, WebP
+                </span>
                 <input
                   type="file"
                   aria-label="Chọn ảnh thật của studio"

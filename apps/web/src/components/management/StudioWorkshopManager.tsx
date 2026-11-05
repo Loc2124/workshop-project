@@ -1,8 +1,8 @@
-import { LoadingState } from '../ui/LoadingState';
 import { useState, type FormEvent } from 'react';
 import {
   categories as localCategories,
   DEFAULT_CATEGORY,
+  getCategoryMeta,
 } from '../../constants/categories';
 import { formatPrice } from '../../lib/format';
 import { useSaveStudioWorkshop } from '../../hooks/useManagement';
@@ -11,11 +11,20 @@ import {
   studioWorkshopInputSchema,
   studioWorkshopUpdateInputSchema,
 } from '../../types/management';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { requiredPriceFormSchema } from '../../lib/form-validation';
 import { useCategories } from '../../hooks/useCategories';
 import { proposedCategoryNameSchema } from '@workshop/shared';
+import { Clock3, Images, Pencil, Plus, UsersRound } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '../ui/sheet';
+import {
+  StudioBadge,
+  StudioButton,
+  StudioCard,
+  StudioEmptyState,
+  StudioField,
+  StudioFormSection,
+  StudioSkeleton,
+} from './StudioPrimitives';
 
 type Props = {
   studio: MemberStudio;
@@ -196,240 +205,330 @@ function StudioWorkshopEditor({
   }
 
   return (
-    <form
-      noValidate
-      className="space-y-5 border-y border-line bg-surface py-6"
-      onSubmit={submit}
-    >
-      <div>
-        <h3 className="font-heading text-xl font-semibold">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="border-b border-studio-border px-5 py-5 pr-16 sm:px-7 sm:py-6">
+        <p className="text-sm font-medium text-studio-muted">
+          Workshop của studio
+        </p>
+        <SheetTitle className="mt-1 font-heading text-2xl font-semibold text-studio-ink">
           {workshop ? 'Sửa workshop' : 'Tạo workshop'}
-        </h3>
-        <p className="mt-1 text-sm text-muted">
+        </SheetTitle>
+        <SheetDescription className="mt-2 max-w-xl text-sm leading-6 text-studio-muted">
           Studio đã duyệt được đăng workshop ngay, không cần admin duyệt từng
           bài. Chọn bản nháp nếu chưa muốn công khai.
-        </p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <label className="space-y-2 text-sm font-semibold md:col-span-2">
-          <span>Tên workshop</span>
-          <Input
-            maxLength={200}
-            onChange={(event) => update('title', event.target.value)}
-            required
-            value={values.title}
-          />
-        </label>
-        <label className="space-y-2 text-sm font-semibold md:col-span-2">
-          <span>Mô tả</span>
-          <textarea
-            className="min-h-32 w-full rounded-lg border border-line bg-paper px-3 py-2 text-base font-normal text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            maxLength={10_000}
-            onChange={(event) => update('description', event.target.value)}
-            required
-            value={values.description}
-          />
-        </label>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Danh mục workshop</span>
-          <select
-            className="min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base font-normal text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            onChange={(event) => {
-              update('categoryId', event.target.value);
-              if (event.target.value !== 'other') setProposingCategory(false);
-            }}
-            required
-            value={values.categoryId}
+        </SheetDescription>
+      </header>
+      <form
+        noValidate
+        className="flex min-h-0 flex-1 flex-col"
+        onSubmit={submit}
+      >
+        <div className="min-h-0 flex-1 space-y-studio-section overflow-y-auto px-5 py-2 sm:px-7">
+          <StudioFormSection
+            title="Thông tin cơ bản"
+            description="Thông tin hiển thị giúp khách hiểu workshop của bạn."
           >
-            <option value="">Chọn danh mục</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-          <span className="block text-sm font-normal text-muted">
-            Mỗi workshop có thể thuộc một danh mục khác nhau. Nếu chưa có danh
-            mục phù hợp, chọn “Khác” và ghi rõ tên, nội dung workshop ở trên.
-          </span>
-        </label>
-        {values.categoryId === 'other' && (
-          <div className="space-y-3 text-sm md:col-span-2">
-            <label className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                className="mt-1 accent-primary"
-                checked={proposingCategory}
-                onChange={(event) => setProposingCategory(event.target.checked)}
+            <div className="grid gap-studio-group sm:grid-cols-2">
+              <StudioField
+                className="sm:col-span-2"
+                label="Tên workshop"
+                maxLength={200}
+                onChange={(event) => update('title', event.target.value)}
+                required
+                value={values.title}
               />
-              <span>Đề xuất danh mục mới cho workshop này</span>
-            </label>
-            {proposingCategory && (
-              <label className="block space-y-2 font-semibold">
-                <span>Tên danh mục đề xuất</span>
-                <Input
-                  aria-invalid={Boolean(proposalError) || undefined}
-                  aria-describedby={
-                    proposalError ? 'category-proposal-error' : undefined
-                  }
-                  className={proposalError ? 'border-brick' : undefined}
-                  value={values.proposedCategoryName}
-                  maxLength={80}
+              <div className="space-y-studio-field sm:col-span-2">
+                <label
+                  htmlFor="studio-workshop-description"
+                  className="block text-sm font-semibold text-studio-ink"
+                >
+                  Mô tả
+                </label>
+                <textarea
+                  id="studio-workshop-description"
+                  className="min-h-28 w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 py-2 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
+                  maxLength={10_000}
                   onChange={(event) =>
-                    update('proposedCategoryName', event.target.value)
+                    update('description', event.target.value)
                   }
-                  placeholder="Ví dụ: Thêu tay"
                   required
+                  value={values.description}
                 />
-                {proposalError && (
-                  <span
-                    id="category-proposal-error"
-                    role="alert"
-                    className="block text-xs font-normal text-brick"
-                  >
-                    {proposalError}
-                  </span>
-                )}
-                <span className="block font-normal text-muted">
-                  Workshop được đăng ngay trong nhóm Khác. Admin xét riêng đề
-                  xuất danh mục mới.
-                </span>
-              </label>
-            )}
-          </div>
-        )}
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Cấp độ</span>
-          <select
-            className="min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base font-normal text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            onChange={(event) =>
-              update('level', event.target.value as WorkshopValues['level'])
-            }
-            value={values.level}
+              </div>
+              <div className="space-y-studio-field">
+                <label
+                  htmlFor="studio-workshop-category"
+                  className="block text-sm font-semibold text-studio-ink"
+                >
+                  Danh mục workshop
+                </label>
+                <select
+                  id="studio-workshop-category"
+                  className="min-h-studio-control w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
+                  onChange={(event) => {
+                    update('categoryId', event.target.value);
+                    if (event.target.value !== 'other')
+                      setProposingCategory(false);
+                  }}
+                  required
+                  value={values.categoryId}
+                >
+                  <option value="">Chọn danh mục</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-sm leading-5 text-studio-muted">
+                  Mỗi workshop có thể thuộc một danh mục khác nhau. Nếu chưa có
+                  danh mục phù hợp, chọn “Khác” và ghi rõ tên, nội dung workshop
+                  ở trên.
+                </p>
+              </div>
+              <div className="space-y-studio-field">
+                <label
+                  htmlFor="studio-workshop-level"
+                  className="block text-sm font-semibold text-studio-ink"
+                >
+                  Cấp độ
+                </label>
+                <select
+                  id="studio-workshop-level"
+                  className="min-h-studio-control w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
+                  onChange={(event) =>
+                    update(
+                      'level',
+                      event.target.value as WorkshopValues['level'],
+                    )
+                  }
+                  value={values.level}
+                >
+                  <option value="beginner">Người mới</option>
+                  <option value="intermediate">Đã có kinh nghiệm</option>
+                  <option value="all">Mọi cấp độ</option>
+                </select>
+              </div>
+              {values.categoryId === 'other' && (
+                <div className="space-y-3 sm:col-span-2">
+                  <label className="flex min-h-11 items-center gap-3 text-sm font-medium text-studio-ink">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-studio-primary"
+                      checked={proposingCategory}
+                      onChange={(event) =>
+                        setProposingCategory(event.target.checked)
+                      }
+                    />
+                    <span>Đề xuất danh mục mới cho workshop này</span>
+                  </label>
+                  {proposingCategory && (
+                    <StudioField
+                      label="Tên danh mục đề xuất"
+                      value={values.proposedCategoryName}
+                      maxLength={80}
+                      onChange={(event) =>
+                        update('proposedCategoryName', event.target.value)
+                      }
+                      placeholder="Ví dụ: Thêu tay"
+                      required
+                      error={proposalError || undefined}
+                      hint="Workshop được đăng ngay trong nhóm Khác. Admin xét riêng đề xuất danh mục mới."
+                    />
+                  )}
+                </div>
+              )}
+              <StudioField
+                className="sm:col-span-2"
+                label="Phù hợp với (phân tách bằng dấu phẩy)"
+                maxLength={2000}
+                onChange={(event) => update('audience', event.target.value)}
+                placeholder="Người mới, nhóm bạn"
+                value={values.audience}
+              />
+            </div>
+          </StudioFormSection>
+
+          <StudioFormSection
+            title="Thời lượng và giá"
+            description="Thiết lập thời gian trải nghiệm và cách thanh toán."
           >
-            <option value="beginner">Người mới</option>
-            <option value="intermediate">Đã có kinh nghiệm</option>
-            <option value="all">Mọi cấp độ</option>
-          </select>
-        </label>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Thời lượng (phút)</span>
-          <Input
-            min={1}
-            onChange={(event) => update('durationMinutes', event.target.value)}
-            required
-            step={1}
-            type="number"
-            value={values.durationMinutes}
-          />
-        </label>
-        {isOwner && (
-          <label className="space-y-2 text-sm font-semibold">
-            <span>Giá cơ sở (VND)</span>
-            <Input
-              min={0}
-              onChange={(event) => update('basePrice', event.target.value)}
-              required
-              step={1}
-              type="number"
-              value={values.basePrice}
-            />
-          </label>
-        )}
-        {isOwner && (
-          <label className="space-y-2 text-sm font-semibold md:col-span-2">
-            <span>Mức cọc (%)</span>
-            <Input
-              type="number"
-              min={0}
-              max={30}
-              step={1}
-              required
-              disabled={!canCollectDeposit}
-              value={canCollectDeposit ? values.depositPercent : '0'}
-              onChange={(event) => update('depositPercent', event.target.value)}
-            />
-            <p className="font-normal text-muted">
-              {canCollectDeposit
-                ? 'Chọn từ 0–30%, mặc định 20%. Chọn 0% để thanh toán toàn bộ tại studio.'
-                : 'Chỉ studio bậc 2 với hồ sơ đầy đủ được nhận cọc. Hiện thanh toán toàn bộ tại studio.'}
+            <div className="grid gap-studio-group sm:grid-cols-2">
+              <StudioField
+                label="Thời lượng (phút)"
+                min={1}
+                onChange={(event) =>
+                  update('durationMinutes', event.target.value)
+                }
+                required
+                step={1}
+                type="number"
+                value={values.durationMinutes}
+              />
+              {isOwner && (
+                <StudioField
+                  label="Giá cơ sở (VND)"
+                  min={0}
+                  onChange={(event) => update('basePrice', event.target.value)}
+                  required
+                  step={1}
+                  type="number"
+                  value={values.basePrice}
+                />
+              )}
+              {isOwner && (
+                <StudioField
+                  className="sm:col-span-2"
+                  label="Mức cọc (%)"
+                  type="number"
+                  min={0}
+                  max={30}
+                  step={1}
+                  required
+                  disabled={!canCollectDeposit}
+                  value={canCollectDeposit ? values.depositPercent : '0'}
+                  onChange={(event) =>
+                    update('depositPercent', event.target.value)
+                  }
+                  hint={
+                    canCollectDeposit
+                      ? 'Chọn từ 0–30%, mặc định 20%. Chọn 0% để thanh toán toàn bộ tại studio.'
+                      : 'Chỉ studio bậc 2 với hồ sơ đầy đủ được nhận cọc. Hiện thanh toán toàn bộ tại studio.'
+                  }
+                />
+              )}
+            </div>
+          </StudioFormSection>
+
+          <StudioFormSection
+            title="Nội dung chi tiết"
+            description="Cho khách biết họ sẽ trải nghiệm và mang về điều gì."
+          >
+            <div className="grid gap-studio-group sm:grid-cols-2">
+              <div className="space-y-studio-field sm:col-span-2">
+                <label
+                  htmlFor="studio-workshop-takeaway"
+                  className="block text-sm font-semibold text-studio-ink"
+                >
+                  Sản phẩm mang về
+                </label>
+                <textarea
+                  id="studio-workshop-takeaway"
+                  className="min-h-24 w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 py-2 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
+                  maxLength={5000}
+                  onChange={(event) => update('takeaway', event.target.value)}
+                  value={values.takeaway}
+                />
+              </div>
+              <div className="space-y-studio-field sm:col-span-2">
+                <label
+                  htmlFor="studio-workshop-requirements"
+                  className="block text-sm font-semibold text-studio-ink"
+                >
+                  Cần chuẩn bị
+                </label>
+                <textarea
+                  id="studio-workshop-requirements"
+                  className="min-h-24 w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 py-2 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
+                  maxLength={5000}
+                  onChange={(event) =>
+                    update('requirements', event.target.value)
+                  }
+                  value={values.requirements}
+                />
+              </div>
+            </div>
+          </StudioFormSection>
+
+          <StudioFormSection
+            title="Chính sách"
+            description="Thông tin thanh toán và hủy để khách chủ động trước khi đặt chỗ."
+          >
+            <div className="grid gap-studio-group sm:grid-cols-2">
+              <div className="space-y-studio-field">
+                <label
+                  htmlFor="studio-workshop-cancellation-policy"
+                  className="block text-sm font-semibold text-studio-ink"
+                >
+                  Chính sách hủy
+                </label>
+                <textarea
+                  id="studio-workshop-cancellation-policy"
+                  className="min-h-24 w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 py-2 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
+                  maxLength={5000}
+                  onChange={(event) =>
+                    update('cancellationPolicy', event.target.value)
+                  }
+                  value={values.cancellationPolicy}
+                />
+              </div>
+              <div className="space-y-studio-field">
+                <label
+                  htmlFor="studio-workshop-payment-policy"
+                  className="block text-sm font-semibold text-studio-ink"
+                >
+                  Chính sách thanh toán
+                </label>
+                <textarea
+                  id="studio-workshop-payment-policy"
+                  className="min-h-24 w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 py-2 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
+                  maxLength={5000}
+                  onChange={(event) =>
+                    update('paymentPolicy', event.target.value)
+                  }
+                  value={values.paymentPolicy}
+                />
+              </div>
+              <div className="space-y-studio-field sm:col-span-2">
+                <label
+                  htmlFor="studio-workshop-publication-status"
+                  className="block text-sm font-semibold text-studio-ink"
+                >
+                  Hiển thị workshop
+                </label>
+                <select
+                  id="studio-workshop-publication-status"
+                  className="min-h-studio-control w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2 sm:max-w-xs"
+                  value={values.publicationStatus}
+                  onChange={(event) =>
+                    update(
+                      'publicationStatus',
+                      event.target.value as 'draft' | 'published',
+                    )
+                  }
+                >
+                  <option value="draft">Bản nháp</option>
+                  <option value="published">Công khai</option>
+                </select>
+              </div>
+            </div>
+          </StudioFormSection>
+
+          {validationError && (
+            <p className="text-sm text-studio-danger" role="alert">
+              {validationError}
             </p>
-          </label>
-        )}
-        <label className="space-y-2 text-sm font-semibold md:col-span-2">
-          <span>Phù hợp với (phân tách bằng dấu phẩy)</span>
-          <Input
-            maxLength={2000}
-            onChange={(event) => update('audience', event.target.value)}
-            placeholder="Người mới, nhóm bạn"
-            value={values.audience}
-          />
-        </label>
-        <label className="space-y-2 text-sm font-semibold md:col-span-2">
-          <span>Sản phẩm mang về</span>
-          <textarea
-            className="min-h-20 w-full rounded-lg border border-line bg-paper px-3 py-2 text-base font-normal text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            maxLength={5000}
-            onChange={(event) => update('takeaway', event.target.value)}
-            value={values.takeaway}
-          />
-        </label>
-        {[
-          ['requirements', 'Cần chuẩn bị'],
-          ['cancellationPolicy', 'Chính sách hủy'],
-          ['paymentPolicy', 'Chính sách thanh toán'],
-        ].map(([key, label]) => (
-          <label
-            className="space-y-2 text-sm font-semibold md:col-span-2"
-            key={key}
+          )}
+        </div>
+        <footer className="flex flex-wrap justify-end gap-3 border-t border-studio-border bg-studio-surface px-5 py-4 sm:px-7">
+          <StudioButton
+            disabled={saveWorkshop.isPending}
+            onClick={onCancel}
+            type="button"
+            variant="secondary"
           >
-            <span>{label}</span>
-            <textarea
-              className="min-h-20 w-full rounded-lg border border-line bg-paper px-3 py-2 text-base font-normal text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              maxLength={5000}
-              onChange={(event) =>
-                update(key as keyof WorkshopValues, event.target.value)
-              }
-              value={values[key as keyof WorkshopValues]}
-            />
-          </label>
-        ))}
-      </div>
-      {validationError && (
-        <p className="text-sm text-brick" role="alert">
-          {validationError}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-3">
-        <label className="space-y-2 text-sm font-semibold">
-          <span className="block">Hiển thị workshop</span>
-          <select
-            className="min-h-11 rounded-lg border border-line bg-paper px-3"
-            value={values.publicationStatus}
-            onChange={(event) =>
-              update(
-                'publicationStatus',
-                event.target.value as 'draft' | 'published',
-              )
-            }
+            Hủy
+          </StudioButton>
+          <StudioButton
+            disabled={saveWorkshop.isPending}
+            loading={saveWorkshop.isPending}
+            type="submit"
           >
-            <option value="draft">Bản nháp</option>
-            <option value="published">Công khai</option>
-          </select>
-        </label>
-        <Button disabled={saveWorkshop.isPending} type="submit">
-          {saveWorkshop.isPending ? 'Đang lưu…' : 'Lưu workshop'}
-        </Button>
-        <Button
-          disabled={saveWorkshop.isPending}
-          onClick={onCancel}
-          type="button"
-          variant="outline"
-        >
-          Hủy
-        </Button>
-      </div>
-    </form>
+            {saveWorkshop.isPending ? 'Đang lưu…' : 'Lưu workshop'}
+          </StudioButton>
+        </footer>
+      </form>
+    </div>
   );
 }
 
@@ -454,128 +553,179 @@ export function StudioWorkshopManager({
 }: Props) {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<StudioWorkshop>();
+  const canManage = studio.role === 'owner' && studio.status === 'approved';
+  const editorOpen = creating || Boolean(editing);
+  const closeEditor = () => {
+    setCreating(false);
+    setEditing(undefined);
+  };
 
   return (
-    <section aria-labelledby="studio-workshops-title">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section aria-label="Danh sách workshop" className="space-y-studio-section">
+      <div className="flex flex-col gap-4 rounded-studio-card border border-studio-border bg-studio-surface p-studio-card shadow-studio-card sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2
-            className="font-heading text-2xl font-semibold md:text-3xl"
-            id="studio-workshops-title"
-          >
-            Workshop
-          </h2>
-          <p className="mt-1 text-muted">
+          <p className="text-sm leading-6 text-studio-muted">
             Quản lý bản nháp và workshop công khai. Admin hậu kiểm nội dung và
             báo cáo.
           </p>
-        </div>
-        {studio.role === 'owner' &&
-          studio.status === 'approved' &&
-          !creating &&
-          !editing && (
-            <Button
-              onClick={() => setCreating(true)}
-              type="button"
-              variant="outline"
-            >
-              Tạo workshop
-            </Button>
+          {!isLoading && !error && (
+            <p className="mt-2 text-sm font-medium text-studio-primary">
+              {workshops?.length ?? 0} workshop
+            </p>
           )}
-        {!isLoading && !error && (
-          <span className="text-sm text-muted">
-            {workshops?.length ?? 0} workshop
-          </span>
+          {studio.status !== 'approved' && (
+            <p className="mt-2 text-sm text-studio-muted">
+              Studio cần được duyệt trước khi tạo hoặc cập nhật workshop.
+            </p>
+          )}
+        </div>
+        {canManage && (
+          <StudioButton onClick={() => setCreating(true)} className="shrink-0">
+            <Plus aria-hidden="true" className="size-4" /> Tạo workshop
+          </StudioButton>
         )}
       </div>
 
-      {studio.status !== 'approved' && (
-        <p className="mt-4 text-sm text-muted">
-          Studio cần được duyệt trước khi tạo hoặc cập nhật workshop.
-        </p>
-      )}
-
-      {creating && (
-        <div className="mt-5">
-          <StudioWorkshopEditor
-            isOwner={studio.role === 'owner'}
-            canCollectDeposit={studio.canCollectDeposit === true}
-            key="new-workshop"
-            onCancel={() => setCreating(false)}
-            studioId={studio.id}
-          />
-        </div>
-      )}
       {isLoading ? (
-        <LoadingState label="Đang tải workshop…" className="py-8 text-muted" />
+        <div className="grid gap-studio-card sm:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <StudioSkeleton
+              key={item}
+              label="Đang tải workshop…"
+              className="h-72 animate-pulse"
+            />
+          ))}
+        </div>
       ) : error ? (
-        <div className="mt-5 space-y-3">
-          <p className="text-brick" role="alert">
+        <StudioCard className="space-y-4" role="alert">
+          <p className="text-studio-danger">
             Không thể tải workshop: {error.message}
           </p>
-          <Button onClick={onRetry} type="button" variant="outline">
+          <StudioButton onClick={onRetry} variant="secondary">
             Tải lại workshop
-          </Button>
-        </div>
+          </StudioButton>
+        </StudioCard>
       ) : workshops?.length ? (
-        <ul className="mt-5 divide-y divide-line border-y border-line">
-          {workshops.map((workshop) => (
-            <li className="py-5" key={workshop.id}>
-              {editing?.id === workshop.id ? (
-                <StudioWorkshopEditor
-                  isOwner={studio.role === 'owner'}
-                  canCollectDeposit={studio.canCollectDeposit === true}
-                  key={workshop.id}
-                  onCancel={() => setEditing(undefined)}
-                  studioId={studio.id}
-                  workshop={workshop}
-                />
-              ) : (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <h3 className="font-heading text-xl font-semibold">
-                      {workshop.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-muted">
-                      {formatPrice(workshop.basePrice)}đ ·{' '}
-                      {workshop.durationMinutes} phút
-                    </p>
-                    {workshop.proposedCategoryName && (
-                      <p className="mt-1 text-sm text-muted">
-                        Danh mục đề xuất: {workshop.proposedCategoryName} · Chưa
-                        được duyệt
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span
-                      className="w-fit rounded-full bg-soft px-3 py-1 text-sm font-semibold"
-                      aria-label={`Trạng thái workshop: ${workshopStatus(workshop)}`}
+        <ul className="grid gap-studio-card sm:grid-cols-2 xl:grid-cols-3">
+          {workshops.map((workshop) => {
+            const category = getCategoryMeta(workshop.categoryId);
+            const tone =
+              workshop.publicationStatus === 'hidden' ||
+              workshop.status === 'rejected'
+                ? 'danger'
+                : workshop.publicationStatus === 'draft' ||
+                    workshop.status === 'pending'
+                  ? 'warning'
+                  : 'success';
+            return (
+              <li key={workshop.id} className="min-w-0">
+                <StudioCard className="group overflow-hidden p-0 transition duration-200 hover:-translate-y-0.5 hover:shadow-studio-card-hover">
+                  <div className="relative aspect-[16/9] overflow-hidden bg-studio-neutral-soft">
+                    <img
+                      alt=""
+                      className="size-full object-cover transition duration-200 group-hover:scale-[1.02]"
+                      decoding="async"
+                      height={540}
+                      loading="lazy"
+                      src={
+                        category.placeholderImage ??
+                        DEFAULT_CATEGORY.placeholderImage ??
+                        undefined
+                      }
+                      style={{
+                        objectPosition: category.imagePosition ?? 'center',
+                      }}
+                      width={960}
+                    />
+                    <StudioBadge
+                      tone={tone}
+                      className="absolute left-3 top-3 shadow-sm"
                     >
                       {workshopStatus(workshop)}
-                    </span>
-                    <Button
-                      disabled={studio.status !== 'approved'}
-                      onClick={() => {
-                        setCreating(false);
-                        setEditing(workshop);
-                      }}
-                      type="button"
-                      variant="outline"
-                    >
-                      Sửa
-                    </Button>
+                    </StudioBadge>
                   </div>
-                </div>
-              )}
-            </li>
-          ))}
+                  <div className="flex flex-col gap-4 p-studio-card">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-studio-muted">
+                        {category.name}
+                      </p>
+                      <h3 className="mt-1 line-clamp-2 font-heading text-xl font-semibold leading-snug text-studio-ink">
+                        {workshop.title}
+                      </h3>
+                      {workshop.proposedCategoryName && (
+                        <p className="mt-2 text-sm text-studio-muted">
+                          Danh mục đề xuất: {workshop.proposedCategoryName} ·
+                          Chưa được duyệt
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-studio-muted">
+                      <span className="font-semibold text-studio-ink">
+                        {formatPrice(workshop.basePrice)}đ
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock3 aria-hidden="true" className="size-4" />
+                        {workshop.durationMinutes} phút
+                      </span>
+                      {workshop.audience.length > 0 && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <UsersRound aria-hidden="true" className="size-4" />
+                          {workshop.audience.length} nhóm
+                        </span>
+                      )}
+                    </div>
+                    <div className="border-t border-studio-border pt-3">
+                      <StudioButton
+                        className="w-full"
+                        disabled={studio.status !== 'approved'}
+                        onClick={() => setEditing(workshop)}
+                        type="button"
+                        variant="secondary"
+                      >
+                        <Pencil aria-hidden="true" className="size-4" /> Sửa
+                        workshop
+                      </StudioButton>
+                    </div>
+                  </div>
+                </StudioCard>
+              </li>
+            );
+          })}
         </ul>
       ) : (
-        <p className="mt-5 border-y border-line py-8 text-muted">
-          Studio chưa có workshop. Workshop đã tạo sẽ xuất hiện tại đây.
-        </p>
+        <StudioEmptyState
+          icon={Images}
+          title="Chưa có workshop nào"
+          description="Workshop đã tạo sẽ xuất hiện tại đây để bạn quản lý và cập nhật nội dung."
+          action={
+            canManage ? (
+              <StudioButton onClick={() => setCreating(true)}>
+                <Plus aria-hidden="true" className="size-4" /> Tạo workshop đầu
+                tiên
+              </StudioButton>
+            ) : undefined
+          }
+        />
       )}
+
+      <Sheet open={editorOpen} onOpenChange={(open) => !open && closeEditor()}>
+        <SheetContent
+          side="right"
+          closeLabel="Đóng biểu mẫu"
+          className="max-w-2xl gap-0 overflow-hidden border-studio-border bg-studio-canvas p-0 text-studio-ink"
+        >
+          {editorOpen && (
+            <StudioWorkshopEditor
+              isOwner={studio.role === 'owner'}
+              canCollectDeposit={studio.canCollectDeposit === true}
+              key={editing?.id ?? 'new-workshop'}
+              onCancel={closeEditor}
+              studioId={studio.id}
+              workshop={editing}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
     </section>
   );
 }

@@ -120,6 +120,7 @@ export function StudioField({
   error,
   hint,
   id,
+  className,
   ...props
 }: ComponentProps<typeof StudioInput> & {
   label: string;
@@ -137,7 +138,7 @@ export function StudioField({
       .filter(Boolean)
       .join(' ') || undefined;
   return (
-    <div className="space-y-studio-field">
+    <div className={cn('space-y-studio-field', className)}>
       <label
         htmlFor={fieldId}
         className="block text-sm font-semibold text-studio-ink"

@@ -14,9 +14,11 @@ const Calendar = lazy(async () => ({
 export function SingleDatePicker({
   value,
   onChange,
+  ariaLabel = 'Ngày trải nghiệm',
 }: {
   value: string;
   onChange: (value: string) => void;
+  ariaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const selected = parseCalendarDate(value);
@@ -26,7 +28,7 @@ export function SingleDatePicker({
         <Button
           variant="outline"
           className="w-full justify-between bg-surface text-base font-normal text-ink"
-          aria-label="Ngày trải nghiệm"
+          aria-label={ariaLabel}
           type="button"
         >
           <span>
@@ -40,7 +42,7 @@ export function SingleDatePicker({
       <Popover.Portal>
         <Popover.Content
           role="dialog"
-          aria-label="Chọn ngày trải nghiệm"
+          aria-label={`Chọn ${ariaLabel.toLocaleLowerCase('vi')}`}
           align="start"
           sideOffset={8}
           collisionPadding={12}

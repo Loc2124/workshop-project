@@ -18,8 +18,12 @@ import {
   StudioEvidenceFields,
   type EvidenceValues,
 } from './StudioEvidenceFields';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
+import {
+  StudioButton,
+  StudioCard,
+  StudioField,
+  StudioFormSection,
+} from './StudioPrimitives';
 import { imageService } from '../../services/imageService';
 import { toast } from 'sonner';
 
@@ -40,13 +44,18 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [name, setName] = useState(studio.name);
   const [address, setAddress] = useState(studio.address);
-  const [paymentQrImageId, setPaymentQrImageId] = useState(
-    studio.paymentQrImageId ?? null,
-  );
-  const [qrUrl, setQrUrl] = useState(studio.paymentQrImageUrl ?? null);
   const [saving, setSaving] = useState(false);
   const [photosBusy, setPhotosBusy] = useState(false);
   const client = useQueryClient();
+  const hasChanges =
+    name !== studio.name ||
+    address !== studio.address ||
+    values.contactPhone !== (studio.contactPhone ?? '') ||
+    values.contactEmail !== (studio.contactEmail ?? '') ||
+    JSON.stringify(values.photoIds) !== JSON.stringify(studio.photoIds ?? []) ||
+    values.facebookUrl !== (studio.facebookUrl ?? '') ||
+    values.instagramUrl !== (studio.instagramUrl ?? '') ||
+    values.googleMapsUrl !== (studio.googleMapsUrl ?? '');
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (saving || photosBusy || !settings.isSuccess) return;
@@ -54,7 +63,6 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
       ...values,
       name,
       address,
-      paymentQrImageId,
       facebookUrl: values.facebookUrl.trim() || null,
       instagramUrl: values.instagramUrl.trim() || null,
       googleMapsUrl: values.googleMapsUrl.trim() || null,
@@ -98,21 +106,26 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
   }
   if (!open)
     return (
-      <section className="space-y-3 border-y border-line py-5">
-        <h2 className="font-heading text-2xl font-semibold">Hồ sơ bậc 1</h2>
-        <p className="text-sm leading-6 text-muted">
+      <StudioCard className="space-y-4">
+        <div>
+          <p className="text-sm font-semibold text-studio-primary">
+            Hồ sơ bậc 1
+          </p>
+          <h2 className="mt-1 font-heading text-xl font-semibold text-studio-ink">
+            Thông tin và hình ảnh studio
+          </h2>
+        </div>
+        <p className="max-w-3xl text-sm leading-6 text-studio-muted">
           {studio.profileComplete
-            ? 'Đổi tên, địa chỉ, ảnh bìa hoặc QR nhận tiền cần duyệt lại. Thông tin liên hệ và ảnh bổ sung được cập nhật ngay.'
+            ? 'Đổi tên, địa chỉ hoặc ảnh bìa cần duyệt lại. Thông tin liên hệ và ảnh bổ sung được cập nhật ngay.'
             : `Cần bổ sung đủ số điện thoại, email và ít nhất ${policy.minPhotos} ảnh thật trước khi xét duyệt.`}
         </p>
-        <Button
+        <StudioButton
           type="button"
-          variant="outline"
+          variant="secondary"
           onClick={() => {
             setName(studio.name);
             setAddress(studio.address);
-            setPaymentQrImageId(studio.paymentQrImageId ?? null);
-            setQrUrl(studio.paymentQrImageUrl ?? null);
             setValues({
               contactPhone: studio.contactPhone ?? '',
               contactEmail: studio.contactEmail ?? '',
@@ -126,33 +139,36 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
           }}
         >
           Bổ sung / cập nhật hồ sơ
-        </Button>
-      </section>
+        </StudioButton>
+      </StudioCard>
     );
   return (
     <form
       onSubmit={(event) => void submit(event)}
       noValidate
-      className="space-y-5 border-y border-line py-6"
+      className="space-y-studio-section pb-24"
     >
-      <label className="block space-y-2 text-sm font-semibold">
-        <span>Tên studio</span>
-        <Input
-          value={name}
-          maxLength={120}
-          onChange={(event) => setName(event.target.value)}
-        />
-        {errors.name && <span role="alert">{errors.name}</span>}
-      </label>
-      <label className="block space-y-2 text-sm font-semibold">
-        <span>Địa chỉ studio</span>
-        <Input
-          value={address}
-          maxLength={500}
-          onChange={(event) => setAddress(event.target.value)}
-        />
-        {errors.address && <span role="alert">{errors.address}</span>}
-      </label>
+      <StudioFormSection
+        title="Thông tin studio"
+        description="Tên và địa chỉ được hiển thị trên trang studio công khai."
+      >
+        <div className="grid gap-studio-group md:grid-cols-2">
+          <StudioField
+            label="Tên studio"
+            value={name}
+            maxLength={120}
+            onChange={(event) => setName(event.target.value)}
+            error={errors.name}
+          />
+          <StudioField
+            label="Địa chỉ studio"
+            value={address}
+            maxLength={500}
+            onChange={(event) => setAddress(event.target.value)}
+            error={errors.address}
+          />
+        </div>
+      </StudioFormSection>
       <StudioEvidenceFields
         values={values}
         errors={errors}
@@ -165,75 +181,33 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
         attachedIds={studio.photoIds}
         onBusyChange={setPhotosBusy}
       />
-      <div className="space-y-3">
-        <label className="block space-y-2 text-sm font-semibold">
-          <span>Ảnh QR nhận tiền (cần admin kiểm tra)</span>
-          <Input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            disabled={saving || photosBusy}
-            onChange={async (event) => {
-              const file = event.target.files?.[0];
-              event.target.value = '';
-              if (!file) return;
-              setPhotosBusy(true);
-              try {
-                const image = await imageService.upload(studio.id, file);
-                setPaymentQrImageId(image.id);
-                setQrUrl(image.url);
-              } catch (cause) {
-                toast.error(
-                  cause instanceof Error ? cause.message : 'Chưa tải được QR.',
-                );
-              } finally {
-                setPhotosBusy(false);
-              }
-            }}
-          />
-        </label>
-        {qrUrl && (
-          <>
-            <a
-              className="text-sm underline"
-              href={qrUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Xem QR nhận tiền
-            </a>
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={saving || photosBusy}
-              onClick={() => {
-                setPaymentQrImageId(null);
-                setQrUrl(null);
-              }}
-            >
-              Bỏ mã QR
-            </Button>
-          </>
-        )}
-      </div>
-      <p className="text-sm text-muted">
+      <p className="text-sm leading-6 text-studio-muted">
         Thay đổi thông tin nhạy cảm sẽ đưa studio về chờ duyệt và thu hồi xác
-        minh hiện tại. QR mới chỉ được dùng sau khi duyệt.
+        minh hiện tại. Khách thanh toán tiền cọc qua cổng PayOS khi đặt chỗ.
       </p>
-      <div className="flex flex-wrap gap-3">
-        <Button
-          type="submit"
-          disabled={saving || photosBusy || !settings.isSuccess}
-        >
-          {saving ? 'Đang lưu…' : 'Lưu hồ sơ'}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={saving || photosBusy}
-          onClick={() => setOpen(false)}
-        >
-          Đóng
-        </Button>
+      <div
+        className={`flex flex-wrap items-center justify-between gap-3 border-t border-studio-border bg-studio-surface px-4 py-3 sm:px-6 ${hasChanges ? 'sticky bottom-0 z-30 -mx-5 shadow-studio-sticky sm:-mx-8' : ''}`}
+      >
+        <p className="text-sm text-studio-muted">
+          {hasChanges ? 'Bạn có thay đổi chưa lưu.' : 'Hồ sơ đã được lưu.'}
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <StudioButton
+            type="submit"
+            disabled={saving || photosBusy || !settings.isSuccess}
+            loading={saving}
+          >
+            {saving ? 'Đang lưu…' : 'Lưu hồ sơ'}
+          </StudioButton>
+          <StudioButton
+            type="button"
+            variant="secondary"
+            disabled={saving || photosBusy}
+            onClick={() => setOpen(false)}
+          >
+            Đóng
+          </StudioButton>
+        </div>
       </div>
     </form>
   );

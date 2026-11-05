@@ -116,6 +116,7 @@ export default {
       boxShadow: {
         'studio-card': '0 2px 8px rgb(41 39 32 / 0.035)',
         'studio-hover': '0 6px 18px rgb(41 39 32 / 0.07)',
+        'studio-sticky': '0 -8px 24px rgb(41 39 32 / 0.08)',
         overlay: '8px 8px 24px rgb(28 25 23 / 0.1)',
       },
     },

@@ -214,8 +214,8 @@ export function CustomerBookingDetailPage() {
             booking.paidAmount >= booking.depositAmount &&
             booking.balanceAmount > 0 && (
               <p className="mt-4 text-sm text-stone-700">
-                Studio đã nhận tiền cọc qua cổng thanh toán. Phần còn lại thanh
-                toán tại studio.
+                Tiền cọc đã được thanh toán qua PayOS. Phần còn lại thanh toán
+                tại studio.
               </p>
             )}
           {canCancel && (

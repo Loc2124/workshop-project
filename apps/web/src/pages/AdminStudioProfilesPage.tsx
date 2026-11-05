@@ -436,22 +436,6 @@ export function AdminStudioProfilesPage({
                     </p>
                   </section>
                 )}
-                {selected.paymentQrImageUrl && (
-                  <section className="space-y-2 border-y border-line py-4">
-                    <h3 className="font-semibold">QR nhận tiền của studio</h3>
-                    <p className="text-sm text-muted">
-                      Kiểm tra tài khoản nhận tiền trước khi duyệt hồ sơ.
-                    </p>
-                    <a
-                      href={selected.paymentQrImageUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-11 items-center underline"
-                    >
-                      Mở ảnh QR để kiểm tra
-                    </a>
-                  </section>
-                )}
                 {(selected.status === 'approved' ||
                   Boolean(selected.verificationHistory?.length)) && (
                   <StudioVerificationPanel

@@ -23,6 +23,7 @@ export function studioDashboardStats(
   );
   return {
     // The API exposes confirmed seats, not booking records; do not present seats as bookings.
+    upcomingSessions: upcoming.length,
     openWorkshops: workshops.filter(
       (w) =>
         w.status === 'approved' &&

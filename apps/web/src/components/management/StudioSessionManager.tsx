@@ -1,4 +1,3 @@
-import { LoadingState } from '../ui/LoadingState';
 import { useState, type FormEvent } from 'react';
 import { formatPrice, formatSessionDate } from '../../lib/format';
 import {
@@ -18,9 +17,26 @@ import {
   studioSessionInputSchema,
   studioSessionUpdateInputSchema,
 } from '../../types/management';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { workshopSelectionSchema } from '../../lib/form-validation';
+import { Link } from 'react-router-dom';
+import { CalendarDays, Clock3, Pencil, Plus, UsersRound } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '../ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '../ui/dialog';
+import { SingleDatePicker } from '../ui/single-date-picker';
+import {
+  StudioBadge,
+  StudioButton,
+  StudioCard,
+  StudioEmptyState,
+  StudioField,
+  StudioFormSection,
+  StudioSkeleton,
+} from './StudioPrimitives';
 
 type Props = {
   studio: MemberStudio;
@@ -72,6 +88,16 @@ function SessionEditor({
     setValues((current) => ({ ...current, [key]: value }));
   }
 
+  function updateDate(key: 'startsAt' | 'endsAt', date: string) {
+    const [, time = ''] = values[key].split('T');
+    update(key, `${date}T${time}`);
+  }
+
+  function updateTime(key: 'startsAt' | 'endsAt', time: string) {
+    const [date = ''] = values[key].split('T');
+    update(key, `${date}T${time}`);
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setValidationError('');
@@ -119,104 +145,147 @@ function SessionEditor({
   }
 
   return (
-    <form
-      noValidate
-      className="space-y-5 border-y border-line bg-surface py-6"
-      onSubmit={submit}
-    >
-      <div>
-        <h3 className="font-heading text-xl font-semibold">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <header className="border-b border-studio-border px-5 py-5 pr-16 sm:px-7 sm:py-6">
+        <p className="text-sm font-medium text-studio-muted">Lịch workshop</p>
+        <SheetTitle className="mt-1 font-heading text-2xl font-semibold text-studio-ink">
           {session ? 'Sửa lịch buổi' : 'Tạo buổi workshop'}
-        </h3>
-        <p className="mt-1 text-sm text-muted">
-          Thời gian nhập theo giờ Việt Nam (UTC+7).
-        </p>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {!session && (
-          <label className="space-y-2 text-sm font-semibold md:col-span-2">
-            <span>Workshop</span>
-            <select
-              className="min-h-11 w-full rounded-lg border border-line bg-paper px-3 text-base font-normal text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              onChange={(event) => update('workshopId', event.target.value)}
-              required
-              value={values.workshopId}
-            >
-              <option value="">Chọn workshop</option>
-              {workshops.map((workshop) => (
-                <option key={workshop.id} value={workshop.id}>
-                  {workshop.title}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Bắt đầu</span>
-          <Input
-            onChange={(event) => update('startsAt', event.target.value)}
-            required
-            type="datetime-local"
-            value={values.startsAt}
-          />
-        </label>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Kết thúc</span>
-          <Input
-            onChange={(event) => update('endsAt', event.target.value)}
-            required
-            type="datetime-local"
-            value={values.endsAt}
-          />
-        </label>
-        <label className="space-y-2 text-sm font-semibold">
-          <span>Sức chứa</span>
-          <Input
-            min={1}
-            onChange={(event) => update('capacity', event.target.value)}
-            required
-            step={1}
-            type="number"
-            value={values.capacity}
-          />
-        </label>
-        {owner && (
-          <label className="space-y-2 text-sm font-semibold">
-            <span>Giá buổi (VND)</span>
-            <Input
-              min={0}
-              onChange={(event) => update('price', event.target.value)}
-              step={1}
-              type="number"
-              value={values.price}
-            />
-            {!session && (
-              <span className="block font-normal text-muted">
-                Để trống để dùng giá cơ sở của workshop.
-              </span>
-            )}
-          </label>
-        )}
-      </div>
-      {validationError && (
-        <p className="text-sm text-brick" role="alert">
-          {validationError}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-3">
-        <Button disabled={saveSession.isPending} type="submit">
-          {saveSession.isPending ? 'Đang lưu…' : 'Lưu buổi'}
-        </Button>
-        <Button
-          disabled={saveSession.isPending}
-          onClick={onCancel}
-          type="button"
-          variant="outline"
-        >
-          Hủy
-        </Button>
-      </div>
-    </form>
+        </SheetTitle>
+        <SheetDescription className="mt-2 text-sm leading-6 text-studio-muted">
+          Thời gian nhập theo giờ Việt Nam (UTC+7), sử dụng định dạng 24 giờ.
+        </SheetDescription>
+      </header>
+      <form
+        noValidate
+        className="flex min-h-0 flex-1 flex-col"
+        onSubmit={submit}
+      >
+        <div className="min-h-0 flex-1 space-y-studio-section overflow-y-auto px-5 py-2 sm:px-7">
+          {!session && (
+            <StudioFormSection title="Workshop">
+              <label
+                htmlFor="studio-session-workshop"
+                className="block text-sm font-semibold text-studio-ink"
+              >
+                Workshop
+              </label>
+              <select
+                id="studio-session-workshop"
+                className="min-h-studio-control w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
+                onChange={(event) => update('workshopId', event.target.value)}
+                required
+                value={values.workshopId}
+              >
+                <option value="">Chọn workshop</option>
+                {workshops.map((workshop) => (
+                  <option key={workshop.id} value={workshop.id}>
+                    {workshop.title}
+                  </option>
+                ))}
+              </select>
+            </StudioFormSection>
+          )}
+          <StudioFormSection
+            title="Ngày và giờ"
+            description="Chọn ngày trên lịch và nhập giờ theo định dạng 24h. Múi giờ được áp dụng là Việt Nam (UTC+7)."
+          >
+            <div className="grid gap-studio-group sm:grid-cols-2">
+              <div className="space-y-studio-field">
+                <span className="block text-sm font-semibold text-studio-ink">
+                  Ngày bắt đầu
+                </span>
+                <SingleDatePicker
+                  ariaLabel="Ngày bắt đầu"
+                  value={values.startsAt.split('T')[0] ?? ''}
+                  onChange={(date) => updateDate('startsAt', date)}
+                />
+              </div>
+              <StudioField
+                label="Giờ bắt đầu"
+                lang="vi-VN"
+                onChange={(event) => updateTime('startsAt', event.target.value)}
+                required
+                step={60}
+                type="time"
+                value={values.startsAt.split('T')[1] ?? ''}
+              />
+              <div className="space-y-studio-field">
+                <span className="block text-sm font-semibold text-studio-ink">
+                  Ngày kết thúc
+                </span>
+                <SingleDatePicker
+                  ariaLabel="Ngày kết thúc"
+                  value={values.endsAt.split('T')[0] ?? ''}
+                  onChange={(date) => updateDate('endsAt', date)}
+                />
+              </div>
+              <StudioField
+                label="Giờ kết thúc"
+                lang="vi-VN"
+                onChange={(event) => updateTime('endsAt', event.target.value)}
+                required
+                step={60}
+                type="time"
+                value={values.endsAt.split('T')[1] ?? ''}
+              />
+            </div>
+          </StudioFormSection>
+          <StudioFormSection
+            title="Sức chứa và giá"
+            description="Thiết lập số lượng chỗ và mức giá áp dụng cho buổi này."
+          >
+            <div className="grid gap-studio-group sm:grid-cols-2">
+              <StudioField
+                label="Sức chứa"
+                min={1}
+                onChange={(event) => update('capacity', event.target.value)}
+                required
+                step={1}
+                type="number"
+                value={values.capacity}
+              />
+              {owner && (
+                <StudioField
+                  label="Giá buổi (VND)"
+                  min={0}
+                  onChange={(event) => update('price', event.target.value)}
+                  step={1}
+                  type="number"
+                  value={values.price}
+                  hint={
+                    !session
+                      ? 'Để trống để dùng giá cơ sở của workshop.'
+                      : undefined
+                  }
+                />
+              )}
+            </div>
+          </StudioFormSection>
+          {validationError && (
+            <p className="text-sm text-studio-danger" role="alert">
+              {validationError}
+            </p>
+          )}
+        </div>
+        <footer className="flex flex-wrap justify-end gap-3 border-t border-studio-border bg-studio-surface px-5 py-4 sm:px-7">
+          <StudioButton
+            disabled={saveSession.isPending}
+            onClick={onCancel}
+            type="button"
+            variant="secondary"
+          >
+            Hủy
+          </StudioButton>
+          <StudioButton
+            disabled={saveSession.isPending}
+            loading={saveSession.isPending}
+            type="submit"
+          >
+            {saveSession.isPending ? 'Đang lưu…' : 'Lưu buổi'}
+          </StudioButton>
+        </footer>
+      </form>
+    </div>
   );
 }
 
@@ -239,6 +308,11 @@ export function StudioSessionManager({
   const [canceling, setCanceling] = useState<StudioSession>();
   const cancelSession = useCancelStudioSession();
   const availableWorkshops = workshops ?? [];
+  const editorOpen = creating || Boolean(editing);
+  const closeEditor = () => {
+    setCreating(false);
+    setEditing(undefined);
+  };
 
   async function confirmCancel(session: StudioSession) {
     try {
@@ -253,155 +327,238 @@ export function StudioSessionManager({
   }
 
   return (
-    <section aria-labelledby="studio-sessions-title">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section aria-label="Lịch và slot" className="space-y-studio-section">
+      <div className="flex flex-col gap-4 rounded-studio-card border border-studio-border bg-studio-surface p-studio-card shadow-studio-card sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2
-            className="font-heading text-2xl font-semibold md:text-3xl"
-            id="studio-sessions-title"
-          >
-            Lịch workshop
-          </h2>
-          <p className="mt-1 text-muted">
-            Các buổi đã lên lịch, đã diễn ra hoặc đã hủy.
+          <p className="text-sm leading-6 text-studio-muted">
+            Theo dõi lịch trải nghiệm, sức chứa và tình trạng từng buổi.
           </p>
+          {!isLoading && !error && (
+            <p className="mt-2 text-sm font-medium text-studio-primary">
+              {sessions?.length ?? 0} buổi workshop
+            </p>
+          )}
         </div>
-        {!creating && !editing && availableWorkshops.length > 0 && (
-          <Button
+        {availableWorkshops.length > 0 && (
+          <StudioButton
+            className="shrink-0"
             onClick={() => setCreating(true)}
             type="button"
-            variant="outline"
           >
-            Tạo buổi
-          </Button>
-        )}
-        {!isLoading && !error && (
-          <span className="text-sm text-muted">
-            {sessions?.length ?? 0} buổi
-          </span>
+            <Plus aria-hidden="true" className="size-4" /> Tạo buổi
+          </StudioButton>
         )}
       </div>
 
-      {creating && (
-        <div className="mt-5">
-          <SessionEditor
-            key="new-session"
-            onCancel={() => setCreating(false)}
-            studio={studio}
-            workshops={availableWorkshops}
-          />
-        </div>
-      )}
       {isLoading ? (
-        <LoadingState label="Đang tải lịch…" className="py-8 text-muted" />
+        <div className="grid gap-studio-card xl:grid-cols-2">
+          {[0, 1, 2].map((item) => (
+            <StudioSkeleton
+              key={item}
+              label="Đang tải lịch workshop…"
+              className="h-52 animate-pulse"
+            />
+          ))}
+        </div>
       ) : error ? (
-        <div className="mt-5 space-y-3">
-          <p className="text-brick" role="alert">
+        <StudioCard className="space-y-4" role="alert">
+          <p className="text-studio-danger">
             Không thể tải lịch: {error.message}
           </p>
-          <Button onClick={onRetry} type="button" variant="outline">
+          <StudioButton onClick={onRetry} variant="secondary">
             Tải lại lịch
-          </Button>
-        </div>
+          </StudioButton>
+        </StudioCard>
       ) : sessions?.length ? (
-        <ul className="mt-5 divide-y divide-line border-y border-line">
-          {sessions.map((session) => (
-            <li className="py-5" key={session.id}>
-              {editing?.id === session.id ? (
-                <SessionEditor
-                  key={session.id}
-                  onCancel={() => setEditing(undefined)}
-                  session={session}
-                  studio={studio}
-                  workshops={availableWorkshops}
-                />
-              ) : (
-                <>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="min-w-0">
-                      <h3 className="font-semibold">{session.workshopTitle}</h3>
-                      <p className="mt-1 text-sm text-muted">
-                        {formatSessionDate(session.startsAt)} –{' '}
-                        {formatSessionDate(session.endsAt)}
-                      </p>
+        <ul className="grid gap-studio-card xl:grid-cols-2">
+          {sessions.map((session) => {
+            const starts = formatSessionDate(session.startsAt, { parts: true });
+            const ends = formatSessionDate(session.endsAt, { parts: true });
+            const booked = session.seatsHeld + session.seatsSold;
+            const remaining = Math.max(0, session.capacity - booked);
+            const progress =
+              session.capacity > 0
+                ? Math.min(100, (booked / session.capacity) * 100)
+                : 0;
+            const statusTone =
+              session.status === 'scheduled'
+                ? 'success'
+                : session.status === 'cancelled'
+                  ? 'danger'
+                  : 'neutral';
+            const isCancelled = session.status === 'cancelled';
+
+            return (
+              <li key={session.id} className="min-w-0">
+                <StudioCard
+                  className={`flex h-full gap-4 p-4 transition duration-200 hover:shadow-studio-card-hover sm:gap-5 sm:p-studio-card ${isCancelled ? 'opacity-60' : ''}`}
+                >
+                  <div className="flex w-[4.75rem] shrink-0 flex-col items-center justify-center self-start rounded-studio-control bg-studio-selected px-2 py-3 text-center text-studio-primary">
+                    <span className="font-heading text-2xl font-bold leading-none">
+                      {starts.day}
+                    </span>
+                    <span className="mt-1 text-[0.65rem] font-bold uppercase tracking-wide">
+                      Tháng {starts.month}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <StudioBadge tone={statusTone}>
+                          {sessionStatusLabels[session.status]}
+                        </StudioBadge>
+                        <h2 className="mt-2 font-heading text-lg font-semibold leading-snug text-studio-ink">
+                          {session.workshopTitle}
+                        </h2>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="w-fit rounded-full bg-soft px-3 py-1 text-sm font-semibold">
-                        {sessionStatusLabels[session.status]}
+                    <p className="mt-2 inline-flex items-center gap-2 text-sm text-studio-muted">
+                      <Clock3 aria-hidden="true" className="size-4 shrink-0" />
+                      <span>
+                        {starts.time} – {ends.time}
+                        {starts.date !== ends.date ? ` · ${ends.date}` : ''}
                       </span>
-                      {session.status === 'scheduled' && (
-                        <>
-                          <Button
-                            disabled={Boolean(canceling)}
-                            onClick={() => {
-                              setCreating(false);
-                              setEditing(session);
-                            }}
-                            type="button"
-                            variant="outline"
-                          >
-                            Sửa lịch
-                          </Button>
-                          {canceling?.id === session.id ? (
-                            <div
-                              className="flex flex-wrap items-center gap-2"
-                              role="group"
-                              aria-label={`Xác nhận hủy buổi ${session.workshopTitle}`}
-                            >
-                              <span className="text-sm text-brick">
-                                Hủy buổi này?
-                              </span>
-                              <Button
-                                disabled={cancelSession.isPending}
-                                onClick={() => void confirmCancel(session)}
-                                type="button"
-                                variant="destructive"
-                              >
-                                Xác nhận hủy
-                              </Button>
-                              <Button
-                                disabled={cancelSession.isPending}
-                                onClick={() => setCanceling(undefined)}
-                                type="button"
-                                variant="outline"
-                              >
-                                Giữ buổi
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              disabled={Boolean(canceling)}
-                              onClick={() => setCanceling(session)}
-                              type="button"
-                              variant="outline"
-                            >
-                              Hủy buổi
-                            </Button>
-                          )}
-                        </>
+                    </p>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                      <span className="font-semibold text-studio-ink">
+                        {formatPrice(session.price)}đ
+                      </span>
+                      {!isCancelled && (
+                        <span className="inline-flex items-center gap-1.5 text-studio-muted">
+                          <UsersRound aria-hidden="true" className="size-4" />
+                          Còn {remaining}/{session.capacity} chỗ
+                        </span>
                       )}
                     </div>
+                    {!isCancelled && (
+                      <div className="mt-3">
+                        <div
+                          aria-label={`Đã đặt ${booked} trên ${session.capacity} chỗ`}
+                          aria-valuemax={session.capacity}
+                          aria-valuemin={0}
+                          aria-valuenow={Math.min(booked, session.capacity)}
+                          className="h-2 overflow-hidden rounded-full bg-studio-subtle"
+                          role="progressbar"
+                        >
+                          <div
+                            className="h-full rounded-full bg-studio-primary transition-[width] duration-studio motion-reduce:transition-none"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    {session.status === 'scheduled' && (
+                      <div className="mt-4 flex flex-wrap gap-2 border-t border-studio-border pt-3">
+                        <StudioButton
+                          disabled={Boolean(canceling)}
+                          onClick={() => setEditing(session)}
+                          type="button"
+                          variant="secondary"
+                        >
+                          <Pencil aria-hidden="true" className="size-4" />
+                          Sửa lịch
+                        </StudioButton>
+                        <StudioButton
+                          disabled={Boolean(canceling)}
+                          onClick={() => setCanceling(session)}
+                          type="button"
+                          variant="ghost"
+                        >
+                          Hủy buổi
+                        </StudioButton>
+                      </div>
+                    )}
                   </div>
-                  <p className="mt-3 text-sm text-muted">
-                    {formatPrice(session.price)}đ · Còn{' '}
-                    {Math.max(
-                      0,
-                      session.capacity - session.seatsHeld - session.seatsSold,
-                    )}{' '}
-                    / {session.capacity} chỗ
-                  </p>
-                </>
-              )}
-            </li>
-          ))}
+                </StudioCard>
+              </li>
+            );
+          })}
         </ul>
+      ) : availableWorkshops.length ? (
+        <StudioEmptyState
+          icon={CalendarDays}
+          title="Lịch workshop chưa có buổi nào"
+          description="Tạo một buổi mới để khách có thể chọn ngày và đặt chỗ."
+          action={
+            <StudioButton onClick={() => setCreating(true)}>
+              <Plus aria-hidden="true" className="size-4" /> Tạo buổi đầu tiên
+            </StudioButton>
+          }
+        />
       ) : (
-        <p className="mt-5 border-y border-line py-8 text-muted">
-          {availableWorkshops.length
-            ? 'Studio chưa có buổi workshop nào được lên lịch.'
-            : 'Tạo workshop trước khi thêm buổi vào lịch.'}
-        </p>
+        <StudioEmptyState
+          icon={CalendarDays}
+          title="Tạo workshop trước nhé"
+          description="Sau khi có workshop, bạn có thể thêm ngày giờ và số chỗ cho từng buổi."
+          action={
+            <StudioButton asChild variant="secondary">
+              <Link to={`/studio/${studio.id}/workshops`}>Đến Workshop</Link>
+            </StudioButton>
+          }
+        />
       )}
+
+      <Sheet open={editorOpen} onOpenChange={(open) => !open && closeEditor()}>
+        <SheetContent
+          side="right"
+          closeLabel="Đóng biểu mẫu"
+          className="max-w-2xl gap-0 overflow-hidden border-studio-border bg-studio-canvas p-0 text-studio-ink"
+        >
+          {editorOpen && (
+            <SessionEditor
+              key={editing?.id ?? 'new-session'}
+              onCancel={closeEditor}
+              session={editing}
+              studio={studio}
+              workshops={availableWorkshops}
+            />
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <Dialog
+        open={Boolean(canceling)}
+        onOpenChange={(open) =>
+          !open && !cancelSession.isPending && setCanceling(undefined)
+        }
+      >
+        <DialogContent className="border-studio-border bg-studio-surface p-6 text-studio-ink">
+          <DialogTitle className="pr-10 font-heading text-xl font-semibold">
+            Hủy buổi workshop?
+          </DialogTitle>
+          <DialogDescription className="mt-3 text-sm leading-6 text-studio-muted">
+            {canceling && (
+              <>
+                Buổi{' '}
+                <span className="font-semibold text-studio-ink">
+                  {canceling.workshopTitle}
+                </span>{' '}
+                bắt đầu lúc {formatSessionDate(canceling.startsAt)} sẽ được đánh
+                dấu đã hủy.
+              </>
+            )}
+          </DialogDescription>
+          <div className="mt-6 flex flex-wrap justify-end gap-3">
+            <StudioButton
+              disabled={cancelSession.isPending}
+              onClick={() => setCanceling(undefined)}
+              type="button"
+              variant="secondary"
+            >
+              Giữ buổi
+            </StudioButton>
+            <StudioButton
+              disabled={cancelSession.isPending || !canceling}
+              loading={cancelSession.isPending}
+              onClick={() => canceling && void confirmCancel(canceling)}
+              type="button"
+              className="bg-studio-danger text-white hover:bg-studio-danger/90"
+            >
+              {cancelSession.isPending ? 'Đang hủy…' : 'Xác nhận hủy'}
+            </StudioButton>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
