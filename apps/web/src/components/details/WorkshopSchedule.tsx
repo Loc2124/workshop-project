@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { CalendarDays, CalendarPlus, MapPin, Minus, Plus } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { Workshop, WorkshopSession } from '../../types/workshop';
 import { formatPrice } from '../../lib/format';
 import { sessionCalendar, upcomingSessions } from '../../lib/workshopDetails';
@@ -30,7 +30,11 @@ export type WorkshopBookingRequest = {
 };
 export type WorkshopBookingHandler = (
   request: WorkshopBookingRequest,
-) => Promise<{ id: string; checkoutUrl?: string | null }>;
+) => Promise<{
+  id: string;
+  checkoutUrl?: string | null;
+  checkoutQrCode?: string | null;
+}>;
 // Inject the booking API through onBook; never treat a calendar download as a booking.
 
 export function WorkshopSchedule({
@@ -61,6 +65,7 @@ export function WorkshopSchedule({
   const submitting = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const locationPath = useLocation();
+  const navigate = useNavigate();
   const selected =
     confirmed?.session ??
     sessions.find(
@@ -107,6 +112,12 @@ export function WorkshopSchedule({
       const result = await onBook(parsed.data);
       if (!result?.id?.trim()) throw new Error('Missing booking confirmation');
       if (result.checkoutUrl) {
+        if (result.checkoutQrCode) {
+          navigate(
+            `/me/bookings/${encodeURIComponent(result.id)}?payment=checkout`,
+          );
+          return;
+        }
         const checkout = new URL(result.checkoutUrl);
         if (
           checkout.protocol !== 'https:' &&

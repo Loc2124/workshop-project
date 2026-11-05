@@ -379,7 +379,7 @@ function StudioWorkshopEditor({
               {isOwner && (
                 <StudioField
                   className="sm:col-span-2"
-                  label="Mức cọc (%)"
+                  label="Tiền cọc khách trả trước qua PayOS (%)"
                   type="number"
                   min={0}
                   max={30}
@@ -392,8 +392,8 @@ function StudioWorkshopEditor({
                   }
                   hint={
                     canCollectDeposit
-                      ? 'Chọn từ 0–30%, mặc định 20%. Chọn 0% để thanh toán toàn bộ tại studio.'
-                      : 'Chỉ studio bậc 2 với hồ sơ đầy đủ được nhận cọc. Hiện thanh toán toàn bộ tại studio.'
+                      ? 'Chọn từ 0–30%, mặc định 20%. Khách quét mã PayOS theo đơn để trả cọc; chọn 0% để thanh toán toàn bộ tại studio.'
+                      : 'Để bật cọc, studio cần được admin duyệt, xác minh và hoàn thiện hồ sơ liên hệ cùng ảnh. Hiện khách thanh toán toàn bộ tại studio.'
                   }
                 />
               )}

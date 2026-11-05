@@ -96,6 +96,7 @@ export async function createCustomerBooking(
       config.PAYMENT_PROVIDER,
       payment.checkoutUrl,
       payment.providerRef,
+      payment.qrCode,
     );
   } catch {
     await failCheckout(result.booking.id);
@@ -104,6 +105,7 @@ export async function createCustomerBooking(
   return {
     booking: result.booking,
     checkoutUrl: payment.checkoutUrl,
+    checkoutQrCode: payment.qrCode,
   };
 }
 

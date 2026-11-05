@@ -14,6 +14,7 @@ const responseSchema = z.object({
     .object({
       checkoutUrl: z.url(),
       paymentLinkId: z.string().nullable().optional(),
+      qrCode: z.string().nullable().optional(),
     })
     .optional(),
 });
@@ -67,6 +68,7 @@ export class PayOSProvider implements PaymentProvider {
     return {
       checkoutUrl: parsed.data.data.checkoutUrl,
       providerRef: parsed.data.data.paymentLinkId ?? null,
+      qrCode: parsed.data.data.qrCode ?? null,
     };
   }
 

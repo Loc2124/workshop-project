@@ -197,13 +197,34 @@ export function CustomerBookingDetailPage() {
           {depositPayment?.checkoutUrl &&
             booking.paymentStatus === 'pending' &&
             booking.reservationStatus === 'pending' && (
-              <a
-                href={depositPayment.checkoutUrl}
-                rel="noreferrer"
-                className="mt-5 flex min-h-12 items-center justify-center bg-primary px-4 text-center font-semibold text-white hover:bg-primary-hover"
-              >
-                Tiếp tục thanh toán tiền cọc
-              </a>
+              <div className="mt-5 space-y-4 rounded-xl border border-stone-200 bg-stone-50 p-4">
+                {depositPayment.qrCode && (
+                  <div className="space-y-2 text-center">
+                    <p className="text-sm font-semibold">
+                      Quét mã để thanh toán tiền cọc
+                    </p>
+                    <QRCodeSVG
+                      value={depositPayment.qrCode}
+                      size={216}
+                      level="M"
+                      title="Mã QR thanh toán PayOS"
+                      className="mx-auto rounded-lg bg-white p-2"
+                    />
+                    <p className="text-xs leading-5 text-stone-600">
+                      Mở ứng dụng ngân hàng và quét mã. Đơn chỉ được xác nhận
+                      sau khi PayOS báo thanh toán thành công.
+                    </p>
+                  </div>
+                )}
+                <a
+                  href={depositPayment.checkoutUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                  className="flex min-h-12 items-center justify-center rounded-lg bg-primary px-4 text-center font-semibold text-white hover:bg-primary-hover"
+                >
+                  Mở trang thanh toán PayOS
+                </a>
+              </div>
             )}
           {booking.paymentMode === 'in_studio' && booking.balanceAmount > 0 && (
             <p className="mt-4 text-sm text-stone-700">

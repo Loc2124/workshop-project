@@ -12,6 +12,7 @@ export type CreatePaymentInput = {
 export type CreatedPayment = {
   checkoutUrl: string;
   providerRef: string | null;
+  qrCode: string | null;
 };
 
 export type WebhookVerification = {

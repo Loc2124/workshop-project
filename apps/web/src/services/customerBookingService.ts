@@ -7,6 +7,7 @@ const paymentSchema = z.object({
   amount: z.number().int().nonnegative(),
   status: z.string(),
   checkoutUrl: z.string().url().nullable(),
+  qrCode: z.string().nullable().optional(),
   paidAt: z.string().nullable(),
 });
 
@@ -66,6 +67,7 @@ const createdBookingSchema = z.object({
     checkoutRequired: z.boolean(),
   }),
   checkoutUrl: z.string().url().nullable(),
+  checkoutQrCode: z.string().nullable().optional(),
 });
 
 const ticketSchema = z.object({

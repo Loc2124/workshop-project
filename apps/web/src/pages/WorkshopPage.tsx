@@ -71,6 +71,7 @@ export function WorkshopPage({
           return {
             id: result.booking.id,
             checkoutUrl: result.checkoutUrl,
+            checkoutQrCode: result.checkoutQrCode,
           };
         }
       : undefined);

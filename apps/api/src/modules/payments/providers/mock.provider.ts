@@ -16,7 +16,11 @@ export class MockProvider implements PaymentProvider {
   async createPayment(input: CreatePaymentInput): Promise<CreatedPayment> {
     const checkout = new URL('/payment/mock', this.webOrigin);
     checkout.searchParams.set('orderCode', String(input.orderCode));
-    return { checkoutUrl: checkout.toString(), providerRef: null };
+    return {
+      checkoutUrl: checkout.toString(),
+      providerRef: null,
+      qrCode: null,
+    };
   }
 
   verifyWebhook(rawBody: string): WebhookVerification {

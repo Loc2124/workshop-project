@@ -283,19 +283,21 @@ export async function saveCheckoutLink(
   provider: 'payos' | 'mock',
   checkoutUrl: string,
   providerRef: string | null,
+  qrCode: string | null,
 ): Promise<void> {
   await withTransaction(async (client) => {
     const result = await client.query(
       `UPDATE payments p
        SET checkout_url = $3,
-           provider_ref = $4
+           provider_ref = $4,
+           qr_code = $5
        FROM bookings b
        WHERE p.booking_id = b.id
          AND b.id = $1
          AND p.kind = 'deposit'
          AND p.provider = $2
          AND p.status = 'created'`,
-      [bookingId, provider, checkoutUrl, providerRef],
+      [bookingId, provider, checkoutUrl, providerRef, qrCode],
     );
     if (!result.rowCount) {
       throw new Error('Pending PayOS payment was not found for the booking.');
@@ -378,7 +380,8 @@ export async function getCustomerBooking(userId: string, bookingId: string) {
        COALESCE(json_agg(
          json_build_object(
            'provider', p.provider, 'kind', p.kind, 'amount', p.amount,
-           'status', p.status, 'checkoutUrl', p.checkout_url, 'paidAt', p.paid_at
+           'status', p.status, 'checkoutUrl', p.checkout_url,
+           'qrCode', p.qr_code, 'paidAt', p.paid_at
          ) ORDER BY p.created_at
        ) FILTER (WHERE p.id IS NOT NULL), '[]'::json) AS payments
      FROM bookings b
