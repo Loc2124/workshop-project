@@ -131,6 +131,36 @@ describe('account cache boundary', () => {
     expect(storage.has(studioDraftKey(a.id))).toBe(false);
   });
 
+  it('keeps the session after a temporary refresh failure and retries later', async () => {
+    const { client, storage } = setup();
+    await synchronizeSession(client, a);
+    client.setQueryData(queryKeys.bookings.list(a.id, {}), ['booking A']);
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{}', { status: 401 }))
+      .mockRejectedValueOnce(new TypeError('network'))
+      .mockResolvedValueOnce(new Response('{}', { status: 401 }))
+      .mockResolvedValueOnce(Response.json({ user: a }))
+      .mockResolvedValueOnce(Response.json({ bookings: [] }));
+    vi.stubGlobal('fetch', fetch);
+
+    await expect(apiFetch('/private-bookings')).rejects.toHaveProperty(
+      'name',
+      'ApiNetworkError',
+    );
+    expect(client.getQueryData(authQueryKey)).toEqual(a);
+    expect(client.getQueryData(queryKeys.bookings.list(a.id, {}))).toEqual([
+      'booking A',
+    ]);
+    expect(storage.has(studioDraftKey(a.id))).toBe(true);
+
+    await expect(apiFetch('/private-bookings')).resolves.toEqual({
+      bookings: [],
+    });
+    expect(client.getQueryData(authQueryKey)).toEqual(a);
+    expect(fetch).toHaveBeenCalledTimes(5);
+  });
+
   it('does not restore a logged-out session from a late refresh response', async () => {
     const { client } = setup();
     await synchronizeSession(client, a);

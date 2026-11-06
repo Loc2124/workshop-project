@@ -626,7 +626,7 @@ export function StudioWorkshopManager({
             return (
               <li key={workshop.id} className="min-w-0">
                 <StudioCard className="group overflow-hidden p-0 transition duration-200 hover:-translate-y-0.5 hover:shadow-studio-card-hover">
-                  <div className="relative aspect-[16/9] overflow-hidden bg-studio-neutral-soft">
+                  <div className="relative aspect-16/9 overflow-hidden bg-studio-neutral-soft">
                     <img
                       alt=""
                       className="size-full object-cover transition duration-200 group-hover:scale-[1.02]"

@@ -58,7 +58,16 @@ function refreshSession(): Promise<unknown> {
         return result;
       })
       .catch(async (error) => {
-        if (sessionEpoch() === epoch && !(error instanceof ApiAbortError))
+        // A temporary network/server failure does not invalidate the refresh
+        // cookie. A rejected token or malformed successful response does.
+        if (
+          sessionEpoch() === epoch &&
+          (error instanceof ApiError
+            ? error.status === 401
+            : !(error instanceof ApiNetworkError) &&
+              !(error instanceof ApiTimeoutError) &&
+              !(error instanceof ApiAbortError))
+        )
           await emitSessionEvent({ type: 'expired', epoch });
         throw error;
       })
