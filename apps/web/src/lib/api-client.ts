@@ -1,5 +1,15 @@
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
+function apiUrl(path: string): URL {
+  if (apiBaseUrl.startsWith('/')) {
+    return new URL(
+      `${apiBaseUrl.replace(/\/$/, '')}${path}`,
+      window.location.origin,
+    );
+  }
+  return new URL(path, apiBaseUrl);
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -103,7 +113,7 @@ async function request<T>(
 
   let response: Response;
   try {
-    response = await fetch(new URL(path, apiBaseUrl), {
+    response = await fetch(apiUrl(path), {
       ...fetchInit,
       credentials: 'include',
       headers,
@@ -129,7 +139,7 @@ async function request<T>(
   if (
     response.status === 401 &&
     canRefresh &&
-    !new URL(path, apiBaseUrl).pathname.startsWith('/auth/')
+    !path.startsWith('/auth/')
   ) {
     await refreshSession();
     if (init.signal?.aborted)

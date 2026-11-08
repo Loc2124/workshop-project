@@ -16,6 +16,8 @@ services:
         value: none
       - key: COOKIE_NAME
         value: workshop_session
+      - key: AUTH_COOKIE_PATH_PREFIX
+        value: /api
       - key: JWT_EXPIRES_IN
         value: 15m
       - key: REFRESH_COOKIE_NAME

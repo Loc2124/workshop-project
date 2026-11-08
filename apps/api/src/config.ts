@@ -45,6 +45,10 @@ const configSchema = z.object({
     .max(64)
     .regex(/^[A-Za-z0-9_-]+$/)
     .default('workshop_refresh'),
+  AUTH_COOKIE_PATH_PREFIX: z
+    .string()
+    .regex(/^(?:\/[A-Za-z0-9_-]+)*$/)
+    .default(''),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
   COOKIE_SAME_SITE: z.enum(['lax', 'strict', 'none']).optional(),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),

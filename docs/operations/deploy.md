@@ -8,7 +8,7 @@
 - Web: React + TypeScript + Vite + Tailwind CSS, build thành static site; có cấu hình Vercel tại `apps/web/vercel.json`.
 - Database: Supabase PostgreSQL.
 
-Web là SPA độc lập, gọi API bằng biến build-time `VITE_API_BASE_URL` (ví dụ `https://workshop-api.onrender.com`). Web chỉ dùng dữ liệu API và không thay thế bằng mock khi API lỗi. API giới hạn CORS theo origin `WEB_ORIGIN`, cho phép credentials, và từ chối request thay đổi dữ liệu từ origin trình duyệt khác. Request đăng nhập và các request cần phiên gửi cookie bằng `credentials: 'include'`; production dùng cookie `HttpOnly`, `Secure`, `SameSite=None` để hoạt động giữa domain Vercel và Render. Local dùng `SameSite=Lax`.
+Web là SPA độc lập, gọi API bằng biến build-time `VITE_API_BASE_URL`. Với production Vercel/Render, đặt biến này thành `/api` để Vercel proxy request qua cùng origin; `apps/web/vercel.json` chuyển tiếp `/api/*` tới API Render. API giới hạn CORS theo origin `WEB_ORIGIN`, cho phép credentials, và từ chối request thay đổi dữ liệu từ origin trình duyệt khác. Request đăng nhập và các request cần phiên gửi cookie bằng `credentials: 'include'`; production dùng cookie `HttpOnly`, `Secure`, `SameSite=None`. Đặt `AUTH_COOKIE_PATH_PREFIX=/api` trên Render để cookie refresh khớp đường dẫn proxy. Local tiếp tục gọi `http://localhost:4000` với `SameSite=Lax`.
 
 Trang khám phá có thể xin quyền vị trí trình duyệt để chọn tỉnh/thành mặc định. Tọa độ được gửi trực tiếp tới reverse-geocoding endpoint cấu hình bằng `VITE_REVERSE_GEOCODE_URL`; mặc định là Nominatim/OpenStreetMap. Người dùng có thể đổi tỉnh hoặc từ chối quyền vị trí. Chỉ bật tính năng này trên HTTPS khi deploy.
 
@@ -38,6 +38,7 @@ Cấu hình static site với root repository hoặc thư mục phù hợp monor
 - Build: `npm run build --workspace @workshop/web`.
 - Publish directory: thư mục output Vite, thường là `apps/web/dist`.
 - Build environment: `VITE_API_BASE_URL=https://<api-domain>`.
+- For the Vercel/Render production deployment, set `VITE_API_BASE_URL=/api`; the Vercel rewrite proxies API calls to Render under the web origin. On Render set `AUTH_COOKIE_PATH_PREFIX=/api` (the Blueprint default) so auth cookies use paths that match `/api/auth/*` in the browser. Set `WEB_ORIGIN` to the exact Vercel production origin, such as `https://<project>.vercel.app`.
 - Reverse geocoding: `VITE_REVERSE_GEOCODE_URL=https://nominatim.openstreetmap.org/reverse` (tọa độ trình duyệt được gửi tới endpoint này khi người dùng cho phép định vị).
 - SPA fallback: mọi đường dẫn frontend cần được rewrite về `/index.html`.
 
@@ -55,6 +56,7 @@ Output hiện tại là `apps/web/dist`; dùng cấu hình rewrite/cache trong `
 | `NODE_ENV`                    | `production`                                                                                                  |
 | `COOKIE_SECURE`               | `true` ở production                                                                                           |
 | `COOKIE_SAME_SITE`            | `none` ở production; `lax` cho local                                                                          |
+| `AUTH_COOKIE_PATH_PREFIX`     | `/api` when Vercel proxies the API under the web origin; leave empty for direct API calls                     |
 | `COOKIE_NAME`                 | `workshop_session`                                                                                            |
 | `REFRESH_COOKIE_NAME`         | `workshop_refresh`                                                                                            |
 | `DB_POOL_MAX`                 | Mặc định `5`, giảm nếu giới hạn kết nối database thấp                                                         |

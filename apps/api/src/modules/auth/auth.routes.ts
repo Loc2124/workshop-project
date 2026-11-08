@@ -15,6 +15,7 @@ const router = Router();
 const {
   COOKIE_NAME: cookieName,
   REFRESH_COOKIE_NAME: refreshCookieName,
+  AUTH_COOKIE_PATH_PREFIX: authCookiePathPrefix,
   COOKIE_SECURE: cookieSecureValue,
   COOKIE_SAME_SITE: cookieSameSite,
   JWT_EXPIRES_IN: accessTokenExpiresIn,
@@ -22,15 +23,16 @@ const {
 } = loadConfig();
 const cookieSecure = cookieSecureValue === 'true';
 const rememberCookieName = `${refreshCookieName}_remember`;
+const authCookiePath = `${authCookiePathPrefix}/auth` || '/auth';
 const accessCookieOptions = {
   httpOnly: true,
   sameSite: cookieSameSite,
   secure: cookieSecure,
-  path: '/',
+  path: authCookiePathPrefix || '/',
 };
 const refreshCookieOptions = {
   ...accessCookieOptions,
-  path: '/auth',
+  path: authCookiePath,
 };
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
