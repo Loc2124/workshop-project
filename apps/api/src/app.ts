@@ -24,7 +24,14 @@ import paymentWebhookRoutes from './modules/payments/webhook.routes.js';
 export function createApp() {
   const app = express();
 
+  // API responses can contain account-specific data. Do not let browsers or
+  // proxies reuse them, and avoid conditional 304 responses for stale entries.
+  app.disable('etag');
   app.use(corsForWeb(loadConfig().WEB_ORIGIN));
+  app.use((_request, response, next) => {
+    response.setHeader('Cache-Control', 'no-store');
+    next();
+  });
   app.use(helmet());
   app.use(
     pinoHttp({

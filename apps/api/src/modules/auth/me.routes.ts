@@ -110,6 +110,7 @@ router.get('/', async (request, response) => {
 });
 
 router.get('/studios', async (request, response) => {
+  response.setHeader('Cache-Control', 'no-store');
   response.json(await listStudiosForUser(request.user!.sub));
 });
 

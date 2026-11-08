@@ -33,6 +33,7 @@ router.get(
   requireAuth(),
   validateUuidParam('studioId'),
   async (request, response) => {
+    response.setHeader('Cache-Control', 'no-store');
     response.json(
       await getStudioSessions(getStudioId(request), request.user!.sub),
     );
