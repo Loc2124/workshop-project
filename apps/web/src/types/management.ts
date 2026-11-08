@@ -174,6 +174,7 @@ export const studioSessionSchema = z
     seatsSold: z.number().int(),
     status: z.enum(['scheduled', 'cancelled', 'completed']),
     registrationDeadline: z.string().nullable().optional(),
+    scheduleVersion: z.number().int().positive().optional(),
     createdAt: z.string(),
   })
   .strict();
