@@ -6,7 +6,6 @@ import {
   formatSlot,
 } from '../../lib/format';
 import { cn } from '../../lib/utils';
-import { SeatsBadge } from '../catalog/SeatsBadge';
 import { TicketPrice, TicketRating } from './TicketContent';
 import { TicketStub } from './TicketStub';
 import { TicketAction, TicketLink } from './TicketPrimitives';
@@ -31,6 +30,13 @@ export function TicketCard(
   const date = session.startAt
     ? formatSessionDate(session.startAt, { parts: true })
     : undefined;
+  const statusBadge = (
+    <span className="rounded-md bg-lime-100 px-2.5 py-1 text-xs font-semibold text-primary">
+      {session.statusLabel === 'Còn chỗ'
+        ? `Còn ${session.seatsLeft} chỗ`
+        : session.statusLabel}
+    </span>
+  );
   return (
     <TicketLink
       {...props}
@@ -77,7 +83,13 @@ export function TicketCard(
         >
           <div className={cn('min-w-0', !featured && 'flex flex-1 flex-col')}>
             <div className="flex flex-wrap items-center gap-2 text-[13px] font-bold text-stone-700">
-              <span>{formatCategoryLabel(workshop.categoryId)}</span>
+              {!workshop.title
+                .toLocaleLowerCase('vi')
+                .includes(
+                  formatCategoryLabel(workshop.categoryId).toLocaleLowerCase(
+                    'vi',
+                  ),
+                ) && <span>{formatCategoryLabel(workshop.categoryId)}</span>}
               {featured && (
                 <span className="rounded bg-primary px-2 py-1 text-white">
                   Gợi ý cho bạn
@@ -140,8 +152,8 @@ export function TicketCard(
                   <TicketRating workshop={workshop} />
                 </div>
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <SeatsBadge availableSeats={session.seatsLeft} />
-                  <TicketAction />
+                  {statusBadge}
+                  <TicketAction label={session.actionLabel} />
                 </div>
               </footer>
             )}
@@ -160,8 +172,8 @@ export function TicketCard(
                 <TicketRating workshop={workshop} />
               </div>
               <div className="flex flex-wrap items-center gap-3 lg:flex-col lg:gap-4">
-                <SeatsBadge availableSeats={session.seatsLeft} />
-                <TicketAction />
+                {statusBadge}
+                <TicketAction label={session.actionLabel} />
               </div>
             </div>
           )}

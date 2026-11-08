@@ -2,11 +2,36 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
+import { depositSettingsSchema } from '@workshop/shared';
+import { updateWorkshopSchema } from '../../src/modules/workshops/workshops.schemas.js';
 import { errorHandler, notFoundHandler } from '../../src/middleware/errors.js';
 import { validateBody } from '../../src/middleware/validate-body.js';
 import { validateUuidParam } from '../../src/middleware/validate-uuid-param.js';
 
 describe('API infrastructure', () => {
+  it.each([
+    {
+      schema: depositSettingsSchema,
+      body: { depositMode: 'optional', depositPercent: 51 },
+    },
+    {
+      schema: updateWorkshopSchema,
+      body: { depositModeOverride: 'required', depositPercent: 51 },
+    },
+  ])(
+    'keeps the Vietnamese maximum-deposit error at the HTTP boundary',
+    async ({ schema, body }) => {
+      const app = express();
+      app.use(express.json());
+      app.post('/deposit', validateBody(schema), (_req, res) =>
+        res.json({ ok: true }),
+      );
+      app.use(errorHandler);
+      const response = await request(app).post('/deposit').send(body);
+      expect(response.status).toBe(422);
+      expect(response.body.error.message).toBe('Mức cọc tối đa là 50%');
+    },
+  );
   it('validates request bodies and returns the shared error format', async () => {
     const app = express();
     app.use(express.json());

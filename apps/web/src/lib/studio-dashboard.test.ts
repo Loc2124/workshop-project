@@ -16,7 +16,7 @@ describe('studio dashboard', () => {
       '/studio/second/profile',
     );
   });
-  it('counts only future scheduled capacity, subtracts holds and excludes unavailable workshops', () => {
+  it('counts future scheduled sessions for operations and subtracts held and sold seats', () => {
     const workshops = [
       { id: 'a', status: 'approved' },
       { id: 'b', status: 'pending' },
@@ -37,7 +37,7 @@ describe('studio dashboard', () => {
     ] as StudioSession[];
     expect(
       studioDashboardStats(workshops, sessions, Date.parse('2029-01-01')),
-    ).toEqual({ upcomingSessions: 1, openWorkshops: 1, availableSeats: 5 });
+    ).toEqual({ upcomingSessions: 2, openWorkshops: 1, availableSeats: 5 });
   });
   it('distinguishes drafts from submitted pending profiles', () => {
     expect(studioState({ status: 'pending', isDraft: true })).toBe('draft');

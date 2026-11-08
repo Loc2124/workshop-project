@@ -23,11 +23,7 @@ export function SiteFooter() {
         </Link>
         <div className="flex flex-col items-start gap-3 text-sm md:flex-row md:justify-between">
           <span>© 2026 Open Slot Vietnam</span>
-          {import.meta.env.DEV && (
-            <span>
-              Hình ảnh minh họa từ thư viện ảnh sẵn có của dự án · Unsplash
-            </span>
-          )}
+          {import.meta.env.DEV && <span>Ảnh minh họa: Unsplash</span>}
         </div>
       </PageContainer>
     </footer>

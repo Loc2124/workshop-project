@@ -1,11 +1,21 @@
 import type { PoolClient } from 'pg';
-import { randomBytes } from 'node:crypto';
+import {
+  BOOKING_HOLD_MINUTES,
+  calculateDeposit,
+  bookingPaymentChoice,
+  requiresAttendanceConfirmation,
+} from '@workshop/shared';
+import { AppError } from '../../errors/app-error.js';
+import { createHash, randomBytes } from 'node:crypto';
 import { query, withTransaction } from '../../db/pool.js';
-import { studioDepositEligibleSql } from '../studios/studio-profile-sql.js';
+import { expireScheduleResponses } from './schedule-changes.js';
+import { releaseUnconfirmedBookings } from './attendance-confirmation.js';
 
 export type CreateCustomerBookingInput = {
+  requestId?: string;
   sessionId: string;
   quantity: number;
+  paymentChoice?: 'deposit' | 'in_studio';
   contactName: string;
   contactPhone: string | null;
 };
@@ -38,6 +48,8 @@ export async function releaseExpiredHolds(
   );
   const lockedIds = lockedSessions.rows.map(({ id }) => id);
   if (lockedIds.length === 0) return;
+  await expireScheduleResponses(client, lockedIds);
+  await releaseUnconfirmedBookings(client, lockedIds);
 
   const result = await client.query<{
     expected: number;
@@ -48,7 +60,7 @@ export async function releaseExpiredHolds(
        SET status = 'expired'
        WHERE status = 'pending'
          AND reservation_status = 'pending'
-         AND hold_expires_at < now()
+         AND hold_expires_at <= now()
          AND session_id = ANY($1::uuid[])
        RETURNING session_id, quantity
      ),
@@ -81,15 +93,73 @@ export async function releaseExpiredHolds(
 export async function createCustomerBooking(
   userId: string,
   input: CreateCustomerBookingInput,
-  holdMinutes: number,
+  _holdMinutes: number,
   paymentProvider: 'payos' | 'mock',
 ): Promise<
   | { kind: 'not_found' }
   | { kind: 'unavailable' }
   | { kind: 'invalid_amount' }
   | { kind: 'created'; booking: CustomerBookingCreated }
+  | {
+      kind: 'replayed';
+      booking: CustomerBookingCreated;
+      checkoutUrl: string | null;
+      checkoutQrCode: string | null;
+    }
 > {
   return withTransaction(async (client) => {
+    if (input.requestId) {
+      const hash = createHash('sha256')
+        .update(
+          JSON.stringify([
+            input.sessionId,
+            input.quantity,
+            input.paymentChoice ?? null,
+          ]),
+        )
+        .digest('hex');
+      await client.query(
+        `INSERT INTO booking_requests(user_id,request_id,payload_hash) VALUES($1,$2,$3) ON CONFLICT DO NOTHING`,
+        [userId, input.requestId, hash],
+      );
+      const request = (
+        await client.query<{ payloadHash: string; bookingId: string | null }>(
+          `SELECT payload_hash AS "payloadHash",booking_id AS "bookingId" FROM booking_requests WHERE user_id=$1 AND request_id=$2 FOR UPDATE`,
+          [userId, input.requestId],
+        )
+      ).rows[0];
+      if (request.payloadHash !== hash)
+        throw new AppError(
+          409,
+          'IDEMPOTENCY_KEY_REUSED',
+          'Yêu cầu trước có thông tin khác. Vui lòng kiểm tra lại đặt chỗ đã tạo.',
+        );
+      if (request.bookingId) {
+        const stored = (
+          await client.query<
+            CustomerBookingCreated & {
+              checkoutUrl: string | null;
+              checkoutQrCode: string | null;
+            }
+          >(
+            `SELECT b.id,b.order_code::integer AS "orderCode",b.payment_mode AS "paymentMode",b.total_amount AS "totalAmount",b.deposit_amount AS "depositAmount",b.total_amount-b.deposit_amount AS "balanceAmount",b.hold_expires_at AS "holdExpiresAt",
+           (b.reservation_status='pending' AND b.status='pending' AND b.hold_expires_at>now() AND s.starts_at>now() AND s.status='scheduled') AS "checkoutRequired",
+           CASE WHEN b.reservation_status='pending' AND b.status='pending' AND b.hold_expires_at>now() AND s.starts_at>now() AND s.status='scheduled' THEN p.checkout_url END AS "checkoutUrl",
+           CASE WHEN b.reservation_status='pending' AND b.status='pending' AND b.hold_expires_at>now() AND s.starts_at>now() AND s.status='scheduled' THEN p.qr_code END AS "checkoutQrCode"
+           FROM bookings b JOIN sessions s ON s.id=b.session_id LEFT JOIN payments p ON p.booking_id=b.id AND p.kind='deposit' AND p.checkout_revision=b.checkout_revision AND p.status='created'
+           WHERE b.id=$1 AND b.user_id=$2`,
+            [request.bookingId, userId],
+          )
+        ).rows[0];
+        const { checkoutUrl, checkoutQrCode, ...booking } = stored;
+        return {
+          kind: 'replayed' as const,
+          booking,
+          checkoutUrl,
+          checkoutQrCode,
+        };
+      }
+    }
     const target = await client.query<{ studioId: string }>(
       `SELECT w.studio_id AS "studioId"
        FROM sessions s
@@ -108,28 +178,36 @@ export async function createCustomerBooking(
     const details = await client.query<{
       price: number;
       startsAt: Date;
+      createdAt: Date;
       workshopTitle: string;
       effectiveDepositPercent: number;
+      depositMode: 'none' | 'optional' | 'required';
+      releaseIfUnconfirmed: boolean;
+      releaseBeforeMinutes: number;
     }>(
-      `SELECT s.price,
+      `SELECT s.price, now() AS "createdAt",
          s.starts_at AS "startsAt",
          w.title AS "workshopTitle",
-         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END
-           AS "effectiveDepositPercent"
+         effective_deposit_percent(st,w) AS "effectiveDepositPercent",
+         effective_deposit_mode(st,w) AS "depositMode",
+         st.release_if_unconfirmed AS "releaseIfUnconfirmed",st.release_before_minutes AS "releaseBeforeMinutes"
        FROM sessions s
        JOIN workshops w ON w.id = s.workshop_id
        JOIN studios st ON st.id = w.studio_id
        WHERE s.id = $1
          AND s.status = 'scheduled'
          AND s.starts_at > now()
+         AND COALESCE(s.registration_deadline, s.starts_at) > now()
          AND w.status = 'approved'
          AND NOT w.is_simulated
+         AND NOT w.is_discontinued
          AND w.visibility_status = 'active'
          AND w.publication_status = 'published'
          AND st.status = 'approved'
          AND NOT st.is_hidden
          AND NOT st.is_draft
-         AND studio_profile_complete(st)`,
+         AND studio_profile_complete(st)
+       FOR SHARE OF w`,
       [input.sessionId],
     );
     const session = details.rows[0];
@@ -140,16 +218,39 @@ export async function createCustomerBooking(
       return { kind: 'invalid_amount' as const };
     }
 
+    let choice: 'deposit' | 'in_studio';
+    try {
+      choice = bookingPaymentChoice(session.depositMode, input.paymentChoice);
+    } catch (error) {
+      throw new AppError(
+        422,
+        'UNPROCESSABLE_ENTITY',
+        error instanceof Error
+          ? error.message
+          : 'Vui lòng chọn cách thanh toán.',
+      );
+    }
     const paymentMode =
       totalAmount === 0
         ? 'free'
-        : session.effectiveDepositPercent > 0
+        : choice === 'deposit' && session.effectiveDepositPercent > 0
           ? 'payos_deposit'
           : 'in_studio';
     const depositAmount =
       paymentMode === 'payos_deposit'
-        ? Math.ceil((totalAmount * session.effectiveDepositPercent) / 100)
+        ? calculateDeposit(totalAmount, session.effectiveDepositPercent)
         : 0;
+    const minimum = Number(process.env.PAYMENT_MIN_AMOUNT ?? 0);
+    if (
+      paymentMode === 'payos_deposit' &&
+      minimum > 0 &&
+      depositAmount < minimum
+    )
+      throw new AppError(
+        422,
+        'UNPROCESSABLE_ENTITY',
+        'Mức cọc của buổi học này cần được studio điều chỉnh. Vui lòng liên hệ studio hoặc chọn buổi khác.',
+      );
     const balanceAmount = totalAmount - depositAmount;
 
     const reserved =
@@ -160,6 +261,7 @@ export async function createCustomerBooking(
              WHERE id = $2
                AND status = 'scheduled'
                AND starts_at > now()
+               AND COALESCE(registration_deadline, starts_at) > now()
                AND seats_held + seats_sold + $1 <= capacity
              RETURNING price`,
             [input.quantity, input.sessionId],
@@ -170,6 +272,7 @@ export async function createCustomerBooking(
              WHERE id = $2
                AND status = 'scheduled'
                AND starts_at > now()
+               AND COALESCE(registration_deadline, starts_at) > now()
                AND seats_held + seats_sold + $1 <= capacity
              RETURNING price`,
             [input.quantity, input.sessionId],
@@ -184,15 +287,15 @@ export async function createCustomerBooking(
       `INSERT INTO bookings (
          user_id, session_id, quantity, unit_price, total_amount, status,
          hold_expires_at, order_code, reservation_status, contact_name,
-         contact_phone, deposit_amount, paid_amount, payment_mode
+         contact_phone, deposit_amount, paid_amount, payment_mode, deposit_percent,deposit_mode,release_if_unconfirmed,release_before_minutes
        )
        VALUES (
          $1, $2, $3, $4, $5, $6::booking_status,
          CASE WHEN $7::boolean
-           THEN LEAST(now() + make_interval(mins => $8), $9::timestamptz)
+           THEN now() + make_interval(mins => $8)
            ELSE $9
          END,
-         $10, $11, $12, $13, $14, $15, $16
+         $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20
        )
        RETURNING id, hold_expires_at AS "holdExpiresAt"`,
       [
@@ -203,7 +306,7 @@ export async function createCustomerBooking(
         totalAmount,
         paymentMode === 'free' ? 'paid' : 'pending',
         paymentMode === 'payos_deposit',
-        holdMinutes,
+        BOOKING_HOLD_MINUTES,
         session.startsAt,
         orderCode,
         paymentMode === 'payos_deposit' ? 'pending' : 'confirmed',
@@ -212,9 +315,24 @@ export async function createCustomerBooking(
         depositAmount,
         paymentMode === 'free' ? totalAmount : 0,
         paymentMode,
+        session.depositMode !== 'none' ? session.effectiveDepositPercent : null,
+        session.depositMode,
+        requiresAttendanceConfirmation({
+          enabled: session.releaseIfUnconfirmed,
+          paymentMode,
+          startsAt: session.startsAt,
+          createdAt: session.createdAt,
+          releaseBeforeMinutes: session.releaseBeforeMinutes,
+        }),
+        session.releaseBeforeMinutes,
       ],
     );
     const booking = inserted.rows[0];
+    if (input.requestId)
+      await client.query(
+        'UPDATE booking_requests SET booking_id=$3 WHERE user_id=$1 AND request_id=$2',
+        [userId, input.requestId, booking.id],
+      );
 
     if (paymentMode === 'payos_deposit') {
       await client.query(
@@ -241,7 +359,7 @@ export async function createCustomerBooking(
     }
 
     if (paymentMode !== 'payos_deposit') {
-      await issueTickets(client, booking.id, input.quantity);
+      await issueTickets(client, booking.id);
     }
 
     await client.query(
@@ -284,20 +402,29 @@ export async function saveCheckoutLink(
   checkoutUrl: string,
   providerRef: string | null,
   qrCode: string | null,
+  transferDescription?: string,
 ): Promise<void> {
   await withTransaction(async (client) => {
     const result = await client.query(
       `UPDATE payments p
        SET checkout_url = $3,
            provider_ref = $4,
-           qr_code = $5
+           qr_code = $5,
+           transfer_description = $6
        FROM bookings b
        WHERE p.booking_id = b.id
          AND b.id = $1
          AND p.kind = 'deposit'
          AND p.provider = $2
          AND p.status = 'created'`,
-      [bookingId, provider, checkoutUrl, providerRef, qrCode],
+      [
+        bookingId,
+        provider,
+        checkoutUrl,
+        providerRef,
+        qrCode,
+        transferDescription ?? null,
+      ],
     );
     if (!result.rowCount) {
       throw new Error('Pending PayOS payment was not found for the booking.');
@@ -364,24 +491,56 @@ export async function failCheckout(bookingId: string): Promise<void> {
   });
 }
 
+const paymentEligibleSql = `b.reservation_status='pending' AND b.status='pending' AND b.hold_expires_at>clock_timestamp() AND s.status='scheduled' AND s.starts_at>clock_timestamp() AND COALESCE(s.registration_deadline,s.starts_at)>clock_timestamp()
+ AND w.status='approved' AND NOT w.is_simulated AND NOT w.is_discontinued AND w.visibility_status='active' AND w.publication_status='published' AND st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`;
 export async function getCustomerBooking(userId: string, bookingId: string) {
-  const result = await query(
-    `SELECT b.id, b.order_code::text AS "orderCode",
+  return withTransaction(async (client) => {
+    const lookup = await client.query<{ sessionId: string }>(
+      'SELECT session_id AS "sessionId" FROM bookings WHERE id=$1 AND user_id=$2',
+      [bookingId, userId],
+    );
+    if (!lookup.rows[0]) return null;
+    await releaseExpiredHolds(client, [lookup.rows[0].sessionId]);
+    const result = await client.query(
+      `SELECT b.id, b.order_code::text AS "orderCode",
        b.session_id AS "sessionId", b.quantity, b.unit_price AS "unitPrice",
+       b.original_quantity AS "originalQuantity",b.original_total_amount AS "originalTotalAmount",b.original_deposit_amount AS "originalDepositAmount",b.seat_revision AS "seatRevision",
+       CASE WHEN b.reservation_status='cancelled' OR b.status='expired' THEN 0 ELSE (SELECT count(*)::integer FROM booking_seats bs WHERE bs.booking_id=b.id AND bs.state='active') END AS "remainingQuantity",
+       ((SELECT COALESCE(sum(paid_amount),0) FROM booking_seats bs WHERE bs.booking_id=b.id)+b.extra_received_amount)::double precision AS "receivedAmount",
+       (${paymentEligibleSql}) AS "paymentAllowed",
+       (SELECT p0.checkout_setup FROM payments p0 WHERE p0.booking_id=b.id AND p0.kind='deposit' AND p0.checkout_revision=b.checkout_revision LIMIT 1) AS "checkoutState",
        b.total_amount AS "totalAmount", b.deposit_amount AS "depositAmount",
        b.paid_amount AS "paidAmount", b.total_amount-b.paid_amount AS "balanceAmount",
        b.status AS "paymentStatus", b.reservation_status AS "reservationStatus",
        b.payment_mode AS "paymentMode", b.hold_expires_at AS "holdExpiresAt",
+       b.deposit_percent AS "depositPercent", b.deposit_mode AS "depositMode",
+       b.refund_status AS "refundStatus", (b.refund_due_amount+b.extra_refund_due_amount)::double precision AS "refundDueAmount",
+       (b.refunded_amount+b.extra_refunded_amount)::double precision AS "refundedAmount",EXISTS(SELECT 1 FROM tickets t WHERE t.booking_id=b.id AND t.attendance_status<>'unmarked') AS "hasAttendance",EXISTS(SELECT 1 FROM tickets t WHERE t.booking_id=b.id AND t.attendance_status='attended') AS "hasAttended",
+       b.attendance_status AS "attendanceStatus",b.attendance_confirmed_at AS "attendanceConfirmedAt",
+       b.release_if_unconfirmed AS "releaseIfUnconfirmed",b.release_before_minutes AS "releaseBeforeMinutes",
+       attendance_confirmation_deadline(b.id) AS "attendanceConfirmationDeadline",
+       b.reschedule_pending AS "reschedulePending",b.original_starts_at AS "originalStartsAt",b.original_ends_at AS "originalEndsAt",
+       s.schedule_version AS "scheduleVersion",b.schedule_version AS "acceptedScheduleVersion",b.proposed_schedule_version AS "proposedScheduleVersion",
+       b.booked_starts_at AS "bookedStartsAt",b.booked_ends_at AS "bookedEndsAt",b.reschedule_deadline AS "rescheduleDeadline",b.cancelled_at AS "cancelledAt",
+       clock_timestamp() AS "serverNow",
+       (s.status='scheduled' AND s.starts_at>clock_timestamp()
+         AND COALESCE(s.registration_deadline,s.starts_at)>clock_timestamp()
+         AND s.capacity-s.seats_held-s.seats_sold>=b.quantity
+         AND w.status='approved' AND NOT w.is_simulated AND NOT w.is_discontinued
+         AND w.visibility_status='active' AND w.publication_status='published'
+         AND st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft
+         AND studio_profile_complete(st)) AS "canRebook",
        COALESCE(b.contact_name, u.full_name) AS "contactName", COALESCE(b.contact_phone, u.phone, '') AS "contactPhone",
        b.created_at AS "createdAt", b.paid_at AS "paidAt",
-       s.starts_at AS "startsAt", s.ends_at AS "endsAt",
+       s.starts_at AS "startsAt", s.ends_at AS "endsAt", s.status AS "sessionRecordStatus",
        w.id AS "workshopId", w.title AS "workshopTitle",
-       st.name AS "studioName", st.address,
+       st.name AS "studioName", st.slug AS "studioSlug",st.contact_phone AS "studioContactPhone",st.contact_email AS "studioContactEmail",st.address,
        COALESCE(json_agg(
          json_build_object(
            'provider', p.provider, 'kind', p.kind, 'amount', p.amount,
-           'status', p.status, 'checkoutUrl', p.checkout_url,
-           'qrCode', p.qr_code, 'paidAt', p.paid_at
+           'status', p.status, 'checkoutUrl', CASE WHEN p.checkout_revision=b.checkout_revision AND p.status='created' AND p.checkout_setup='ready' AND (${paymentEligibleSql}) THEN p.checkout_url END,
+           'qrCode', CASE WHEN p.checkout_revision=b.checkout_revision AND p.status='created' AND p.checkout_setup='ready' AND (${paymentEligibleSql}) THEN p.qr_code END, 'paidAt', p.paid_at,'transferDescription',p.transfer_description,
+           'orderCode',p.order_code::integer,'checkoutRevision',p.checkout_revision,'isCurrent',p.checkout_revision=b.checkout_revision
          ) ORDER BY p.created_at
        ) FILTER (WHERE p.id IS NOT NULL), '[]'::json) AS payments
      FROM bookings b
@@ -392,9 +551,10 @@ export async function getCustomerBooking(userId: string, bookingId: string) {
      LEFT JOIN payments p ON p.booking_id = b.id
      WHERE b.id = $1 AND b.user_id = $2
      GROUP BY b.id, u.id, s.id, w.id, st.id`,
-    [bookingId, userId],
-  );
-  return result.rows[0] ?? null;
+      [bookingId, userId],
+    );
+    return result.rows[0] ?? null;
+  });
 }
 
 export async function listCustomerBookings(userId: string) {
@@ -405,7 +565,8 @@ export async function listCustomerBookings(userId: string) {
        b.total_amount-b.paid_amount AS "balanceAmount",
        b.status AS "paymentStatus", b.reservation_status AS "reservationStatus",
        b.payment_mode AS "paymentMode", b.created_at AS "createdAt",
-       s.starts_at AS "startsAt", w.title AS "workshopTitle",
+       CASE WHEN b.reservation_status='cancelled' THEN b.booked_starts_at ELSE s.starts_at END AS "startsAt",
+       CASE WHEN b.reservation_status='cancelled' THEN b.booked_ends_at ELSE s.ends_at END AS "endsAt", s.status AS "sessionRecordStatus", w.title AS "workshopTitle",
        st.name AS "studioName"
      FROM bookings b
      JOIN sessions s ON s.id = b.session_id
@@ -430,10 +591,11 @@ export async function listStudioBookings(studioId: string, userId: string) {
        COALESCE(b.contact_name,u.full_name) AS "contactName",
        COALESCE(b.contact_phone,u.phone) AS "contactPhone",
        b.total_amount AS "totalAmount", b.paid_amount AS "paidAmount",
-       b.deposit_amount AS "depositAmount", b.payment_mode AS "paymentMode",
+       b.deposit_amount AS "depositAmount", b.payment_mode AS "paymentMode",b.refund_status AS "refundStatus",(b.refund_due_amount+b.extra_refund_due_amount)::double precision AS "refundDueAmount",(b.refunded_amount+b.extra_refunded_amount)::double precision AS "refundedAmount",
        b.total_amount-b.paid_amount AS "balanceAmount",
        b.status AS "paymentStatus", b.reservation_status AS "reservationStatus",
-       s.starts_at AS "startsAt", w.title AS "workshopTitle"
+       b.reschedule_pending AS "reschedulePending",b.reschedule_deadline AS "rescheduleDeadline",b.seat_revision AS "seatRevision",b.original_quantity AS "originalQuantity",
+       s.starts_at AS "startsAt",s.ends_at AS "endsAt",b.attendance_status AS "attendanceStatus", w.title AS "workshopTitle"
      FROM bookings b JOIN users u ON u.id=b.user_id
      JOIN sessions s ON s.id=b.session_id JOIN workshops w ON w.id=s.workshop_id
      WHERE w.studio_id=$1 ORDER BY b.created_at DESC,b.id LIMIT 200`,
@@ -451,7 +613,7 @@ export async function getCustomerTickets(userId: string, bookingId: string) {
   );
   if (!booking.rowCount) return null;
   const tickets = await query(
-    `SELECT id, seq, code, status, issued_at AS "issuedAt"
+    `SELECT id, seq, code, status, issued_at AS "issuedAt",attendance_status AS "attendanceStatus",refund_due_amount AS "refundDueAmount",refunded_amount AS "refundedAmount"
      FROM tickets
      WHERE booking_id = $1
      ORDER BY seq`,
@@ -481,9 +643,14 @@ async function nextOrderCode(client: PoolClient): Promise<number> {
 async function issueTickets(
   client: PoolClient,
   bookingId: string,
-  quantity: number,
 ): Promise<void> {
-  for (let seq = 1; seq <= quantity; seq++) {
+  const seats = (
+    await client.query<{ seq: number }>(
+      "SELECT seq FROM booking_seats WHERE booking_id=$1 AND state='active' ORDER BY seq",
+      [bookingId],
+    )
+  ).rows;
+  for (const { seq } of seats) {
     await client.query(
       `INSERT INTO tickets (booking_id, seq, code)
        VALUES ($1, $2, $3)

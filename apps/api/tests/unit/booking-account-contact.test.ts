@@ -53,6 +53,7 @@ it.each(['0912345678', null, ''])(
 
 it('accepts only session and quantity from the browser', () => {
   const input = {
+    requestId: '223e4567-e89b-42d3-a456-426614174000',
     sessionId: '123e4567-e89b-42d3-a456-426614174000',
     quantity: 1,
   };

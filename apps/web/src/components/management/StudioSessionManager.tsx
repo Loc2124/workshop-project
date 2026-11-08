@@ -53,6 +53,7 @@ type SessionValues = {
   endsAt: string;
   price: string;
   capacity: string;
+  registrationDeadline: string;
 };
 
 function toValues(session?: StudioSession): SessionValues {
@@ -62,6 +63,9 @@ function toValues(session?: StudioSession): SessionValues {
     endsAt: session ? toVietnamDateTimeLocal(session.endsAt) : '',
     price: session ? String(session.price) : '',
     capacity: String(session?.capacity ?? 8),
+    registrationDeadline: session?.registrationDeadline
+      ? toVietnamDateTimeLocal(session.registrationDeadline)
+      : '',
   };
 }
 
@@ -117,6 +121,9 @@ function SessionEditor({
       startsAt: fromVietnamDateTimeLocal(values.startsAt),
       endsAt: fromVietnamDateTimeLocal(values.endsAt),
       capacity: Number(values.capacity),
+      registrationDeadline: values.registrationDeadline
+        ? fromVietnamDateTimeLocal(values.registrationDeadline)
+        : null,
       ...(owner && values.price !== '' ? { price: Number(values.price) } : {}),
     };
     const parsed = session
@@ -127,6 +134,17 @@ function SessionEditor({
         parsed.error.issues[0]?.code === 'custom'
           ? 'Thời gian kết thúc phải sau thời gian bắt đầu.'
           : 'Kiểm tra lại thời gian, sức chứa và giá buổi.',
+      );
+      return;
+    }
+    if (
+      session &&
+      (Date.parse(input.startsAt) !== Date.parse(session.startsAt) ||
+        Date.parse(input.endsAt) !== Date.parse(session.endsAt)) &&
+      Date.parse(input.startsAt) <= Date.now() + 12 * 3600000
+    ) {
+      setValidationError(
+        'Chỉ có thể đổi sang giờ học còn trên 12 giờ. Nếu không thể giữ giờ cũ, hãy hủy buổi học để hoàn tiền cho khách.',
       );
       return;
     }
@@ -187,7 +205,11 @@ function SessionEditor({
           )}
           <StudioFormSection
             title="Ngày và giờ"
-            description="Chọn ngày trên lịch và nhập giờ theo định dạng 24h. Múi giờ được áp dụng là Việt Nam (UTC+7)."
+            description={
+              session
+                ? 'Chỉ đổi sang giờ học còn trên 12 giờ. Khách đã xác nhận sẽ chọn giữ chỗ hoặc hủy; chỗ đang chờ cọc sẽ được hủy để khách đặt lại. Hạn phản hồi là mốc sớm hơn giữa 48 giờ sau thông báo và 12 giờ trước giờ học mới.'
+                : 'Chọn ngày trên lịch và nhập giờ theo định dạng 24h. Giờ Việt Nam (UTC+7).'
+            }
           >
             <div className="grid gap-studio-group sm:grid-cols-2">
               <div className="space-y-studio-field">
@@ -229,6 +251,20 @@ function SessionEditor({
                 value={values.endsAt.split('T')[1] ?? ''}
               />
             </div>
+          </StudioFormSection>
+          <StudioFormSection
+            title="Hạn đăng ký"
+            description="Để trống để đóng đăng ký đúng giờ bắt đầu buổi học."
+          >
+            <StudioField
+              label="Đóng đăng ký lúc"
+              type="datetime-local"
+              lang="vi-VN"
+              value={values.registrationDeadline}
+              onChange={(event) =>
+                update('registrationDeadline', event.target.value)
+              }
+            />
           </StudioFormSection>
           <StudioFormSection
             title="Sức chứa và giá"
@@ -327,7 +363,7 @@ export function StudioSessionManager({
   }
 
   return (
-    <section aria-label="Lịch và slot" className="space-y-studio-section">
+    <section aria-label="Lịch buổi học" className="space-y-studio-section">
       <div className="flex flex-col gap-4 rounded-studio-card border border-studio-border bg-studio-surface p-studio-card shadow-studio-card sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm leading-6 text-studio-muted">

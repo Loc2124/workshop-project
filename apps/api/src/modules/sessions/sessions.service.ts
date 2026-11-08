@@ -81,6 +81,13 @@ export async function updateStudioSession(
       'Không thể sửa buổi đã hủy, đã hoàn thành hoặc đã bắt đầu.',
     );
   }
+  if (result.conflict === 'reschedule_too_soon') {
+    throw new AppError(
+      422,
+      'UNPROCESSABLE_ENTITY',
+      'Chỉ có thể đổi sang giờ học còn trên 12 giờ. Nếu không thể giữ giờ cũ, vui lòng hủy buổi học để hoàn tiền cho khách.',
+    );
+  }
   if (result.conflict === 'owner_required') {
     throw new AppError(
       403,

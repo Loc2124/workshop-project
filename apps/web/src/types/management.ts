@@ -1,5 +1,7 @@
 import {
   studioTrustLevelSchema,
+  depositPercentSchema,
+  validateWorkshopDeposit,
   studioVerificationHistorySchema,
   studioReviewStatusSchema,
   studioStatusHistorySchema,
@@ -27,19 +29,26 @@ const studioWorkshopFieldsSchema = z
     takeaway: z.string().trim().max(5000).nullable().optional(),
     durationMinutes: z.number().int().positive().max(2_147_483_647),
     basePrice: z.number().int().min(0).max(2_147_483_647),
-    depositPercent: z.number().int().min(0).max(30).optional(),
+    depositPercent: depositPercentSchema.nullable().optional(),
+    depositModeOverride: z
+      .enum(['none', 'optional', 'required'])
+      .nullable()
+      .optional(),
+    included: z.array(z.string()).optional(),
     publicationStatus: z.enum(['draft', 'published']).optional(),
+    isDiscontinued: z.boolean().optional(),
     requirements: z.string().trim().max(5000).nullable().optional(),
     cancellationPolicy: z.string().trim().max(5000).nullable().optional(),
     paymentPolicy: z.string().trim().max(5000).nullable().optional(),
   })
   .strict();
-export const studioWorkshopInputSchema = studioWorkshopFieldsSchema.superRefine(
-  validateCategoryProposal,
-);
+export const studioWorkshopInputSchema = studioWorkshopFieldsSchema
+  .superRefine(validateCategoryProposal)
+  .superRefine(validateWorkshopDeposit);
 export const studioWorkshopUpdateInputSchema = studioWorkshopFieldsSchema
   .partial()
   .superRefine(validateCategoryProposal)
+  .superRefine(validateWorkshopDeposit)
   .refine((input) => Object.keys(input).length > 0);
 
 const studioSessionFieldsSchema = z
@@ -48,6 +57,11 @@ const studioSessionFieldsSchema = z
     endsAt: z.string().datetime({ offset: true }),
     price: z.number().int().min(0).max(2_147_483_647).optional(),
     capacity: z.number().int().positive().max(2_147_483_647),
+    registrationDeadline: z
+      .string()
+      .datetime({ offset: true })
+      .nullable()
+      .optional(),
   })
   .strict();
 
@@ -127,8 +141,13 @@ export const studioWorkshopSchema = z
     takeaway: z.string().nullable(),
     durationMinutes: z.number().int(),
     basePrice: z.number().int(),
-    depositPercent: z.number().int().min(0).max(30).optional(),
-    effectiveDepositPercent: z.number().int().min(0).max(30).optional(),
+    depositPercent: depositPercentSchema.nullable().optional(),
+    depositModeOverride: z
+      .enum(['none', 'optional', 'required'])
+      .nullable()
+      .optional(),
+    included: z.array(z.string()).optional(),
+    effectiveDepositPercent: z.number().int().min(0).max(50).optional(),
     requirements: z.string().nullable(),
     cancellationPolicy: z.string().nullable(),
     paymentPolicy: z.string().nullable(),
@@ -137,6 +156,7 @@ export const studioWorkshopSchema = z
     address: z.string(),
     status: approvalStatusSchema,
     publicationStatus: z.enum(['draft', 'published', 'hidden']).optional(),
+    isDiscontinued: z.boolean().optional(),
     createdAt: z.string(),
   })
   .strict();
@@ -153,6 +173,7 @@ export const studioSessionSchema = z
     seatsHeld: z.number().int(),
     seatsSold: z.number().int(),
     status: z.enum(['scheduled', 'cancelled', 'completed']),
+    registrationDeadline: z.string().nullable().optional(),
     createdAt: z.string(),
   })
   .strict();
@@ -234,8 +255,13 @@ export const adminWorkshopSchema = z
     takeaway: z.string().nullable(),
     durationMinutes: z.number().int(),
     basePrice: z.number().int(),
-    depositPercent: z.number().int().min(0).max(30).optional(),
-    effectiveDepositPercent: z.number().int().min(0).max(30).optional(),
+    depositPercent: depositPercentSchema.nullable().optional(),
+    depositModeOverride: z
+      .enum(['none', 'optional', 'required'])
+      .nullable()
+      .optional(),
+    included: z.array(z.string()).optional(),
+    effectiveDepositPercent: z.number().int().min(0).max(50).optional(),
     requirements: z.string().nullable(),
     cancellationPolicy: z.string().nullable(),
     paymentPolicy: z.string().nullable(),

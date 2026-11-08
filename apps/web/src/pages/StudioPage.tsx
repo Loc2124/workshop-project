@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
+import { useSessionClock } from '../hooks/useSessionClock';
 import { useParams } from 'react-router-dom';
 import { CategoryShortcuts } from '../components/catalog/CategoryShortcuts';
 import {
@@ -30,6 +31,9 @@ function StudioDetails({
   workshops: Workshop[];
 }) {
   const [category, setCategory] = useState('');
+  const now = useSessionClock(
+    workshops.flatMap((workshop) => workshop.sessions),
+  );
   const sorted = useMemo(() => rankWorkshops(workshops), [workshops]);
   const categoryIds = [...new Set(workshops.map((item) => item.categoryId))];
   const visible = category
@@ -71,7 +75,7 @@ function StudioDetails({
                   {visible.map((workshop) => (
                     <TicketCard
                       key={workshop.id}
-                      {...toTicketProps(workshop)}
+                      {...toTicketProps(workshop, now)}
                     />
                   ))}
                 </div>

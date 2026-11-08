@@ -15,6 +15,7 @@ const responseSchema = z.object({
       checkoutUrl: z.url(),
       paymentLinkId: z.string().nullable().optional(),
       qrCode: z.string().nullable().optional(),
+      description: z.string().optional(),
     })
     .optional(),
 });
@@ -51,6 +52,9 @@ export class PayOSProvider implements PaymentProvider {
           cancelUrl: input.cancelUrl,
           returnUrl: input.returnUrl,
           signature,
+          ...(input.expiresAt
+            ? { expiredAt: Math.floor(Date.parse(input.expiresAt) / 1000) }
+            : {}),
         }),
         signal: AbortSignal.timeout(10_000),
       },
@@ -69,6 +73,7 @@ export class PayOSProvider implements PaymentProvider {
       checkoutUrl: parsed.data.data.checkoutUrl,
       providerRef: parsed.data.data.paymentLinkId ?? null,
       qrCode: parsed.data.data.qrCode ?? null,
+      transferDescription: parsed.data.data.description ?? input.description,
     };
   }
 
@@ -105,6 +110,75 @@ export class PayOSProvider implements PaymentProvider {
       providerRef,
       success: data.code === '00' && orderCode !== null && amount !== null,
     };
+  }
+  async lookupPayment(orderCode: number) {
+    const response = await fetch(
+      `https://api-merchant.payos.vn/v2/payment-requests/${orderCode}`,
+      {
+        headers: { 'x-client-id': this.clientId, 'x-api-key': this.apiKey },
+        signal: AbortSignal.timeout(10000),
+      },
+    );
+    if (response.status === 404) return null;
+    const raw: unknown = await response.json();
+    const parsed = z
+      .object({
+        code: z.literal('00'),
+        signature: z.string(),
+        data: z
+          .object({
+            id: z.string().regex(/^[A-Za-z0-9-]{16,64}$/),
+            orderCode: z.number().int(),
+            amount: z.number().int().nonnegative(),
+            status: z.string(),
+          })
+          .passthrough(),
+      })
+      .safeParse(raw);
+    if (
+      !response.ok ||
+      !parsed.success ||
+      parsed.data.data.orderCode !== orderCode ||
+      !hasValidSignature(
+        this.checksumKey,
+        parsed.data.data,
+        parsed.data.signature,
+      )
+    )
+      throw new Error('Unable to verify the payment link lookup.');
+    const data = parsed.data.data;
+    return {
+      orderCode: data.orderCode,
+      amount: data.amount,
+      status: data.status,
+      payment: {
+        checkoutUrl: `https://pay.payos.vn/web/${encodeURIComponent(data.id)}`,
+        providerRef: data.id,
+        qrCode: null,
+      },
+    };
+  }
+  async cancelPayment(orderCode: number, reason: string) {
+    const response = await fetch(
+      `https://api-merchant.payos.vn/v2/payment-requests/${orderCode}/cancel`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-client-id': this.clientId,
+          'x-api-key': this.apiKey,
+        },
+        body: JSON.stringify({ cancellationReason: reason }),
+        signal: AbortSignal.timeout(10000),
+      },
+    );
+    if (!response.ok)
+      throw new Error('Unable to cancel the previous payment link.');
+    const data = z
+      .object({ code: z.literal('00') })
+      .safeParse(await response.json());
+    if (!data.success)
+      throw new Error('Previous payment link cancellation was not confirmed.');
   }
 }
 

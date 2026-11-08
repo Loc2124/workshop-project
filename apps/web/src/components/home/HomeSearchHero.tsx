@@ -1,5 +1,5 @@
 import { MediaImage } from '../ui/MediaImage';
-import { ArrowRight, Search } from 'lucide-react';
+import { ArrowRight, Search, LocateFixed } from 'lucide-react';
 import type { useHomeCatalog } from '../../hooks/useHomeCatalog';
 import { PageContainer } from '../layout/PageContainer';
 import { ProvinceCombobox } from '../catalog/ProvinceCombobox';
@@ -87,17 +87,18 @@ export function HomeSearchHero(props: Props) {
               {!provinceId && provinces.length > 0 && (
                 <Button
                   type="button"
-                  variant="link"
-                  className="px-0 text-sm"
+                  variant="outline"
+                  className="mt-2 min-h-11 border-primary px-3 text-sm font-semibold text-primary"
                   onClick={retryLocation}
                   disabled={locationStatus.startsWith('Đang')}
                 >
-                  Dùng vị trí của tôi
+                  <LocateFixed size={18} aria-hidden="true" /> Dùng vị trí của
+                  tôi
                 </Button>
               )}
             </div>
             <label className={labelClass}>
-              Ngày trải nghiệm
+              Ngày học
               <SingleDatePicker value={date} onChange={setDate} />
             </label>
           </div>
@@ -131,8 +132,9 @@ export function HomeSearchHero(props: Props) {
       </div>
       <figure className="min-w-0 overflow-hidden rounded-2xl bg-beige">
         <MediaImage
-          src="/images/workshops/stampPhoto.webp"
-          alt="Bàn làm thủ công với kéo, bút chì và dụng cụ cắt giấy"
+          src="/images/workshops/craftPhoto.jpg"
+          fallbackSrc="/images/workshops/artPhoto.jpg"
+          alt="Sản phẩm gốm thủ công tại workshop"
           width={900}
           height={1100}
           priority

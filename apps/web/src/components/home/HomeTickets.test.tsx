@@ -5,6 +5,17 @@ import { HomeFeaturedStudios } from './HomeFeaturedStudios';
 import { HomeWorkshopSection } from './HomeWorkshopSection';
 import type { FeaturedStudio } from '../../services/featuredService';
 import { mockWorkshops } from '../../test-fixtures/mockWorkshops';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const bookableWorkshops = mockWorkshops.slice(0, 8).map((workshop) => ({
+  ...workshop,
+  sessions: workshop.sessions.map((session) => ({
+    ...session,
+    startsAt: '2099-11-07T01:00:00Z',
+    endsAt: '2099-11-07T03:00:00Z',
+    availableSeats: 8,
+  })),
+}));
 
 const studio: FeaturedStudio = {
   id: 'studio',
@@ -24,7 +35,11 @@ const studio: FeaturedStudio = {
   trustLevel: 'verified',
 };
 const render = (component: React.ReactNode) =>
-  renderToStaticMarkup(<MemoryRouter>{component}</MemoryRouter>);
+  renderToStaticMarkup(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>{component}</MemoryRouter>
+    </QueryClientProvider>,
+  );
 describe('homepage ticket consistency', () => {
   it('uses the shared studio ticket with API metrics, verification and a detail link', () => {
     const html = render(
@@ -62,7 +77,7 @@ describe('homepage ticket consistency', () => {
   it('uses featured and normal workshop tickets without dropping admin selections', () => {
     const html = render(
       <HomeWorkshopSection
-        featuredWorkshops={mockWorkshops.slice(0, 8)}
+        featuredWorkshops={bookableWorkshops}
         browseUrl="/kham-pha"
         loading={false}
         error={false}
@@ -76,7 +91,7 @@ describe('homepage ticket consistency', () => {
   it('prioritizes the first workshop image and leaves later ticket images lazy', () => {
     const html = render(
       <HomeWorkshopSection
-        featuredWorkshops={mockWorkshops.slice(0, 2)}
+        featuredWorkshops={bookableWorkshops.slice(0, 2)}
         browseUrl="/kham-pha"
         loading={false}
         error={false}

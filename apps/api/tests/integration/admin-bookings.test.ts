@@ -1,4 +1,5 @@
 import { randomUUID, createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import { beforeAll, afterAll, expect, it, vi } from 'vitest';
@@ -14,6 +15,121 @@ beforeAll(async () => {
   await migrateDatabase(process.env.DATABASE_URL_TEST!);
 });
 afterAll(async () => closePool());
+
+it('repairs missing refund metadata once without erasing receipts or overwriting a refund decision', async () => {
+  const customer = await account('customer');
+  const studio = randomUUID(),
+    workshop = randomUUID(),
+    slot = randomUUID();
+  await query(
+    "INSERT INTO studios(id,name,province_id,address) VALUES($1,'Refund repair','ho-chi-minh','Test address')",
+    [studio],
+  );
+  await query(
+    "INSERT INTO workshops(id,studio_id,title,slug,description,category_id,duration_minutes,base_price) VALUES($1,$2,'Refund repair',$3,'Details','ceramics',90,200000)",
+    [workshop, studio, `repair-${workshop}`],
+  );
+  await query(
+    "INSERT INTO sessions(id,workshop_id,starts_at,ends_at,price,capacity) VALUES($1,$2,now()+interval '2 days',now()+interval '2 days 2 hours',200000,10)",
+    [slot, workshop],
+  );
+  const cases = [
+    {
+      status: 'not_applicable',
+      paid: 10000,
+      due: 0,
+      expectedStatus: 'pending',
+      expectedDue: 10000,
+    },
+    {
+      status: 'not_applicable',
+      paid: 0,
+      due: 0,
+      expectedStatus: 'not_applicable',
+      expectedDue: 0,
+    },
+    {
+      status: 'pending',
+      paid: 200000,
+      due: 190000,
+      expectedStatus: 'pending',
+      expectedDue: 190000,
+    },
+    {
+      status: 'refunded',
+      paid: 10000,
+      due: 10000,
+      expectedStatus: 'refunded',
+      expectedDue: 10000,
+    },
+    {
+      status: 'forfeited',
+      paid: 10000,
+      due: 0,
+      expectedStatus: 'forfeited',
+      expectedDue: 0,
+    },
+  ];
+  const rows: Array<{
+    id: string;
+    expectedStatus: string;
+    expectedDue: number;
+    paid: number;
+  }> = [];
+  for (const [index, value] of cases.entries()) {
+    const id = randomUUID();
+    await query(
+      "INSERT INTO bookings(id,user_id,session_id,quantity,unit_price,total_amount,status,hold_expires_at,order_code,paid_amount,refund_status,refund_due_amount) VALUES($1,$2,$3,1,200000,200000,'refund_needed',now()+interval '1 hour',$4,$5,$6,$7)",
+      [
+        id,
+        customer.id,
+        slot,
+        Date.now() * 1000 + index,
+        value.paid,
+        value.status,
+        value.due,
+      ],
+    );
+    rows.push({
+      id,
+      expectedStatus: value.expectedStatus,
+      expectedDue: value.expectedDue,
+      paid: value.paid,
+    });
+  }
+  const sql = readFileSync(
+    new URL(
+      '../../../../db/migrations/037_repair_missing_refund_metadata.sql',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  await withTransaction(async (client) => {
+    await client.query(sql);
+    await client.query(sql);
+  });
+  for (const row of rows) {
+    const stored = (
+      await query(
+        'SELECT paid_amount,refund_due_amount,refund_status FROM bookings WHERE id=$1',
+        [row.id],
+      )
+    ).rows[0];
+    expect(stored).toEqual({
+      paid_amount: row.paid,
+      refund_due_amount: row.expectedDue,
+      refund_status: row.expectedStatus,
+    });
+  }
+  expect(
+    (
+      await query(
+        "SELECT count(*)::integer AS count FROM admin_activity_log WHERE entity_id=$1 AND action='booking.refund_metadata.repaired'",
+        [rows[0].id],
+      )
+    ).rows[0].count,
+  ).toBe(1);
+});
 async function account(role: 'admin' | 'customer') {
   const id = randomUUID(),
     sid = randomUUID();
@@ -59,7 +175,7 @@ it('cancels once under concurrency, releases capacity, voids tickets, audits and
   async function booking(payment: string, qty: number) {
     const id = randomUUID();
     await query(
-      "INSERT INTO bookings(id,user_id,session_id,quantity,unit_price,total_amount,status,hold_expires_at,order_code) VALUES($1,$2,$3,$4,200000,$4*200000,$5,now()+interval '1 hour',$6)",
+      "INSERT INTO bookings(id,user_id,session_id,quantity,unit_price,total_amount,status,paid_amount,hold_expires_at,order_code) VALUES($1,$2,$3,$4,200000,$4*200000,$5::booking_status,CASE WHEN $5::booking_status='paid' THEN $4*200000 ELSE 0 END,now()+interval '1 hour',$6)",
       [id, customer.id, slot, qty, payment, base + seq++],
     );
     return id;
@@ -139,6 +255,9 @@ it('cancels once under concurrency, releases capacity, voids tickets, audits and
   expect(cancelled.body.booking).toMatchObject({
     status: 'cancelled',
     paymentStatus: 'refund_needed',
+    paidAmount: 400000,
+    refundStatus: 'pending',
+    refundDueAmount: 400000,
   });
   expect(
     (
@@ -225,6 +344,22 @@ it('cancels once under concurrency, releases capacity, voids tickets, audits and
     .set('Cookie', admin.cookie);
   expect(detail.body.booking.status).toBe('completed');
   expect(detail.body.booking.history.at(-1).actorId).toBe(admin.id);
+  const cancelCompleted = await request(app)
+    .patch(endpoint(remaining))
+    .set('Cookie', admin.cookie)
+    .send({ status: 'cancelled', expectedStatus: 'completed', reason });
+  expect(cancelCompleted.status).toBe(200);
+  expect(cancelCompleted.body.booking).toMatchObject({
+    status: 'cancelled',
+    paymentStatus: 'cancelled',
+    paidAmount: 0,
+    refundStatus: 'not_applicable',
+    refundDueAmount: 0,
+  });
+  expect(
+    (await query('SELECT seats_sold FROM sessions WHERE id=$1', [slot])).rows[0]
+      .seats_sold,
+  ).toBe(0);
   // A failed counter update rolls back status, tickets and history.
   const mismatch = await booking('pending', 1);
   await query('UPDATE sessions SET seats_held=0 WHERE id=$1', [slot]);

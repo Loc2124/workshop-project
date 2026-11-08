@@ -45,10 +45,13 @@ type WorkshopValues = {
   durationMinutes: string;
   basePrice: string;
   depositPercent: string;
+  depositModeOverride: 'inherit' | 'none' | 'optional' | 'required';
+  included: string;
   requirements: string;
   cancellationPolicy: string;
   paymentPolicy: string;
   publicationStatus: 'draft' | 'published';
+  isDiscontinued: boolean;
 };
 
 function toValues(workshop?: StudioWorkshop): WorkshopValues {
@@ -62,12 +65,15 @@ function toValues(workshop?: StudioWorkshop): WorkshopValues {
     takeaway: workshop?.takeaway ?? '',
     durationMinutes: String(workshop?.durationMinutes ?? 90),
     basePrice: String(workshop?.basePrice ?? ''),
-    depositPercent: String(workshop?.depositPercent ?? 20),
+    depositPercent: workshop?.depositPercent?.toString() ?? '',
+    depositModeOverride: workshop?.depositModeOverride ?? 'inherit',
+    included: workshop?.included?.join('\n') ?? '',
     requirements: workshop?.requirements ?? '',
     cancellationPolicy: workshop?.cancellationPolicy ?? '',
     paymentPolicy: workshop?.paymentPolicy ?? '',
     publicationStatus:
       workshop?.publicationStatus === 'draft' ? 'draft' : 'published',
+    isDiscontinued: workshop?.isDiscontinued ?? false,
   };
 }
 
@@ -79,7 +85,7 @@ const fieldLabels: Record<string, string> = {
   audience: 'đối tượng tham gia',
   durationMinutes: 'thời lượng',
   basePrice: 'giá cơ sở',
-  depositPercent: 'mức cọc (0–30%)',
+  depositPercent: 'mức cọc (1–50%)',
 };
 
 function StudioWorkshopEditor({
@@ -149,6 +155,11 @@ function StudioWorkshopEditor({
     const common = {
       title: values.title,
       publicationStatus: values.publicationStatus,
+      included: values.included
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean),
+      isDiscontinued: values.isDiscontinued,
       description: values.description,
       categoryId: values.categoryId,
       proposedCategoryName:
@@ -170,9 +181,16 @@ function StudioWorkshopEditor({
       ...common,
       ...(isOwner
         ? {
-            depositPercent: canCollectDeposit
-              ? Number(values.depositPercent)
-              : 0,
+            depositModeOverride:
+              canCollectDeposit && values.depositModeOverride !== 'inherit'
+                ? values.depositModeOverride
+                : null,
+            depositPercent:
+              canCollectDeposit &&
+              ['optional', 'required'].includes(values.depositModeOverride) &&
+              values.depositPercent !== ''
+                ? Number(values.depositPercent)
+                : null,
           }
         : {}),
       ...(price?.success ? { basePrice: price.data } : {}),
@@ -377,25 +395,55 @@ function StudioWorkshopEditor({
                 />
               )}
               {isOwner && (
-                <StudioField
-                  className="sm:col-span-2"
-                  label="Tiền cọc khách trả trước qua PayOS (%)"
-                  type="number"
-                  min={0}
-                  max={30}
-                  step={1}
-                  required
-                  disabled={!canCollectDeposit}
-                  value={canCollectDeposit ? values.depositPercent : '0'}
-                  onChange={(event) =>
-                    update('depositPercent', event.target.value)
-                  }
-                  hint={
-                    canCollectDeposit
-                      ? 'Chọn từ 0–30%, mặc định 20%. Khách quét mã PayOS theo đơn để trả cọc; chọn 0% để thanh toán toàn bộ tại studio.'
-                      : 'Để bật cọc, studio cần được admin duyệt, xác minh và hoàn thiện hồ sơ liên hệ cùng ảnh. Hiện khách thanh toán toàn bộ tại studio.'
-                  }
-                />
+                <div className="space-y-3">
+                  <label className="block text-sm font-semibold">
+                    Cách thanh toán riêng cho workshop
+                    <select
+                      disabled={!canCollectDeposit}
+                      value={values.depositModeOverride}
+                      onChange={(event) =>
+                        update(
+                          'depositModeOverride',
+                          event.target
+                            .value as WorkshopValues['depositModeOverride'],
+                        )
+                      }
+                      className="mt-2 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3"
+                    >
+                      <option value="inherit">Dùng cấu hình studio</option>
+                      <option value="none">Không cọc</option>
+                      <option value="optional">Cọc tùy chọn</option>
+                      <option value="required">Cọc bắt buộc</option>
+                    </select>
+                  </label>
+                  {canCollectDeposit &&
+                    ['optional', 'required'].includes(
+                      values.depositModeOverride,
+                    ) && (
+                      <StudioField
+                        label="Mức cọc (%)"
+                        type="number"
+                        min={1}
+                        max={50}
+                        step={1}
+                        required
+                        value={values.depositPercent}
+                        onChange={(event) =>
+                          update('depositPercent', event.target.value)
+                        }
+                      />
+                    )}
+                  {!canCollectDeposit && (
+                    <p className="text-sm text-studio-muted">
+                      Xác minh studio để bật đặt cọc.
+                    </p>
+                  )}
+                  {Number(values.depositPercent) > 50 && (
+                    <p role="alert" className="text-sm text-studio-danger">
+                      Mức cọc tối đa là 50%
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </StudioFormSection>
@@ -501,9 +549,36 @@ function StudioWorkshopEditor({
                   <option value="published">Công khai</option>
                 </select>
               </div>
+              {workshop && (
+                <label className="flex items-center gap-3 text-sm font-semibold text-studio-ink sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    className="size-4 accent-primary"
+                    checked={values.isDiscontinued}
+                    onChange={(event) =>
+                      update('isDiscontinued', event.target.checked)
+                    }
+                  />
+                  Đã ngừng tổ chức workshop này
+                </label>
+              )}
             </div>
           </StudioFormSection>
 
+          <StudioFormSection
+            title="Bao gồm"
+            description="Mỗi dòng là một mục, ví dụ nguyên liệu, nung sản phẩm hoặc đóng gói mang về."
+          >
+            <label className="block text-sm font-semibold">
+              Những gì buổi học bao gồm
+              <textarea
+                value={values.included}
+                onChange={(event) => update('included', event.target.value)}
+                rows={4}
+                className="mt-2 w-full rounded-lg border border-stone-300 p-3"
+              />
+            </label>
+          </StudioFormSection>
           {validationError && (
             <p className="text-sm text-studio-danger" role="alert">
               {validationError}
@@ -613,7 +688,7 @@ export function StudioWorkshopManager({
               workshop.effectiveDepositPercent ?? workshop.depositPercent ?? 0;
             const depositPerPerson =
               depositPercent > 0
-                ? Math.ceil((workshop.basePrice * depositPercent) / 100)
+                ? Math.round((workshop.basePrice * depositPercent) / 100)
                 : 0;
             const tone =
               workshop.publicationStatus === 'hidden' ||
@@ -684,7 +759,7 @@ export function StudioWorkshopManager({
                       {depositPercent > 0 ? (
                         <>
                           <p className="font-semibold text-studio-primary">
-                            Khách cọc {depositPercent}% qua PayOS
+                            Đặt cọc ({depositPercent}%)
                           </p>
                           <p className="mt-1 text-studio-muted">
                             Theo giá cơ sở, mỗi khách cọc{' '}
@@ -694,7 +769,7 @@ export function StudioWorkshopManager({
                           </p>
                           <p className="mt-1 text-xs text-studio-muted">
                             Số chính xác tính theo giá buổi và số người trong
-                            booking.
+                            đặt chỗ.
                           </p>
                         </>
                       ) : (

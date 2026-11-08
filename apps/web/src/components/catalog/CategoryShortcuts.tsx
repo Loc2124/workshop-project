@@ -84,7 +84,7 @@ export function CategoryShortcuts({
       aria-label="Khám phá workshop theo chủ đề"
     >
       <div className="relative min-w-0 flex-1">
-        <div className="scrollbar-none flex gap-3 overflow-x-auto pr-8">
+        <div className="flex flex-wrap gap-3">
           {!home && (
             <Link
               to="/kham-pha?view=workshop"
@@ -109,10 +109,7 @@ export function CategoryShortcuts({
             )
             .map((category) => categoryLink(category))}
         </div>
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-linear-to-l from-paper to-transparent"
-        />
+        <div aria-hidden="true" className="hidden" />
       </div>
       <Popover.Root
         open={open}

@@ -4,7 +4,7 @@ export const siteContact = defaultSiteSettings.support;
 export const footerInformation = [
   {
     id: 'chinh-sach-dat-lich',
-    label: 'Chính sách đặt lịch',
+    label: 'Chính sách đặt chỗ',
     text: 'Kiểm tra ngày, giờ, giá, số chỗ và cách nhận thành phẩm trên trang workshop trước khi đặt. Liên hệ studio để xác nhận hình thức thanh toán và điều kiện thay đổi lịch của buổi bạn chọn.',
   },
   {

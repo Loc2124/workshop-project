@@ -1,6 +1,13 @@
 import type { PoolClient } from 'pg';
+import { calculateDeposit } from '@workshop/shared';
+import { AppError } from '../../errors/app-error.js';
 import { query, withTransaction } from '../../db/pool.js';
 import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
+import {
+  cancelChangedScheduleBookings,
+  expireScheduleResponses,
+  scheduleResponseDeadline,
+} from '../bookings/schedule-changes.js';
 import type { SessionInput, SessionUpdate } from './sessions.schemas.js';
 
 export type SessionRow = {
@@ -14,6 +21,8 @@ export type SessionRow = {
   seatsHeld: number;
   seatsSold: number;
   status: 'scheduled' | 'cancelled' | 'completed';
+  registrationDeadline: string | null;
+  scheduleVersion: number;
   createdAt: string;
 };
 
@@ -41,6 +50,8 @@ export async function listStudioSessions(
        s.seats_held AS "seatsHeld",
        s.seats_sold AS "seatsSold",
        s.status,
+       s.registration_deadline AS "registrationDeadline",
+       s.schedule_version AS "scheduleVersion",
        s.created_at AS "createdAt"
      FROM sessions s
      JOIN workshops w ON w.id = s.workshop_id
@@ -61,6 +72,8 @@ const sessionColumns = `id,
   seats_held AS "seatsHeld",
   seats_sold AS "seatsSold",
   status,
+  registration_deadline AS "registrationDeadline",
+  schedule_version AS "scheduleVersion",
   created_at AS "createdAt"`;
 const ownedSessionColumns = `s.id,
   s.workshop_id AS "workshopId",
@@ -71,6 +84,8 @@ const ownedSessionColumns = `s.id,
   s.seats_held AS "seatsHeld",
   s.seats_sold AS "seatsSold",
   s.status,
+  s.registration_deadline AS "registrationDeadline",
+  s.schedule_version AS "scheduleVersion",
   s.created_at AS "createdAt",
   sm.role AS "memberRole"`;
 type OwnedSessionRow = SessionRow & { memberRole: 'owner' | 'staff' };
@@ -81,9 +96,17 @@ export async function createSession(
   workshopId: string,
   input: SessionInput,
 ): Promise<SessionRow | null> {
-  const result = await query<SessionRow>(
-    `INSERT INTO sessions (workshop_id, starts_at, ends_at, price, capacity)
-     SELECT w.id, $3, $4, COALESCE($5::integer, w.base_price), $6
+  return withTransaction(async (client) => {
+    await validateDepositAmount(
+      client,
+      studioId,
+      userId,
+      workshopId,
+      input.price,
+    );
+    const result = await client.query<SessionRow>(
+      `INSERT INTO sessions (workshop_id, starts_at, ends_at, price, capacity, registration_deadline)
+     SELECT w.id, $3, $4, COALESCE($5::integer, w.base_price), $6, $9
      FROM workshops w
      JOIN studio_members sm ON sm.studio_id = w.studio_id
      WHERE w.id = $1
@@ -91,19 +114,21 @@ export async function createSession(
        AND sm.user_id = $7
        AND (NOT $8::boolean OR sm.role = 'owner')
      RETURNING ${sessionColumns}`,
-    [
-      workshopId,
-      studioId,
-      input.startsAt,
-      input.endsAt,
-      input.price ?? null,
-      input.capacity,
-      userId,
-      Object.hasOwn(input, 'price'),
-    ],
-  );
+      [
+        workshopId,
+        studioId,
+        input.startsAt,
+        input.endsAt,
+        input.price ?? null,
+        input.capacity,
+        userId,
+        Object.hasOwn(input, 'price'),
+        input.registrationDeadline ?? null,
+      ],
+    );
 
-  return result.rows[0] ?? null;
+    return result.rows[0] ?? null;
+  });
 }
 
 export async function updateSession(
@@ -121,6 +146,7 @@ export async function updateSession(
         | 'schedule_locked'
         | 'session_closed'
         | 'invalid_schedule'
+        | 'reschedule_too_soon'
         | 'owner_required';
     }
   | null
@@ -135,19 +161,48 @@ export async function updateSession(
     if (!existing) {
       return null;
     }
+    const serverNow = (
+      await client.query<{ now: Date }>('SELECT clock_timestamp() AS now')
+    ).rows[0]!.now.getTime();
+    await expireScheduleResponses(client, [sessionId]);
+    const allocation = (
+      await client.query<{ held: number; sold: number }>(
+        'SELECT seats_held AS held,seats_sold AS sold FROM sessions WHERE id=$1',
+        [sessionId],
+      )
+    ).rows[0]!;
+    existing.seatsHeld = allocation.held;
+    existing.seatsSold = allocation.sold;
     if (
       existing.status !== 'scheduled' ||
-      new Date(existing.startsAt) <= new Date()
+      new Date(existing.startsAt).getTime() <= serverNow
     ) {
       return { session: null, conflict: 'session_closed' };
     }
     if (Object.hasOwn(input, 'price') && existing.memberRole !== 'owner') {
       return { session: null, conflict: 'owner_required' };
     }
+    await validateDepositAmount(
+      client,
+      studioId,
+      userId,
+      existing.workshopId,
+      input.price ?? existing.price,
+    );
 
     const startsAt = input.startsAt ?? existing.startsAt;
     const endsAt = input.endsAt ?? existing.endsAt;
     if (new Date(endsAt) <= new Date(startsAt)) {
+      return { session: null, conflict: 'invalid_schedule' };
+    }
+    const registrationDeadline =
+      input.registrationDeadline === undefined
+        ? existing.registrationDeadline
+        : input.registrationDeadline;
+    if (
+      registrationDeadline &&
+      new Date(registrationDeadline) > new Date(startsAt)
+    ) {
       return { session: null, conflict: 'invalid_schedule' };
     }
 
@@ -161,9 +216,14 @@ export async function updateSession(
     const scheduleChanged =
       new Date(startsAt).getTime() !== new Date(existing.startsAt).getTime() ||
       new Date(endsAt).getTime() !== new Date(existing.endsAt).getTime();
+    const responseDeadline = scheduleChanged
+      ? scheduleResponseDeadline(startsAt, serverNow)
+      : null;
+    if (scheduleChanged && !responseDeadline)
+      return { session: null, conflict: 'reschedule_too_soon' };
     const priceChanged =
       input.price !== undefined && input.price !== existing.price;
-    if (scheduleChanged || priceChanged) {
+    if (priceChanged) {
       const bookings = await client.query(
         `SELECT 1
          FROM bookings b
@@ -191,12 +251,75 @@ export async function updateSession(
       }
     }
 
+    if (scheduleChanged) {
+      await cancelChangedScheduleBookings(
+        client,
+        sessionId,
+        'hold_changed',
+        userId,
+      );
+      await client.query(
+        `UPDATE bookings SET original_starts_at=booked_starts_at,original_ends_at=booked_ends_at,
+          reschedule_pending=true,proposed_schedule_version=$2,reschedule_notified_at=$3,reschedule_deadline=$4,
+          attendance_confirmed_at=NULL WHERE session_id=$1 AND reservation_status='confirmed'`,
+        [
+          sessionId,
+          existing.scheduleVersion + 1,
+          new Date(serverNow),
+          responseDeadline,
+        ],
+      );
+      await client.query(
+        `INSERT INTO user_notifications(user_id,booking_id,type,title,body,href) SELECT user_id,id,'session_rescheduled','Studio đã đổi giờ học','Vui lòng xem giờ học mới và chọn giữ chỗ hoặc hủy trước hạn phản hồi. Nếu không phản hồi, đặt chỗ sẽ tự hủy và số tiền đã trả được hoàn toàn bộ.','/me/bookings/'||id::text FROM bookings WHERE session_id=$1 AND reservation_status='confirmed'`,
+        [sessionId],
+      );
+      await client.query(
+        `UPDATE email_outbox SET status='cancelled' WHERE booking_id IN (SELECT id FROM bookings WHERE session_id=$1) AND status IN ('pending','failed')`,
+        [sessionId],
+      );
+      const when = (date: string | Date) =>
+        new Intl.DateTimeFormat('vi-VN', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).format(new Date(date));
+      await client.query(
+        `INSERT INTO email_outbox(booking_id,recipient,subject,body,idempotency_key,delivery_type,schedule_version)
+         SELECT b.id,u.email,'Studio đã đổi giờ học',$3 || E'\n' || $4 || '/me/bookings/'||b.id::text,
+          b.id::text||':schedule:'||$2::integer::text,'schedule_change',$2 FROM bookings b JOIN users u ON u.id=b.user_id
+         WHERE b.session_id=$1 AND b.reservation_status='confirmed'`,
+        [
+          sessionId,
+          existing.scheduleVersion + 1,
+          `Giờ mới: ${when(startsAt)}–${when(endsAt)}. Vui lòng chọn giữ chỗ hoặc hủy trước ${when(responseDeadline!)}. Nếu không phản hồi, đặt chỗ sẽ tự hủy và số tiền đã trả được hoàn toàn bộ trong tối đa 7 ngày làm việc.`,
+          process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+        ],
+      );
+      await client.query(
+        `INSERT INTO session_schedule_history(session_id,actor_id,previous_starts_at,previous_ends_at,starts_at,ends_at,schedule_version,response_deadline) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [
+          sessionId,
+          userId,
+          existing.startsAt,
+          existing.endsAt,
+          startsAt,
+          endsAt,
+          existing.scheduleVersion + 1,
+          responseDeadline,
+        ],
+      );
+    }
     const updated = await client.query<SessionRow>(
       `UPDATE sessions
        SET starts_at = $1,
            ends_at = $2,
            price = $3,
-           capacity = $4
+           capacity = $4,
+           registration_deadline = $9,
+           schedule_version = schedule_version + $10
        WHERE id = $5
          AND EXISTS (
            SELECT 1
@@ -228,14 +351,18 @@ export async function updateSession(
         studioId,
         userId,
         Object.hasOwn(input, 'price'),
+        registrationDeadline,
+        scheduleChanged ? 1 : 0,
       ],
     );
 
     const updatedSession = updated.rows[0];
     if (!updatedSession) {
-      return Object.hasOwn(input, 'price')
-        ? { session: null, conflict: 'owner_required' }
-        : null;
+      throw new AppError(
+        409,
+        'CONFLICT',
+        'Quyền quản lý buổi học đã thay đổi. Vui lòng tải lại trước khi lưu.',
+      );
     }
     return { session: updatedSession, conflict: null };
   });
@@ -318,7 +445,7 @@ export async function cancelSession(
              THEN 'refund_needed'::booking_status
            ELSE 'cancelled'::booking_status
          END,
-         reservation_status = 'cancelled'
+         reservation_status = 'cancelled',refund_due_amount=paid_amount,refund_status=CASE WHEN paid_amount>0 THEN 'pending' ELSE 'not_applicable' END
          WHERE id = ANY($1::uuid[])`,
         [bookingIds],
       );
@@ -396,8 +523,37 @@ function toSessionRow(session: OwnedSessionRow): SessionRow {
     seatsHeld: session.seatsHeld,
     seatsSold: session.seatsSold,
     status: session.status,
+    registrationDeadline: session.registrationDeadline,
+    scheduleVersion: session.scheduleVersion,
     createdAt: session.createdAt,
   };
+}
+
+async function validateDepositAmount(
+  client: PoolClient,
+  studioId: string,
+  userId: string,
+  workshopId: string,
+  price?: number,
+) {
+  const minimum = Number(process.env.PAYMENT_MIN_AMOUNT ?? 0);
+  if (!minimum) return;
+  const result = await client.query<{ price: number; percent: number }>(
+    `SELECT COALESCE($4::integer,w.base_price) AS price,effective_deposit_percent(st,w) AS percent FROM studios st JOIN workshops w ON w.studio_id=st.id JOIN studio_members sm ON sm.studio_id=st.id WHERE st.id=$1 AND sm.user_id=$2 AND w.id=$3 FOR SHARE OF st`,
+    [studioId, userId, workshopId, price ?? null],
+  );
+  const row = result.rows[0];
+  if (
+    row &&
+    row.price > 0 &&
+    row.percent > 0 &&
+    calculateDeposit(row.price, row.percent) < minimum
+  )
+    throw new AppError(
+      422,
+      'UNPROCESSABLE_ENTITY',
+      `Tiền cọc của buổi này thấp hơn mức thanh toán tối thiểu ${minimum.toLocaleString('vi-VN')} đ. Vui lòng đổi giá hoặc mức cọc trước khi lưu.`,
+    );
 }
 
 async function findOwnedSession(

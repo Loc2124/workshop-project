@@ -1,5 +1,6 @@
 import { withTransaction } from '../../db/pool.js';
 import { releaseExpiredHolds } from './bookings.repository.js';
+import { expirePendingScheduleResponses } from './schedule-changes.js';
 
 const EXPIRY_LOCK_NAMESPACE = 731904;
 const EXPIRY_LOCK_ID = 31;
@@ -37,6 +38,7 @@ export function startBookingExpiryJob(intervalSeconds: number): () => void {
     running = true;
     try {
       await releaseExpiredBookingHolds();
+      await expirePendingScheduleResponses();
     } catch (error) {
       console.error('Booking expiry job failed.', error);
     } finally {

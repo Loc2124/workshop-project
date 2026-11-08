@@ -18,6 +18,12 @@ const configSchema = z.object({
     message:
       'must be a random base64url secret with at least 43 characters and 16 distinct characters',
   }),
+  FINANCIAL_ACCOUNT_ENCRYPTION_KEY: z
+    .string()
+    .refine((value) => Buffer.from(value, 'base64url').length === 32, {
+      message: 'must be a 32-byte base64url encryption key',
+    })
+    .optional(),
   JWT_EXPIRES_IN: z.string().default('15m').refine(isValidJwtExpiresIn, {
     message: 'must be a positive duration such as 15m, 1h, or 7d',
   }),
@@ -51,6 +57,9 @@ const configSchema = z.object({
     .max(3600)
     .default(60),
   PAYMENT_PROVIDER: z.enum(['mock', 'payos']).default('mock'),
+  PAYMENT_MIN_AMOUNT: z.coerce.number().int().positive().optional(),
+  EMAIL_DELIVERY_URL: z.url().optional(),
+  EMAIL_DELIVERY_TOKEN: z.string().min(1).optional(),
   PAYOS_CLIENT_ID: z.string().min(1).optional(),
   PAYOS_API_KEY: z.string().min(1).optional(),
   PAYOS_CHECKSUM_KEY: z.string().min(1).optional(),
@@ -104,6 +113,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     'PAYOS_API_KEY',
     'PAYOS_CHECKSUM_KEY',
     'PAYOS_WEBHOOK_URL',
+    'PAYMENT_MIN_AMOUNT',
+    'EMAIL_DELIVERY_URL',
+    'EMAIL_DELIVERY_TOKEN',
   ]) {
     if (paymentEnv[key] === '') delete paymentEnv[key];
   }

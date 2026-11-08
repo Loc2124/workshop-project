@@ -95,9 +95,7 @@ export function TicketRating({ workshop }: Pick<TicketData, 'workshop'>) {
           />
           {workshop.rating.toFixed(1)} ({workshop.ratingCount ?? 0})
         </span>
-      ) : (
-        'Chưa có đánh giá'
-      )}
+      ) : null}
     </span>
   );
 }

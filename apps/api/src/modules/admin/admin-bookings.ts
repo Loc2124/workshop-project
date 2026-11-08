@@ -1,6 +1,5 @@
 import { adminListFields } from './admin-list-query.js';
 import { z } from 'zod';
-import { getSiteSettings } from '../settings/settings.repository.js';
 import { query, withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
 import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
@@ -52,7 +51,7 @@ export const adminBookingDecision = z
   .strict();
 const joins =
   'FROM bookings b JOIN users u ON u.id=b.user_id JOIN sessions s ON s.id=b.session_id JOIN workshops w ON w.id=s.workshop_id JOIN studios st ON st.id=w.studio_id';
-const columns = `b.id,b.order_code::text AS code,u.full_name AS "customerName",u.email AS "customerEmail",u.phone AS "customerPhone",w.id AS "workshopId",w.title AS "workshopTitle",w.description AS "workshopDescription",st.id AS "studioId",st.name AS "studioName",st.address,s.id AS "sessionId",s.starts_at AS "startsAt",s.ends_at AS "endsAt",s.status AS "slotStatus",b.quantity,b.unit_price AS "unitPrice",b.total_amount AS "totalAmount",b.deposit_amount AS "depositAmount",b.paid_amount AS "paidAmount",b.total_amount-b.paid_amount AS "balanceAmount",b.payment_mode AS "paymentMode",b.reservation_status AS status,b.status AS "paymentStatus",b.created_at AS "createdAt",b.hold_expires_at AS "holdExpiresAt"`;
+const columns = `b.id,b.order_code::text AS code,u.full_name AS "customerName",u.email AS "customerEmail",u.phone AS "customerPhone",w.id AS "workshopId",w.title AS "workshopTitle",w.description AS "workshopDescription",st.id AS "studioId",st.name AS "studioName",st.address,s.id AS "sessionId",s.starts_at AS "startsAt",s.ends_at AS "endsAt",s.status AS "slotStatus",b.quantity,b.unit_price AS "unitPrice",b.total_amount AS "totalAmount",b.deposit_amount AS "depositAmount",b.paid_amount AS "paidAmount",b.total_amount-b.paid_amount AS "balanceAmount",b.payment_mode AS "paymentMode",b.reservation_status AS status,b.status AS "paymentStatus",b.refund_status AS "refundStatus",(b.refund_due_amount+b.extra_refund_due_amount)::double precision AS "refundDueAmount",(b.refunded_amount+b.extra_refunded_amount)::double precision AS "refundedAmount",b.original_quantity AS "originalQuantity",b.original_total_amount AS "originalTotalAmount",((SELECT COALESCE(sum(bs.paid_amount),0) FROM booking_seats bs WHERE bs.booking_id=b.id)+b.extra_received_amount)::double precision AS "receivedAmount",b.created_at AS "createdAt",b.hold_expires_at AS "holdExpiresAt"`;
 export async function listAdminBookings(
   filters: z.infer<typeof adminBookingsQuery>,
   countsOnly = false,
@@ -139,13 +138,12 @@ export async function changeAdminBooking(
   id: string,
   actor: string,
   input: z.infer<typeof adminBookingDecision>,
-  customerId?: string,
 ) {
   await withTransaction(async (client) => {
     const lookup = (
       await client.query<{ session_id: string }>(
-        'SELECT session_id FROM bookings WHERE id=$1 AND ($2::uuid IS NULL OR user_id=$2)',
-        [id, customerId ?? null],
+        'SELECT session_id FROM bookings WHERE id=$1',
+        [id],
       )
     ).rows[0];
     if (!lookup)
@@ -158,27 +156,6 @@ export async function changeAdminBooking(
       )
     ).rows[0];
     await releaseExpiredHolds(client, [lookup.session_id]);
-    if (customerId) {
-      const policy = (await getSiteSettings(client)).booking;
-      if (input.status !== 'cancelled')
-        throw new AppError(
-          403,
-          'FORBIDDEN',
-          'Chỉ được hủy đặt chỗ của chính bạn.',
-        );
-      const allowed = (
-        await client.query<{ ok: boolean }>(
-          'SELECT $1::timestamptz>clock_timestamp()+make_interval(hours=>$2) AS ok',
-          [slot.startsAt, policy.cancellationHours],
-        )
-      ).rows[0];
-      if (!allowed?.ok)
-        throw new AppError(
-          400,
-          'BAD_REQUEST',
-          `Chỉ được hủy trước giờ học ít nhất ${policy.cancellationHours} giờ.`,
-        );
-    }
     const b = (
       await client.query<{
         session_id: string;
@@ -190,8 +167,9 @@ export async function changeAdminBooking(
         total_amount: number;
         payment_mode: string;
         deposit_amount: number;
+        user_id: string;
       }>(
-        'SELECT session_id,status,reservation_status,quantity,paid_amount,total_amount,payment_mode,deposit_amount,hold_expires_at<=now() AS expired FROM bookings WHERE id=$1 FOR UPDATE',
+        'SELECT user_id,session_id,status,reservation_status,quantity,paid_amount,total_amount,payment_mode,deposit_amount,hold_expires_at<=now() AS expired FROM bookings WHERE id=$1 FOR UPDATE',
         [id],
       )
     ).rows[0];
@@ -210,6 +188,7 @@ export async function changeAdminBooking(
     const allowed: Record<string, string[]> = {
       pending: ['confirmed', 'cancelled'],
       confirmed: ['completed', 'cancelled'],
+      completed: ['cancelled'],
     };
     if (
       input.status === 'confirmed' &&
@@ -261,7 +240,7 @@ export async function changeAdminBooking(
         ? null
         : b.reservation_status === 'pending'
           ? 'seats_held'
-          : b.reservation_status === 'confirmed'
+          : ['confirmed', 'completed'].includes(b.reservation_status)
             ? 'seats_sold'
             : null;
     const shouldConfirmHeldReservation =
@@ -275,11 +254,15 @@ export async function changeAdminBooking(
        SET reservation_status = $2,
            status = CASE
              WHEN $2 = 'cancelled'
-               AND (paid_amount > 0 OR (status = 'paid' AND total_amount > 0))
+               AND paid_amount > 0
                THEN 'refund_needed'::booking_status
              WHEN $2 = 'cancelled' THEN 'cancelled'::booking_status
              ELSE status
-           END
+           END,
+           refund_due_amount = CASE WHEN $2 = 'cancelled' THEN paid_amount ELSE refund_due_amount END,
+           refund_status = CASE WHEN $2 = 'cancelled' THEN
+             CASE WHEN paid_amount > 0 THEN 'pending' ELSE 'not_applicable' END
+             ELSE refund_status END
        WHERE id = $1`,
       [id, input.status],
     );
@@ -302,6 +285,17 @@ export async function changeAdminBooking(
         "UPDATE payments SET status='cancelled' WHERE booking_id=$1 AND status='created'",
         [id],
       );
+      await client.query(
+        `INSERT INTO user_notifications(user_id,booking_id,type,title,body,href)
+         VALUES($1::uuid,$2::uuid,'booking_cancelled_by_admin','Open Slot đã hủy đặt chỗ',$3,'/me/bookings/'||$2::uuid::text)`,
+        [
+          b.user_id,
+          id,
+          b.paid_amount > 0
+            ? `Bạn sẽ được hoàn ${b.paid_amount.toLocaleString('vi-VN')} đ trong tối đa 7 ngày làm việc. Khoản hoàn đang chờ xử lý.`
+            : 'Bạn chưa thanh toán nên không mất khoản nào. Chỗ đã được trả lại.',
+        ],
+      );
     } else if (shouldConfirmHeldReservation) {
       const transferred = await client.query(
         `UPDATE sessions
@@ -320,5 +314,5 @@ export async function changeAdminBooking(
       }
     }
   });
-  return customerId ? { ok: true } : getAdminBooking(id);
+  return getAdminBooking(id);
 }

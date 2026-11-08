@@ -9,12 +9,12 @@ const steps = [
   },
   {
     title: 'Chọn buổi phù hợp',
-    description: 'Đặt chỗ online, trả trước hoặc trả tại studio.',
+    description: 'Đặt chỗ online, cọc trước hoặc trả tại studio.',
   },
   {
     title: 'Gặp nhau tại studio',
     description:
-      'Kiểm tra thông tin đặt chỗ trước khi đến. Nghệ nhân sẽ hướng dẫn bạn từng bước.',
+      'Xem lại thông tin đặt chỗ trước khi đến. Nghệ nhân sẽ hướng dẫn bạn từng bước.',
   },
 ];
 

@@ -1,4 +1,6 @@
 import { ArrowUpRight, Star } from 'lucide-react';
+import { depositPaymentCopy } from '@workshop/shared';
+import { getCategoryMeta } from '../../constants/categories';
 import { Link } from 'react-router-dom';
 import type { Workshop } from '../../types/workshop';
 import { workshopLevel } from '../../lib/workshopDetails';
@@ -35,10 +37,21 @@ export function WorkshopDetails({
     /^(không cần kinh nghiệm|không yêu cầu kinh nghiệm)[.!]?$/i.test(
       requirements,
     ) && ['beginner', 'all'].includes(workshop.level);
-  const preparation = duplicatesLevel ? '' : requirements;
+  const preparation =
+    duplicatesLevel ||
+    !requirements ||
+    /^(không cần|không|none)$/i.test(requirements)
+      ? 'Không cần chuẩn bị gì'
+      : requirements;
   const included = workshop.included?.map(workshopText).filter(Boolean) ?? [];
-  const cancellationPolicy = workshopText(workshop.cancellationPolicy);
-  const paymentPolicy = workshopText(workshop.paymentPolicy);
+  const cancellationPolicy =
+    (workshop.depositMode ?? 'none') === 'none'
+      ? 'Hủy miễn phí trước giờ học 24h.'
+      : 'Hủy miễn phí trước giờ học 24h. Nếu bạn chưa đặt cọc, bạn có thể hủy bất cứ lúc nào.';
+  const paymentPolicy = depositPaymentCopy(
+    workshop.depositMode ?? 'none',
+    workshop.effectiveDepositPercent ?? workshop.depositPercent ?? 0,
+  );
   const rawAddress = workshopText(workshop.address)
     .replace(/^Địa chỉ mô phỏng:\s*/i, '')
     .trim();
@@ -53,7 +66,13 @@ export function WorkshopDetails({
     <>
       <div className="grid items-start gap-8 pb-10 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:gap-10">
         <MediaImage
-          src={workshop.imageUrl}
+          src={
+            workshop.imageUrl ||
+            getCategoryMeta(workshop.categoryId).placeholderImage
+          }
+          fallbackSrc={
+            getCategoryMeta(workshop.categoryId).placeholderImage ?? undefined
+          }
           mediumUrl={workshop.mediumUrl}
           thumbnailUrl={workshop.thumbnailUrl}
           alt={`${workshop.title} tại ${workshop.studioName}`}
@@ -68,7 +87,32 @@ export function WorkshopDetails({
           aria-label="Đặt chỗ và thông tin studio"
           className="min-w-0 space-y-4 self-start lg:sticky lg:top-20 lg:col-start-2 lg:row-span-2 lg:row-start-1"
         >
-          <DeferredSchedule workshop={workshop} onBook={onBook} />
+          {workshop.isDiscontinued ? (
+            <section className="rounded-2xl border border-stone-200 bg-stone-50 p-6">
+              <h1 className="font-heading text-2xl font-semibold">
+                {workshop.title}
+              </h1>
+              <p className="mt-3 font-semibold text-primary">
+                Đã ngừng tổ chức
+              </p>
+              <p className="mt-2 text-sm text-stone-700">
+                Studio không còn tổ chức workshop này. Bạn có thể xem các
+                workshop tương tự bên dưới.
+              </p>
+              <a
+                href={
+                  related.length
+                    ? '#related-heading'
+                    : '/kham-pha?view=workshop'
+                }
+                className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white"
+              >
+                Xem workshop tương tự
+              </a>
+            </section>
+          ) : (
+            <DeferredSchedule workshop={workshop} onBook={onBook} />
+          )}
           {(workshopText(workshop.studioName) || address) && (
             <section
               aria-label="Thông tin studio"
@@ -87,6 +131,19 @@ export function WorkshopDetails({
                 <p className="mt-1 text-sm leading-relaxed text-stone-700">
                   {address}
                 </p>
+              )}
+              {hasAddress && (
+                <iframe
+                  title="Bản đồ studio"
+                  className="mt-3 h-52 w-full rounded-lg border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                  src={
+                    'https://maps.google.com/maps?q=' +
+                    encodeURIComponent(address) +
+                    '&output=embed'
+                  }
+                />
               )}
               {address && (
                 <a
@@ -118,19 +175,8 @@ export function WorkshopDetails({
             level ||
             audience.length > 0 ||
             preparation) && (
-            <DetailSection
-              id="prepare-heading"
-              title="Bạn sẽ nhận được / Cần biết"
-            >
+            <DetailSection id="prepare-heading" title="Cần biết">
               <dl className="grid gap-5 sm:grid-cols-2">
-                {takeaway && takeaway !== description && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-sm text-stone-700">Bạn sẽ nhận được</dt>
-                    <dd className="mt-1 whitespace-pre-line leading-relaxed">
-                      {takeaway}
-                    </dd>
-                  </div>
-                )}
                 {workshop.durationMinutes > 0 && (
                   <div>
                     <dt className="text-sm text-stone-700">Thời lượng</dt>
@@ -228,18 +274,27 @@ export function WorkshopDetails({
               </div>
             </DetailSection>
           )}
-          {(included.length > 0 || cancellationPolicy || paymentPolicy) && (
-            <DetailSection id="policies-heading" title="Bao gồm / Chính sách">
-              {included.length > 0 && (
-                <div>
-                  <h3 className="font-semibold">Bao gồm</h3>
-                  <ul className="mt-2 list-disc space-y-2 pl-5 text-stone-700">
-                    {included.map((item, index) => (
-                      <li key={`${item}-${index}`}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+          {takeaway && takeaway !== description && (
+            <DetailSection id="takeaway-heading" title="Bạn sẽ nhận được">
+              <p className="whitespace-pre-line text-stone-700">{takeaway}</p>
+            </DetailSection>
+          )}
+          <DetailSection id="included-heading" title="Bao gồm">
+            {included.length ? (
+              <ul className="list-disc space-y-2 pl-5 text-stone-700">
+                {included.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-stone-700">
+                Studio chưa cập nhật danh sách bao gồm. Bạn có thể liên hệ
+                studio để biết thêm.
+              </p>
+            )}
+          </DetailSection>
+          {(cancellationPolicy || paymentPolicy) && (
+            <DetailSection id="policies-heading" title="Chính sách">
               {cancellationPolicy && (
                 <div className={included.length > 0 ? 'mt-5' : ''}>
                   <h3 className="font-semibold">Chính sách hủy</h3>

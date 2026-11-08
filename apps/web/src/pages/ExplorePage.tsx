@@ -32,8 +32,7 @@ function replaceParamsIfChanged(
   current: URLSearchParams,
   replace: (params: URLSearchParams, options: { replace: true }) => void,
 ) {
-  if (next.toString() !== current.toString())
-    replace(next, { replace: true });
+  if (next.toString() !== current.toString()) replace(next, { replace: true });
 }
 function writeFilters(
   params: URLSearchParams,
@@ -252,7 +251,14 @@ export function ExplorePage() {
     if (params.get('view') !== expectedView) params.set('view', expectedView);
     if (params.toString() !== searchString)
       setSearchParams(params, { replace: true });
-  }, [categoriesReady, provinceOptions.length, normalizedSearchString, searchString, setSearchParams, view]);
+  }, [
+    categoriesReady,
+    provinceOptions.length,
+    normalizedSearchString,
+    searchString,
+    setSearchParams,
+    view,
+  ]);
   const titleLocation = selectedProvince?.name.replace(
     'TP. Hồ Chí Minh',
     'TP.HCM',
@@ -342,7 +348,9 @@ export function ExplorePage() {
           locating={isLocating}
           view={view}
         >
-          <label className="sr-only" htmlFor="explore-search">Tìm workshop</label>
+          <label className="sr-only" htmlFor="explore-search">
+            Tìm workshop
+          </label>
           <input
             id="explore-search"
             className="min-h-11 w-40 rounded-lg border border-line bg-surface px-3 text-sm md:w-52"

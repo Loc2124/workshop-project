@@ -47,6 +47,10 @@ const loadAdminApprovalPage = () =>
   import('../pages/AdminApprovalPage').then((module) => ({
     default: module.AdminApprovalPage,
   }));
+const loadAdminFinancialPage = () =>
+  import('../pages/AdminFinancialPage').then((module) => ({
+    default: module.AdminFinancialPage,
+  }));
 const loadStudioOverviewPage = () =>
   import('../pages/StudioOverviewPage').then((module) => ({
     default: module.StudioOverviewPage,
@@ -75,6 +79,7 @@ export const AdminReportsPage = lazy(loadAdminReportsPage);
 export const AdminWorkshopPage = lazy(loadAdminWorkshopPage);
 export const AdminStudioProfilesPage = lazy(loadAdminStudioProfilesPage);
 export const AdminApprovalPage = lazy(loadAdminApprovalPage);
+export const AdminFinancialPage = lazy(loadAdminFinancialPage);
 export const StudioOverviewPage = lazy(loadStudioOverviewPage);
 export const StudioWorkspacePage = lazy(loadStudioWorkspacePage);
 export const StudioDashboard = lazy(loadStudioDashboard);
@@ -97,6 +102,7 @@ const adminLoaders: Record<string, () => Promise<unknown>> = {
   'workshop-review': loadAdminWorkshopPage,
   studios: loadAdminStudioProfilesPage,
   'ho-so-studio': loadAdminStudioProfilesPage,
+  'tai-chinh': loadAdminFinancialPage,
 };
 const pending = new Map<string, Promise<unknown>>();
 export function prefetchDashboardRoute(to: string) {

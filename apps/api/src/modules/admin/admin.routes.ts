@@ -4,6 +4,7 @@ import {
 } from './admin.repository.js';
 import { selectAdminRecords } from './admin-records.repository.js';
 import { Router } from 'express';
+import { financialLedgerRouter } from './financial-ledger.js';
 import { createAdminRateLimiter } from '../../middleware/rate-limits.js';
 import {
   categoryListQuery,
@@ -122,6 +123,7 @@ router.use((_req, res, next) => {
   res.set('Cache-Control', 'no-store');
   next();
 });
+router.use('/tai-chinh', financialLedgerRouter);
 router.get('/studios/counts', async (req, res) =>
   res.json({
     counts: await countStudiosForAdmin(

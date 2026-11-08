@@ -6,6 +6,8 @@ import { SectionHeading } from '../layout/SectionHeading';
 import { Button } from '../ui/button';
 import { TicketRow, toTicketProps } from '../tickets';
 import type { Workshop } from '../../types/workshop';
+import { useSessionClock } from '../../hooks/useSessionClock';
+import { sessionStatus } from '../../lib/sessionStatus';
 
 type Props = Pick<
   ReturnType<typeof useHomeCatalog>,
@@ -19,6 +21,14 @@ export function HomeWorkshopSection({
   error,
   refetch,
 }: Props) {
+  const now = useSessionClock(
+    featuredWorkshops.flatMap((workshop) => workshop.sessions),
+  );
+  const bookable = featuredWorkshops.filter((workshop) =>
+    workshop.sessions.some(
+      (session) => sessionStatus(session, now) === 'available',
+    ),
+  );
   return (
     <PageContainer
       as="section"
@@ -50,28 +60,33 @@ export function HomeWorkshopSection({
             </div>
           ))}
         </div>
-      ) : error || !featuredWorkshops.length ? (
+      ) : error || !bookable.length ? (
         <div className="rounded-2xl bg-soft p-6" role="status">
           <p>
             {error
               ? 'Chưa tải được workshop. Bạn có thể thử lại.'
-              : 'Chưa có workshop công khai để giới thiệu.'}
+              : 'Hiện chưa có workshop đang nhận đăng ký.'}
           </p>
           {error && (
             <Button type="button" onClick={refetch} className="mt-4">
               Thử lại
             </Button>
           )}
+          {!error && (
+            <Button asChild className="mt-4">
+              <Link to={browseUrl}>Khám phá workshop</Link>
+            </Button>
+          )}
         </div>
       ) : (
         <div className="home-workshop-list grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2">
-          {featuredWorkshops.map((workshop, index) => (
+          {bookable.map((workshop, index) => (
             <div
               key={workshop.id}
               className={index === 0 ? 'lg:col-span-2' : undefined}
             >
               <TicketRow
-                {...toTicketProps(workshop)}
+                {...toTicketProps(workshop, now)}
                 featured={index === 0}
                 priority={index === 0}
               />

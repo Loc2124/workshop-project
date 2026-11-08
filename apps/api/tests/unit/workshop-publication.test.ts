@@ -58,7 +58,10 @@ describe('studio self publication', () => {
       'publication_status, is_simulated',
     );
     expect(client.query.mock.calls[1][0]).toContain('$17, false');
-    expect(client.query.mock.calls[1][1].slice(-2)).toEqual([0, 'published']);
+    expect(client.query.mock.calls[1][1].slice(15, 17)).toEqual([
+      null,
+      'published',
+    ]);
     expect(audit).toHaveBeenCalledWith(
       client,
       expect.objectContaining({
@@ -122,6 +125,9 @@ describe('studio self publication', () => {
     });
     await createWorkshop('studio', 'owner', input);
     expect(client.query.mock.calls[1][0]).not.toContain("'pending'");
-    expect(client.query.mock.calls[1][1].slice(-2)).toEqual([20, 'published']);
+    expect(client.query.mock.calls[1][1].slice(15, 17)).toEqual([
+      null,
+      'published',
+    ]);
   });
 });

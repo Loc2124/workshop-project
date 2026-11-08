@@ -95,6 +95,7 @@ describe('studio onboarding requirements', () => {
     expect(calculateDeposit(100001, 20)).toBe(20000);
     expect(effectiveDepositPercent(30, false)).toBe(0);
     expect(effectiveDepositPercent(30, true)).toBe(30);
-    expect(() => calculateDeposit(500000, 31)).toThrow();
+    expect(calculateDeposit(500000, 50)).toBe(250000);
+    expect(() => calculateDeposit(500000, 51)).toThrow();
   });
 });

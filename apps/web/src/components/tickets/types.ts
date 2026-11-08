@@ -1,4 +1,9 @@
 import type { Workshop } from '../../types/workshop';
+import {
+  displaySession,
+  sessionStatus,
+  sessionStatusLabel,
+} from '../../lib/sessionStatus';
 
 export type TicketData = {
   workshop: {
@@ -26,6 +31,8 @@ export type TicketData = {
     startAt: string | null;
     durationMinutes: number;
     seatsLeft: number;
+    statusLabel: string;
+    actionLabel: string;
   };
   artisan?: {
     name: string;
@@ -52,10 +59,14 @@ export type Booking = {
   paymentStatus: 'unpaid' | 'pending' | 'paid' | 'refunded';
 };
 
-export function toTicketProps(workshop: Workshop): TicketProps {
-  const session = [...workshop.sessions].sort(
-    (a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt),
-  )[0];
+export function toTicketProps(
+  workshop: Workshop,
+  now = Date.now(),
+): TicketProps {
+  const session = workshop.isDiscontinued
+    ? undefined
+    : displaySession(workshop.sessions, now);
+  const status = session ? sessionStatus(session, now) : undefined;
   return {
     workshop: {
       id: workshop.id,
@@ -82,6 +93,18 @@ export function toTicketProps(workshop: Workshop): TicketProps {
       startAt: session?.startsAt ?? null,
       durationMinutes: workshop.durationMinutes,
       seatsLeft: session?.availableSeats ?? 0,
+      statusLabel: workshop.isDiscontinued
+        ? 'Đã ngừng tổ chức'
+        : status
+          ? sessionStatusLabel[status]
+          : 'Chưa có lịch mới',
+      actionLabel: workshop.isDiscontinued
+        ? 'Xem workshop tương tự'
+        : status === 'available'
+          ? 'Chọn lịch'
+          : session
+            ? 'Xem lịch'
+            : 'Nhận thông báo khi có lịch',
     },
     artisan: workshop.artistName
       ? {

@@ -28,12 +28,14 @@ export function PublicShell() {
               : 'min-h-svh';
   return (
     <div
-      className={`${classes} ${['/danh-cho-nghe-nhan', '/ve-open-slot'].includes(pathname) ? 'marketing-page' : ''} public-shell bg-paper text-ink [--loading-height:calc(100svh-5rem)]`}
+      className={`${classes} ${['/danh-cho-nghe-nhan', '/ve-open-slot'].includes(pathname) ? 'marketing-page' : ''} public-shell flex min-h-svh flex-col bg-paper text-ink [--loading-height:calc(100svh-5rem)]`}
     >
       <SiteHeader />
-      <Suspense fallback={<PublicPageSkeleton />}>
-        <Outlet />
-      </Suspense>
+      <div className="flex-1">
+        <Suspense fallback={<PublicPageSkeleton />}>
+          <Outlet />
+        </Suspense>
+      </div>
       <SiteFooter />
     </div>
   );

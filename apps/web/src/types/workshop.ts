@@ -6,6 +6,8 @@ export type WorkshopSession = {
   endsAt: string;
   price: number;
   availableSeats: number;
+  status?: 'scheduled' | 'cancelled' | 'completed';
+  registrationDeadline?: string | null;
 };
 
 export type WorkshopReview = {
@@ -35,6 +37,9 @@ export type Workshop = {
   takeaway: string | null;
   durationMinutes: number;
   basePrice: number;
+  depositMode?: 'none' | 'optional' | 'required';
+  studioContactPhone?: string | null;
+  studioContactEmail?: string | null;
   depositPercent?: number;
   effectiveDepositPercent?: number;
   requirements: string | null;
@@ -44,6 +49,7 @@ export type Workshop = {
   areaId?: string | null;
   address: string | null;
   isSimulated: boolean;
+  isDiscontinued?: boolean;
   studioName: string;
   studioTrustLevel?: 'unapproved' | 'approved' | 'verified';
   studioDescription: string | null;

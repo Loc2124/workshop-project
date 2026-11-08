@@ -183,7 +183,7 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
       />
       <p className="text-sm leading-6 text-studio-muted">
         Thay đổi thông tin nhạy cảm sẽ đưa studio về chờ duyệt và thu hồi xác
-        minh hiện tại. Khách thanh toán tiền cọc qua cổng PayOS khi đặt chỗ.
+        minh hiện tại. Khách thanh toán tiền cọc bằng chuyển khoản khi đặt chỗ.
       </p>
       <div
         className={`flex flex-wrap items-center justify-between gap-3 border-t border-studio-border bg-studio-surface px-4 py-3 sm:px-6 ${hasChanges ? 'sticky bottom-0 z-30 -mx-5 shadow-studio-sticky sm:-mx-8' : ''}`}

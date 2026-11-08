@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { requireAuth } from '../../middleware/auth.js';
 import { publicFeatured } from '../admin/featured.repository.js';
 import { query } from '../../db/pool.js';
 import { listCategories } from './categories.repository.js';
@@ -18,6 +19,33 @@ import {
 } from './catalog.service.js';
 
 const router = Router();
+router.post(
+  '/workshops/:id/schedule-subscription',
+  requireAuth(['customer']),
+  async (request, response) => {
+    const id = String(request.params.id);
+    if (!/^[a-f0-9-]{36}$/i.test(id))
+      throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy workshop.');
+    const result = await query(
+      `INSERT INTO workshop_schedule_subscriptions (workshop_id,user_id)
+     SELECT w.id,$2 FROM workshops w JOIN studios st ON st.id=w.studio_id
+     WHERE w.id=$1 AND w.status='approved' AND NOT w.is_simulated
+       AND w.visibility_status='active' AND w.publication_status='published'
+       AND st.status='approved' AND NOT st.is_hidden AND NOT st.is_draft
+     ON CONFLICT (workshop_id,user_id) DO NOTHING RETURNING workshop_id`,
+      [id, request.user!.sub],
+    );
+    if (!result.rowCount) {
+      const existing = await query(
+        'SELECT 1 FROM workshop_schedule_subscriptions WHERE workshop_id=$1 AND user_id=$2',
+        [id, request.user!.sub],
+      );
+      if (!existing.rowCount)
+        throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy workshop.');
+    }
+    response.status(201).json({ subscribed: true });
+  },
+);
 router.get('/home/featured', async (_req, res) =>
   res.set('Cache-Control', 'no-store').json(await publicFeatured()),
 );

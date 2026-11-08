@@ -6,10 +6,7 @@ import { query, withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
 import { imagePublicUrl } from '../images/image-storage.js';
 import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
-import {
-  studioDepositEligibleSql,
-  studioTrustSql,
-} from '../studios/studio-profile-sql.js';
+import { studioTrustSql } from '../studios/studio-profile-sql.js';
 const ids = (max: number) =>
   z
     .array(z.string().uuid())
@@ -236,7 +233,11 @@ export async function publicFeatured(
                w.created_at DESC,w.id
            ) AS position
            FROM workshops w JOIN studios st ON st.id=w.studio_id
-           WHERE ${workshopEligible}
+           WHERE ${workshopEligible} AND NOT w.is_discontinued
+             AND EXISTS (SELECT 1 FROM sessions bookable WHERE bookable.workshop_id=w.id
+               AND bookable.status='scheduled' AND bookable.starts_at>now()
+               AND COALESCE(bookable.registration_deadline,bookable.starts_at)>now()
+               AND bookable.capacity>bookable.seats_held+bookable.seats_sold)
            ORDER BY (w.id=ANY($1::uuid[])) DESC,array_position($1::uuid[],w.id),
              w.created_at DESC,w.id
            LIMIT 8
@@ -260,6 +261,7 @@ export async function publicFeatured(
              WHERE (w.id IN (SELECT id FROM selected_workshops)
                OR w.studio_id IN (SELECT id FROM selected_studios))
                AND s.status='scheduled' AND s.starts_at>now()
+               AND COALESCE(s.registration_deadline,s.starts_at)>now()
            ) AS "sessionIds"`,
         [saved.workshopIds, saved.studioIds],
       )
@@ -305,8 +307,9 @@ export async function publicFeatured(
                count(s.id)::integer AS "availableSessions",min(s.price)::integer AS "startingPrice"
              FROM workshops w LEFT JOIN sessions s ON s.workshop_id=w.id
                AND s.status='scheduled' AND s.starts_at>now()
+               AND COALESCE(s.registration_deadline,s.starts_at)>now()
                AND s.capacity>s.seats_held+s.seats_sold
-             WHERE w.studio_id=st.id AND w.status='approved' AND NOT w.is_simulated
+             WHERE w.studio_id=st.id AND w.status='approved' AND NOT w.is_simulated AND NOT w.is_discontinued
                AND w.visibility_status='active' AND w.publication_status='published'
            ) stats ON true
            LEFT JOIN LATERAL (
@@ -321,21 +324,24 @@ export async function publicFeatured(
            SELECT sw.position,w.id,w.slug,st.id AS "studioId",st.slug AS "studioSlug",
              w.title,w.description,w.category_id AS "categoryId",w.level,w.audience,w.takeaway,
              w.duration_minutes AS "durationMinutes",w.base_price AS "basePrice",
-             CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",
+             effective_deposit_percent(st,w) AS "depositPercent",
+         effective_deposit_mode(st,w) AS "depositMode",w.included,st.contact_phone AS "studioContactPhone",st.contact_email AS "studioContactEmail",
              w.requirements,w.cancellation_policy AS "cancellationPolicy",
              w.payment_policy AS "paymentPolicy",st.district,p.name AS province,
              st.province_id AS "provinceId",st.area_id AS "areaId",st.address,
-             w.is_simulated AS "isSimulated",st.name AS "studioName",
+             w.is_simulated AS "isSimulated",w.is_discontinued AS "isDiscontinued",st.name AS "studioName",
              st.description AS "studioDescription",${studioTrustSql} AS "studioTrustLevel",
              cover.key AS "imageKey",cover.thumbnail_key AS "thumbnailKey",
              cover.medium_key AS "mediumKey",
              coalesce((
                SELECT json_agg(json_build_object('id',s.id,'startsAt',s.starts_at,
                  'endsAt',s.ends_at,'price',s.price,
-                 'availableSeats',s.capacity-s.seats_held-s.seats_sold)
+                 'availableSeats',s.capacity-s.seats_held-s.seats_sold,
+                 'status',s.status,'registrationDeadline',s.registration_deadline)
                  ORDER BY s.starts_at,s.id)
                FROM sessions s
                WHERE s.workshop_id=w.id AND s.status='scheduled' AND s.starts_at>now()
+                 AND COALESCE(s.registration_deadline,s.starts_at)>now()
                  AND s.capacity>s.seats_held+s.seats_sold
              ),'[]'::json) AS sessions
            FROM selected_workshops sw

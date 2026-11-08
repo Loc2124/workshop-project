@@ -22,6 +22,15 @@ export class MockProvider implements PaymentProvider {
       qrCode: null,
     };
   }
+  async lookupPayment(_orderCode: number) {
+    void _orderCode;
+    return null;
+  }
+  async cancelPayment(_orderCode: number, _reason: string) {
+    void _orderCode;
+    void _reason;
+    return;
+  }
 
   verifyWebhook(rawBody: string): WebhookVerification {
     const fallbackKey = createHash('sha256').update(rawBody).digest('hex');

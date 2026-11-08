@@ -3,12 +3,16 @@ import { CalendarDays, CalendarPlus, MapPin, Minus, Plus } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import type { Workshop, WorkshopSession } from '../../types/workshop';
 import { formatPrice } from '../../lib/format';
-import { sessionCalendar, upcomingSessions } from '../../lib/workshopDetails';
+import { sessionCalendar } from '../../lib/workshopDetails';
+import { sessionStatus, sessionStatusLabel } from '../../lib/sessionStatus';
+import { useSessionClock } from '../../hooks/useSessionClock';
+import { ScheduleNotification } from './ScheduleNotification';
 import { cn } from '../../lib/utils';
 import { WorkshopRating } from './WorkshopRating';
 import { workshopText, workshopSessionRange } from './workshopPresentation';
 import { bookingFormSchema } from '../../lib/form-validation';
 import { toast } from 'sonner';
+import { calculateDeposit } from '@workshop/shared';
 
 const MAX_BOOKING_QUANTITY = 10;
 
@@ -27,6 +31,7 @@ export type WorkshopBookingRequest = {
   workshopId: string;
   sessionId: string;
   quantity: number;
+  paymentChoice?: 'deposit' | 'in_studio';
 };
 export type WorkshopBookingHandler = (
   request: WorkshopBookingRequest,
@@ -44,14 +49,29 @@ export function WorkshopSchedule({
   workshop: Workshop;
   onBook?: WorkshopBookingHandler;
 }) {
-  const sessions = upcomingSessions(workshop.sessions).filter(
-    (session) =>
-      Number.isFinite(session.price) &&
-      session.price >= 0 &&
-      Number.isInteger(session.availableSeats) &&
-      session.availableSeats >= 0,
+  const now = useSessionClock(workshop.sessions);
+  const [showOtherSessions, setShowOtherSessions] = useState(false);
+  const [choice, setChoice] = useState<'deposit' | 'in_studio'>('in_studio');
+  const depositMode = workshop.depositMode ?? 'none';
+  const paymentChoice =
+    depositMode === 'required'
+      ? 'deposit'
+      : depositMode === 'none'
+        ? 'in_studio'
+        : choice;
+  const sessions = workshop.sessions
+    .filter(
+      (session) =>
+        Number.isFinite(session.price) &&
+        session.price >= 0 &&
+        Number.isInteger(session.availableSeats) &&
+        session.availableSeats >= 0 &&
+        Date.parse(session.endsAt) > now,
+    )
+    .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  const initial = sessions.find(
+    (session) => sessionStatus(session, now) === 'available',
   );
-  const initial = sessions.find((session) => session.availableSeats > 0);
   const [selectedId, setSelectedId] = useState(initial?.id);
   const [quantity, setQuantity] = useState(1);
   const [pending, setPending] = useState(false);
@@ -69,7 +89,9 @@ export function WorkshopSchedule({
   const selected =
     confirmed?.session ??
     sessions.find(
-      (session) => session.id === selectedId && session.availableSeats > 0,
+      (session) =>
+        session.id === selectedId &&
+        sessionStatus(session, now) === 'available',
     ) ??
     initial;
   const seats =
@@ -79,8 +101,8 @@ export function WorkshopSchedule({
   const depositPercent =
     workshop.effectiveDepositPercent ?? workshop.depositPercent ?? 0;
   const depositAmount =
-    total !== undefined && depositPercent > 0
-      ? Math.ceil((total * depositPercent) / 100)
+    total !== undefined && paymentChoice === 'deposit' && depositPercent > 0
+      ? calculateDeposit(total, depositPercent)
       : 0;
   const balanceAmount = total === undefined ? 0 : total - depositAmount;
   const locked = pending || Boolean(confirmed);
@@ -96,6 +118,10 @@ export function WorkshopSchedule({
   async function book(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selected || !seats || confirmed || submitting.current) return;
+    if (sessionStatus(selected, Date.now()) !== 'available') {
+      setError('Buổi này đã đóng đăng ký. Vui lòng chọn lịch khác.');
+      return;
+    }
     setError('');
     setNotice('');
     const parsed = bookingFormSchema.safeParse({
@@ -116,8 +142,9 @@ export function WorkshopSchedule({
     setPending(true);
     const snapshot = { ...selected };
     try {
-      const result = await onBook(parsed.data);
-      if (!result?.id?.trim()) throw new Error('Missing booking confirmation');
+      const result = await onBook({ ...parsed.data, paymentChoice });
+      if (!result?.id?.trim())
+        throw new Error('Chưa nhận được xác nhận đặt chỗ.');
       if (result.checkoutUrl) {
         if (result.checkoutQrCode) {
           navigate(
@@ -183,9 +210,9 @@ export function WorkshopSchedule({
       <span className="rounded-md bg-lime-100 px-2.5 py-1 text-xs font-semibold text-primary">
         {confirmed
           ? 'Đã đặt ' + confirmed.quantity + ' chỗ'
-          : session.availableSeats > 0
+          : sessionStatus(session, now) === 'available'
             ? 'Còn ' + session.availableSeats + ' chỗ'
-            : 'Đã hết chỗ'}
+            : sessionStatusLabel[sessionStatus(session, now)]}
       </span>
     </span>
   );
@@ -223,9 +250,11 @@ export function WorkshopSchedule({
           className="mt-5 space-y-5"
           aria-busy={pending}
         >
-          {confirmed || sessions.length === 1 ? (
+          {confirmed ||
+          sessions.length === 1 ||
+          (sessions.length > 1 && !showOtherSessions) ? (
             <div className="rounded-xl bg-soft p-4">
-              {dateDetails(confirmed?.session ?? sessions[0])}
+              {dateDetails(confirmed?.session ?? selected ?? sessions[0])}
             </div>
           ) : sessions.length > 1 ? (
             <fieldset disabled={locked} className="space-y-2">
@@ -236,7 +265,7 @@ export function WorkshopSchedule({
                   className={cn(
                     'flex flex-wrap items-center gap-3 rounded-lg border border-stone-200 bg-white p-3 focus-within:ring-2 focus-within:ring-primary',
                     session.id === selected?.id && 'border-primary bg-soft',
-                    session.availableSeats > 0 && !locked
+                    sessionStatus(session, now) === 'available' && !locked
                       ? 'cursor-pointer'
                       : 'cursor-default',
                   )}
@@ -246,7 +275,9 @@ export function WorkshopSchedule({
                     name="workshop-session"
                     value={session.id}
                     checked={selected?.id === session.id}
-                    disabled={session.availableSeats < 1 || locked}
+                    disabled={
+                      sessionStatus(session, now) !== 'available' || locked
+                    }
                     onChange={() => {
                       setSelectedId(session.id);
                       setQuantity(1);
@@ -265,13 +296,25 @@ export function WorkshopSchedule({
             </fieldset>
           ) : (
             <p className="text-sm text-stone-700">
-              Workshop chưa có lịch sắp tới.
+              Các buổi trước đã kết thúc. Studio chưa công bố lịch tiếp theo.
             </p>
+          )}
+          {sessions.length > 1 && !showOtherSessions && (
+            <button
+              type="button"
+              className="min-h-11 text-sm font-semibold text-primary underline"
+              onClick={() => setShowOtherSessions(true)}
+            >
+              Xem các buổi khác
+            </button>
+          )}
+          {!initial && sessions.length === 0 && !confirmed && (
+            <ScheduleNotification workshopId={workshop.id} />
           )}
           {selected && (
             <>
               <p className="text-sm text-stone-600">
-                Thông tin liên hệ được lấy từ tài khoản đã đăng nhập.
+                Chúng tôi dùng thông tin từ tài khoản của bạn để liên hệ.
               </p>
               <div
                 role="group"
@@ -325,6 +368,40 @@ export function WorkshopSchedule({
                   </button>
                 </div>
               </div>
+              {depositMode === 'optional' ? (
+                <fieldset disabled={locked} className="space-y-2">
+                  <legend className="font-semibold">Cách thanh toán</legend>
+                  {(['deposit', 'in_studio'] as const).map((value) => (
+                    <label
+                      key={value}
+                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3"
+                    >
+                      <input
+                        type="radio"
+                        name="payment-choice"
+                        checked={paymentChoice === value}
+                        onChange={() => setChoice(value)}
+                        className="accent-primary"
+                      />
+                      {value === 'deposit' ? 'Cọc trước' : 'Trả tại studio'}
+                    </label>
+                  ))}
+                </fieldset>
+              ) : (
+                <p className="text-sm font-semibold">
+                  {depositMode === 'required'
+                    ? 'Cần đặt cọc để giữ chỗ'
+                    : 'Trả tại studio'}
+                </p>
+              )}
+              {paymentChoice === 'deposit' &&
+                selected &&
+                Date.parse(selected.startsAt) - now < 24 * 3600000 && (
+                  <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
+                    Buổi học diễn ra trong vòng 24 giờ, khoản cọc sẽ không được
+                    hoàn nếu bạn hủy.
+                  </p>
+                )}
               <div className="rounded-xl bg-soft p-4">
                 <p className="text-sm text-stone-700">
                   {formatPrice(selected.price)} đ × {seats} người
@@ -340,7 +417,7 @@ export function WorkshopSchedule({
                     <>
                       <div className="flex justify-between gap-3 text-primary">
                         <dt className="font-semibold">
-                          Cọc qua PayOS ({depositPercent}%)
+                          Đặt cọc ({depositPercent}%)
                         </dt>
                         <dd className="font-bold tabular-nums">
                           {formatPrice(depositAmount)} đ
@@ -353,14 +430,13 @@ export function WorkshopSchedule({
                         </dd>
                       </div>
                       <p className="pt-1 text-xs leading-5 text-stone-600">
-                        Sau khi đặt chỗ, mã QR PayOS cho khoản cọc sẽ hiện trong
-                        chi tiết booking. Chỗ được xác nhận khi PayOS báo đã
-                        thanh toán.
+                        Sau khi đặt chỗ, bạn có 15 phút để quét mã QR đặt cọc.
+                        Chỗ được xác nhận ngay khi chúng tôi nhận được tiền cọc.
                       </p>
                     </>
                   ) : (
                     <div className="flex justify-between gap-3 border-t border-primary/15 pt-2">
-                      <dt>Thanh toán tại studio</dt>
+                      <dt>Trả tại studio</dt>
                       <dd className="font-semibold tabular-nums">
                         {formatPrice(total!)} đ
                       </dd>
@@ -368,6 +444,12 @@ export function WorkshopSchedule({
                   )}
                 </dl>
               </div>
+              {paymentChoice === 'in_studio' && (
+                <p className="text-sm text-stone-700">
+                  Chỗ của bạn được xác nhận ngay. Bạn thanh toán trực tiếp tại
+                  studio.
+                </p>
+              )}
             </>
           )}
           <button
@@ -376,7 +458,13 @@ export function WorkshopSchedule({
             aria-describedby={error ? 'booking-error' : undefined}
             className={cn(primary, 'w-full')}
           >
-            {pending ? 'Đang đặt chỗ…' : confirmed ? 'Đã đặt chỗ' : 'Đặt chỗ'}
+            {pending
+              ? 'Đang đặt chỗ…'
+              : confirmed
+                ? 'Đã đặt chỗ'
+                : paymentChoice === 'deposit'
+                  ? 'Đặt chỗ · Cọc ' + formatPrice(depositAmount) + ' đ'
+                  : 'Đặt chỗ · Trả tại studio'}
           </button>
           {error && (
             <p id="booking-error" role="alert" className="text-sm text-brick">
@@ -429,7 +517,7 @@ export function WorkshopSchedule({
           onClick={() => heading.current?.focus({ preventScroll: true })}
           className={cn(primary, 'flex-1')}
         >
-          {confirmed ? 'Xem đặt chỗ' : 'Đặt chỗ'}
+          {confirmed ? 'Xem đặt chỗ' : selected ? 'Chọn lịch' : 'Xem lịch'}
         </a>
       </div>
     </>

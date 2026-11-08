@@ -1,8 +1,8 @@
 import { AppError } from '../../errors/app-error.js';
 import { writeAuditLog } from '../admin/audit-log.js';
-import { DEFAULT_DEPOSIT_PERCENT } from '@workshop/shared';
 import { studioDepositEligibleSql } from '../studios/studio-profile-sql.js';
 import { query, withTransaction } from '../../db/pool.js';
+import { calculateDeposit } from '@workshop/shared';
 import { createSlug } from '../../lib/slug.js';
 import type {
   WorkshopInput,
@@ -22,7 +22,9 @@ export type WorkshopRow = {
   takeaway: string | null;
   durationMinutes: number;
   basePrice: number;
-  depositPercent: number;
+  depositPercent: number | null;
+  depositModeOverride: 'none' | 'optional' | 'required' | null;
+  included: string[];
   effectiveDepositPercent: number;
   requirements: string | null;
   cancellationPolicy: string | null;
@@ -32,6 +34,7 @@ export type WorkshopRow = {
   address: string;
   status: 'pending' | 'approved' | 'rejected';
   publicationStatus: 'draft' | 'published' | 'hidden';
+  isDiscontinued: boolean;
   createdAt: string;
 };
 
@@ -48,7 +51,8 @@ const workshopColumns = `w.id,
   w.duration_minutes AS "durationMinutes",
   w.base_price AS "basePrice",
   w.deposit_percent AS "depositPercent",
-  CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "effectiveDepositPercent",
+  w.deposit_mode_override AS "depositModeOverride",w.included,
+  effective_deposit_percent(st,w) AS "effectiveDepositPercent",
   w.requirements,
   w.cancellation_policy AS "cancellationPolicy",
   w.payment_policy AS "paymentPolicy",
@@ -57,6 +61,7 @@ const workshopColumns = `w.id,
   st.address,
   w.status,
   CASE WHEN w.visibility_status <> 'active' THEN 'hidden' ELSE w.publication_status END AS "publicationStatus",
+  w.is_discontinued AS "isDiscontinued",
   w.created_at AS "createdAt"`;
 
 const updateableColumns: Array<[keyof WorkshopUpdateInput, string]> = [
@@ -70,10 +75,13 @@ const updateableColumns: Array<[keyof WorkshopUpdateInput, string]> = [
   ['durationMinutes', 'duration_minutes'],
   ['basePrice', 'base_price'],
   ['depositPercent', 'deposit_percent'],
+  ['depositModeOverride', 'deposit_mode_override'],
+  ['included', 'included'],
   ['requirements', 'requirements'],
   ['cancellationPolicy', 'cancellation_policy'],
   ['paymentPolicy', 'payment_policy'],
   ['publicationStatus', 'publication_status'],
+  ['isDiscontinued', 'is_discontinued'],
 ];
 
 export async function listWorkshops(
@@ -109,10 +117,8 @@ export async function createWorkshop(
     const state = await lockDepositStudio(client, studioId, userId);
     if (!state) return null;
     assertApprovedStudio(state);
-    const depositPercent =
-      input.depositPercent ??
-      (state.canCollectDeposit ? DEFAULT_DEPOSIT_PERCENT : 0);
-    if (depositPercent > 0 && !state.canCollectDeposit)
+    const depositPercent = input.depositPercent ?? null;
+    if ((depositPercent ?? 0) > 0 && !state.canCollectDeposit)
       throw new AppError(
         403,
         'FORBIDDEN',
@@ -122,9 +128,9 @@ export async function createWorkshop(
       `INSERT INTO workshops (
        studio_id, slug, title, description, category_id, level, audience, takeaway,
        duration_minutes, base_price, requirements, cancellation_policy,
-       payment_policy, district, address, status, proposed_category_name, deposit_percent, publication_status, is_simulated
+       payment_policy, district, address, status, proposed_category_name, deposit_percent, publication_status, is_simulated,deposit_mode_override,included
      )
-     SELECT st.id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NULL, NULL, 'approved'::approval_status, $15, $16, $17, false
+     SELECT st.id, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NULL, NULL, 'approved'::approval_status, $15, $16, $17, false, $18, $19
      FROM studios st
      JOIN studio_members sm
        ON sm.studio_id = st.id AND sm.user_id = $2 AND sm.role = 'owner'
@@ -141,8 +147,8 @@ export async function createWorkshop(
        takeaway,
        duration_minutes AS "durationMinutes",
        base_price AS "basePrice",
-       deposit_percent AS "depositPercent",
-       deposit_percent AS "effectiveDepositPercent",
+       deposit_percent AS "depositPercent",deposit_mode_override AS "depositModeOverride",included,
+       (SELECT effective_deposit_percent(st,workshops) FROM studios st WHERE st.id=studio_id) AS "effectiveDepositPercent",
        requirements,
        cancellation_policy AS "cancellationPolicy",
        payment_policy AS "paymentPolicy",
@@ -170,9 +176,12 @@ export async function createWorkshop(
         input.proposedCategoryName ?? null,
         depositPercent,
         input.publicationStatus ?? 'published',
+        input.depositModeOverride ?? null,
+        input.included ?? [],
       ],
     );
     const workshop = result.rows[0] ?? null;
+    if (workshop) await assertMinimumDeposit(client, workshop.id);
     if (workshop)
       await writeAuditLog(client, {
         actorId: userId,
@@ -216,7 +225,8 @@ export async function updateWorkshop(
     const basePriceParameter = `$${values.length + 1}`;
     values.push(
       Object.hasOwn(input, 'basePrice') ||
-        Object.hasOwn(input, 'depositPercent'),
+        Object.hasOwn(input, 'depositPercent') ||
+        Object.hasOwn(input, 'depositModeOverride'),
     );
 
     const result = await client.query<WorkshopRow>(
@@ -234,6 +244,7 @@ export async function updateWorkshop(
       values,
     );
     const workshop = result.rows[0] ?? null;
+    if (workshop) await assertMinimumDeposit(client, workshop.id);
     if (workshop)
       await writeAuditLog(client, {
         actorId: userId,
@@ -260,6 +271,30 @@ async function lockDepositStudio(
     [studioId, userId],
   );
   return result.rows[0] ?? null;
+}
+
+async function assertMinimumDeposit(
+  client: import('pg').PoolClient,
+  id: string,
+) {
+  const minimum = Number(process.env.PAYMENT_MIN_AMOUNT ?? 0);
+  if (!minimum) return;
+  const result = await client.query<{ price: number; percent: number }>(
+    `SELECT LEAST(w.base_price,COALESCE(min(s.price),w.base_price)) AS price,effective_deposit_percent(st,w) AS percent FROM workshops w JOIN studios st ON st.id=w.studio_id LEFT JOIN sessions s ON s.workshop_id=w.id AND s.status='scheduled' AND s.starts_at>now() WHERE w.id=$1 GROUP BY w.id,st.id`,
+    [id],
+  );
+  const row = result.rows[0];
+  if (
+    row &&
+    row.price > 0 &&
+    row.percent > 0 &&
+    calculateDeposit(row.price, row.percent) < minimum
+  )
+    throw new AppError(
+      422,
+      'UNPROCESSABLE_ENTITY',
+      `Tiền cọc thấp hơn mức thanh toán tối thiểu ${minimum.toLocaleString('vi-VN')} đ. Vui lòng tăng mức cọc hoặc chọn không cọc.`,
+    );
 }
 
 function assertApprovedStudio(state: { status: string; isDraft: boolean }) {

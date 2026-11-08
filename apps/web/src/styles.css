@@ -478,3 +478,13 @@
     contain-intrinsic-size: auto 720px;
   }
 }
+
+html,
+body,
+#root {
+  min-height: 100%;
+  background-color: theme('colors.paper');
+}
+body {
+  margin: 0;
+}

@@ -7,6 +7,11 @@ export {
 } from './category-proposal.js';
 export { studioRegistrationSchema } from './studio-registration.js';
 export {
+  splitSeatAmount,
+  originalSeatAmounts,
+  seatCancellationAmounts,
+} from './seat-allocation.js';
+export {
   studioEvidenceSchema,
   createStudioEvidenceSchema,
   studioPhoneSchema,
@@ -17,7 +22,14 @@ export {
 export type { StudioEvidenceInput } from './studio-evidence.js';
 export {
   depositPercentSchema,
-  DEFAULT_DEPOSIT_PERCENT,
+  validateWorkshopDeposit,
+  BOOKING_HOLD_MINUTES,
+  depositModeSchema,
+  depositSettingsSchema,
+  bookingPaymentChoice,
+  cancellationRefund,
+  requiresAttendanceConfirmation,
+  depositPaymentCopy,
   MAX_DEPOSIT_PERCENT,
   effectiveDepositPercent,
   calculateDeposit,
@@ -47,6 +59,8 @@ export const workshopSessionDtoSchema = z
     endsAt: isoDateTimeSchema,
     price: z.number().int().nonnegative(),
     availableSeats: z.number().int().nonnegative(),
+    status: z.enum(['scheduled', 'cancelled', 'completed']).optional(),
+    registrationDeadline: isoDateTimeSchema.nullable().optional(),
   })
   .strict();
 
@@ -64,8 +78,12 @@ export const publicWorkshopDtoSchema = z
     takeaway: z.string().nullable(),
     durationMinutes: z.number().int().positive(),
     basePrice: z.number().int().nonnegative(),
-    depositPercent: z.number().int().min(0).max(30).optional(),
-    effectiveDepositPercent: z.number().int().min(0).max(30).optional(),
+    depositPercent: z.number().int().min(0).max(50).optional(),
+    effectiveDepositPercent: z.number().int().min(0).max(50).optional(),
+    depositMode: z.enum(['none', 'optional', 'required']).optional(),
+    included: z.array(z.string()).optional(),
+    studioContactPhone: z.string().nullable().optional(),
+    studioContactEmail: z.string().nullable().optional(),
     requirements: z.string().nullable(),
     cancellationPolicy: z.string().nullable(),
     paymentPolicy: z.string().nullable(),
@@ -75,6 +93,7 @@ export const publicWorkshopDtoSchema = z
     areaId: z.string().nullable(),
     address: z.string(),
     isSimulated: z.boolean(),
+    isDiscontinued: z.boolean().optional(),
     studioName: z.string(),
     studioDescription: z.string().nullable(),
     studioTrustLevel: studioTrustLevelSchema.optional(),

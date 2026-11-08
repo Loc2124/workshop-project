@@ -9,7 +9,7 @@ import {
   useState,
 } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ChevronDown, LogOut, Menu, X } from 'lucide-react';
+import { Bell, LogOut, Menu, UserRound, X } from 'lucide-react';
 import { PageContainer } from './PageContainer';
 import { Logo } from './Logo';
 import { HeaderSearch } from './HeaderSearch';
@@ -124,11 +124,31 @@ export function SiteHeader() {
         <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <HeaderSearch open={searchOpen} onOpenChange={changeSearch} />
           {isLoading && (
-            <LoadingState
-              label="Đang tải…"
-              variant="inline"
-              className="px-2 text-sm text-muted"
-            />
+            <>
+              <button
+                type="button"
+                aria-label="Đang tải thông báo"
+                aria-busy="true"
+                disabled
+                className="inline-grid size-11 place-items-center rounded-lg text-muted"
+              >
+                <Bell size={18} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                aria-label="Đang tải tài khoản"
+                aria-busy="true"
+                disabled
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm text-muted"
+              >
+                <span
+                  className="grid size-8 place-items-center rounded-full bg-soft"
+                  aria-hidden="true"
+                >
+                  <UserRound size={16} />
+                </span>
+              </button>
+            </>
           )}
           {!isLoading && !authError && !user && (
             <>
@@ -167,23 +187,14 @@ export function SiteHeader() {
                 aria-label="Tài khoản"
                 aria-expanded={accountOpen}
                 aria-controls="account-menu"
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm hover:bg-soft"
+                className="inline-grid size-11 place-items-center rounded-lg text-sm hover:bg-soft"
                 onClick={() => {
                   setAccountOpen(!accountOpen);
                   setAccountNotice('');
                   setMenuOpen(false);
                 }}
               >
-                <span
-                  className="flex size-8 items-center justify-center rounded-full bg-soft font-semibold text-primary"
-                  aria-hidden="true"
-                >
-                  {user.fullName.trim().slice(0, 1).toUpperCase()}
-                </span>
-                <span className="hidden max-w-32 truncate sm:inline">
-                  {user.fullName}
-                </span>
-                <ChevronDown size={16} aria-hidden="true" />
+                <UserRound size={18} aria-hidden="true" />
               </button>
               {accountOpen && (
                 <div
@@ -248,6 +259,18 @@ export function SiteHeader() {
                         )
                           ? 'Quản lý studio'
                           : 'Mở studio trên Open Slot'}
+                      </Link>
+                    )}
+                    {studiosQuery.data?.some(
+                      (studio) =>
+                        studio.status === 'approved' && !studio.isDraft,
+                    ) && (
+                      <Link
+                        to="/check-in"
+                        onClick={closeMenus}
+                        className="flex min-h-11 items-center rounded-lg px-3 text-sm hover:bg-soft"
+                      >
+                        Check-in vé
                       </Link>
                     )}
                     {user.role === 'admin' && (

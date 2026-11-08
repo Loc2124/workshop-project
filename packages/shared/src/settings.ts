@@ -41,7 +41,7 @@ export const siteSettingsSchema = z
       .strict(),
     booking: z
       .object({
-        cancellationHours: integer(0, 720, 'Số giờ cho phép hủy'),
+        cancellationHours: integer(24, 24, 'Mốc hoàn cọc miễn phí là 24 giờ'),
         maxActiveSlots: integer(1, 100, 'Số slot tối đa'),
       })
       .strict(),

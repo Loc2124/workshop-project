@@ -1,4 +1,7 @@
-import { withStudioImages, withStudiosImages } from '../studios/studios.service.js';
+import {
+  withStudioImages,
+  withStudiosImages,
+} from '../studios/studios.service.js';
 import { selectAdminOverview } from './admin-overview.repository.js';
 import { selectAdminRecords } from './admin-records.repository.js';
 export async function getAdminOverview() {

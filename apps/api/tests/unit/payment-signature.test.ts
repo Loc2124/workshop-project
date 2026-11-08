@@ -1,9 +1,71 @@
 import { createHmac } from 'node:crypto';
-import { expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import {
   PayOSProvider,
   hasValidSignature,
 } from '../../src/modules/payments/providers/payos.provider.js';
+afterEach(() => vi.unstubAllGlobals());
+
+it('recovers only a signed payment lookup matching the requested invoice', async () => {
+  const data = {
+    id: 'abcdefghijklmnop',
+    orderCode: 123,
+    amount: 20000,
+    status: 'PENDING',
+  };
+  const signature = createHmac('sha256', 'test-key')
+    .update('amount=20000&id=abcdefghijklmnop&orderCode=123&status=PENDING')
+    .digest('hex');
+  const fetchMock = vi.fn().mockImplementation(
+    async () =>
+      new Response(JSON.stringify({ code: '00', data, signature }), {
+        status: 200,
+      }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  const provider = new PayOSProvider('client', 'api', 'test-key');
+  expect(await provider.lookupPayment(123)).toMatchObject({
+    orderCode: 123,
+    amount: 20000,
+    status: 'PENDING',
+    payment: {
+      checkoutUrl: 'https://pay.payos.vn/web/abcdefghijklmnop',
+      qrCode: null,
+    },
+  });
+  await expect(provider.lookupPayment(124)).rejects.toThrow('Unable to verify');
+  fetchMock.mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        code: '00',
+        data: { ...data, amount: 30000 },
+        signature,
+      }),
+      { status: 200 },
+    ),
+  );
+  await expect(provider.lookupPayment(123)).rejects.toThrow('Unable to verify');
+});
+
+it('does not mistake a provider outage for a missing invoice or a successful cancellation', async () => {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValue(new Response('', { status: 404 }));
+  vi.stubGlobal('fetch', fetchMock);
+  const provider = new PayOSProvider('client', 'api', 'test-key');
+  expect(await provider.lookupPayment(123)).toBeNull();
+  fetchMock.mockImplementation(
+    async () => new Response(JSON.stringify({ code: '99' }), { status: 200 }),
+  );
+  await expect(provider.lookupPayment(123)).rejects.toThrow();
+  await expect(provider.cancelPayment(123, 'Changed seats')).rejects.toThrow();
+  fetchMock.mockResolvedValue(
+    new Response(JSON.stringify({ code: '00' }), { status: 200 }),
+  );
+  await expect(
+    provider.cancelPayment(123, 'Changed seats'),
+  ).resolves.toBeUndefined();
+});
 
 it('verifies raw payment-request values including Vietnamese text and spaces', () => {
   const data = {

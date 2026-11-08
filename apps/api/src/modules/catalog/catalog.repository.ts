@@ -98,8 +98,10 @@ export async function listProvinces(includeEmpty = false) {
           JOIN sessions s ON s.workshop_id = w.id
           WHERE w.studio_id = st.id
             AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
+            AND NOT w.is_discontinued
             AND s.status = 'scheduled'
             AND s.starts_at > now()
+            AND COALESCE(s.registration_deadline, s.starts_at) > now()
             AND s.capacity - s.seats_held - s.seats_sold >= 1
         )
        WHERE $1::boolean OR st.id IS NOT NULL
@@ -137,8 +139,10 @@ export async function listAreas(provinceId: string) {
            JOIN sessions s ON s.workshop_id = w.id
            WHERE w.studio_id = st.id
              AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
+             AND NOT w.is_discontinued
              AND s.status = 'scheduled'
              AND s.starts_at > now()
+             AND COALESCE(s.registration_deadline, s.starts_at) > now()
              AND s.capacity - s.seats_held - s.seats_sold >= 1
          )
        GROUP BY a.id
@@ -154,7 +158,8 @@ const sessionColumns = `s.id,
   s.starts_at AS "startsAt",
   s.ends_at AS "endsAt",
   s.price,
-  (s.capacity - s.seats_held - s.seats_sold) AS "availableSeats"`;
+  (s.capacity - s.seats_held - s.seats_sold) AS "availableSeats",
+  s.status, s.registration_deadline AS "registrationDeadline"`;
 
 const vietnameseAccentSource =
   'áàảãạăắằẳẵặâấầẩẫậéèẻẽẹêếềểễệíìỉĩịóòỏõọôốồổỗộơớờởỡợúùủũụưứừửữựýỳỷỹỵđ';
@@ -171,10 +176,7 @@ function createCandidateFilters(filters: CatalogFilters) {
     `s.status = 'scheduled'`,
     's.starts_at > now()',
   ];
-  const sessionConditions = [
-    ...sessionScopeConditions,
-    's.capacity - s.seats_held - s.seats_sold >= 1',
-  ];
+  const sessionConditions = ['TRUE'];
   const workshopConditions = [
     `w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'`,
     `st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
@@ -384,8 +386,9 @@ export async function findCandidates(
          w.takeaway,
          w.duration_minutes AS "durationMinutes",
          w.base_price AS "basePrice",
-         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",
-         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "effectiveDepositPercent",
+         effective_deposit_percent(st,w) AS "depositPercent",
+         effective_deposit_mode(st,w) AS "depositMode",w.included,st.contact_phone AS "studioContactPhone",st.contact_email AS "studioContactEmail",
+         effective_deposit_percent(st,w) AS "effectiveDepositPercent",
          w.requirements,
          w.cancellation_policy AS "cancellationPolicy",
          w.payment_policy AS "paymentPolicy",
@@ -395,6 +398,7 @@ export async function findCandidates(
          st.area_id AS "areaId",
          st.address,
          w.is_simulated AS "isSimulated",
+         w.is_discontinued AS "isDiscontinued",
          st.name AS "studioName",
          st.description AS "studioDescription", ${studioTrustSql} AS "studioTrustLevel",
          page."nextStartsAt",
@@ -405,6 +409,7 @@ export async function findCandidates(
              'endsAt', es."endsAt",
              'price', es.price,
              'availableSeats', es."availableSeats"
+             ,'status', es.status, 'registrationDeadline', es."registrationDeadline"
            )
            ORDER BY es."startsAt"
          ) AS sessions
@@ -459,9 +464,13 @@ export async function findStudioCandidates(
       `WITH ${filteredWorkshops}
        SELECT count(DISTINCT fw."studioId")::integer AS total
        FROM filtered_workshops fw
+       JOIN workshops active_workshop ON active_workshop.id=fw.id AND NOT active_workshop.is_discontinued
        WHERE EXISTS (
          SELECT 1 FROM sessions s
          WHERE s.workshop_id = fw.id AND ${sessionWhere}
+           AND s.status = 'scheduled' AND s.starts_at > now()
+           AND COALESCE(s.registration_deadline,s.starts_at)>now()
+           AND s.capacity>s.seats_held+s.seats_sold
        )`,
       values,
     );
@@ -472,6 +481,9 @@ export async function findStudioCandidates(
          SELECT ${sessionColumns}
          FROM sessions s
          WHERE ${sessionWhere}
+           AND s.status = 'scheduled' AND s.starts_at > now()
+           AND COALESCE(s.registration_deadline,s.starts_at)>now()
+           AND s.capacity>s.seats_held+s.seats_sold
        ),
        ${filteredWorkshops},
        filtered_studio_workshops AS (
@@ -484,6 +496,7 @@ export async function findStudioCandidates(
          FROM filtered_workshops fw
          JOIN workshops w ON w.id = fw.id
          JOIN eligible_sessions es ON es."workshopId" = fw.id
+         WHERE NOT w.is_discontinued
          GROUP BY fw."studioId", fw.id, w.category_id, fw.relevance
        ),
        studios AS (
@@ -564,8 +577,9 @@ export async function getPublicWorkshop(
          w.takeaway,
          w.duration_minutes AS "durationMinutes",
          w.base_price AS "basePrice",
-         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",
-         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "effectiveDepositPercent",
+         effective_deposit_percent(st,w) AS "depositPercent",
+         effective_deposit_mode(st,w) AS "depositMode",w.included,st.contact_phone AS "studioContactPhone",st.contact_email AS "studioContactEmail",
+         effective_deposit_percent(st,w) AS "effectiveDepositPercent",
          w.requirements,
          w.cancellation_policy AS "cancellationPolicy",
          w.payment_policy AS "paymentPolicy",
@@ -575,6 +589,7 @@ export async function getPublicWorkshop(
          st.area_id AS "areaId",
          st.address,
          w.is_simulated AS "isSimulated",
+         w.is_discontinued AS "isDiscontinued",
          st.name AS "studioName",
          st.description AS "studioDescription", ${studioTrustSql} AS "studioTrustLevel",
          COALESCE(
@@ -585,6 +600,7 @@ export async function getPublicWorkshop(
                'endsAt', s.ends_at,
                'price', s.price,
                'availableSeats', s.capacity - s.seats_held - s.seats_sold
+               ,'status', s.status, 'registrationDeadline', s.registration_deadline
              )
              ORDER BY s.starts_at
            ) FILTER (WHERE s.id IS NOT NULL),
@@ -595,9 +611,7 @@ export async function getPublicWorkshop(
        JOIN provinces p ON p.id = st.province_id
        LEFT JOIN sessions s
          ON s.workshop_id = w.id
-        AND s.status = 'scheduled'
-        AND s.starts_at > now()
-        AND s.capacity - s.seats_held - s.seats_sold >= 1
+        AND s.id IS NOT NULL
        WHERE (w.id::text = $1 OR w.slug = $1)
          AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
          AND st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)
@@ -660,8 +674,9 @@ export async function getPublicStudio(
          w.takeaway,
          w.duration_minutes AS "durationMinutes",
          w.base_price AS "basePrice",
-         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "depositPercent",
-         CASE WHEN ${studioDepositEligibleSql} THEN w.deposit_percent ELSE 0 END AS "effectiveDepositPercent",
+         effective_deposit_percent(st,w) AS "depositPercent",
+         effective_deposit_mode(st,w) AS "depositMode",w.included,st.contact_phone AS "studioContactPhone",st.contact_email AS "studioContactEmail",
+         effective_deposit_percent(st,w) AS "effectiveDepositPercent",
          w.requirements,
          w.cancellation_policy AS "cancellationPolicy",
          w.payment_policy AS "paymentPolicy",
@@ -671,6 +686,7 @@ export async function getPublicStudio(
          st.area_id AS "areaId",
          st.address,
          w.is_simulated AS "isSimulated",
+         w.is_discontinued AS "isDiscontinued",
          st.name AS "studioName",
          st.description AS "studioDescription", ${studioTrustSql} AS "studioTrustLevel",
          COALESCE(
@@ -681,6 +697,7 @@ export async function getPublicStudio(
                'endsAt', s.ends_at,
                'price', s.price,
                'availableSeats', s.capacity - s.seats_held - s.seats_sold
+               ,'status', s.status, 'registrationDeadline', s.registration_deadline
              )
              ORDER BY s.starts_at
            ) FILTER (WHERE s.id IS NOT NULL),
@@ -691,9 +708,7 @@ export async function getPublicStudio(
        JOIN provinces p ON p.id = st.province_id
        LEFT JOIN sessions s
          ON s.workshop_id = w.id
-        AND s.status = 'scheduled'
-        AND s.starts_at > now()
-        AND s.capacity - s.seats_held - s.seats_sold >= 1
+        AND s.id IS NOT NULL
        WHERE (st.id::text = $1 OR st.slug = $1)
          AND w.status = 'approved' AND NOT w.is_simulated AND w.visibility_status = 'active' AND w.publication_status = 'published'
        GROUP BY w.id, st.id, p.id

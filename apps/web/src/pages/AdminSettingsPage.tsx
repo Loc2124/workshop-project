@@ -95,17 +95,17 @@ const groups: {
     ],
   },
   {
-    title: 'Chính sách đặt lịch',
+    title: 'Chính sách đặt chỗ',
     description:
       'Giới hạn áp dụng cho khách. Admin vẫn có thể xử lý hủy theo nghiệp vụ.',
     fields: [
       {
         name: 'booking.cancellationHours',
-        label: 'Hủy trước giờ học ít nhất (giờ)',
+        label: 'Mốc hoàn cọc miễn phí (giờ)',
         type: 'number',
-        min: 0,
-        max: 720,
-        hint: '0: cho phép hủy đến trước khi buổi học bắt đầu.',
+        min: 24,
+        max: 24,
+        hint: 'Chưa cọc được hủy bất cứ lúc nào. Đã cọc được hoàn khi hủy trước 24 giờ.',
       },
       {
         name: 'booking.maxActiveSlots',

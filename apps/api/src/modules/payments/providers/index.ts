@@ -3,9 +3,13 @@ import { MockProvider } from './mock.provider.js';
 import { PayOSProvider } from './payos.provider.js';
 import type { PaymentProvider } from './payment-provider.js';
 
-export function createPaymentProvider(): PaymentProvider {
+export function createPaymentProvider(
+  name?: 'mock' | 'payos',
+): PaymentProvider {
   const config = loadConfig();
-  if (config.PAYMENT_PROVIDER === 'mock') {
+  if ((name ?? config.PAYMENT_PROVIDER) === 'mock') {
+    if (config.NODE_ENV === 'production')
+      throw new Error('Mock payments are disabled in production.');
     return new MockProvider(config.WEB_ORIGIN, config.PAYOS_CHECKSUM_KEY_TEST);
   }
   if (

@@ -1,6 +1,8 @@
 import { createApp } from './app.js';
 import { loadConfig } from './config.js';
 import { startBookingExpiryJob } from './modules/bookings/booking-expiry-job.js';
+import { startAttendanceJob } from './modules/bookings/attendance-job.js';
+import { startFinancialObligationJob } from './modules/payments/financial-obligation-job.js';
 
 const {
   API_PORT: port,
@@ -14,6 +16,8 @@ if (trustProxyHops > 0) {
 }
 
 startBookingExpiryJob(expiryJobIntervalSeconds);
+startAttendanceJob();
+startFinancialObligationJob();
 
 app.listen(port, () => {
   console.log(`API listening on port ${port}`);

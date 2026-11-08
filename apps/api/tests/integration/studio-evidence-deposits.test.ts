@@ -166,7 +166,7 @@ describe('studio evidence and owner deposit settings', () => {
       ).status,
     ).toBe(409);
   });
-  it('allows zero deposit at tier 1 and owner-selected deposits only at tier 2', async () => {
+  it('keeps unverified studios on none and requires explicit verified deposit settings', async () => {
     expect(
       (
         await request(app)
@@ -180,7 +180,11 @@ describe('studio evidence and owner deposit settings', () => {
         await request(app)
           .post(`/studios/${studioId}/workshops`)
           .set('Cookie', ownerCookie)
-          .send({ ...workshop, depositPercent: 20 })
+          .send({
+            ...workshop,
+            depositModeOverride: 'required',
+            depositPercent: 20,
+          })
       ).status,
     ).toBe(403);
     const zero = await request(app)
@@ -188,7 +192,7 @@ describe('studio evidence and owner deposit settings', () => {
       .set('Cookie', ownerCookie)
       .send(workshop);
     expect(zero.status).toBe(201);
-    expect(zero.body.workshop.depositPercent).toBe(0);
+    expect(zero.body.workshop.depositPercent).toBeNull();
     expect(
       (
         await request(app)
@@ -202,23 +206,23 @@ describe('studio evidence and owner deposit settings', () => {
       .set('Cookie', ownerCookie)
       .send(workshop);
     expect(created.status).toBe(201);
-    expect(created.body.workshop.depositPercent).toBe(20);
+    expect(created.body.workshop.depositPercent).toBeNull();
     const workshopId = created.body.workshop.id;
     expect(
       (
         await request(app)
           .patch(`/studios/${studioId}/workshops/${workshopId}`)
           .set('Cookie', ownerCookie)
-          .send({ depositPercent: 30 })
+          .send({ depositModeOverride: 'required', depositPercent: 50 })
       ).status,
     ).toBe(200);
-    for (const percent of [-1, 31, 10.5])
+    for (const percent of [-1, 51, 10.5])
       expect(
         (
           await request(app)
             .patch(`/studios/${studioId}/workshops/${workshopId}`)
             .set('Cookie', ownerCookie)
-            .send({ depositPercent: percent })
+            .send({ depositModeOverride: 'required', depositPercent: percent })
         ).status,
       ).toBe(422);
     await query(
@@ -230,7 +234,7 @@ describe('studio evidence and owner deposit settings', () => {
         await request(app)
           .patch(`/studios/${studioId}/workshops/${workshopId}`)
           .set('Cookie', otherCookie)
-          .send({ depositPercent: 10 })
+          .send({ depositModeOverride: 'required', depositPercent: 10 })
       ).status,
     ).toBe(403);
     expect(

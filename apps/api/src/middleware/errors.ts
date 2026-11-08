@@ -25,10 +25,17 @@ export const errorHandler: ErrorRequestHandler = (
   }
 
   if (error instanceof ZodError) {
+    const depositIssue = error.issues.find(
+      (issue) => issue.path.at(-1) === 'depositPercent',
+    );
     response.status(422).json({
       error: {
         code: 'UNPROCESSABLE_ENTITY',
-        message: 'Dữ liệu gửi lên không hợp lệ.',
+        message: depositIssue
+          ? depositIssue.code === 'invalid_type'
+            ? 'Mức cọc phải là số nguyên từ 1 đến 50%.'
+            : depositIssue.message
+          : 'Dữ liệu gửi lên không hợp lệ.',
       },
     });
     return;

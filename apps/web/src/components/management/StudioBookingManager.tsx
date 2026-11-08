@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { StudioAttendancePanel } from './StudioAttendancePanel';
+import { StudioRefundPanel } from './StudioRefundPanel';
 import {
   useMutation,
   useQuery,
@@ -47,10 +49,17 @@ const responseSchema = z.object({
       paidAmount: z.number(),
       depositAmount: z.number(),
       paymentMode: z.string(),
+      refundStatus: z.string().optional(),
+      refundDueAmount: z.number().optional(),
+      refundedAmount: z.number().optional(),
+      reschedulePending: z.boolean().optional(),
+      seatRevision: z.number().int().optional(),
       balanceAmount: z.number(),
       reservationStatus: z.string(),
       paymentStatus: z.string(),
       startsAt: z.string(),
+      endsAt: z.string().optional(),
+      attendanceStatus: z.string().optional(),
       workshopTitle: z.string(),
     }),
   ),
@@ -136,6 +145,29 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
     );
   return (
     <section aria-label="Quản lý đặt chỗ" className="space-y-studio-section">
+      <StudioCard className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-heading text-lg font-semibold">
+            Check-in bằng vé QR
+          </h2>
+          <p className="mt-1 text-sm text-studio-muted">
+            Quét hoặc nhập mã vé, kiểm tra thông tin rồi xác nhận từng người.
+          </p>
+        </div>
+        <StudioButton asChild>
+          <a href={`/check-in?studioId=${studioId}`}>Mở Check-in</a>
+        </StudioButton>
+      </StudioCard>
+      <StudioRefundPanel
+        studioId={studioId}
+        bookings={query.data}
+        updated={() => client.invalidateQueries({ queryKey: key })}
+      />
+      <StudioAttendancePanel
+        studioId={studioId}
+        bookings={query.data}
+        onUpdated={() => client.invalidateQueries({ queryKey: key })}
+      />
       <div className="flex flex-col gap-4 rounded-studio-card border border-studio-border bg-studio-surface p-studio-card shadow-studio-card sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm leading-6 text-studio-muted">
@@ -248,8 +280,7 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
                         {booking.paymentMode === 'payos_deposit' ? (
                           <div className="mt-1 space-y-1 text-sm text-studio-muted">
                             <p className="tabular-nums">
-                              Cọc PayOS: {formatPrice(booking.depositAmount)} đ
-                              ·{' '}
+                              Đặt cọc: {formatPrice(booking.depositAmount)} đ ·{' '}
                               {booking.paidAmount >= booking.depositAmount
                                 ? 'đã thanh toán'
                                 : 'chờ khách thanh toán'}
@@ -280,7 +311,9 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
                           <StudioBadge
                             tone={reservationTone(booking.reservationStatus)}
                           >
-                            {reservationLabel(booking.reservationStatus)}
+                            {booking.reschedulePending
+                              ? 'Chờ khách xác nhận giờ mới'
+                              : reservationLabel(booking.reservationStatus)}
                           </StudioBadge>
                           <StudioBadge
                             tone={paymentTone(booking.paymentStatus)}
@@ -290,8 +323,15 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
                         </div>
                       </td>
                       <td className="px-3 py-4 text-right">
-                        {booking.reservationStatus === 'confirmed' &&
+                        {['confirmed', 'completed'].includes(
+                          booking.reservationStatus,
+                        ) &&
                         booking.paymentStatus === 'pending' &&
+                        !booking.reschedulePending &&
+                        ((booking.seatRevision ?? 0) > 0 ||
+                          !['pending', 'refunded'].includes(
+                            booking.refundStatus ?? '',
+                          )) &&
                         booking.balanceAmount > 0 ? (
                           <StudioButton
                             aria-label={`Ghi nhận thu ${formatPrice(booking.balanceAmount)} đồng cho đơn #${booking.orderCode}`}
@@ -369,7 +409,7 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-studio-muted">
                         {booking.paymentMode === 'payos_deposit'
-                          ? `Cọc PayOS (${booking.depositAmount > 0 && booking.paidAmount >= booking.depositAmount ? 'đã trả' : 'đang chờ'})`
+                          ? `Đặt cọc (${booking.depositAmount > 0 && booking.paidAmount >= booking.depositAmount ? 'đã trả' : 'đang chờ'})`
                           : 'Thanh toán'}
                       </span>
                       <span className="font-medium tabular-nums text-studio-ink">
@@ -398,14 +438,23 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
                     <StudioBadge
                       tone={reservationTone(booking.reservationStatus)}
                     >
-                      {reservationLabel(booking.reservationStatus)}
+                      {booking.reschedulePending
+                        ? 'Chờ khách xác nhận giờ mới'
+                        : reservationLabel(booking.reservationStatus)}
                     </StudioBadge>
                     <StudioBadge tone={paymentTone(booking.paymentStatus)}>
                       {paymentLabel(booking.paymentStatus)}
                     </StudioBadge>
                   </div>
-                  {booking.reservationStatus === 'confirmed' &&
+                  {['confirmed', 'completed'].includes(
+                    booking.reservationStatus,
+                  ) &&
                     booking.paymentStatus === 'pending' &&
+                    !booking.reschedulePending &&
+                    ((booking.seatRevision ?? 0) > 0 ||
+                      !['pending', 'refunded'].includes(
+                        booking.refundStatus ?? '',
+                      )) &&
                     booking.balanceAmount > 0 && (
                       <StudioButton
                         className="w-full"

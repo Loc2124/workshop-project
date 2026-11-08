@@ -1,5 +1,6 @@
 import type { Workshop, WorkshopSession } from '../../types/workshop';
 import { rankWorkshops } from '../../lib/rankWorkshops';
+import { sessionStatus } from '../../lib/sessionStatus';
 import { formatSessionDate, formatSlot } from '../../lib/format';
 import { upcomingSessions } from '../../lib/workshopDetails';
 
@@ -89,7 +90,14 @@ export function workshopSuggestions(current: Workshop, candidates: Workshop[]) {
   const now = Date.now();
   return rankWorkshops(
     candidates
-      .filter((item) => item.id !== current.id)
+      .filter(
+        (item) =>
+          item.id !== current.id &&
+          !item.isDiscontinued &&
+          item.sessions.some(
+            (session) => sessionStatus(session, now) === 'available',
+          ),
+      )
       .map((item) => ({
         ...item,
         sessions: upcomingSessions(item.sessions, now),

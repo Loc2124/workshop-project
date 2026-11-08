@@ -11,6 +11,7 @@ import {
   Flag,
   ScrollText,
   Settings,
+  WalletCards,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { DashboardLayout, type DashboardMenuItem } from './DashboardLayout';
@@ -21,7 +22,7 @@ import { StudioSwitcher } from './StudioSwitcher';
 const STUDIO_SECTIONS = [
   { label: 'Tổng quan', section: '', icon: LayoutDashboard },
   { label: 'Workshop', section: 'workshops', icon: PanelsTopLeft },
-  { label: 'Lịch và slot', section: 'sessions', icon: CalendarDays },
+  { label: 'Lịch buổi học', section: 'sessions', icon: CalendarDays },
   { label: 'Đặt chỗ', section: 'bookings', icon: Ticket },
   { label: 'Hồ sơ studio', section: 'profile', icon: Store },
 ];
@@ -89,6 +90,7 @@ export function AdminDashboard() {
     { label: 'Danh mục', to: '/admin/danh-muc', icon: PanelsTopLeft },
     { label: 'Người dùng', to: '/admin/nguoi-dung', icon: Users },
     { label: 'Đặt chỗ', to: '/admin/dat-cho', icon: Ticket },
+    { label: 'Tài chính', to: '/admin/tai-chinh', icon: WalletCards },
     { label: 'Báo cáo', to: '/admin/bao-cao', icon: Flag },
     { label: 'Nhật ký', to: '/admin/nhat-ky', icon: ScrollText },
     { label: 'Cài đặt', to: '/admin/cai-dat', icon: Settings },

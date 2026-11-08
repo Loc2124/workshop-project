@@ -1,4 +1,6 @@
 import { lazy } from 'react';
+import { StudioPaymentSettings } from '../components/management/StudioPaymentSettings';
+import { FinancialAccountForm } from '../components/management/FinancialAccountForm';
 import { LoadingState } from '../components/ui/LoadingState';
 import { StudioNotifications } from '../components/management/StudioNotifications';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
@@ -41,7 +43,7 @@ const StudioEvidenceEditor = lazy(() =>
 type Section = 'workshops' | 'sessions' | 'bookings' | 'profile';
 const titles: Record<Section, string> = {
   workshops: 'Workshop',
-  sessions: 'Lịch và slot',
+  sessions: 'Lịch buổi học',
   bookings: 'Đặt chỗ',
   profile: 'Hồ sơ studio',
 };
@@ -263,7 +265,15 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
                 </div>
               </StudioCard>
               {studio.status !== 'suspended' && (
-                <StudioEvidenceEditor key={studio.id} studio={studio} />
+                <>
+                  <StudioPaymentSettings studioId={studio.id} />
+                  <FinancialAccountForm
+                    endpoint={`/studios/${studio.id}/payout-account`}
+                    title="Tài khoản nhận tiền"
+                    description="Chủ studio nhập tài khoản nhận tiền và xác nhận lại mật khẩu. Quản trị đối chiếu trước khi chi trả."
+                  />
+                  <StudioEvidenceEditor key={studio.id} studio={studio} />
+                </>
               )}
             </>
           )}

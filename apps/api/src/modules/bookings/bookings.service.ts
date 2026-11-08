@@ -10,13 +10,24 @@ import {
   saveCheckoutLink,
   type CreateCustomerBookingInput,
 } from './bookings.repository.js';
-import { cancelCustomerBooking as cancelOwnedBooking } from '../payments/payments.repository.js';
+import {
+  cancelCustomerBooking as cancelOwnedBooking,
+  getCustomerCancellationQuote,
+} from '../payments/payments.repository.js';
 import { createPaymentProvider } from '../payments/providers/index.js';
 import type { CreatedPayment } from '../payments/providers/payment-provider.js';
+import {
+  isPartialBooking,
+  quoteSeatCancellation,
+  cancelBookingSeats,
+} from './partial-seats.repository.js';
 
 export async function createCustomerBooking(
   userId: string,
-  input: Pick<CreateCustomerBookingInput, 'sessionId' | 'quantity'>,
+  input: Pick<
+    CreateCustomerBookingInput,
+    'sessionId' | 'quantity' | 'paymentChoice' | 'requestId'
+  >,
 ) {
   const user = await query<{
     email: string;
@@ -36,7 +47,13 @@ export async function createCustomerBooking(
   const config = loadConfig();
   const result = await insertCustomerBooking(
     userId,
-    { sessionId: input.sessionId, quantity: input.quantity, ...contact },
+    {
+      sessionId: input.sessionId,
+      quantity: input.quantity,
+      paymentChoice: input.paymentChoice,
+      ...(input.requestId ? { requestId: input.requestId } : {}),
+      ...contact,
+    },
     config.HOLD_MINUTES,
     config.PAYMENT_PROVIDER,
   );
@@ -61,6 +78,13 @@ export async function createCustomerBooking(
       'Tổng tiền vượt giới hạn hỗ trợ.',
     );
   }
+  if (result.kind === 'replayed') {
+    return {
+      booking: result.booking,
+      checkoutUrl: result.checkoutUrl,
+      checkoutQrCode: result.checkoutQrCode,
+    };
+  }
   if (!result.booking.checkoutRequired) {
     return { booking: result.booking, checkoutUrl: null };
   }
@@ -76,6 +100,7 @@ export async function createCustomerBooking(
       orderCode: result.booking.orderCode,
       amount: result.booking.depositAmount,
       description: String(result.booking.orderCode),
+      expiresAt: result.booking.holdExpiresAt,
       buyerName: contact.contactName,
       buyerEmail: customer.email,
       buyerPhone: contact.contactPhone ?? '',
@@ -97,6 +122,7 @@ export async function createCustomerBooking(
       payment.checkoutUrl,
       payment.providerRef,
       payment.qrCode,
+      payment.transferDescription ?? String(result.booking.orderCode),
     );
   } catch {
     await failCheckout(result.booking.id);
@@ -132,8 +158,11 @@ export async function getTicketsForCustomer(userId: string, bookingId: string) {
 export async function cancelBookingForCustomer(
   userId: string,
   bookingId: string,
+  quoteToken?: string,
 ) {
-  const result = await cancelOwnedBooking(bookingId, userId);
+  if (await isPartialBooking(bookingId, userId))
+    return cancelBookingSeats(userId, bookingId, undefined, quoteToken);
+  const result = await cancelOwnedBooking(bookingId, userId, quoteToken);
   if (result === 'not_found') {
     throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy đặt chỗ.');
   }
@@ -145,4 +174,15 @@ export async function cancelBookingForCustomer(
     );
   }
   return { ok: true };
+}
+
+export async function getCancellationQuoteForCustomer(
+  userId: string,
+  bookingId: string,
+) {
+  if (await isPartialBooking(bookingId, userId))
+    return quoteSeatCancellation(userId, bookingId);
+  const quote = await getCustomerCancellationQuote(bookingId, userId);
+  if (!quote) throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy đặt chỗ.');
+  return { quote };
 }

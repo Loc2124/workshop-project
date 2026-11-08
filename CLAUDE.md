@@ -1,17 +1,17 @@
 # CLAUDE.md — Nền tảng đặt chỗ workshop
 
-Đọc file này đầu tiên trong mỗi phiên làm việc. Chi tiết nằm trong `docs/`.
+Đọc file này đầu tiên trong mỗi phiên làm việc. Mục lục: [docs/README.md](docs/README.md). Đối chiếu [trạng thái mã](docs/project/current-status.md) và [policy](docs/policy/README.md), không coi đặc tả mục tiêu là tính năng đã có. Đồng bộ 07/11/2026.
 
 ## Dự án là gì
 
-Đồ án tốt nghiệp: website để các đơn vị tổ chức đăng workshop thủ công (gốm, nến, vẽ, cắm hoa...) trên toàn Việt Nam; khách tìm, đặt chỗ, thanh toán. MVP hỗ trợ dữ liệu theo tỉnh/thành trên toàn quốc và ra mắt lần lượt từng thành phố. **Phần AI trọng tâm: mô hình xếp hạng workshop theo nhu cầu bằng ngôn ngữ tự nhiên, do sinh viên tự fine-tune** (xem `docs/05-ranking-spec.md`). Đặt chỗ + thanh toán là môi trường để triển khai và kiểm chứng.
+Đồ án tốt nghiệp: website để các đơn vị tổ chức đăng workshop thủ công (gốm, nến, vẽ, cắm hoa...) trên toàn Việt Nam; khách tìm, đặt chỗ, thanh toán. MVP hỗ trợ dữ liệu theo tỉnh/thành trên toàn quốc và ra mắt lần lượt từng thành phố. **Phần AI trọng tâm: mô hình xếp hạng workshop theo nhu cầu bằng ngôn ngữ tự nhiên, do sinh viên tự fine-tune** (xem `docs/engineering/05-ranking-spec.md`). Đặt chỗ + thanh toán là môi trường để triển khai và kiểm chứng.
 
 - Giao diện và thông báo: tiếng Việt. Tiền: VND, **số nguyên**, không dùng float.
 - Múi giờ nghiệp vụ: `Asia/Ho_Chi_Minh` (UTC+7); DB lưu thời điểm bằng `timestamptz`, API chỉ nhận ISO 8601 có độ lệch múi giờ, ngày lọc dùng khoảng nửa mở theo giờ Việt Nam, web định dạng qua helper chung.
 - Dữ liệu mẫu là MÔ PHỎNG, luôn ghi rõ như vậy trong báo cáo và UI demo.
 - Địa điểm công khai lấy từ danh mục tỉnh/thành trong database; studio có tỉnh/thành bắt buộc và khu vực tùy chọn. Workshop kế thừa địa điểm từ studio; không dùng quận/huyện làm bộ lọc.
 
-## Tech stack (đã chốt — xem `docs/00-tech-stack.md`)
+## Tech stack (đã chốt — xem `docs/engineering/00-tech-stack.md`)
 
 - **DB:** PostgreSQL qua hai Supabase project riêng: `DATABASE_URL` cho dev/demo và `DATABASE_URL_TEST` chỉ cho test. Không cài PostgreSQL local, không dùng Docker ngoài PostgreSQL service trong CI. **SQL thuần qua `pg`, không ORM.**
 - **API:** Node.js + TypeScript + **Express**, `nodemon` theo dõi `src/**/*.ts` và chạy lại qua `tsx` khi phát triển; `zod` (validate qua middleware), `pino-http` (log), `helmet`, `cookie-parser`, `express-rate-limit`. Xác thực tự làm (JWT trong cookie httpOnly). Mọi handler async phải đi qua một wrapper bắt lỗi (hoặc dùng bản Express tự bắt lỗi async), không để lỗi bị nuốt.
@@ -19,7 +19,7 @@
 - **Test:** Vitest + `supertest` (gọi thẳng app Express, không cần mở cổng) + PostgreSQL thật.
 - **AI:** Python (PyTorch, sentence-transformers, rank_bm25, scikit-learn), phục vụ bằng FastAPI.
 - **Thanh toán:** PayOS sau interface `PaymentProvider`; `MockProvider` cho test.
-- **KHÔNG dùng:** Supabase Auth/RLS làm phân quyền/Edge Functions/client SDK từ trình duyệt, ORM, GraphQL, Redis, queue.
+- **KHÔNG dùng:** Supabase Auth/RLS làm phân quyền/Edge Functions/client SDK từ trình duyệt, ORM, GraphQL, Redis hoặc message broker bên ngoài. Có hàng đợi DB email_outbox, không đồng nghĩa đã có tích hợp chi trả.
 
 ## Cấu trúc thư mục
 
@@ -51,11 +51,11 @@ packages/shared/src/         kiểu và schema zod dùng chung
 services/ranker/             Python: dữ liệu, baseline, fine-tune, dịch vụ /rank
 db/migrations/               SQL đánh số: 001_init.sql, 002_rls_lockdown.sql, 003_...
 scripts/                      migrate.ts, guard và seed
-data/                         dữ liệu mẫu, nhãn, quy tắc gán nhãn
+data/                         dữ liệu mẫu và nhãn; quy tắc ở docs/engineering/labeling-guideline.md
 docs/                         đặc tả
 ```
 
-Đây là quy ước, không phải danh sách thư mục phải tạo sẵn: chỉ thêm module, feature hoặc thư mục khi bước tương ứng cần. Trong API, routes gọi service rồi repository; SQL nghiệp vụ nằm trong repository. Trong web, dùng cấu trúc React phù hợp với Vite. API hiện cần được bổ sung CORS/credentials để frontend SPA ở origin riêng dùng cookie đăng nhập an toàn.
+Đây là quy ước, không phải danh sách thư mục phải tạo sẵn: chỉ thêm module, feature hoặc thư mục khi bước tương ứng cần. Trong API, routes gọi service rồi repository; SQL nghiệp vụ nằm trong repository. Trong web, dùng cấu trúc React phù hợp với Vite. API đã có CORS/credentials; vẫn cần kiểm chứng cookie và origin đúng ở môi trường triển khai.
 
 ### Quy ước module API
 
@@ -78,30 +78,30 @@ docs/                         đặc tả
 
 ### Triển khai
 
-Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL công khai sớm (hướng dẫn tại `docs/deploy.md`). API hiện có cấu hình Render; frontend React/Vite đã có khung và sẽ build thành static site để deploy riêng. Bước 18 hoàn thiện triển khai, dữ liệu demo và checklist trước buổi bảo vệ.
+Thực hiện triển khai ban đầu API và web ở Bước 5B để có URL công khai sớm (hướng dẫn tại `docs/operations/deploy.md`). API hiện có cấu hình Render; frontend React/Vite đã có khung và sẽ build thành static site để deploy riêng. Bước 18 hoàn thiện triển khai, dữ liệu demo và checklist trước buổi bảo vệ.
 
 ### Giữ cho dễ chuyển nhà cung cấp
 
-Giữ nguyên mục này khi chỉnh sửa `CLAUDE.md`. Hiện dùng Render cho API; nhà cung cấp static hosting cho web chưa chốt và có thể đổi sau. Không để code ứng dụng phụ thuộc trực tiếp vào nhà cung cấp. Để việc đổi không đau:
+Giữ nguyên mục này khi chỉnh sửa `CLAUDE.md`. Hiện dùng Render cho API; web có cấu hình Vercel nhưng môi trường thực tế cần xác minh và có thể đổi sau. Không để code ứng dụng phụ thuộc trực tiếp vào nhà cung cấp. Để việc đổi không đau:
 
-1. Mọi cấu hình nằm trong biến môi trường, không ghi cứng địa chỉ hay khóa vào code. Danh sách đầy đủ các biến ghi ở `docs/deploy.md`.
+1. Mọi cấu hình nằm trong biến môi trường, không ghi cứng địa chỉ hay khóa vào code. Danh sách đầy đủ các biến ghi ở `docs/operations/deploy.md`.
 2. Web là React SPA build tĩnh bằng Vite; không phụ thuộc tính năng riêng của nhà cung cấp hosting.
-3. API không ghi dữ liệu vào ổ đĩa local. Mọi dữ liệu lưu trong database.
+3. API không dùng ổ đĩa local làm lưu trữ bền vững. Dữ liệu nghiệp vụ ở PostgreSQL, ảnh ở storage được cấu hình qua biến môi trường.
 4. Giữ lệnh chuẩn trong package.json (`npm run build`, `npm start`). Không dùng cấu hình chỉ có ở một nhà cung cấp.
 5. Frontend đọc URL API từ `VITE_API_BASE_URL`; API giới hạn CORS theo origin web.
-6. Mọi thao tác thủ công (nơi đặt biến, đăng ký webhook PayOS, DNS) phải được ghi vào `docs/deploy.md` ngay khi làm.
+6. Mọi thao tác thủ công (nơi đặt biến, đăng ký webhook PayOS, DNS) phải được ghi vào `docs/operations/deploy.md` ngay khi làm.
 7. Cấu hình riêng của nhà cung cấp chỉ đặt trong Blueprint/dashboard và tài liệu deploy; không đưa API SDK hoặc dịch vụ lưu trữ riêng của host vào luồng nghiệp vụ nếu chưa được yêu cầu.
 
 ## Quy tắc BẮT BUỘC (không được phá, kể cả khi "cho nhanh")
 
 1. **Điều kiện cứng do database lọc** (ngày, giá, tỉnh/thành, khu vực, chỗ trống). Mô hình AI chỉ xếp hạng tập ứng viên đã qua lọc.
-2. **Giữ chỗ phải nguyên tử**: một câu `UPDATE ... WHERE seats_held + seats_sold + $qty <= capacity RETURNING ...` trong transaction. Cấm đọc số chỗ rồi ghi lại ở tầng ứng dụng. Mẫu SQL ở `docs/02-architecture.md`. Không chỉ dựa vào job định kỳ để giải phóng chỗ hết hạn: ngoài job, phải giải phóng chỗ hết hạn của buổi liên quan ở đầu `POST /bookings` trong cùng transaction, trước câu UPDATE giữ chỗ, và trước khi trả danh sách buổi còn chỗ; xem `docs/02-architecture.md`.
+2. **Giữ chỗ phải nguyên tử**: một câu `UPDATE ... WHERE seats_held + seats_sold + $qty <= capacity RETURNING ...` trong transaction. Cấm đọc số chỗ rồi ghi lại ở tầng ứng dụng. Mẫu SQL ở `docs/engineering/02-architecture.md`. Không chỉ dựa vào job định kỳ để giải phóng chỗ hết hạn: ngoài job, phải giải phóng chỗ hết hạn của buổi liên quan ở đầu `POST /bookings` trong cùng transaction, trước câu UPDATE giữ chỗ, và trước khi trả danh sách buổi còn chỗ; xem `docs/engineering/02-architecture.md`.
 3. **Webhook thanh toán idempotent**: xác thực chữ ký, ghi mọi sự kiện vào `webhook_events` (unique theo khóa chống trùng), nhận lặp không tạo vé hay cộng doanh thu hai lần. Đọc tài liệu chính thức PayOS trước khi code phần chữ ký, không đoán.
 4. **Không tin dữ liệu tiền từ client**: giá, tổng tiền tính lại ở server từ `sessions`.
 5. **Phân quyền theo studio**: mọi truy vấn quản lý studio lọc theo cặp `studio_id`/`user_id` trong `studio_members`, truyền như tham số bắt buộc. Mỗi endpoint studio có test thành viên studio B không truy cập dữ liệu studio A.
 6. **Nhà cung cấp thanh toán nằm sau interface** `PaymentProvider`.
 7. **Có dự phòng cho xếp hạng**: ranker lỗi/chậm quá ngưỡng → xếp hạng BM25/văn bản trong API, ghi `search_logs.fallback_used=true`.
-8. **Số sao đánh giá KHÔNG dùng làm nhãn huấn luyện**; nhãn theo `data/labeling-guideline.md`.
+8. **Số sao đánh giá KHÔNG dùng làm nhãn huấn luyện**; nhãn theo `docs/engineering/labeling-guideline.md`.
 9. **Mọi bảng public phải bật RLS và không có policy** (migration 002 + test). API dùng `DATABASE_URL`; chỉ test và migration test dùng `DATABASE_URL_TEST` sau khi safety guard cho phép. Không kết nối PostgreSQL trực tiếp từ trình duyệt.
 10. Secret chỉ ở `.env`, không commit; `.env.example` luôn được cập nhật.
 11. Mọi câu SQL dùng tham số (`$1`, `$2`), không nối chuỗi.
@@ -109,15 +109,16 @@ Giữ nguyên mục này khi chỉnh sửa `CLAUDE.md`. Hiện dùng Render cho 
 
 ## Phạm vi và mức ưu tiên
 
-- **Mức 1 (lõi):** đăng ký/đăng nhập, vai hệ thống customer/admin và vai thành viên studio owner/staff; duyệt studio và workshop bằng cờ trạng thái; đăng workshop, tạo buổi; bộ lọc cứng; xếp hạng; giữ chỗ có hạn; PayOS; webhook idempotent; mã vé hiển thị; theo dõi booking/webhook; bộ test đồng thời/webhook/phân quyền.
+- **Mức 1 (lõi):** đăng ký/đăng nhập, vai hệ thống customer/admin và vai thành viên studio owner/staff; duyệt studio, workshop tự công khai/hậu kiểm theo cờ trạng thái; đăng workshop, tạo buổi; bộ lọc cứng; xếp hạng; giữ chỗ có hạn; PayOS; webhook idempotent; mã vé hiển thị; theo dõi booking/webhook; bộ test đồng thời/webhook/phân quyền.
 - **Mức 2:** doanh thu; đánh giá sau tham gia.
-- **Mức 3:** vé QR + điểm danh; trích xuất nhu cầu bằng Gemini ra JSON (kèm bước khách xem lại).
-- **Ngoài phạm vi:** chat khách-đơn vị, chia tiền tự động, hoàn tiền tự động (chỉ `refund_needed`), app di động, bản đồ phức tạp.
+- **Theo policy mới:** vé/điểm danh từng vé thuộc luồng lõi cần hoàn thiện; trích xuất nhu cầu bằng Gemini ra JSON vẫn là mở rộng, cần bước khách xem lại.
+- **P0 bổ sung theo tài liệu 07/11:** đối soát, hoàn tự động và chi trả studio sau buổi; hủy/điểm danh từng vé. Đây là phạm vi cần triển khai, hiện chưa có chi hộ/Bảo Kim/chi trả. Theo policy và roadmap hiện hành.
+- **Ngoài phạm vi bản đầu:** chat trực tiếp, app native, mã giảm giá/thành viên, đa ngôn ngữ; chưa hỗ trợ đổi buổi/địa điểm/chuyển tên. Hoàn tự động không còn bị loại khỏi phạm vi.
 - **Mốc cắt:** cuối tuần 7, nếu mức 1 chưa xong thì bỏ mức 2 và 3.
 
 ## Cách làm việc với Claude
 
-- Làm từng bước nhỏ theo `docs/04-roadmap-prompts.md`; mỗi bước phải chạy được và có test trước khi sang bước sau.
+- Làm theo docs/project/roadmap.md và policy hiện hành; roadmap dạng prompt cũ chỉ là lịch sử. Mỗi phần triển khai cần bằng chứng kiểm tra, nêu rõ nhánh chưa chạy/chưa chốt.
 - Luôn **lập kế hoạch trước, chưa viết code**, chờ tôi đồng ý.
 - Trước khi sửa schema: nói lý do và tạo migration mới, không sửa migration cũ đã chạy.
 - Điểm mơ hồ về nghiệp vụ: hỏi lại, không tự đoán. Không xóa test để "cho qua".

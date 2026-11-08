@@ -30,6 +30,7 @@ import { apiFetch } from '../lib/api-client';
 import { createAdminTableFetcher } from '../services/adminTableService';
 import { formatReviewDate } from '../lib/studio-review';
 import { formatPrice } from '../lib/format';
+import { TicketAttendanceEditor } from '../components/management/TicketAttendanceEditor';
 
 const status = z.enum(['pending', 'confirmed', 'cancelled', 'completed']);
 type Status = z.infer<typeof status>;
@@ -54,6 +55,12 @@ const bookingSchema = z.object({
   totalAmount: z.number(),
   status,
   paymentStatus: z.string(),
+  refundStatus: z.string().optional(),
+  refundDueAmount: z.number().int().nonnegative().optional(),
+  refundedAmount: z.number().nonnegative().optional(),
+  originalQuantity: z.number().int().optional(),
+  originalTotalAmount: z.number().optional(),
+  receivedAmount: z.number().optional(),
   createdAt: z.string(),
   holdExpiresAt: z.string(),
 });
@@ -90,7 +97,7 @@ const transitions: Record<Status, Status[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['completed', 'cancelled'],
   cancelled: [],
-  completed: [],
+  completed: ['cancelled'],
 };
 const fetcher: DataTableFetcher<Booking> = createAdminTableFetcher(
   '/admin/dat-cho',
@@ -354,6 +361,19 @@ export function AdminBookingsPage() {
                       value={<StatusBadge status={selected.slotStatus} />}
                     />
                     <Field label="Số người" value={String(selected.quantity)} />
+                    {selected.originalQuantity !== undefined &&
+                      selected.originalQuantity !== selected.quantity && (
+                        <Field
+                          label="Số chỗ ban đầu"
+                          value={String(selected.originalQuantity)}
+                        />
+                      )}
+                    {selected.receivedAmount !== undefined && (
+                      <Field
+                        label="Tổng tiền đã nhận"
+                        value={formatPrice(selected.receivedAmount) + ' đ'}
+                      />
+                    )}
                     <Field
                       label="Đơn giá"
                       value={formatPrice(selected.unitPrice)}
@@ -369,10 +389,28 @@ export function AdminBookingsPage() {
                 </section>
                 {selected.paymentStatus === 'refund_needed' && (
                   <p className="rounded-sm bg-amber-50 p-3 text-sm text-amber-900">
-                    Đơn đã hủy và trả chỗ. Khoản thanh toán đang cần được hoàn
-                    tiền.
+                    Đặt chỗ đã hủy và trả chỗ. Khoản cần hoàn{' '}
+                    {selected.refundDueAmount !== undefined
+                      ? `${formatPrice(Math.max(0, selected.refundDueAmount - (selected.refundedAmount ?? 0)))} đ`
+                      : 'đang được đối soát'}{' '}
+                    chưa được chuyển cho khách.
                   </p>
                 )}
+                <section>
+                  <h2 className="font-heading text-lg font-semibold">
+                    Điểm danh từng vé
+                  </h2>
+                  <TicketAttendanceEditor
+                    bookingId={selected.id}
+                    admin
+                    onUpdated={async () => {
+                      await Promise.all([
+                        detail.refetch(),
+                        invalidateResources(client, userId, ['bookings']),
+                      ]);
+                    }}
+                  />
+                </section>
                 <section>
                   <h2 className="font-heading text-lg font-semibold">
                     Lịch sử trạng thái

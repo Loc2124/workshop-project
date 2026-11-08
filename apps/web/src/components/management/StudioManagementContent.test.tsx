@@ -130,7 +130,7 @@ describe('StudioManagementContent', () => {
     expect(html).toContain('Buổi làm gốm');
     expect(html).toContain('Công khai');
     expect(html).not.toContain('Chờ duyệt');
-    expect(html).toContain('Còn 7 / 10 chỗ');
+    expect(html).toContain('Còn 7/10 chỗ');
     expect(html).toContain('href="/studios/studio-gom-an"');
     expect(html).toContain('Tạo workshop');
   });
@@ -160,8 +160,8 @@ describe('StudioManagementContent', () => {
   it('shows empty states independently for workshops and sessions', () => {
     const html = renderContent({ workshops: [], sessions: [] });
 
-    expect(html).toContain('Studio chưa có workshop');
-    expect(html).toContain('Tạo workshop trước khi thêm buổi vào lịch.');
+    expect(html).toContain('Chưa có workshop nào');
+    expect(html).toContain('Tạo workshop trước nhé');
   });
 
   it('asks signed-out users to log in before loading management content', () => {

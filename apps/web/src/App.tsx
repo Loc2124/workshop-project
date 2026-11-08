@@ -27,6 +27,7 @@ import {
   AdminReportsPage,
   AdminWorkshopPage,
   AdminStudioProfilesPage,
+  AdminFinancialPage,
   StudioOverviewPage,
   StudioWorkspacePage,
   StudioDashboard,
@@ -43,6 +44,11 @@ const HomePage = lazy(() =>
 const ExplorePage = lazy(() =>
   import('./pages/ExplorePage').then((module) => ({
     default: module.ExplorePage,
+  })),
+);
+const StudioCheckInPage = lazy(() =>
+  import('./pages/StudioCheckInPage').then((module) => ({
+    default: module.StudioCheckInPage,
   })),
 );
 const ArtisanPage = lazy(() =>
@@ -79,6 +85,11 @@ const CustomerBookingsPage = lazy(() =>
 const CustomerBookingDetailPage = lazy(() =>
   import('./pages/CustomerBookingDetailPage').then((module) => ({
     default: module.CustomerBookingDetailPage,
+  })),
+);
+const SavedRefundAccountsPage = lazy(() =>
+  import('./pages/SavedRefundAccountsPage').then((module) => ({
+    default: module.SavedRefundAccountsPage,
   })),
 );
 const MockPaymentPage = lazy(() =>
@@ -137,6 +148,7 @@ function App() {
     <Suspense fallback={<DashboardSkeleton />}>
       <Routes>
         <Route element={<PublicShell />}>
+          <Route path="/check-in" element={<StudioCheckInPage />} />
           <Route path="/" element={<HomePage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/kham-pha" element={<ExplorePage />} />
@@ -148,6 +160,10 @@ function App() {
           <Route path="/workshops/:id" element={<WorkshopPage />} />
           <Route element={<RequireCustomer />}>
             <Route path="/me/bookings" element={<CustomerBookingsPage />} />
+            <Route
+              path="/me/refund-accounts"
+              element={<SavedRefundAccountsPage />}
+            />
             <Route
               path="/me/bookings/:id"
               element={<CustomerBookingDetailPage />}
@@ -311,6 +327,7 @@ function App() {
               }
             />
             <Route path="nguoi-dung" element={<AdminUsersPage />} />
+            <Route path="tai-chinh" element={<AdminFinancialPage />} />
             <Route
               path="*"
               element={<Navigate to="/admin/ho-so-studio" replace />}

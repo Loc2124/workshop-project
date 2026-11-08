@@ -13,7 +13,7 @@ export function useSiteInformation() {
       : item.id === 'chinh-sach-dat-lich'
         ? {
             ...item,
-            text: `Khách được hủy trước giờ học ít nhất ${settings.booking.cancellationHours} giờ. Mỗi tài khoản được đặt tối đa ${settings.booking.maxActiveSlots} buổi sắp tới đang giữ chỗ hoặc đã xác nhận. Kiểm tra lịch, giá và điều kiện workshop trước khi đặt.`,
+            text: `Hủy miễn phí trước giờ học 24h. Chưa cọc: có thể hủy bất cứ lúc nào. Đã cọc và hủy trong vòng 24h: cọc không hoàn lại. Mỗi tài khoản được đặt tối đa ${settings.booking.maxActiveSlots} buổi sắp tới đang giữ chỗ hoặc đã xác nhận. Kiểm tra lịch, giá và điều kiện workshop trước khi đặt.`,
           }
         : item,
   );

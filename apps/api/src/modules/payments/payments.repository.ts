@@ -2,8 +2,19 @@ import { createHash, randomBytes } from 'node:crypto';
 import { query, withTransaction } from '../../db/pool.js';
 import type { WebhookVerification } from './providers/payment-provider.js';
 import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
-import { getSiteSettings } from '../settings/settings.repository.js';
+import { cancellationRefund } from '@workshop/shared';
 import { signMockWebhook } from './providers/mock.provider.js';
+import { writeAuditLog } from '../admin/audit-log.js';
+import type { PoolClient } from 'pg';
+import { loadConfig } from '../../config.js';
+import { AppError } from '../../errors/app-error.js';
+import { expireScheduleResponses } from '../bookings/schedule-changes.js';
+import { processPartialDeposit } from '../bookings/partial-seats.repository.js';
+import {
+  createCancellationQuote,
+  cancellationQuoteMatches,
+  type CancellationSnapshot,
+} from '../bookings/cancellation-quote.js';
 
 type ReservationRow = {
   id: string;
@@ -20,6 +31,8 @@ type ReservationRow = {
   paymentId: string;
   paymentAmount: number;
   paymentStatus: string;
+  scheduleVersion: number;
+  seatRevision: number;
 };
 
 export async function processPaymentWebhook(
@@ -82,6 +95,8 @@ export async function processPaymentWebhook(
          b.status AS "bookingStatus",
          b.reservation_status AS "reservationStatus",
          b.payment_mode AS "paymentMode",
+         b.schedule_version AS "scheduleVersion",
+         b.seat_revision AS "seatRevision",
          b.hold_expires_at <= now() AS "holdExpired",
          p.id AS "paymentId", p.amount AS "paymentAmount", p.status AS "paymentStatus"
        FROM bookings b
@@ -99,10 +114,22 @@ export async function processPaymentWebhook(
     }
     if (
       verification.amount !== booking.paymentAmount ||
-      booking.paymentAmount !== booking.depositAmount
+      (booking.seatRevision === 0 &&
+        booking.paymentAmount !== booking.depositAmount)
     ) {
       await finishWebhook(client, eventId, 'amount_mismatch');
       return 'processed';
+    }
+    if (booking.seatRevision > 0) {
+      const outcome = await processPartialDeposit(
+        client,
+        booking.id,
+        booking.paymentId,
+        eventId,
+        verification,
+      );
+      await finishWebhook(client, eventId, outcome);
+      return outcome === 'duplicate' ? 'duplicate' : 'processed';
     }
     if (booking.paymentStatus === 'paid') {
       await finishWebhook(client, eventId, 'duplicate');
@@ -129,8 +156,9 @@ export async function processPaymentWebhook(
     const session = await client.query<{
       status: string;
       startsAt: Date;
+      scheduleVersion: number;
     }>(
-      `SELECT status, starts_at AS "startsAt"
+      `SELECT status, starts_at AS "startsAt",schedule_version AS "scheduleVersion"
        FROM sessions
        WHERE id = $1`,
       [sessionId],
@@ -138,13 +166,15 @@ export async function processPaymentWebhook(
     const slot = session.rows[0];
     const isLate = booking.bookingStatus === 'expired';
     let reacquired = false;
-    if (isLate) {
+    const scheduleMatches = slot?.scheduleVersion === booking.scheduleVersion;
+    if (isLate && scheduleMatches) {
       const reservation = await client.query(
         `UPDATE sessions
          SET seats_held = seats_held + $2
          WHERE id = $1
            AND status = 'scheduled'
            AND starts_at > now()
+           AND COALESCE(registration_deadline, starts_at) > now()
            AND seats_held + seats_sold + $2 <= capacity
          RETURNING id`,
         [sessionId, booking.quantity],
@@ -152,6 +182,7 @@ export async function processPaymentWebhook(
       reacquired = Boolean(reservation.rowCount);
     }
     const canConfirm =
+      scheduleMatches &&
       slot?.status === 'scheduled' &&
       slot.startsAt > new Date() &&
       (booking.reservationStatus === 'pending' || (isLate && reacquired));
@@ -159,10 +190,11 @@ export async function processPaymentWebhook(
     if (!canConfirm) {
       await client.query(
         `UPDATE bookings
-         SET status = 'refund_needed',
-             paid_amount = LEAST(total_amount, paid_amount + $2)
+         SET status = 'refund_needed',refund_status='pending',refund_due_amount=LEAST(total_amount,paid_amount+$2),
+             paid_amount = LEAST(total_amount, paid_amount + $2),
+             reservation_status=CASE WHEN $3::boolean THEN 'cancelled' ELSE reservation_status END
          WHERE id = $1`,
-        [booking.id, verification.amount],
+        [booking.id, verification.amount, !scheduleMatches],
       );
       if (reacquired) {
         await client.query(
@@ -215,7 +247,7 @@ export async function processPaymentWebhook(
     if (!held.rowCount) {
       throw new Error('Booking hold exceeds the session seats currently held.');
     }
-    await issueTickets(client, booking.id, booking.quantity);
+    await issueTickets(client, booking.id);
     await notifyCustomer(
       client,
       booking.userId,
@@ -255,16 +287,21 @@ export async function confirmInStudioPayment(
     await client.query('SELECT id FROM sessions WHERE id = $1 FOR UPDATE', [
       sessionId,
     ]);
+    await expireScheduleResponses(client, [sessionId]);
     const booking = await client.query<{
       totalAmount: number;
       paidAmount: number;
       reservationStatus: string;
       status: string;
+      sessionStatus: string;
+      refundStatus: string;
+      reschedulePending: boolean;
+      seatRevision: number;
     }>(
       `SELECT b.total_amount AS "totalAmount",
          b.paid_amount AS "paidAmount",
          b.reservation_status AS "reservationStatus",
-         b.status
+         b.status, s.status AS "sessionStatus", b.refund_status AS "refundStatus",b.reschedule_pending AS "reschedulePending",b.seat_revision AS "seatRevision"
        FROM bookings b
        JOIN sessions s ON s.id = b.session_id
        JOIN workshops w ON w.id = s.workshop_id
@@ -276,8 +313,12 @@ export async function confirmInStudioPayment(
     const row = booking.rows[0];
     if (!row) return 'not_found';
     if (
-      row.reservationStatus !== 'confirmed' ||
+      !['confirmed', 'completed'].includes(row.reservationStatus) ||
+      row.reschedulePending ||
       ['cancelled', 'expired', 'refund_needed'].includes(row.status) ||
+      row.sessionStatus === 'cancelled' ||
+      (row.seatRevision === 0 &&
+        ['pending', 'refunded'].includes(row.refundStatus)) ||
       row.paidAmount >= row.totalAmount
     ) {
       return 'conflict';
@@ -303,6 +344,10 @@ export async function confirmInStudioPayment(
       return 'conflict';
     }
     await client.query(
+      "SELECT set_config('app.booking_actor',$1,true),set_config('app.booking_reason',$2,true)",
+      [userId, 'Studio ghi nhận đã thu đủ số tiền còn lại.'],
+    );
+    await client.query(
       `UPDATE payments SET status = 'paid', paid_at = now() WHERE id = $1`,
       [due.id],
     );
@@ -314,71 +359,136 @@ export async function confirmInStudioPayment(
        WHERE id = $1`,
       [bookingId],
     );
+    await writeAuditLog(client, {
+      actorId: userId,
+      action: 'booking.in_studio_payment.recorded',
+      targetType: 'booking',
+      targetId: bookingId,
+      targetName: 'Ghi nhận thanh toán tại studio',
+      before: {
+        paidAmount: row.paidAmount,
+        paymentStatus: row.status,
+        reservationStatus: row.reservationStatus,
+      },
+      after: {
+        paidAmount: row.totalAmount,
+        paymentStatus: 'paid',
+        reservationStatus: row.reservationStatus,
+        amountReceived: due.amount,
+      },
+    });
+    const customer = (
+      await client.query<{ userId: string; refundDue: number }>(
+        'SELECT user_id AS "userId",(refund_due_amount-refunded_amount+extra_refund_due_amount-extra_refunded_amount)::double precision AS "refundDue" FROM bookings WHERE id=$1',
+        [bookingId],
+      )
+    ).rows[0];
     await notifyCustomer(
       client,
-      (
-        await client.query<{ userId: string }>(
-          'SELECT user_id AS "userId" FROM bookings WHERE id = $1',
-          [bookingId],
-        )
-      ).rows[0].userId,
+      customer.userId,
       bookingId,
       'in_studio_payment_paid',
       'Đã ghi nhận thanh toán tại studio',
-      'Studio đã xác nhận khoản thanh toán còn lại của bạn.',
+      'Studio đã xác nhận khoản thanh toán còn lại của bạn.' +
+        (customer.refundDue > 0
+          ? ` Khoản ${customer.refundDue.toLocaleString('vi-VN')} đ đang được ghi nhận để hoàn trong tối đa 7 ngày làm việc.`
+          : ''),
     );
     return 'confirmed';
+  });
+}
+
+async function lockCancellation(
+  client: PoolClient,
+  bookingId: string,
+  userId: string,
+) {
+  const lookup = await client.query<{ sessionId: string }>(
+    'SELECT session_id AS "sessionId" FROM bookings WHERE id=$1 AND user_id=$2',
+    [bookingId, userId],
+  );
+  if (!lookup.rows[0]) return null;
+  await releaseExpiredHolds(client, [lookup.rows[0].sessionId]);
+  const row = (
+    await client.query<CancellationSnapshot & { sessionId: string; now: Date }>(
+      `SELECT b.id,b.user_id AS "userId",b.session_id AS "sessionId",b.quantity,b.paid_amount AS "paidAmount",b.deposit_amount AS "depositAmount",b.status,b.reservation_status AS "reservationStatus",b.reschedule_pending AS "reschedulePending",s.schedule_version AS "scheduleVersion",EXISTS(SELECT 1 FROM tickets t WHERE t.booking_id=b.id AND t.attendance_status<>'unmarked') AS "hasAttendance",EXISTS(SELECT 1 FROM tickets t WHERE t.booking_id=b.id AND t.attendance_status='attended') AS "hasAttended",s.starts_at AS "startsAt",s.ends_at AS "endsAt",s.status AS "sessionStatus",clock_timestamp() AS now FROM bookings b JOIN sessions s ON s.id=b.session_id WHERE b.id=$1 AND b.user_id=$2 FOR UPDATE OF b`,
+      [bookingId, userId],
+    )
+  ).rows[0];
+  return row ?? null;
+}
+function cancellationAllowed(row: CancellationSnapshot) {
+  return (
+    ['pending', 'confirmed'].includes(row.reservationStatus) &&
+    !row.hasAttended &&
+    !(row.hasAttendance && row.paidAmount > 0) &&
+    !['cancelled', 'expired', 'refund_needed'].includes(row.status)
+  );
+}
+export async function getCustomerCancellationQuote(
+  bookingId: string,
+  userId: string,
+) {
+  return withTransaction(async (client) => {
+    const row = await lockCancellation(client, bookingId, userId);
+    if (!row) return null;
+    if (!cancellationAllowed(row))
+      throw new AppError(
+        409,
+        'CONFLICT',
+        'Đặt chỗ không còn ở trạng thái có thể hủy.',
+      );
+    return createCancellationQuote(
+      row,
+      row.now.getTime(),
+      loadConfig().JWT_SECRET,
+    );
   });
 }
 
 export async function cancelCustomerBooking(
   bookingId: string,
   userId: string,
+  quoteToken?: string,
 ): Promise<'not_found' | 'conflict' | 'cancelled'> {
   return withTransaction(async (client) => {
-    const lookup = await client.query<{ sessionId: string }>(
-      'SELECT session_id AS "sessionId" FROM bookings WHERE id = $1 AND user_id = $2',
-      [bookingId, userId],
-    );
-    const sessionId = lookup.rows[0]?.sessionId;
-    if (!sessionId) return 'not_found';
-
-    await client.query('SELECT id FROM sessions WHERE id = $1 FOR UPDATE', [
-      sessionId,
-    ]);
-    const booking = await client.query<{
-      quantity: number;
-      paidAmount: number;
-      status: string;
-      reservationStatus: string;
-      startsAt: Date;
-    }>(
-      `SELECT b.quantity, b.paid_amount AS "paidAmount", b.status,
-         b.reservation_status AS "reservationStatus",
-         s.starts_at AS "startsAt"
-       FROM bookings b
-       JOIN sessions s ON s.id = b.session_id
-       WHERE b.id = $1 AND b.user_id = $2
-       FOR UPDATE OF b`,
-      [bookingId, userId],
-    );
-    const row = booking.rows[0];
+    const row = await lockCancellation(client, bookingId, userId);
     if (!row) return 'not_found';
-    if (
-      !['pending', 'confirmed'].includes(row.reservationStatus) ||
-      ['cancelled', 'expired', 'refund_needed'].includes(row.status)
-    ) {
+    const sessionId = row.sessionId;
+    if (!cancellationAllowed(row)) {
       return 'conflict';
     }
-    const cancellationHours = (await getSiteSettings(client)).booking
-      .cancellationHours;
-    const allowed = await client.query<{ allowed: boolean }>(
-      `SELECT $1::timestamptz >
-         clock_timestamp() + make_interval(hours => $2) AS allowed`,
-      [row.startsAt, cancellationHours],
+    if (
+      (quoteToken || row.paidAmount > 0) &&
+      (!quoteToken ||
+        !cancellationQuoteMatches(
+          quoteToken,
+          row,
+          row.now.getTime(),
+          loadConfig().JWT_SECRET,
+        ))
+    ) {
+      throw new AppError(
+        409,
+        'CANCELLATION_QUOTE_CHANGED',
+        'Thông tin hoàn tiền đã thay đổi hoặc hết hiệu lực. Vui lòng xem lại và xác nhận hủy lần nữa.',
+      );
+    }
+    const refund = cancellationRefund(
+      row.paidAmount,
+      row.startsAt,
+      row.now.getTime(),
+      row.reschedulePending || row.sessionStatus === 'cancelled',
+      row.depositAmount,
     );
-    if (!allowed.rows[0]?.allowed) return 'conflict';
-
+    await client.query(
+      "SELECT set_config('app.booking_actor',$1,true),set_config('app.booking_reason',$2,true)",
+      [userId, 'Khách xác nhận hủy theo thông tin hoàn tiền đã kiểm tra.'],
+    );
+    await client.query(
+      'UPDATE bookings SET refund_due_amount=$2,refund_status=$3 WHERE id=$1',
+      [bookingId, refund.refundDue, refund.refundStatus],
+    );
     const seatColumn =
       row.reservationStatus === 'pending' ? 'seats_held' : 'seats_sold';
     await client.query(
@@ -386,7 +496,7 @@ export async function cancelCustomerBooking(
        SET status = $2::booking_status,
            reservation_status = 'cancelled'
        WHERE id = $1`,
-      [bookingId, row.paidAmount > 0 ? 'refund_needed' : 'cancelled'],
+      [bookingId, refund.refundDue > 0 ? 'refund_needed' : 'cancelled'],
     );
     const released = await client.query(
       `UPDATE sessions
@@ -415,11 +525,13 @@ export async function cancelCustomerBooking(
       client,
       userId,
       bookingId,
-      row.paidAmount > 0 ? 'booking_refund_needed' : 'booking_cancelled',
-      row.paidAmount > 0 ? 'Đã hủy, cần xử lý hoàn tiền' : 'Đã hủy đặt chỗ',
-      row.paidAmount > 0
-        ? 'Khoản đã thanh toán cần được studio xử lý hoàn thủ công.'
-        : 'Chỗ đã được trả lại cho buổi workshop.',
+      refund.refundDue > 0 ? 'booking_refund_needed' : 'booking_cancelled',
+      refund.refundDue > 0 ? 'Đã hủy, đang xử lý hoàn tiền' : 'Đã hủy đặt chỗ',
+      refund.refundDue > 0
+        ? `Bạn sẽ được hoàn ${refund.refundDue.toLocaleString('vi-VN')} đ trong tối đa 7 ngày làm việc.${row.paidAmount > refund.refundDue ? ` Khoản cọc ${(row.paidAmount - refund.refundDue).toLocaleString('vi-VN')} đ không được hoàn vì bạn hủy trong vòng 24 giờ trước buổi học.` : ''}`
+        : refund.refundStatus === 'forfeited'
+          ? 'Đặt chỗ đã hủy. Khoản cọc không được hoàn vì bạn hủy trong vòng 24 giờ trước buổi học.'
+          : 'Chỗ đã được trả lại cho buổi học.',
     );
     return 'cancelled';
   });
@@ -500,9 +612,14 @@ async function notifyCustomer(
 async function issueTickets(
   client: import('pg').PoolClient,
   bookingId: string,
-  quantity: number,
 ): Promise<void> {
-  for (let seq = 1; seq <= quantity; seq++) {
+  const seats = (
+    await client.query<{ seq: number }>(
+      "SELECT seq FROM booking_seats WHERE booking_id=$1 AND state='active' ORDER BY seq",
+      [bookingId],
+    )
+  ).rows;
+  for (const { seq } of seats) {
     await client.query(
       `INSERT INTO tickets (booking_id, seq, code)
        VALUES ($1, $2, $3)

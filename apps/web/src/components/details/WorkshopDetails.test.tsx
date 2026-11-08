@@ -40,8 +40,8 @@ describe('WorkshopDetails policies', () => {
     );
 
     expect(html).toContain('Chính sách hủy');
-    expect(html).toContain('Báo trước một ngày để đổi lịch.');
+    expect(html).toContain('Hủy miễn phí trước giờ học 24h.');
     expect(html).toContain('Chính sách thanh toán');
-    expect(html).toContain('Thanh toán khi đặt chỗ.');
+    expect(html).toContain('Thanh toán trực tiếp tại studio khi đến học.');
   });
 });

@@ -1,6 +1,9 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { toast } from 'sonner';
+import { apiFetch } from '../../lib/api-client';
+import { useAuth } from '../../hooks/useAuth';
 import { cn } from '../../lib/utils';
 import { buttonVariants } from '../ui/button';
 import type { TicketData } from './types';
@@ -16,18 +19,71 @@ export function TicketLink({
   className?: string;
   children: ReactNode;
 }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [notificationState, setNotificationState] = useState<
+    'idle' | 'pending' | 'success' | 'error'
+  >('idle');
+  const detailHref = href ?? `/workshop/${workshop.id}`;
   return (
     <Link
-      to={href ?? `/workshop/${workshop.id}`}
-      aria-label={`Xem workshop ${workshop.title}`}
+      to={detailHref}
+      onClick={(event) => {
+        if (
+          session.actionLabel === 'Nhận thông báo khi có lịch' &&
+          ((event.target as HTMLElement).closest('[data-ticket-action]') ||
+            event.detail === 0)
+        ) {
+          event.preventDefault();
+          if (
+            notificationState === 'pending' ||
+            notificationState === 'success'
+          )
+            return;
+          if (user?.role !== 'customer') {
+            navigate(`/dang-nhap?redirect=${encodeURIComponent(detailHref)}`);
+            return;
+          }
+          setNotificationState('pending');
+          void apiFetch(`/workshops/${workshop.id}/schedule-subscription`, {
+            method: 'POST',
+          })
+            .then(() => {
+              setNotificationState('success');
+              toast.success('Đã đăng ký nhận thông báo khi có lịch mới.');
+            })
+            .catch(() => {
+              setNotificationState('error');
+              toast.error('Chưa lưu được đăng ký. Vui lòng thử lại.');
+            });
+        }
+      }}
+      aria-label={
+        session.actionLabel === 'Nhận thông báo khi có lịch'
+          ? `Nhận thông báo khi có lịch cho workshop ${workshop.title}`
+          : `Xem workshop ${workshop.title}`
+      }
       className={cn(
         'ticket-link group block h-full w-full min-w-0 rounded-ticket text-ticket-ink no-underline focus-visible:outline-3 focus-visible:outline-offset-4 focus-visible:outline-ticket-accent motion-safe:transition-transform motion-safe:hover:-translate-y-0.5',
-        session.seatsLeft < 1 &&
+        session.statusLabel === 'Hết chỗ' &&
           'ticket-sold-out [&_.ticket-photo]:opacity-50 [&_.ticket-stub]:bg-ticket-stub/60 [&_.ticket-stub_img]:opacity-50',
         className,
       )}
     >
       {children}
+      {notificationState === 'success' && (
+        <span
+          role="status"
+          className="block p-3 text-sm font-semibold text-primary"
+        >
+          Đã đăng ký nhận thông báo
+        </span>
+      )}
+      {notificationState === 'error' && (
+        <span role="alert" className="block p-3 text-sm text-brick">
+          Chưa lưu được đăng ký. Vui lòng thử lại.
+        </span>
+      )}
     </Link>
   );
 }
@@ -87,6 +143,7 @@ export function TicketAction({
 }) {
   return (
     <span
+      data-ticket-action
       className={cn(
         buttonVariants({ variant: 'outline', size: 'sm' }),
         'ticket-action min-h-9 w-fit justify-between gap-2 border-primary bg-transparent px-3 text-[13px] font-semibold text-primary hover:bg-primary hover:text-white group-hover:bg-primary group-hover:text-white group-focus-visible:bg-primary group-focus-visible:text-white',

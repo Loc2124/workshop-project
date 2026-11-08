@@ -4,15 +4,28 @@ import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
 import { formatPrice } from '../lib/format';
 import { customerBookingService } from '../services/customerBookingService';
+import { useSessionClock } from '../hooks/useSessionClock';
 import { PageContainer } from '../components/layout/PageContainer';
 import { LoadingState } from '../components/ui/LoadingState';
 
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'long',
+    dateStyle: 'short',
     timeStyle: 'short',
     timeZone: 'Asia/Ho_Chi_Minh',
   }).format(new Date(value));
+}
+
+export function sessionLifecycleLabel(
+  startsAt: string,
+  endsAt: string,
+  recordStatus: string,
+  now = Date.now(),
+) {
+  if (recordStatus === 'cancelled') return 'Đã hủy';
+  if (now >= Date.parse(endsAt)) return 'Đã kết thúc';
+  if (now >= Date.parse(startsAt)) return 'Đang diễn ra';
+  return 'Chưa diễn ra';
 }
 
 function paymentLabel(status: string) {
@@ -24,6 +37,7 @@ function paymentLabel(status: string) {
       expired: 'Đã hết hạn',
       refund_needed: 'Cần xử lý hoàn tiền',
       failed: 'Thanh toán thất bại',
+      processing: 'Đang xử lý',
     }[status] ?? status
   );
 }
@@ -32,8 +46,9 @@ function reservationLabel(status: string) {
   return (
     {
       pending: 'Đang giữ chỗ',
-      confirmed: 'Đã xác nhận chỗ',
-      cancelled: 'Đã hủy chỗ',
+      confirmed: 'Đã xác nhận',
+      cancelled: 'Đã hủy',
+      expired: 'Hết hạn giữ chỗ',
     }[status] ?? status
   );
 }
@@ -47,6 +62,15 @@ export function CustomerBookingsPage() {
     queryFn: ({ signal }) => customerBookingService.list(signal),
     enabled: Boolean(user),
   });
+  const now = useSessionClock(
+    (query.data ?? []).map((booking) => ({
+      id: booking.id,
+      startsAt: booking.startsAt,
+      endsAt: booking.endsAt,
+      price: 0,
+      availableSeats: 0,
+    })),
+  );
 
   return (
     <PageContainer as="main" className="py-8 pb-16">
@@ -54,6 +78,12 @@ export function CustomerBookingsPage() {
       <p className="mt-2 text-sm text-stone-700">
         Theo dõi tình trạng giữ chỗ, thanh toán và vé workshop.
       </p>
+      <Link
+        to="/me/refund-accounts"
+        className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-olive underline"
+      >
+        Quản lý tài khoản nhận hoàn đã lưu
+      </Link>
       {query.isLoading ? (
         <LoadingState label="Đang tải lịch đặt…" className="mt-8" />
       ) : query.isError ? (
@@ -91,6 +121,15 @@ export function CustomerBookingsPage() {
                 <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
                   <span>{reservationLabel(booking.reservationStatus)}</span>
                   <span>{paymentLabel(booking.paymentStatus)}</span>
+                  <span>
+                    Buổi học:{' '}
+                    {sessionLifecycleLabel(
+                      booking.startsAt,
+                      booking.endsAt,
+                      booking.sessionRecordStatus,
+                      now,
+                    )}
+                  </span>
                   {booking.balanceAmount > 0 && (
                     <span>Còn {formatPrice(booking.balanceAmount)} đ</span>
                   )}

@@ -1,4 +1,9 @@
 import { Router } from 'express';
+import { bookingActionsRouter } from './customer-actions.routes.js';
+import { attendanceRouter } from './attendance.routes.js';
+import { refundRouter } from '../payments/refunds.routes.js';
+import { partialSeatsRouter } from './partial-seats.routes.js';
+import { refundAccountsRouter } from './refund-accounts.routes.js';
 import { AppError } from '../../errors/app-error.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-body.js';
@@ -9,15 +14,22 @@ import {
   getBookingForCustomer,
   getBookingsForCustomer,
   getTicketsForCustomer,
+  getCancellationQuoteForCustomer,
 } from './bookings.service.js';
 import { confirmStudioPayment } from '../payments/payments.service.js';
 import { listStudioBookings } from './bookings.repository.js';
 import {
   confirmStudioPaymentSchema,
   createBookingSchema,
+  cancelBookingSchema,
 } from './bookings.schemas.js';
 
 const router = Router();
+router.use(bookingActionsRouter);
+router.use(attendanceRouter);
+router.use(refundRouter);
+router.use(partialSeatsRouter);
+router.use(refundAccountsRouter);
 
 router.get(
   '/studios/:studioId/bookings',
@@ -80,13 +92,31 @@ router.post(
   '/bookings/:id/cancel',
   requireAuth(['customer']),
   validateUuidParam('id'),
+  validateBody(cancelBookingSchema),
   async (request, response) =>
     response.json(
       await cancelBookingForCustomer(
         request.user!.sub,
         String(request.params.id),
+        request.body.quoteToken,
       ),
     ),
+);
+
+router.get(
+  '/bookings/:id/cancellation-quote',
+  requireAuth(['customer']),
+  validateUuidParam('id'),
+  async (req, res) => {
+    res
+      .set('Cache-Control', 'no-store')
+      .json(
+        await getCancellationQuoteForCustomer(
+          req.user!.sub,
+          String(req.params.id),
+        ),
+      );
+  },
 );
 
 router.post(

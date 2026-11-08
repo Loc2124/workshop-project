@@ -14,7 +14,7 @@ const Calendar = lazy(async () => ({
 export function SingleDatePicker({
   value,
   onChange,
-  ariaLabel = 'Ngày trải nghiệm',
+  ariaLabel = 'Ngày học',
 }: {
   value: string;
   onChange: (value: string) => void;

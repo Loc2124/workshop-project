@@ -57,11 +57,16 @@ export function WorkshopPage({
   const handleBooking: WorkshopBookingHandler | undefined =
     onBook ??
     (user?.role === 'customer'
-      ? async ({ sessionId, quantity }) => {
-          const result = await customerBookingService.create({
-            sessionId,
-            quantity,
-          });
+      ? async ({ sessionId, quantity, paymentChoice }) => {
+          const result = await customerBookingService.create(
+            {
+              sessionId,
+              quantity,
+              paymentChoice,
+            },
+            user.id,
+            `workshop:${workshop?.id ?? identifier}`,
+          );
           await queryClient.invalidateQueries({
             queryKey: queryKeys.bookings.all(user.id),
           });

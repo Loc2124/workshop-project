@@ -28,7 +28,7 @@ export class ApiTimeoutError extends Error {
 
 export class ApiNetworkError extends Error {
   constructor() {
-    super('Không thể kết nối đến máy chủ. Vui lòng thử lại.');
+    super('Chưa kết nối được với Open Slot. Vui lòng thử lại.');
     this.name = 'ApiNetworkError';
   }
 }
