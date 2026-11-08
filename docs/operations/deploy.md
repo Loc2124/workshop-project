@@ -17,7 +17,7 @@ Trang khám phá có thể xin quyền vị trí trình duyệt để chọn t�
 - API có cấu hình deploy trên Render và endpoint `GET /health`.
 - Frontend trong `apps/web` có giao diện khách, xác thực, đặt chỗ, lịch sử và vé; xem README để biết phạm vi còn thiếu.
 - Migration booking/thanh toán mới nhất trong repository là `034_customer_booking_payments.sql`. Chưa xác nhận URL công khai, giá trị `WEB_ORIGIN` production hoặc migration đã chạy ở từng database; kiểm tra lịch sử trước khi triển khai.
-- `packages/shared` chưa có script build; API chưa cần build package này riêng.
+- `packages/shared` được biên dịch sang JavaScript trước khi chạy API; build command trên Render biên dịch package này trước workspace API.
 - `JWT_SECRET` phải là chuỗi base64url ngẫu nhiên dài ít nhất 43 ký tự, có tối thiểu 16 ký tự khác nhau. Sinh bằng `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`; đặt trực tiếp trong secret manager/dashboard, không ghi vào Git hoặc log.
 - Production yêu cầu `WEB_ORIGIN` dùng HTTPS. Nếu thay `JWT_SECRET`, access token hiện hành không còn hợp lệ nhưng phiên có refresh token còn hạn có thể lấy access token mới; để thu hồi mọi phiên, thu hồi các dòng `auth_sessions` của user.
 - Access JWT có thời hạn 15 phút; refresh token ngẫu nhiên có thời hạn 14 ngày, lưu dưới dạng SHA-256 hash trong `auth_sessions` và xoay sau mỗi lần `POST /auth/refresh`. Logout thu hồi phiên hiện tại; đổi role có hiệu lực ngay do middleware đọc role từ database. Khi cần thu hồi mọi phiên, quản trị phải thu hồi các dòng `auth_sessions` của user.
