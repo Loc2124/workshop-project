@@ -10,18 +10,20 @@ const loadInformationDialog = () =>
 const InformationDialog = lazy(loadInformationDialog);
 
 const linkClass =
-  'inline-flex min-h-11 items-center rounded-lg text-sm hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:min-h-7';
+  'inline-flex min-h-11 items-center rounded-lg text-sm hover:text-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 md:min-h-7 max-[480px]:min-h-10 max-[480px]:text-[14px]';
 
 function FooterGroup({
   title,
   children,
+  className = '',
 }: {
   title: string;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="footer-link-group flex min-w-0 flex-col items-start gap-2">
-      <h2 className="mb-1 font-sans text-base font-bold leading-normal">
+    <div className={`footer-link-group flex min-w-0 flex-col items-start gap-2 ${className} ${className.includes('footer-discover') ? 'max-[480px]:hidden' : 'max-[480px]:contents'}`}>
+      <h2 className="mb-1 font-sans text-base font-bold leading-normal max-[480px]:hidden">
         {title}
       </h2>
       {children}
@@ -40,9 +42,9 @@ export function FooterLinks() {
     <>
       <nav
         aria-label="Điều hướng cuối trang"
-        className="footer-links grid grid-cols-2 gap-5 sm:grid-cols-3 sm:gap-8"
+        className="footer-links grid grid-cols-2 gap-5 sm:grid-cols-3 sm:gap-8 max-[480px]:gap-x-4 max-[480px]:gap-y-3"
       >
-        <FooterGroup title="Khám phá">
+        <FooterGroup title="Khám phá" className="footer-discover">
           <Link
             className={linkClass}
             to="/kham-pha?view=workshop"
@@ -109,18 +111,17 @@ export function FooterLinks() {
           })}
           {(siteContact.hotline?.trim() ||
             siteContact.workingHours?.trim()) && (
-            <p className="footer-hotline max-w-full break-words text-sm font-semibold leading-relaxed">
+            <p className="footer-hotline max-w-full break-words text-sm font-semibold leading-relaxed max-[480px]:col-span-2 max-[480px]:flex max-[480px]:min-h-10 max-[480px]:items-center max-[480px]:text-[14px]">
               {siteContact.hotline?.trim() && (
                 <a
                   href={'tel:' + siteContact.hotline.replace(/[^\d+]/g, '')}
                   className="rounded-lg hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   Hotline {siteContact.hotline}
+                  {siteContact.workingHours?.trim() && ` · ${siteContact.workingHours}`}
                 </a>
               )}
-              {siteContact.hotline?.trim() &&
-                siteContact.workingHours?.trim() && <br />}
-              {siteContact.workingHours?.trim() && (
+              {!siteContact.hotline?.trim() && siteContact.workingHours?.trim() && (
                 <span className="font-normal">{siteContact.workingHours}</span>
               )}
             </p>

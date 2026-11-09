@@ -276,14 +276,20 @@ export function StudioCheckInPage() {
           </Button>
         </form>
         {scanning && (
-          <div className="mt-4 overflow-hidden rounded-xl bg-black">
+          <div className="relative mt-4 aspect-[4/3] overflow-hidden rounded-xl bg-black">
             <video
               ref={videoRef}
               muted
               playsInline
-              className="max-h-80 w-full object-cover"
+              className="absolute inset-0 size-full object-cover"
               aria-label="Camera quét mã QR"
             />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-[12%] z-10">
+              <span className="absolute left-0 top-0 size-8 rounded-tl-lg border-l-[3px] border-t-[3px] border-white" />
+              <span className="absolute right-0 top-0 size-8 rounded-tr-lg border-r-[3px] border-t-[3px] border-white" />
+              <span className="absolute bottom-0 left-0 size-8 rounded-bl-lg border-b-[3px] border-l-[3px] border-white" />
+              <span className="absolute bottom-0 right-0 size-8 rounded-br-lg border-b-[3px] border-r-[3px] border-white" />
+            </div>
           </div>
         )}
       </section>
