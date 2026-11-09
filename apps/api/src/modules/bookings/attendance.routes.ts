@@ -36,8 +36,11 @@ attendanceRouter.post(
   requireAuth(),
   validateUuidParam('studioId'),
   async (req, res) => {
-    const { code, expectedVersion } = checkInCode
-      .extend({ expectedVersion: z.number().int().positive() })
+    const { code, expectedVersion, reason } = checkInCode
+      .extend({
+        expectedVersion: z.number().int().positive(),
+        reason: z.string().trim().max(1000).optional(),
+      })
       .parse(req.body);
     res.set('Cache-Control', 'no-store').json({
       ticket: await confirmTicketCheckIn(
@@ -45,6 +48,7 @@ attendanceRouter.post(
         req.user!.sub,
         code,
         expectedVersion,
+        reason,
       ),
     });
   },
@@ -74,7 +78,10 @@ attendanceRouter.post(
   validateUuidParam('id'),
   async (req, res) => {
     const input = z
-      .object({ status: z.enum(['attended', 'absent']) })
+      .object({
+        status: z.enum(['attended', 'absent']),
+        reason: z.string().trim().max(1000).optional(),
+      })
       .strict()
       .parse(req.body);
     await markTicketAttendance(
@@ -92,6 +99,7 @@ const ticketInput = z
   .object({
     status: z.enum(['attended', 'absent']),
     expectedVersion: z.number().int().positive(),
+    reason: z.string().trim().max(1000).optional(),
   })
   .strict();
 attendanceRouter.get(

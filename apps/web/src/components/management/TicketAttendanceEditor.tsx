@@ -16,6 +16,7 @@ const ticketSchema = z.object({
   seq: z.number(),
   status: z.string(),
   attendanceStatus: z.enum(['unmarked', 'attended', 'absent']),
+  attendanceMethod: z.enum(['check_in', 'manual_confirmation']).nullable().optional(),
   version: z.number(),
   paidAmount: z.number(),
   depositAmount: z.number(),
@@ -23,13 +24,14 @@ const ticketSchema = z.object({
   refundedAmount: z.number(),
   refundHistoryLocked: z.boolean(),
   startsAt: z.string(),
+  endsAt: z.string(),
   serverNow: z.string(),
   canMark: z.boolean(),
 });
 type Ticket = z.infer<typeof ticketSchema>;
 const labels = {
   unmarked: 'Chưa ghi nhận',
-  attended: 'Đã đến',
+  attended: 'Đã tham dự',
   absent: 'Vắng mặt',
 };
 const button =
@@ -81,6 +83,11 @@ export function TicketAttendanceEditor({
     const timer = setInterval(() => setNow(Date.now() + offset.current), 1000);
     return () => clearInterval(timer);
   }, []);
+  const requiresManualReason = Boolean(
+    selected &&
+      selected.status === 'attended' &&
+      now >= Date.parse(selected.ticket.endsAt),
+  );
   const update = useMutation({
     mutationFn: async () => {
       if (!selected) throw new Error('Vui lòng chọn vé.');
@@ -91,6 +98,8 @@ export function TicketAttendanceEditor({
           expectedVersion: selected.ticket.version,
           ...(admin
             ? { reason, ...(refundAction ? { refundAction } : {}) }
+            : requiresManualReason
+              ? { reason }
             : {}),
         }),
       });
@@ -149,7 +158,11 @@ export function TicketAttendanceEditor({
           return (
             <li key={t.id} className="rounded-lg bg-soft p-3 text-sm">
               <p className="font-semibold">
-                Vé số {t.seq} · {labels[t.attendanceStatus]}
+                Vé số {t.seq} ·{' '}
+                {t.attendanceStatus === 'attended' &&
+                t.attendanceMethod === 'manual_confirmation'
+                  ? 'Đã tham dự · Xác nhận thủ công'
+                  : labels[t.attendanceStatus]}
               </p>
               <p className="mt-1 text-stone-700">
                 Đã trả {formatPrice(t.paidAmount)} đ · Cọc{' '}
@@ -242,9 +255,11 @@ export function TicketAttendanceEditor({
                 : `${selected.ticket.paidAmount > 0 && selected.ticket.depositAmount > 0 ? 'Khoản cọc đã nhận được giữ lại.' : 'Vé này chưa thanh toán.'} Việc ghi nhận vắng mặt không tự xóa số tiền khách còn phải trả.`
               : 'Chỉ vé này được ghi nhận đã đến. Thông tin thanh toán và các vé khác được giữ nguyên.'}
           </DialogDescription>
-          {admin && (
+          {(admin || requiresManualReason) && (
             <label className="mt-3 block text-sm">
-              Lý do điều chỉnh
+              {requiresManualReason
+                ? 'Lý do xác nhận đã tham dự thủ công'
+                : 'Lý do điều chỉnh'}
               <textarea
                 className="mt-2 min-h-24 w-full rounded-lg border border-stone-300 p-3"
                 value={reason}
@@ -303,7 +318,7 @@ export function TicketAttendanceEditor({
               type="button"
               disabled={
                 update.isPending ||
-                (admin && reason.trim().length < 3) ||
+                ((admin || requiresManualReason) && reason.trim().length < 3) ||
                 !!(needsRefundChoice && !refundAction)
               }
               aria-busy={update.isPending}

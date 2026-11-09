@@ -24,7 +24,7 @@ export async function listAttendanceTickets(
   if (!allowed.rowCount)
     throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy đặt chỗ.');
   const result = await query(
-    `SELECT t.id,t.seq,t.status,t.attendance_status AS "attendanceStatus",t.attendance_marked_at AS "attendanceMarkedAt",
+    `SELECT t.id,t.seq,t.status,t.attendance_status AS "attendanceStatus",t.attendance_method AS "attendanceMethod",t.attendance_marked_at AS "attendanceMarkedAt",
     t.version,t.total_amount AS "totalAmount",t.deposit_amount AS "depositAmount",t.paid_amount AS "paidAmount",
     t.refund_due_amount AS "refundDueAmount",t.refunded_amount AS "refundedAmount",t.refund_history_locked AS "refundHistoryLocked",
     s.starts_at AS "startsAt",s.ends_at AS "endsAt",clock_timestamp() AS "serverNow",
@@ -64,10 +64,11 @@ export async function markTicketAttendance(
         reschedulePending: boolean;
         sessionStatus: string;
         startsAt: Date;
+        endsAt: Date;
         now: Date;
         quantity: number;
       }>(
-        `SELECT b.reservation_status AS "reservationStatus",b.reschedule_pending AS "reschedulePending",b.quantity,s.status AS "sessionStatus",s.starts_at AS "startsAt",clock_timestamp() AS now
+        `SELECT b.reservation_status AS "reservationStatus",b.reschedule_pending AS "reschedulePending",b.quantity,s.status AS "sessionStatus",s.starts_at AS "startsAt",s.ends_at AS "endsAt",clock_timestamp() AS now
        FROM bookings b JOIN sessions s ON s.id=b.session_id WHERE b.id=$1 FOR UPDATE OF b`,
         [bookingId],
       )
@@ -86,7 +87,12 @@ export async function markTicketAttendance(
       };
     const now = booking.now.getTime(),
       start = booking.startsAt.getTime();
-    if (now < start || (input.status === 'absent' && now < start + 30 * 60000))
+    const end = booking.endsAt.getTime();
+    if (
+      now < start ||
+      (input.checkInOnly && now >= end) ||
+      (input.status === 'absent' && now < start + 30 * 60000)
+    )
       return {
         error: new AppError(
           409,
@@ -94,6 +100,19 @@ export async function markTicketAttendance(
           input.status === 'absent'
             ? 'Chỉ ghi nhận vắng mặt từ 30 phút sau giờ bắt đầu.'
             : 'Chỉ ghi nhận đã đến từ giờ bắt đầu buổi học.',
+        ),
+      };
+    if (
+      input.status === 'attended' &&
+      !input.checkInOnly &&
+      now >= end &&
+      (!input.reason?.trim() || input.reason.trim().length < 3)
+    )
+      return {
+        error: new AppError(
+          422,
+          'UNPROCESSABLE_ENTITY',
+          'Vui lòng nhập lý do xác nhận tham dự thủ công (ít nhất 3 ký tự).',
         ),
       };
     if (!ticketId && booking.quantity !== 1)
@@ -199,12 +218,12 @@ export async function markTicketAttendance(
               : 0,
           );
     await client.query(
-      `UPDATE tickets SET attendance_status=$2,attendance_marked_by=$3,attendance_marked_at=clock_timestamp(),
+      `UPDATE tickets SET attendance_status=$2,attendance_method=CASE WHEN $2='attended' THEN CASE WHEN $5::boolean THEN 'check_in' ELSE 'manual_confirmation' END ELSE NULL END,attendance_marked_by=$3,attendance_marked_at=clock_timestamp(),
       status=CASE WHEN $2='attended' THEN 'used'::ticket_status ELSE 'valid'::ticket_status END,
       checked_in_at=CASE WHEN $2='attended' THEN COALESCE(checked_in_at,clock_timestamp()) ELSE checked_in_at END,
       refund_due_amount=$4,refund_history_locked=refund_history_locked OR $4>0,
       refund_started_at=CASE WHEN $4>0 THEN COALESCE(refund_started_at,clock_timestamp()) ELSE refund_started_at END WHERE id=$1`,
-      [ticket.id, input.status, userId, due],
+      [ticket.id, input.status, userId, due, input.checkInOnly ?? false],
     );
     await client.query(
       "SELECT set_config('app.booking_actor',$1,true),set_config('app.booking_reason',$2,true)",

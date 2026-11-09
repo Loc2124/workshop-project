@@ -120,9 +120,16 @@ const ticketSchema = z.object({
   id: z.uuid(),
   seq: z.number().int().positive(),
   code: z.string().min(1),
+  manualCode: z.string().length(8).optional(),
   status: z.string(),
   issuedAt: z.string(),
   attendanceStatus: z.enum(['unmarked', 'attended', 'absent']).optional(),
+  attendanceMethod: z
+    .enum(['check_in', 'manual_confirmation'])
+    .nullable()
+    .optional(),
+  attendanceMarkedAt: z.string().nullable().optional(),
+  attendanceMarkedBy: z.string().nullable().optional(),
   refundDueAmount: z.number().optional(),
   refundedAmount: z.number().optional(),
 });

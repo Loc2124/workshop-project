@@ -283,6 +283,7 @@ export function CustomerBookingDetailPage() {
     booking.sessionRecordStatus,
     now,
   );
+  const sessionEnded = now >= Date.parse(booking.endsAt);
   const refundNeeded = booking.paymentStatus === 'refund_needed';
   const bookingLabel = state.expired
     ? 'Hết hạn giữ chỗ'
@@ -561,17 +562,23 @@ export function CustomerBookingDetailPage() {
                     key={ticket.id}
                     className="flex min-w-0 flex-wrap items-center gap-3 rounded-xl bg-surface p-4"
                   >
-                    <QRCodeSVG
-                      value={`OS-TICKET:${ticket.code}`}
-                      size={112}
-                      title={`Mã QR vé tham gia ${ticket.seq}`}
-                      className="shrink-0"
-                    />
+                    {!sessionEnded && ticket.status === 'valid' && (
+                      <QRCodeSVG
+                        value={`OS-TICKET:${ticket.code}`}
+                        size={112}
+                        title={`Mã QR vé tham gia ${ticket.seq}`}
+                        className="shrink-0"
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold">Vé số {ticket.seq}</h3>
                       <p className="mt-1 text-sm">
                         {ticket.attendanceStatus === 'attended'
-                          ? 'Đã đến'
+                          ? ticket.attendanceMethod === 'manual_confirmation'
+                            ? 'Đã tham dự · Xác nhận thủ công'
+                            : 'Đã tham dự'
+                          : sessionEnded && ticket.attendanceStatus === 'unmarked'
+                            ? 'Đã qua buổi · Chưa check-in'
                           : ticket.attendanceStatus === 'absent'
                             ? 'Vắng mặt'
                             : ticket.status === 'valid'
@@ -580,12 +587,33 @@ export function CustomerBookingDetailPage() {
                                 ? 'Đã sử dụng'
                                 : 'Đã vô hiệu'}
                       </p>
-                      <p className="mt-1 text-xs text-stone-600">
-                        Xuất trình tại studio. Đây là mã vé tham gia.
-                      </p>
-                      <p className="mt-1 break-all font-mono text-xs text-stone-700">
-                        Mã vé: {ticket.code}
-                      </p>
+                      {!sessionEnded && ticket.status === 'valid' && (
+                        <p className="mt-1 text-xs text-stone-600">
+                          Xuất trình QR tại studio trước giờ kết thúc buổi học.
+                        </p>
+                      )}
+                      {sessionEnded && ticket.status === 'valid' && (
+                        <p className="mt-1 text-xs text-stone-600">
+                          QR đã hết hiệu lực sau giờ kết thúc buổi học.
+                        </p>
+                      )}
+                      {ticket.manualCode &&
+                        ticket.status === 'valid' &&
+                        ticket.attendanceStatus === 'unmarked' && (
+                        <p className="mt-1 font-mono text-sm font-semibold tracking-widest text-stone-700">
+                          Mã nhập tay: {ticket.manualCode}
+                        </p>
+                      )}
+                      {ticket.attendanceStatus === 'attended' && (
+                        <p className="mt-1 text-xs text-stone-600">
+                          {ticket.attendanceMarkedAt
+                            ? `Ghi nhận lúc ${formatDate(ticket.attendanceMarkedAt)}`
+                            : 'Đã ghi nhận tham dự'}
+                          {ticket.attendanceMarkedBy
+                            ? ` bởi ${ticket.attendanceMarkedBy}`
+                            : ''}.
+                        </p>
+                      )}
                     </div>
                   </li>
                 ))}

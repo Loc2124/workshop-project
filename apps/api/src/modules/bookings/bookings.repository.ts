@@ -613,10 +613,13 @@ export async function getCustomerTickets(userId: string, bookingId: string) {
   );
   if (!booking.rowCount) return null;
   const tickets = await query(
-    `SELECT id, seq, code, status, issued_at AS "issuedAt",attendance_status AS "attendanceStatus",refund_due_amount AS "refundDueAmount",refunded_amount AS "refundedAmount"
-     FROM tickets
-     WHERE booking_id = $1
-     ORDER BY seq`,
+    `SELECT t.id,t.seq,t.code,t.manual_code AS "manualCode",t.status,t.issued_at AS "issuedAt",
+       t.attendance_status AS "attendanceStatus",t.attendance_method AS "attendanceMethod",
+       t.attendance_marked_at AS "attendanceMarkedAt",marker.full_name AS "attendanceMarkedBy",
+       t.refund_due_amount AS "refundDueAmount",t.refunded_amount AS "refundedAmount"
+     FROM tickets t LEFT JOIN users marker ON marker.id=t.attendance_marked_by
+     WHERE t.booking_id = $1
+     ORDER BY t.seq`,
     [bookingId],
   );
   return { tickets: tickets.rows };

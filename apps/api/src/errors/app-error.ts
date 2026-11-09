@@ -6,6 +6,7 @@ export type AppErrorCode =
   | 'UNAUTHORIZED'
   | 'FORBIDDEN'
   | 'NOT_FOUND'
+  | 'GONE'
   | 'CONFLICT'
   | 'IDEMPOTENCY_KEY_REUSED'
   | 'CANCELLATION_QUOTE_CHANGED'
@@ -16,7 +17,7 @@ export type AppErrorCode =
 export class AppError extends Error {
   constructor(
     public readonly statusCode:
-      400 | 401 | 403 | 404 | 409 | 413 | 415 | 422 | 429 | 503,
+      400 | 401 | 403 | 404 | 409 | 410 | 413 | 415 | 422 | 429 | 503,
     public readonly code: AppErrorCode,
     message: string,
   ) {

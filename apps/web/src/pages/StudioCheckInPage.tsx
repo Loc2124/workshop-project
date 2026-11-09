@@ -16,6 +16,7 @@ const ticketSchema = z.object({
   version: z.number(),
   ticketStatus: z.string(),
   attendanceStatus: z.string(),
+  attendanceMethod: z.enum(['check_in', 'manual_confirmation']).nullable(),
   checkedInAt: z.string().nullable(),
   checkedInBy: z.string().nullable(),
   workshopTitle: z.string(),
@@ -31,6 +32,7 @@ const ticketSchema = z.object({
   reschedulePending: z.boolean(),
   serverNow: z.string(),
   canCheckIn: z.boolean(),
+  canConfirmManually: z.boolean(),
 });
 type Ticket = z.infer<typeof ticketSchema>;
 
@@ -47,6 +49,7 @@ export function StudioCheckInPage() {
     available.find((item) => item.id === requested) ?? available[0];
   const [code, setCode] = useState('');
   const [ticket, setTicket] = useState<Ticket | null>(null);
+  const [manualReason, setManualReason] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState<'lookup' | 'payment' | 'check-in' | null>(
     null,
@@ -67,6 +70,7 @@ export function StudioCheckInPage() {
           { method: 'POST', body: JSON.stringify({ code: value.trim() }) },
         );
         setTicket(z.object({ ticket: ticketSchema }).parse(response).ticket);
+        setManualReason('');
       } catch (error) {
         setMessage(
           error instanceof Error ? error.message : 'Không tra cứu được mã vé.',
@@ -137,6 +141,7 @@ export function StudioCheckInPage() {
           body: JSON.stringify({
             code: code.trim(),
             expectedVersion: ticket.version,
+            ...(ticket.canConfirmManually ? { reason: manualReason.trim() } : {}),
           }),
         },
       );
@@ -250,7 +255,7 @@ export function StudioCheckInPage() {
               }}
               autoComplete="off"
               spellCheck={false}
-              placeholder="Nhập mã in dưới QR vé"
+              placeholder="Nhập mã 8 ký tự trên vé"
               className="mt-2 min-h-11 w-full rounded-lg border border-line bg-paper px-3 font-mono text-sm"
             />
           </label>
@@ -308,15 +313,20 @@ export function StudioCheckInPage() {
             </div>
             <span className="rounded-full border border-line px-3 py-1 text-sm font-medium">
               {ticket.attendanceStatus === 'attended'
-                ? 'Đã check-in'
+                ? ticket.attendanceMethod === 'manual_confirmation'
+                  ? 'Đã tham dự · Xác nhận thủ công'
+                  : 'Đã tham dự'
                 : ticket.ticketStatus === 'void' ||
                     ticket.reservationStatus === 'cancelled'
                   ? 'Vé đã hủy'
                   : ticket.attendanceStatus === 'absent'
                     ? 'Đã ghi vắng'
-                    : ticket.ticketStatus === 'used'
-                      ? 'Vé đã sử dụng'
-                      : 'Chưa check-in'}
+                : Date.parse(ticket.serverNow) >= Date.parse(ticket.endsAt) &&
+                        ticket.attendanceStatus === 'unmarked'
+                      ? 'Đã qua buổi · Chưa check-in'
+                      : ticket.ticketStatus === 'used'
+                        ? 'Vé đã sử dụng'
+                        : 'Chưa check-in'}
             </span>
           </div>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
@@ -343,7 +353,10 @@ export function StudioCheckInPage() {
           </dl>
           {ticket.attendanceStatus === 'attended' && ticket.checkedInAt && (
             <p className="mt-4 border-t border-line pt-4 text-sm">
-              Đã check-in lúc {formatDate(ticket.checkedInAt)}
+              {ticket.attendanceMethod === 'manual_confirmation'
+                ? 'Đã tham dự, xác nhận thủ công lúc '
+                : 'Đã check-in lúc '}
+              {formatDate(ticket.checkedInAt)}
               {ticket.checkedInBy ? ` bởi ${ticket.checkedInBy}` : ''}.
             </p>
           )}
@@ -380,9 +393,34 @@ export function StudioCheckInPage() {
                 disabled={busy !== null}
                 onClick={() => void confirm()}
               >
+                {busy === 'check-in' ? 'Đang xác nhận…' : 'Xác nhận check-in'}
+              </Button>
+            </div>
+          ) : ticket.canConfirmManually ? (
+            <div className="mt-5 border-t border-line pt-4">
+              <p className="mb-3 text-sm text-muted">
+                Buổi học đã kết thúc. Chỉ xác nhận nếu đã đối chiếu được rằng
+                khách thực sự tham dự; thao tác sẽ lưu người xác nhận và lý do.
+              </p>
+              <label className="block text-sm font-medium">
+                Lý do xác nhận đã tham dự
+                <textarea
+                  className="mt-2 min-h-24 w-full rounded-lg border border-line bg-paper p-3"
+                  value={manualReason}
+                  onChange={(event) => setManualReason(event.target.value)}
+                  maxLength={1000}
+                  required
+                />
+              </label>
+              <Button
+                type="button"
+                className="mt-3"
+                disabled={busy !== null || manualReason.trim().length < 3}
+                onClick={() => void confirm()}
+              >
                 {busy === 'check-in'
                   ? 'Đang xác nhận…'
-                  : 'Xác nhận check-in vé này'}
+                  : 'Xác nhận đã tham dự'}
               </Button>
             </div>
           ) : (
@@ -390,6 +428,8 @@ export function StudioCheckInPage() {
               <p className="mt-5 border-t border-line pt-4 text-sm text-brick">
                 {Date.parse(ticket.serverNow) < Date.parse(ticket.startsAt)
                   ? 'Chỉ check-in từ giờ bắt đầu buổi học.'
+                  : Date.parse(ticket.serverNow) >= Date.parse(ticket.endsAt)
+                    ? 'Buổi đã qua. QR hết hiệu lực; dùng mã 8 ký tự và xác nhận thủ công nếu đã đối chiếu khách thực sự tham dự.'
                   : 'Vé chưa đủ điều kiện check-in. Kiểm tra trạng thái đặt chỗ và lịch học.'}
               </p>
             )
