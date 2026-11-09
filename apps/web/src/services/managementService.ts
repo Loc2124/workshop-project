@@ -64,6 +64,8 @@ const studioCreationResponseSchema = z
         contactPhone: z.string().nullable().optional(),
         contactEmail: z.string().nullable().optional(),
         photoIds: z.array(z.string().uuid()).optional(),
+        paymentQrImageId: z.string().uuid().nullable().optional(),
+        paymentQrImageUrl: z.string().nullable().optional(),
         facebookUrl: z.string().nullable().optional(),
         instagramUrl: z.string().nullable().optional(),
         googleMapsUrl: z.string().nullable().optional(),
@@ -104,6 +106,8 @@ const sessionMutationResponseSchema = z
         seatsHeld: z.number().int(),
         seatsSold: z.number().int(),
         status: z.enum(['scheduled', 'cancelled', 'completed']),
+        registrationDeadline: z.string().nullable().optional(),
+        scheduleVersion: z.number().int().positive().optional(),
         createdAt: z.string(),
       })
       .strict(),
