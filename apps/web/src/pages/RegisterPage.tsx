@@ -8,7 +8,6 @@ import { AuthField } from '../components/ui/auth-field';
 import { PasswordChecklist } from '../components/ui/password-checklist';
 import { ApiError } from '../lib/api-client';
 import { AuthLayout } from '../components/layout/AuthLayout';
-import { GoogleAuthButton } from '../components/layout/AuthOptions';
 import { useAuth } from '../hooks/useAuth';
 import {
   authFieldErrors,
@@ -120,18 +119,6 @@ export function RegisterPage() {
             Tạo tài khoản
           </h1>
           <p className="mt-2 text-muted">Bắt đầu trải nghiệm cùng Open Slot.</p>
-          <GoogleAuthButton
-            disabled={isSubmitting}
-            beforeContinue={() => {
-              if (values.acceptedTerms) return true;
-              setErrors((current) => ({
-                ...current,
-                acceptedTerms:
-                  'Bạn cần đồng ý với Điều khoản và Chính sách bảo mật.',
-              }));
-              return false;
-            }}
-          />
           <form
             noValidate
             className="space-y-4"

@@ -9,7 +9,7 @@ export function ViewToggle({ value, onChange }: Props) {
   return (
     <div
       aria-label="Chế độ xem kết quả"
-      className="inline-flex min-h-11 min-w-28 shrink-0 rounded-lg border border-line bg-surface p-1"
+      className="inline-flex h-11 min-w-28 shrink-0 rounded-lg border border-[#DDD6C4] bg-white p-1 max-[480px]:w-full"
       role="group"
     >
       {(
@@ -20,7 +20,7 @@ export function ViewToggle({ value, onChange }: Props) {
       ).map(([view, label]) => (
         <button
           aria-pressed={value === view}
-          className={`min-h-11 min-w-20 rounded-lg px-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain lg:min-w-28 lg:px-3 ${
+          className={`h-full min-w-20 rounded-md px-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain lg:min-w-28 lg:px-3 max-[480px]:min-w-0 max-[480px]:flex-1 ${
             value === view ? 'bg-forest text-white' : 'text-ink hover:bg-paper'
           }`}
           key={view}

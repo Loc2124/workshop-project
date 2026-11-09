@@ -47,10 +47,6 @@ export function SiteHeader() {
   };
   const changeSearch = useCallback((value: boolean) => {
     setSearchOpen(value);
-    if (value) {
-      setMenuOpen(false);
-      setAccountOpen(false);
-    }
   }, []);
   useEffect(() => {
     if (!accountOpen) return;
@@ -74,6 +70,14 @@ export function SiteHeader() {
       document.removeEventListener('keydown', escape);
     };
   }, [accountOpen]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [menuOpen]);
   function active(to: string) {
     const current = pathname.replace(/\/+$/, '') || '/';
     return current === to || (to === '/kham-pha' && current === '/explore');
@@ -85,7 +89,7 @@ export function SiteHeader() {
         to={to}
         onClick={closeMenus}
         aria-current={active(to) ? 'page' : undefined}
-        className={`inline-flex min-h-11 items-center underline-offset-8 transition-colors hover:text-primary ${mobile ? 'py-2 text-base' : 'text-sm'} ${active(to) ? 'font-semibold text-primary underline' : 'font-normal text-ink'}`}
+        className={`inline-flex items-center underline-offset-8 transition-colors hover:text-primary ${mobile ? 'min-h-12 w-full rounded-lg px-3 py-2 text-base' : 'min-h-11 text-sm'} ${active(to) ? mobile ? 'bg-[#DCEFC8] font-semibold text-[#2A4710]' : 'font-semibold text-primary underline' : 'font-normal text-ink'}`}
       >
         {label}
       </Link>
@@ -106,7 +110,7 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 bg-paper">
-      <PageContainer className="flex h-20 items-center justify-between gap-2 lg:gap-6">
+      <PageContainer className="flex h-20 items-center justify-start gap-2 lg:gap-6">
         <Link
           to="/"
           aria-label="Open Slot, trang chủ"
@@ -117,11 +121,11 @@ export function SiteHeader() {
         </Link>
         <nav
           aria-label="Điều hướng chính"
-          className="hidden items-center gap-5 whitespace-nowrap xl:flex 2xl:gap-8"
+          className="hidden w-[450px] flex-none items-center justify-start gap-3 whitespace-nowrap xl:flex 2xl:w-[500px] 2xl:gap-6"
         >
           {navigation()}
         </nav>
-        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-3">
           <HeaderSearch open={searchOpen} onOpenChange={changeSearch} />
           {isLoading && (
             <>
@@ -130,7 +134,7 @@ export function SiteHeader() {
                 aria-label="Đang tải thông báo"
                 aria-busy="true"
                 disabled
-                className="inline-grid size-11 place-items-center rounded-lg text-muted"
+                className="inline-grid size-11 place-items-center rounded-lg text-muted max-[480px]:hidden"
               >
                 <Bell size={18} aria-hidden="true" />
               </button>
@@ -139,7 +143,7 @@ export function SiteHeader() {
                 aria-label="Đang tải tài khoản"
                 aria-busy="true"
                 disabled
-                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm text-muted"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm text-muted max-[480px]:hidden"
               >
                 <span
                   className="grid size-8 place-items-center rounded-full bg-soft"
@@ -173,14 +177,16 @@ export function SiteHeader() {
             </>
           )}
           {user && (
+            <div className="max-[480px]:hidden">
             <Suspense
               fallback={<span aria-hidden="true" className="block size-11" />}
             >
               <NotificationsMenu userId={user.id} />
             </Suspense>
+            </div>
           )}
           {user && (
-            <div className="relative" ref={accountRef}>
+            <div className="relative max-[480px]:hidden" ref={accountRef}>
               <button
                 ref={accountTriggerRef}
                 type="button"
@@ -308,7 +314,7 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => void retryAuth()}
-              className="min-h-11 px-2 text-sm text-brick"
+              className="min-h-11 px-2 text-sm text-brick max-[480px]:hidden"
             >
               Thử lại phiên
             </button>
@@ -329,19 +335,41 @@ export function SiteHeader() {
         </div>
       </PageContainer>
       {menuOpen && (
+        <div
+          className="fixed inset-x-0 bottom-0 top-20 z-40 xl:hidden"
+          onClick={closeMenus}
+        >
+          <div aria-hidden="true" className="absolute inset-0 bg-ink/25 backdrop-blur-sm" />
         <nav
           id="mobile-navigation"
           aria-label="Điều hướng trên điện thoại"
-          className="bg-surface px-4 py-4 shadow-overlay md:px-6 xl:hidden"
+          className="relative mx-auto max-h-[calc(100dvh-5rem)] max-w-page overflow-y-auto bg-surface px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-overlay md:px-6"
+          onClick={(event) => event.stopPropagation()}
         >
-          <div className="flex flex-col items-start">{navigation(true)}</div>
+          <div className="flex flex-col items-start gap-1">{navigation(true)}</div>
+          {user && (
+            <section className="mt-3 border-t border-line pt-3">
+              <div className="px-3 py-2">
+                <p className="text-sm font-semibold text-ink">{user.fullName}</p>
+                <p className="mt-0.5 truncate text-[13px] text-muted">{user.email}</p>
+              </div>
+              <div className="flex flex-col">
+                <Link to="/me/notifications" onClick={closeMenus} className="flex min-h-12 items-center gap-3 rounded-lg px-3 text-sm hover:bg-soft"><Bell size={18} aria-hidden="true" />Thông báo</Link>
+                {user.role === 'customer' && <Link to="/me/bookings" onClick={closeMenus} className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft">Lịch đặt của tôi</Link>}
+                <Link to={studiosQuery.data?.some((studio) => studio.role === 'owner') ? '/studio' : '/dang-ky-studio'} onClick={closeMenus} className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft">{studiosQuery.data?.some((studio) => studio.role === 'owner') ? 'Quản lý studio' : 'Mở studio trên Open Slot'}</Link>
+                {studiosQuery.data?.some((studio) => studio.status === 'approved' && !studio.isDraft) && <Link to="/check-in" onClick={closeMenus} className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft">Check-in vé</Link>}
+                {user.role === 'admin' && <Link to="/admin" onClick={closeMenus} className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft">Duyệt nội dung</Link>}
+                <button type="button" disabled={isLoggingOut} onClick={() => void handleLogout()} className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-brick hover:bg-soft disabled:opacity-50"><LogOut size={17} aria-hidden="true" />{isLoggingOut ? 'Đang thoát…' : 'Đăng xuất'}</button>
+              </div>
+            </section>
+          )}
           {!isLoading && !authError && !user && (
             <div className="mt-4 flex items-center gap-6 sm:hidden">
               {pathname !== '/dang-nhap' && (
                 <AuthLink
                   to="/dang-nhap"
                   onClick={closeMenus}
-                  className="inline-flex min-h-11 items-center"
+                  className="inline-flex min-h-12 items-center"
                 >
                   Đăng nhập
                 </AuthLink>
@@ -350,7 +378,7 @@ export function SiteHeader() {
                 <AuthLink
                   to="/dang-ky"
                   onClick={closeMenus}
-                  className="inline-flex min-h-11 items-center bg-primary px-5 text-white hover:bg-primary-hover"
+                  className="inline-flex min-h-12 items-center bg-primary px-5 text-white hover:bg-primary-hover"
                 >
                   Tạo tài khoản
                 </AuthLink>
@@ -358,6 +386,7 @@ export function SiteHeader() {
             </div>
           )}
         </nav>
+        </div>
       )}
       {authError && (
         <p

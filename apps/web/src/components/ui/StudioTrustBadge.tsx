@@ -25,7 +25,7 @@ export function StudioTrustBadge({
   return (
     <span
       title={description}
-      className="inline-flex rounded-full bg-soft px-3 py-1 text-sm font-semibold text-primary"
+      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${verified ? 'bg-[#DCEFC8] text-[#2A4710]' : 'bg-[#E8E4D8] text-[#4A453C]'}`}
     >
       {label}
     </span>

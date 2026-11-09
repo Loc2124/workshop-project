@@ -1,7 +1,7 @@
 import { LoadingState } from '../ui/LoadingState';
 import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { CategoryShortcuts } from './CategoryShortcuts';
-import { countActiveFilters, MobileFilterSheet } from './MobileFilterSheet';
+import { MobileFilterSheet } from './MobileFilterSheet';
 import { CatalogFilterFields } from './CatalogFilterFields';
 import { useCategoriesQuery } from '../../hooks/useCategories';
 
@@ -9,7 +9,6 @@ export function ExploreFilters(
   props: ComponentProps<typeof MobileFilterSheet> & { children: ReactNode },
 ) {
   const { filters, onChange, onClear, children, ...rest } = props;
-  const count = countActiveFilters(filters);
   const categoryQuery = useCategoriesQuery();
   const barRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -75,15 +74,6 @@ export function ExploreFilters(
       )}
       <div className="hidden flex-wrap items-center gap-2 pt-2 md:flex">
         <CatalogFilterFields {...rest} filters={filters} onChange={onChange} />
-        {count > 0 && (
-          <button
-            type="button"
-            onClick={onClear}
-            className="min-h-11 shrink-0 text-[13px] font-semibold text-primary hover:underline"
-          >
-            Xóa lọc
-          </button>
-        )}
         <div className="ml-auto flex min-w-0 items-center gap-2">
           {children}
         </div>

@@ -5,6 +5,7 @@ import {
   defaultSiteSettings,
 } from '@workshop/shared';
 import { useSiteSettings } from '../hooks/useSiteSettings';
+import { getCategoryIcon } from '../constants/categories';
 import { studioMissingFields } from '../lib/studio-missing-fields';
 import { authHref } from '../lib/auth-navigation';
 import { StudioEvidenceFields } from '../components/management/StudioEvidenceFields';
@@ -25,7 +26,7 @@ import { authFieldErrors } from '../lib/auth-validation';
 import type { CreatedStudio } from '../services/managementService';
 
 const selectClass =
-  'min-h-12 w-full rounded-lg border border-line bg-surface px-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50 aria-invalid:border-brick';
+  'min-h-12 w-full rounded-lg border border-line bg-surface px-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:border-[#DDD6C4] disabled:bg-[#E6E1D3] disabled:text-[#8A8375] disabled:opacity-100 aria-invalid:border-brick';
 
 function StudioRegistrationForm() {
   const settingsQuery = useSiteSettings();
@@ -97,6 +98,19 @@ function StudioRegistrationForm() {
   const missingFields = formValidation.success
     ? []
     : studioMissingFields(formValidation.error.issues);
+  const missingFieldTargets: Record<string, string> = {
+    'tên studio': 'studio-name',
+    'loại workshop': 'studio-categoryIds',
+    'tỉnh/thành': 'studio-provinceId',
+    'địa chỉ': 'studio-address',
+    SĐT: 'studio-contactPhone',
+    email: 'studio-contactEmail',
+    ảnh: 'studio-photoIds',
+    'giới thiệu hợp lệ': 'studio-description',
+    'liên kết Facebook hợp lệ': 'studio-facebookUrl',
+    'liên kết Instagram hợp lệ': 'studio-instagramUrl',
+    'liên kết Google Maps hợp lệ': 'studio-googleMapsUrl',
+  };
   function validate() {
     const parsed = formValidation;
     if (!parsed.success) {
@@ -308,6 +322,8 @@ function StudioRegistrationForm() {
                           disabled={createStudio.isPending}
                           className="space-y-5"
                         >
+                          <section className="space-y-5 rounded-xl border border-line bg-surface p-5">
+                          <h2 className="font-heading text-xl font-semibold">Cơ bản</h2>
                           <AuthField
                             id="studio-name"
                             name="name"
@@ -339,7 +355,7 @@ function StudioRegistrationForm() {
                                 {categories.map((category) => (
                                   <label
                                     key={category.id}
-                                    className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-line px-3 py-2 text-base"
+                                    className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${values.categoryIds.includes(category.id) ? 'border-primary bg-primary/5 text-primary' : 'border-line bg-paper hover:border-primary/50'}`}
                                   >
                                     <input
                                       type="checkbox"
@@ -366,9 +382,14 @@ function StudioRegistrationForm() {
                                           categoryIds: '',
                                         }));
                                       }}
-                                      className="h-5 w-5 accent-primary"
+                                      className="sr-only"
                                     />
-                                    {category.name}
+                                    {(() => {
+                                      const Icon = getCategoryIcon(category.id);
+                                      return <Icon size={20} aria-hidden="true" className="shrink-0" />;
+                                    })()}
+                                    <span className="flex-1 font-semibold">{category.name}</span>
+                                    {values.categoryIds.includes(category.id) && <Check size={18} aria-hidden="true" />}
                                   </label>
                                 ))}
                               </div>
@@ -459,6 +480,9 @@ function StudioRegistrationForm() {
                             </p>
                             {fieldError('description')}
                           </div>
+                          </section>
+                          <section className="space-y-5 rounded-xl border border-line bg-surface p-5">
+                          <h2 className="font-heading text-xl font-semibold">Địa điểm</h2>
                           <div>
                             <label
                               htmlFor="studio-provinceId"
@@ -507,6 +531,7 @@ function StudioRegistrationForm() {
                               update('address', event.target.value)
                             }
                           />
+                          </section>
                           <StudioEvidenceFields
                             values={values}
                             errors={errors}
@@ -669,15 +694,37 @@ function StudioRegistrationForm() {
                           </Link>
                         </Button>
                       </div>
-                      {(missingFields.length > 0 || photosBusy) && (
+                      {(missingFields.length > 0 || photosBusy || !catalogReady || Boolean(authError)) && (
                         <p
                           id="studio-missing-fields"
                           role="status"
                           className="text-sm leading-6 text-muted"
                         >
-                          {missingFields.length > 0
-                            ? `Còn thiếu: ${missingFields.join(', ')}.`
-                            : 'Đang tải ảnh, vui lòng chờ hoàn tất.'}
+                          {missingFields.length > 0 ? (
+                            <>
+                              <span>Còn thiếu hoặc cần sửa:</span>
+                              <ul className="mt-2 flex flex-wrap gap-2">
+                                {missingFields.map((label) => (
+                                  <li key={label}>
+                                    <button
+                                      type="button"
+                                      className="min-h-9 rounded-full border border-line bg-surface px-3 font-semibold text-primary underline"
+                                      onClick={() => {
+                                        draft.setStep(0);
+                                        const parsed = formValidation;
+                                        if (!parsed.success)
+                                          setErrors(authFieldErrors(parsed.error));
+                                        requestAnimationFrame(() => document.getElementById(missingFieldTargets[label])?.focus());
+                                      }}
+                                    >
+                                      {label}
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                              <p className="mt-2">Nút “Xem lại hồ sơ” sẽ bật khi các mục bắt buộc hợp lệ và ảnh không còn đang tải.</p>
+                            </>
+                          ) : photosBusy ? 'Đang tải ảnh, vui lòng chờ hoàn tất.' : authError ? 'Cần kết nối tài khoản ổn định để tiếp tục.' : 'Đang tải danh sách bộ môn hoặc yêu cầu hồ sơ; nút sẽ bật sau khi dữ liệu sẵn sàng.'}
                         </p>
                       )}
                     </form>

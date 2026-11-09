@@ -146,7 +146,7 @@ export function TicketAction({
       data-ticket-action
       className={cn(
         buttonVariants({ variant: 'outline', size: 'sm' }),
-        'ticket-action min-h-9 w-fit justify-between gap-2 border-primary bg-transparent px-3 text-[13px] font-semibold text-primary hover:bg-primary hover:text-white group-hover:bg-primary group-hover:text-white group-focus-visible:bg-primary group-focus-visible:text-white',
+        `ticket-action min-h-9 w-fit justify-between gap-2 border-primary bg-transparent px-3 text-[13px] font-semibold text-primary hover:bg-primary hover:text-white group-hover:bg-primary group-hover:text-white group-focus-visible:bg-primary group-focus-visible:text-white ${label === 'Nhận thông báo khi có lịch' ? 'max-[480px]:w-full max-[480px]:justify-center' : ''}`,
         light &&
           'border border-primary bg-transparent text-primary hover:bg-primary hover:text-white group-hover:bg-primary group-hover:text-white group-focus-visible:bg-primary group-focus-visible:text-white',
       )}

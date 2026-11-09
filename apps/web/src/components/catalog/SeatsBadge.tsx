@@ -7,9 +7,11 @@ export function SeatsBadge({ availableSeats, className }: Props) {
     <span
       className={cn(
         'inline-flex shrink-0 items-center whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-[13px] font-bold tabular-nums',
-        availableSeats <= 3
-          ? 'border-red-200 bg-red-50 text-red-800'
-          : 'border-green-300 bg-green-50 text-green-800',
+        availableSeats < 1
+          ? 'border-[#DDD6C4] bg-[#E8E4D8] text-[#4A453C]'
+          : availableSeats <= 3
+            ? 'border-[#B4532A]/40 bg-[#FCE0DB] text-[#9B2C1A]'
+            : 'border-[#B8D79A] bg-[#DCEFC8] text-[#2A4710]',
         className,
       )}
     >

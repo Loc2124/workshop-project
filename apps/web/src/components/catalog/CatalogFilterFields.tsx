@@ -30,7 +30,7 @@ function FilterPopover({
 }) {
   return (
     <Popover.Root>
-      <Popover.Trigger className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg border border-line bg-surface px-1.5 text-[13px] text-ink hover:border-primary focus-visible:outline-2 focus-visible:outline-primary lg:gap-1.5 lg:px-2">
+      <Popover.Trigger className="inline-flex h-11 shrink-0 items-center gap-1 rounded-lg border border-line bg-surface px-1.5 text-[13px] text-ink hover:border-primary focus-visible:outline-2 focus-visible:outline-primary lg:gap-1.5 lg:px-2">
         {icon}
         <span>{label}</span>
         {count > 0 && <span className="font-bold">({count})</span>}

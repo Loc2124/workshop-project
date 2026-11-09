@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { formatCategoryLabel, formatPrice } from '../../lib/format';
+import { formatPrice } from '../../lib/format';
 import type { CatalogFilters } from '../../types/catalog';
 import type { AreaOption } from './AreaMultiSelect';
 import type { ProvinceOption } from './ProvinceCombobox';
@@ -20,12 +20,7 @@ export function ActiveFilterChips({
   compact = false,
 }: Props) {
   const chips: Array<{ label: string; clear: () => CatalogFilters }> = [];
-  if (filters.categoryId) {
-    chips.push({
-      label: formatCategoryLabel(filters.categoryId),
-      clear: () => ({ ...filters, categoryId: undefined }),
-    });
-  }
+  // The selected category is already represented by the shortcut chip above.
   if (filters.provinceId) {
     const province = provinces.find((item) => item.id === filters.provinceId);
     chips.push({

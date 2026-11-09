@@ -4,7 +4,6 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { AuthField } from '../components/ui/auth-field';
 import { AuthLayout } from '../components/layout/AuthLayout';
-import { GoogleAuthButton } from '../components/layout/AuthOptions';
 import { useAuth } from '../hooks/useAuth';
 import { authFieldErrors, loginFormSchema } from '../lib/auth-validation';
 import {
@@ -86,7 +85,6 @@ export function LoginPage() {
               Tài khoản đã được tạo. Đăng nhập để tiếp tục.
             </p>
           )}
-          <GoogleAuthButton disabled={isLoggingIn} />
           <form
             noValidate
             className="space-y-5"

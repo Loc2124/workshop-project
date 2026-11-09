@@ -12,7 +12,7 @@ import {
 
 export type SearchSuggestion = {
   id: string;
-  group: 'Bộ môn' | 'Khác' | 'Studio' | 'Workshop';
+  group: 'Bộ môn' | 'Studio' | 'Workshop';
   label: string;
   detail?: string;
   href: string;
@@ -39,16 +39,13 @@ export function getSearchSuggestions(
     .map((category): SearchSuggestion => ({
       id: `category-${category.id}`,
       categoryId: category.id,
-      group: category.status === 'pending' ? 'Khác' : 'Bộ môn',
+      group: 'Bộ môn',
       label: category.name,
       detail: category.status === 'pending' ? 'Khác' : undefined,
       href: `/kham-pha?type=${encodeURIComponent(category.slug)}&view=workshop`,
     }));
-  const orderedCategories = [
-    ...categories.filter((category) => category.group === 'Bộ môn'),
-    ...categories.filter((category) => category.group === 'Khác'),
-  ];
-  if (!normalizeSearchText(query)) return orderedCategories.slice(0, 5);
+  const orderedCategories = categories;
+  if (!normalizeSearchText(query)) return orderedCategories.slice(0, 3);
 
   const studios = [
     ...new Map(
@@ -77,18 +74,9 @@ export function getSearchSuggestions(
       detail: workshop.studioName,
       href: `/workshop/${workshop.slug ?? workshop.id}`,
     }));
-  const groups = [orderedCategories, studios, matches];
-  const counts = [0, 0, 0];
-  for (let remaining = 5; remaining > 0;) {
-    let added = false;
-    for (let index = 0; index < groups.length && remaining > 0; index++) {
-      if (counts[index] < groups[index].length) {
-        counts[index]++;
-        remaining--;
-        added = true;
-      }
-    }
-    if (!added) break;
-  }
-  return groups.flatMap((group, index) => group.slice(0, counts[index]));
+  return [
+    ...matches.slice(0, 3),
+    ...studios.slice(0, 3),
+    ...orderedCategories.slice(0, 3),
+  ];
 }

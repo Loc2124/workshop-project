@@ -51,7 +51,7 @@ export function WorkshopTicketCard({
             </p>
           )}
           {session && (
-            <span className="mt-4 inline-block w-fit cursor-default rounded-md bg-lime-100 px-3 py-1 text-sm font-semibold text-primary">
+            <span className="mt-4 inline-block w-fit cursor-default rounded-md bg-[#E8E4D8] px-3 py-1 text-sm font-semibold text-[#4A453C]">
               {session.availableSeats > 0
                 ? `Còn ${session.availableSeats} chỗ`
                 : 'Đã hết chỗ'}

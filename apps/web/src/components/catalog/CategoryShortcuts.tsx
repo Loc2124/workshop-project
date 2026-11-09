@@ -1,7 +1,7 @@
 import * as Popover from '@radix-ui/react-popover';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, Grid2X2Plus, LayoutGrid, Search, X } from 'lucide-react';
+import { ChevronDown, Plus, Search, X } from 'lucide-react';
 import {
   getCategoryIcon,
   getCategoryOptions,
@@ -46,7 +46,7 @@ export function CategoryShortcuts({
     ).includes(normalizeSearchText(query)),
   );
   const chipClass = (active: boolean) =>
-    `inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border px-4 py-3 font-semibold focus-visible:ring-2 focus-visible:ring-primary ${active ? 'border-primary bg-transparent text-primary' : 'border-line bg-transparent text-stone-600 hover:border-primary hover:text-primary'}`;
+    `inline-flex h-11 shrink-0 snap-start items-center gap-2 rounded-lg border px-4 font-semibold focus-visible:ring-2 focus-visible:ring-primary ${active ? 'border-[#DCEFC8] bg-[#DCEFC8] text-[#2A4710]' : 'border-[#DDD6C4] bg-transparent text-[#5E584D] hover:border-primary hover:text-primary'}`;
   const categoryLink = (category: (typeof available)[number], grid = false) => {
     const Icon = getCategoryIcon(category.id);
     return (
@@ -80,33 +80,18 @@ export function CategoryShortcuts({
   };
   return (
     <nav
-      className="category-shortcuts flex min-w-0 items-start gap-3 pb-2"
+      className="category-shortcuts flex min-w-0 items-start gap-3"
       aria-label="Khám phá workshop theo chủ đề"
     >
-      <div className="relative min-w-0 flex-1">
-        <div className="flex flex-wrap gap-3">
-          {!home && (
-            <Link
-              to="/kham-pha?view=workshop"
-              aria-current={!selected ? 'true' : undefined}
-              className={chipClass(!selected)}
-              onClick={(event) => {
-                if (onSelect) {
-                  event.preventDefault();
-                  onSelect(undefined);
-                }
-              }}
-            >
-              <LayoutGrid size={20} aria-hidden="true" />
-              Tất cả
-            </Link>
-          )}
+      <div className="relative min-w-0 flex-1 after:pointer-events-none after:absolute after:right-0 after:top-0 after:hidden after:h-11 after:w-8 after:bg-gradient-to-l after:from-paper after:to-transparent max-[480px]:after:block">
+        <div className="flex w-full snap-x snap-mandatory flex-nowrap gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:thin]">
           {available
             .filter(
               (category) =>
                 category.isVisible !== false &&
                 (category.status === 'active' || category.id === 'other'),
             )
+            .slice(0, 5)
             .map((category) => categoryLink(category))}
         </div>
         <div aria-hidden="true" className="hidden" />
@@ -119,7 +104,7 @@ export function CategoryShortcuts({
         }}
       >
         <Popover.Trigger
-          title="Tất cả môn"
+          title="Thêm bộ môn"
           className={`${chipClass(
             !home &&
               Boolean(
@@ -131,9 +116,9 @@ export function CategoryShortcuts({
               ),
           )} ${!home ? 'max-sm:px-3' : ''}`}
         >
-          <Grid2X2Plus size={18} aria-hidden="true" />
+          <Plus size={18} aria-hidden="true" />
           <span className={!home ? 'sr-only sm:not-sr-only' : undefined}>
-            Tất cả môn
+            Thêm bộ môn
           </span>
           {!home && (
             <ChevronDown
@@ -148,11 +133,13 @@ export function CategoryShortcuts({
             align="end"
             sideOffset={8}
             collisionPadding={16}
-            aria-label="Tất cả môn"
+            aria-label="Thêm bộ môn"
             className="z-50 w-[28rem] max-w-[calc(100vw-2rem)] rounded-lg border border-stone-200 bg-paper p-4 text-ink shadow-overlay"
           >
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="font-heading text-lg font-semibold">Tất cả môn</h2>
+              <h2 className="font-heading text-lg font-semibold">
+                Thêm bộ môn
+              </h2>
               <Popover.Close
                 aria-label="Đóng danh sách môn"
                 className="grid size-9 place-items-center rounded hover:bg-soft"
@@ -167,7 +154,7 @@ export function CategoryShortcuts({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Tìm bộ môn"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#7A7367]"
               />
             </label>
             <div className="max-h-[min(24rem,55dvh)] overflow-y-auto overscroll-contain">

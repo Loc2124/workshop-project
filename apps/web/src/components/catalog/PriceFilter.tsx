@@ -68,7 +68,7 @@ export function PriceFilter({ filters, onChange }: Props) {
             aria-invalid={Boolean(error)}
             onChange={(event) => setMin(event.target.value)}
             onBlur={commit}
-            className="min-h-11 w-full min-w-0 rounded-lg border border-stone-200 bg-white px-3 text-sm tabular-nums text-ink"
+            className="h-11 w-full min-w-0 rounded-lg border border-stone-200 bg-white px-3 text-sm tabular-nums text-ink placeholder:text-[#7A7367]"
           />
         </label>
         <label className="grid min-w-0 gap-1.5 text-[13px] text-stone-700">
@@ -84,7 +84,7 @@ export function PriceFilter({ filters, onChange }: Props) {
             aria-invalid={Boolean(error)}
             onChange={(event) => setMax(event.target.value)}
             onBlur={commit}
-            className="min-h-11 w-full min-w-0 rounded-lg border border-stone-200 bg-white px-3 text-sm tabular-nums text-ink"
+            className="h-11 w-full min-w-0 rounded-lg border border-stone-200 bg-white px-3 text-sm tabular-nums text-ink placeholder:text-[#7A7367]"
           />
         </label>
       </div>

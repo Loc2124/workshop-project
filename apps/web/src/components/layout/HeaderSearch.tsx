@@ -32,21 +32,21 @@ export function HeaderSearch({
         (!event.ctrlKey && !event.metaKey && event.key === '/')
       ) {
         event.preventDefault();
-        setRequested(true);
-        onOpenChange(true);
+        activate();
       }
     };
     window.addEventListener('keydown', key);
     return () => window.removeEventListener('keydown', key);
   }, [requested, onOpenChange]);
   const trigger = (
-    <div className="relative flex w-11 shrink-0 justify-end md:w-[15.25rem] lg:w-[11.25rem] xl:w-[15.25rem]">
+    <div className="relative flex w-11 shrink-0 justify-end">
       <button
         type="button"
         aria-label="Tìm kiếm"
+        title="Tìm kiếm"
         aria-expanded={open}
         onClick={activate}
-        className="grid size-11 place-items-center rounded-lg text-ink hover:bg-soft focus-visible:outline-2 focus-visible:outline-primary"
+        className="grid size-11 place-items-center rounded-md text-ink hover:bg-soft focus-visible:outline-2 focus-visible:outline-primary"
       >
         <Search size={20} aria-hidden="true" />
       </button>

@@ -65,15 +65,15 @@ export function MobileFilterSheet({
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <button
-                className="inline-flex w-full justify-center min-h-11 shrink-0 items-center gap-1.5 rounded-lg bg-forest px-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain"
+                className="inline-flex h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-lg bg-forest px-2.5 text-sm font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain"
                 type="button"
               >
                 <SlidersHorizontal aria-hidden="true" size={16} />
                 <span>Bộ lọc{activeCount > 0 && ` (${activeCount})`}</span>
               </button>
             </DialogTrigger>
-            <DialogContent className="bg-paper md:hidden" sheet>
-              <div className="flex max-h-[90dvh] flex-col">
+            <DialogContent className="h-[min(90dvh,720px)] bg-paper md:hidden" sheet>
+              <div className="flex h-full min-h-0 flex-col">
                 <header className="border-b border-line px-5 py-4 pr-14">
                   <DialogTitle className="font-heading text-xl font-semibold leading-tight text-ink">
                     Bộ lọc {view === 'studios' ? 'studio' : 'workshop'}
@@ -87,11 +87,6 @@ export function MobileFilterSheet({
                   </DialogDescription>
                 </header>
                 <div className="min-h-0 flex-1 overflow-y-auto px-5">
-                  {children && (
-                    <div className="flex flex-wrap items-center gap-3 py-3">
-                      {children}
-                    </div>
-                  )}
                   <div className="py-5">
                     <CatalogFilterFields
                       stacked
@@ -104,20 +99,25 @@ export function MobileFilterSheet({
                       provinceError={provinceError}
                     />
                   </div>
-                </div>
-                <footer className="flex items-center gap-3 border-t border-line bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-                  {activeCount > 0 && (
-                    <button
-                      className="min-h-12 flex-1 rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:border-porcelain"
-                      onClick={onClear}
-                      type="button"
-                    >
-                      Xóa lọc
-                    </button>
+                  {children && (
+                    <fieldset className="grid gap-2 pb-5">
+                      <legend className="mb-2 text-[13px] font-bold text-stone-700">Sắp xếp</legend>
+                      {children}
+                    </fieldset>
                   )}
+                </div>
+                <footer className="mt-auto flex shrink-0 items-center gap-3 border-t border-line bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  <button
+                    className="h-12 flex-1 rounded-lg border border-line px-4 text-sm font-semibold text-ink hover:border-porcelain disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={activeCount === 0}
+                    onClick={onClear}
+                    type="button"
+                  >
+                    Xóa
+                  </button>
                   <DialogClose asChild>
                     <button
-                      className="min-h-12 flex-2 rounded-lg bg-porcelain px-4 text-base font-semibold text-white hover:bg-porcelain focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain"
+                      className="h-12 flex-[2] rounded-lg bg-porcelain px-4 text-base font-semibold text-white hover:bg-porcelain focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain"
                       type="button"
                     >
                       Xem {resultCount} kết quả

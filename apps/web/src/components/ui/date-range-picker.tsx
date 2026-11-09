@@ -103,8 +103,8 @@ export function DateRangePicker({
           aria-label="Chọn khoảng ngày"
           className={
             compact
-              ? 'justify-start gap-1.5 border border-line bg-surface px-2 text-left text-[13px] font-normal text-ink hover:bg-surface'
-              : 'w-full justify-start border border-line bg-surface px-3 text-left text-base font-normal text-ink hover:bg-surface'
+              ? 'h-11 justify-start gap-1.5 border border-line bg-surface px-2 text-left text-[13px] font-normal text-ink hover:bg-surface'
+              : 'h-11 w-full justify-start border border-line bg-surface px-3 text-left text-base font-normal text-ink hover:bg-surface'
           }
           title={label}
           type="button"

@@ -46,7 +46,7 @@ export function AreaMultiSelect({
           const checked = selectedIds.includes(area.id);
           return (
             <label
-              className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm border border-line bg-surface px-3 text-sm font-medium text-ink has-checked:border-forest has-checked:bg-forest/5"
+              className="inline-flex h-11 cursor-pointer items-center gap-2 whitespace-nowrap rounded-sm border border-line bg-surface px-3 text-sm font-medium text-ink has-checked:border-forest has-checked:bg-forest/5"
               key={area.id}
             >
               <input

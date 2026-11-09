@@ -32,7 +32,7 @@ type StudioCandidate = Omit<PublicStudio, 'workshops' | 'description'> & {
   description: string;
   workshopCount: number;
   categoryIds: string[];
-  startingPrice: number;
+  startingPrice: number | null;
   availableSessions: number;
 };
 
@@ -460,33 +460,65 @@ export async function findStudioCandidates(
       workshopWhere,
       relevance,
     );
-    const countResult = await client.query<CandidateCount>(
-      `WITH ${filteredWorkshops}
-       SELECT count(DISTINCT fw."studioId")::integer AS total
-       FROM filtered_workshops fw
-       JOIN workshops active_workshop ON active_workshop.id=fw.id AND NOT active_workshop.is_discontinued
-       WHERE EXISTS (
-         SELECT 1 FROM sessions s
-         WHERE s.workshop_id = fw.id AND ${sessionWhere}
-           AND s.status = 'scheduled' AND s.starts_at > now()
-           AND COALESCE(s.registration_deadline,s.starts_at)>now()
-           AND s.capacity>s.seats_held+s.seats_sold
-       )`,
-      values,
+    const studioValues = [...values];
+    const studioConditions = [
+      `st.status = 'approved' AND NOT st.is_hidden AND NOT st.is_draft AND studio_profile_complete(st)`,
+      'st.province_id IS NOT NULL',
+    ];
+    const addStudioValue = (value: unknown) => {
+      studioValues.push(value);
+      return `$${studioValues.length}`;
+    };
+    if (filters.provinceId !== undefined)
+      studioConditions.push(`st.province_id = ${addStudioValue(filters.provinceId)}`);
+    if (filters.areaIds !== undefined)
+      studioConditions.push(`st.area_id = ANY(${addStudioValue(filters.areaIds)}::uuid[])`);
+
+    const hasWorkshopFilter = Boolean(
+      filters.categoryId || filters.level || filters.audience || filters.takeawaySameDay,
     );
-    const pageSizeParameter = `$${values.length + 1}`;
-    const offsetParameter = `$${values.length + 2}`;
-    const pageResult = await client.query<StudioCandidate>(
-      `WITH eligible_sessions AS (
+    const hasSessionFilter = Boolean(
+      filters.dateFrom || filters.dateTo || filters.priceMin !== undefined || filters.priceMax !== undefined,
+    );
+    if (hasWorkshopFilter)
+      studioConditions.push(`EXISTS (SELECT 1 FROM filtered_workshops fw WHERE fw."studioId" = st.id)`);
+    if (filters.query?.trim()) {
+      const terms = filters.query
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .toLocaleLowerCase('vi')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      const searchByStudio: string[] = [];
+      for (const term of new Set(terms)) {
+        const parameter = addStudioValue(term);
+        searchByStudio.push(
+          `(position(${parameter} in ${normalizedSql('st.name')}) > 0 OR position(${parameter} in ${normalizedSql('p.name')}) > 0)`,
+        );
+      }
+      studioConditions.push(
+        `(EXISTS (SELECT 1 FROM filtered_workshops fw WHERE fw."studioId" = st.id) OR (${searchByStudio.join(' AND ')}))`,
+      );
+    }
+    if (hasSessionFilter)
+      studioConditions.push(`EXISTS (
+        SELECT 1 FROM filtered_workshops fw
+        JOIN eligible_sessions es ON es."workshopId" = fw.id
+        JOIN workshops active_workshop ON active_workshop.id = fw.id AND NOT active_workshop.is_discontinued
+        WHERE fw."studioId" = st.id
+      )`);
+
+    const eligibleSessions = `eligible_sessions AS (
          SELECT ${sessionColumns}
          FROM sessions s
          WHERE ${sessionWhere}
            AND s.status = 'scheduled' AND s.starts_at > now()
            AND COALESCE(s.registration_deadline,s.starts_at)>now()
            AND s.capacity>s.seats_held+s.seats_sold
-       ),
-       ${filteredWorkshops},
-       filtered_studio_workshops AS (
+       )`;
+    const studioWorkshopRows = `studio_workshop_rows AS (
          SELECT fw."studioId",
            w.category_id AS "categoryId",
            min(es.price)::integer AS "startingPrice",
@@ -495,16 +527,27 @@ export async function findStudioCandidates(
            fw.relevance
          FROM filtered_workshops fw
          JOIN workshops w ON w.id = fw.id
-         JOIN eligible_sessions es ON es."workshopId" = fw.id
+         LEFT JOIN eligible_sessions es ON es."workshopId" = fw.id
          WHERE NOT w.is_discontinued
          GROUP BY fw."studioId", fw.id, w.category_id, fw.relevance
-       ),
-       studios AS (
+       )`;
+    const studioStats = `studio_stats AS (
+         SELECT "studioId",
+           count(*)::integer AS "workshopCount",
+           array_agg(DISTINCT "categoryId" ORDER BY "categoryId") AS "categoryIds",
+           min("startingPrice")::integer AS "startingPrice",
+           sum("availableSessions")::integer AS "availableSessions",
+           min("nextStartsAt") AS "nextStartsAt",
+           max(relevance) AS relevance
+         FROM studio_workshop_rows
+         GROUP BY "studioId"
+       )`;
+    const studiosCte = `studios AS (
          SELECT st.id,
            st.slug,
            ${studioTrustSql} AS "trustLevel",
-         ${studioDepositEligibleSql} AS "canCollectDeposit",
-         st.category_id AS "categoryId",
+           ${studioDepositEligibleSql} AS "canCollectDeposit",
+           st.category_id AS "categoryId",
            st.name,
            coalesce(st.description, '') AS description,
            p.name AS province,
@@ -512,23 +555,39 @@ export async function findStudioCandidates(
            st.area_id AS "areaId",
            a.name AS "areaName",
            st.address,
-           count(*)::integer AS "workshopCount",
-           array_agg(DISTINCT fsw."categoryId" ORDER BY fsw."categoryId") AS "categoryIds",
-           min(fsw."startingPrice")::integer AS "startingPrice",
-           sum(fsw."availableSessions")::integer AS "availableSessions",
-           min(fsw."nextStartsAt") AS "nextStartsAt",
-           max(fsw.relevance) AS relevance,
+           coalesce(stats."workshopCount", 0)::integer AS "workshopCount",
+           coalesce(stats."categoryIds", ARRAY[]::text[]) AS "categoryIds",
+           stats."startingPrice",
+           coalesce(stats."availableSessions", 0)::integer AS "availableSessions",
+           stats."nextStartsAt",
+           coalesce(stats.relevance, 0) AS relevance,
            CASE WHEN st.verified_at IS NOT NULL THEN 1 ELSE 0 END AS "verifiedPriority"
-         FROM filtered_studio_workshops fsw
-         JOIN studios st ON st.id = fsw."studioId"
+         FROM studios st
          JOIN provinces p ON p.id = st.province_id
          LEFT JOIN areas a ON a.id = st.area_id
-         GROUP BY st.id, p.id, a.id
-       ),
-       page AS (
+         LEFT JOIN studio_stats stats ON stats."studioId" = st.id
+         WHERE ${studioConditions.join('\n AND ')}
+       )`;
+    const ctes = `WITH ${eligibleSessions}, ${filteredWorkshops}, ${studioWorkshopRows}, ${studioStats}, ${studiosCte}`;
+    const studioOrderBy = (() => {
+      switch (filters.sort) {
+        case 'price-asc': return '"startingPrice" ASC NULLS LAST, "verifiedPriority" DESC';
+        case 'price-desc': return '"startingPrice" DESC NULLS LAST, "verifiedPriority" DESC';
+        case 'soonest': return '"nextStartsAt" ASC NULLS LAST, "verifiedPriority" DESC';
+        default: return 'relevance DESC, "verifiedPriority" DESC, "nextStartsAt" ASC NULLS LAST';
+      }
+    })();
+    const countResult = await client.query<CandidateCount>(
+      `${ctes} SELECT count(*)::integer AS total FROM studios`,
+      studioValues,
+    );
+    const pageSizeParameter = `$${studioValues.length + 1}`;
+    const offsetParameter = `$${studioValues.length + 2}`;
+    const pageResult = await client.query<StudioCandidate>(
+      `${ctes}, page AS (
          SELECT *
          FROM studios
-         ORDER BY ${getCatalogOrderBy(filters.sort)}, id
+         ORDER BY ${studioOrderBy}, id
          LIMIT ${pageSizeParameter}
          OFFSET ${offsetParameter}
        )
@@ -536,8 +595,8 @@ export async function findStudioCandidates(
          "provinceId", "areaId", "areaName", address, "workshopCount",
          "categoryIds", "startingPrice", "availableSessions"
        FROM page
-       ORDER BY ${getCatalogOrderBy(filters.sort)}, id`,
-      [...values, filters.pageSize, (filters.page - 1) * filters.pageSize],
+       ORDER BY ${studioOrderBy}, id`,
+      [...studioValues, filters.pageSize, (filters.page - 1) * filters.pageSize],
     );
 
     return {

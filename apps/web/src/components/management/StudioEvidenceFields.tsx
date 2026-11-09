@@ -134,9 +134,7 @@ export function StudioEvidenceFields({
   const galleryIds = values.photoIds.slice(1);
   return (
     <section className="space-y-5" aria-label="Liên hệ và ảnh thật của studio">
-      <h2 className="font-heading text-2xl font-semibold">
-        Liên hệ và hình ảnh
-      </h2>
+      <h2 className="font-heading text-xl font-semibold">Liên hệ</h2>
       <p className="text-sm leading-6 text-muted">
         Thông tin này giúp Open Slot xác nhận studio của bạn.
       </p>
@@ -164,6 +162,7 @@ export function StudioEvidenceFields({
           onChange={(event) => onChange('contactEmail', event.target.value)}
         />
       </div>
+      <h2 className="pt-3 font-heading text-xl font-semibold">Hình ảnh</h2>
       <div
         id="studio-photoIds"
         tabIndex={-1}

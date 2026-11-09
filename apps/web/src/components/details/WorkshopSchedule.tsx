@@ -107,7 +107,7 @@ export function WorkshopSchedule({
   const balanceAmount = total === undefined ? 0 : total - depositAmount;
   const locked = pending || Boolean(confirmed);
   const primary =
-    'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-600';
+    'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary disabled:cursor-not-allowed disabled:border disabled:border-[#DDD6C4] disabled:bg-[#E6E1D3] disabled:text-[#8A8375] disabled:opacity-100';
   const location = [
     workshopText(workshop.studioName),
     workshopText(workshop.province),
@@ -207,7 +207,7 @@ export function WorkshopSchedule({
         />
         {workshopSessionRange(session)}
       </time>
-      <span className="rounded-md bg-lime-100 px-2.5 py-1 text-xs font-semibold text-primary">
+      <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${confirmed ? 'bg-[#DCEFC8] text-[#2A4710]' : sessionStatus(session, now) === 'available' && session.availableSeats <= 3 ? 'bg-secondary text-white' : sessionStatus(session, now) === 'available' ? 'bg-[#DCEFC8] text-[#2A4710]' : 'bg-[#E8E4D8] text-[#4A453C]'}`}>
         {confirmed
           ? 'Đã đặt ' + confirmed.quantity + ' chỗ'
           : sessionStatus(session, now) === 'available'
@@ -295,8 +295,8 @@ export function WorkshopSchedule({
               ))}
             </fieldset>
           ) : (
-            <p className="text-sm text-stone-700">
-              Các buổi trước đã kết thúc. Studio chưa công bố lịch tiếp theo.
+            <p className="text-sm font-semibold text-stone-700">
+              {sessions.length === 0 ? 'Hiện chưa có lịch.' : 'Các buổi trước đã kết thúc. Studio chưa công bố lịch tiếp theo.'}
             </p>
           )}
           {sessions.length > 1 && !showOtherSessions && (
@@ -309,7 +309,7 @@ export function WorkshopSchedule({
             </button>
           )}
           {!initial && sessions.length === 0 && !confirmed && (
-            <ScheduleNotification workshopId={workshop.id} />
+            <ScheduleNotification workshopId={workshop.id} primary />
           )}
           {selected && (
             <>
@@ -452,7 +452,7 @@ export function WorkshopSchedule({
               )}
             </>
           )}
-          <button
+          {sessions.length > 0 && <button
             type="submit"
             disabled={!selected || locked}
             aria-describedby={error ? 'booking-error' : undefined}
@@ -462,10 +462,12 @@ export function WorkshopSchedule({
               ? 'Đang đặt chỗ…'
               : confirmed
                 ? 'Đã đặt chỗ'
-                : paymentChoice === 'deposit'
+                : !selected
+                  ? 'Hiện chưa có lịch'
+                  : paymentChoice === 'deposit'
                   ? 'Đặt chỗ · Cọc ' + formatPrice(depositAmount) + ' đ'
                   : 'Đặt chỗ · Trả tại studio'}
-          </button>
+          </button>}
           {error && (
             <p id="booking-error" role="alert" className="text-sm text-brick">
               {error}
@@ -499,7 +501,7 @@ export function WorkshopSchedule({
           )}
         </form>
       </section>
-      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:hidden">
+      {sessions.length > 0 && <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:hidden">
         {total !== undefined && (
           <span className="flex min-w-0 flex-col">
             <span className="text-lg font-bold tabular-nums">
@@ -519,7 +521,7 @@ export function WorkshopSchedule({
         >
           {confirmed ? 'Xem đặt chỗ' : selected ? 'Chọn lịch' : 'Xem lịch'}
         </a>
-      </div>
+      </div>}
     </>
   );
 }

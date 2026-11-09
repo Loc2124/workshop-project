@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowDownWideNarrow } from 'lucide-react';
+import { CalendarDays, ChevronDown } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import type { AreaOption } from '../components/catalog/AreaMultiSelect';
 import { ExploreFilters } from '../components/catalog/ExploreFilters';
@@ -8,6 +9,8 @@ import { Pagination } from '../components/catalog/Pagination';
 import type { ProvinceOption } from '../components/catalog/ProvinceCombobox';
 import { ViewToggle, type CatalogView } from '../components/catalog/ViewToggle';
 import { WorkshopGrid } from '../components/catalog/WorkshopGrid';
+import { ActiveFilterChips } from '../components/catalog/ActiveFilterChips';
+import { countActiveFilters } from '../components/catalog/MobileFilterSheet';
 import { PageBreadcrumb } from '../components/layout/PageBreadcrumb';
 import { PageContainer } from '../components/layout/PageContainer';
 import { categories, getCategoryMeta } from '../constants/categories';
@@ -88,10 +91,6 @@ export function ExplorePage() {
   const defaultProvinceApplied = useRef(false);
   const client = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  const urlQuery = searchParams.get('q') ?? '';
-  const [searchDraft, setSearchDraft] = useState(urlQuery);
-  const paramsRef = useRef(searchParams);
-  paramsRef.current = searchParams;
   const categoryQuery = useCategoriesQuery();
   const categoriesReady = categoryQuery.isSuccess;
   const { provinces: provinceOptions, error: provinceError } = useProvinces();
@@ -100,21 +99,7 @@ export function ExplorePage() {
     [searchParams, provinceOptions, categoriesReady, categories],
   );
   const { filters, sort, view, query: appliedQuery } = parsedUrl;
-  useEffect(() => setSearchDraft(urlQuery), [urlQuery]);
-  useEffect(() => {
-    const normalized = searchDraft.trim();
-    if (normalized === urlQuery) return;
-    const timer = window.setTimeout(() => {
-      const params = new URLSearchParams(paramsRef.current);
-      if (normalized) params.set('q', normalized);
-      else params.delete('q');
-      params.delete('page');
-      if (params.toString() !== paramsRef.current.toString())
-        setSearchParams(params, { replace: true });
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [searchDraft, urlQuery, setSearchParams]);
-  const [, setAreaOptions] = useState<AreaOption[]>([]);
+  const [areaOptions, setAreaOptions] = useState<AreaOption[]>([]);
   const [locationError, setLocationError] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const requestFilters = useMemo(
@@ -183,7 +168,14 @@ export function ExplorePage() {
     params.delete('page');
     replaceParamsIfChanged(params, searchParams, setSearchParams);
   };
-  const clearFilters = () => updateFilters(defaultFilters);
+  const clearFilters = () => {
+    const params = new URLSearchParams(searchParams);
+    writeFilters(params, defaultFilters, provinceOptions);
+    params.delete('q');
+    params.delete('page');
+    window.localStorage.removeItem(provincePreferenceKey);
+    replaceParamsIfChanged(params, searchParams, setSearchParams);
+  };
   const setPage = (nextPage: number) => {
     const params = new URLSearchParams(searchParams);
     writeFilters(
@@ -348,27 +340,10 @@ export function ExplorePage() {
           locating={isLocating}
           view={view}
         >
-          <label className="sr-only" htmlFor="explore-search">
-            Tìm workshop
-          </label>
-          <input
-            id="explore-search"
-            className="min-h-11 w-40 rounded-lg border border-line bg-surface px-3 text-sm md:w-52"
-            type="search"
-            value={searchDraft}
-            onChange={(event) => setSearchDraft(event.target.value)}
-            placeholder="Tìm workshop"
-          />
-          <ViewToggle onChange={updateView} value={view} />
-          <label className="flex min-h-11 items-center gap-2 text-sm font-semibold text-ink">
-            <ArrowDownWideNarrow
-              aria-hidden="true"
-              size={17}
-              className="hidden shrink-0 xl:block"
-            />
-            <span className="sr-only xl:not-sr-only">Sắp xếp</span>
+          <label className="relative flex h-11 items-center gap-2 text-sm font-semibold text-ink">
+            <span className="sr-only">Sắp xếp</span>
             <select
-              className="min-h-11 w-32 min-w-0 rounded-lg border border-line bg-surface px-2 text-[13px] font-semibold text-ink focus:border-primary xl:w-auto xl:px-3"
+              className="h-11 w-40 min-w-0 appearance-none rounded-lg border border-[#DDD6C4] bg-white py-0 pl-3 pr-9 text-[13px] font-semibold text-ink placeholder:text-[#7A7367] focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 md:w-48"
               value={sort}
               onChange={(event) => updateSort(event.target.value as SortOption)}
             >
@@ -377,20 +352,36 @@ export function ExplorePage() {
               <option value="price-asc">Giá thấp đến cao</option>
               <option value="price-desc">Giá cao đến thấp</option>
             </select>
+            <ChevronDown aria-hidden="true" size={16} className="pointer-events-none absolute right-3 text-[#5E584D]" />
           </label>
         </ExploreFilters>
+        {(countActiveFilters(filters) > 0 || appliedQuery.trim()) && (
+          <div className="flex flex-wrap items-center gap-x-3">
+            <ActiveFilterChips
+              filters={filters}
+              provinces={provinceOptions}
+              areas={areaOptions}
+              onChange={updateFilters}
+              compact
+            />
+            {countActiveFilters(filters) > 0 && <button type="button" onClick={clearFilters} className="h-9 shrink-0 text-sm font-semibold text-primary underline">Xóa bộ lọc</button>}
+          </div>
+        )}
         <section
           aria-labelledby="workshops-title"
           className="pt-6 scroll-mt-[calc(var(--filter-bar-height,9rem)+3.5rem)]"
           id="workshops"
         >
+          <div className="mb-4 flex justify-start">
+            <ViewToggle onChange={updateView} value={view} />
+          </div>
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <h2
               id="workshops-title"
               className="font-heading text-xl font-semibold"
             >
-              {view === 'studios' ? 'Studio nổi bật' : 'Workshop sắp tới'} ·{' '}
-              <span aria-live="polite">{totalCount}</span>
+              {view === 'studios' ? 'Studio nổi bật' : 'Workshop sắp tới'}
+              {totalCount > 0 && <> · <span aria-live="polite">{totalCount}</span></>}
             </h2>
             {titleLocation && (
               <p className="text-sm text-stone-600">Ở {titleLocation}</p>
@@ -403,6 +394,16 @@ export function ExplorePage() {
             loading={
               view === 'studios' ? studiosCatalog.isLoading : catalog.isLoading
             }
+            emptyState={view === 'workshops' && totalCount === 0 ? (
+              <div className="mx-auto flex max-w-md flex-col items-center">
+                <CalendarDays aria-hidden="true" className="mb-4 text-[#5E584D]" size={30} />
+                <h3 className="font-heading text-lg font-semibold text-ink">Chưa có workshop {filters.categoryId ? getCategoryMeta(filters.categoryId).name : ''} phù hợp</h3>
+                <div className="mt-5 flex flex-wrap justify-center gap-3">
+                  <button type="button" onClick={clearFilters} className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover">Xóa bộ lọc</button>
+                  <Link to={`/dang-nhap?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`} className="inline-flex h-11 items-center justify-center rounded-lg border border-[#DDD6C4] bg-white px-4 text-sm font-semibold text-[#2A4710] hover:bg-[#DCEFC8]">Nhận thông báo khi có lịch</Link>
+                </div>
+              </div>
+            ) : undefined}
             studios={visibleStudios}
             view={view}
             workshops={visibleWorkshops}

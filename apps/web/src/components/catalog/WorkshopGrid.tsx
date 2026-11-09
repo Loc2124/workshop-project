@@ -1,4 +1,5 @@
 import { cn } from '../../lib/utils';
+import type { ReactNode } from 'react';
 import { TicketCard } from '../tickets';
 import type { Workshop } from '../../types/workshop';
 import type { StudioListing } from '../../types/studio';
@@ -13,6 +14,8 @@ type Props = {
   columns?: 'default' | 'home';
   loading: boolean;
   error: boolean;
+  emptyMessage?: string;
+  emptyState?: ReactNode;
 };
 
 export function WorkshopGrid({
@@ -22,6 +25,8 @@ export function WorkshopGrid({
   columns = 'default',
   loading,
   error,
+  emptyMessage,
+  emptyState,
 }: Props) {
   const gridClass = cn(
     'grid grid-cols-1 items-stretch gap-5 md:grid-cols-2',
@@ -47,7 +52,7 @@ export function WorkshopGrid({
           ? 'Đang tìm workshop phù hợp…'
           : error
             ? 'Chưa tải được danh sách workshop. Vui lòng thử lại sau.'
-            : `Chưa có ${view === 'studios' ? 'studio' : 'workshop'} phù hợp. Hãy thử thay đổi bộ lọc.`}
+            : emptyState ?? emptyMessage ?? `Chưa có ${view === 'studios' ? 'studio' : 'workshop'} phù hợp. Hãy thử thay đổi bộ lọc.`}
       </div>
     );
   }

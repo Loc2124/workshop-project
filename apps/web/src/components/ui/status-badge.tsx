@@ -2,11 +2,11 @@ import type { ComponentProps } from 'react';
 import { cn } from '../../lib/utils';
 
 const tones = {
-  gray: 'bg-neutral-100 text-neutral-700',
-  yellow: 'bg-amber-50 text-amber-800',
-  green: 'bg-emerald-50 text-emerald-800',
-  red: 'bg-red-50 text-red-800',
-  orange: 'bg-orange-50 text-orange-800',
+  gray: 'bg-[#E8E4D8] text-[#4A453C]',
+  yellow: 'bg-[#FBE8B5] text-[#7A4B00]',
+  green: 'bg-[#DCEFC8] text-[#2A4710]',
+  red: 'bg-[#FCE0DB] text-[#9B2C1A]',
+  orange: 'bg-[#FCE0DB] text-[#9B2C1A]',
 } as const;
 const statuses: Record<string, { label: string; tone: keyof typeof tones }> = {
   draft: { label: 'Nháp', tone: 'gray' },
@@ -23,12 +23,12 @@ const statuses: Record<string, { label: string; tone: keyof typeof tones }> = {
   inactive: { label: 'Ngừng hoạt động', tone: 'gray' },
   blocked: { label: 'Đã khóa', tone: 'red' },
   scheduled: { label: 'Đã lên lịch', tone: 'green' },
-  cancelled: { label: 'Đã hủy', tone: 'red' },
+  cancelled: { label: 'Đã hủy', tone: 'gray' },
   confirmed: { label: 'Đã xác nhận', tone: 'green' },
   completed: { label: 'Hoàn thành', tone: 'gray' },
   paid: { label: 'Đã thanh toán', tone: 'green' },
   expired: { label: 'Hết hạn', tone: 'gray' },
-  refund_needed: { label: 'Cần hoàn tiền', tone: 'orange' },
+  refund_needed: { label: 'Cần hoàn tiền', tone: 'red' },
   resolved: { label: 'Đã xử lý', tone: 'green' },
   dismissed: { label: 'Bỏ qua', tone: 'gray' },
 };

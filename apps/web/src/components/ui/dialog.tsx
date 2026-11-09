@@ -25,14 +25,14 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 type DialogContentProps = React.ComponentPropsWithoutRef<
   typeof DialogPrimitive.Content
-> & { sheet?: boolean; closeDisabled?: boolean };
+> & { sheet?: boolean; closeDisabled?: boolean; hideClose?: boolean };
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
 >(
   (
-    { className, children, sheet = false, closeDisabled = false, ...props },
+    { className, children, sheet = false, closeDisabled = false, hideClose = false, ...props },
     ref,
   ) => (
     <DialogPortal>
@@ -48,13 +48,13 @@ const DialogContent = React.forwardRef<
         {...props}
       >
         {children}
-        <DialogPrimitive.Close
+        {!hideClose && <DialogPrimitive.Close
           aria-label="Đóng"
           disabled={closeDisabled}
           className="absolute right-4 top-4 grid size-11 place-items-center rounded-md text-muted hover:bg-paper focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-porcelain"
         >
           <X aria-hidden="true" size={18} />
-        </DialogPrimitive.Close>
+        </DialogPrimitive.Close>}
       </DialogPrimitive.Content>
     </DialogPortal>
   ),
