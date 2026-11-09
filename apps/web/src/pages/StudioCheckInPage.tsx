@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Camera, CameraOff, Search } from 'lucide-react';
+import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser';
 import { z } from 'zod';
 import { useAuth } from '../hooks/useAuth';
 import { useMyStudios } from '../hooks/useOwnedStudios';
@@ -32,11 +33,6 @@ const ticketSchema = z.object({
   canCheckIn: z.boolean(),
 });
 type Ticket = z.infer<typeof ticketSchema>;
-
-type Detector = {
-  detect(source: HTMLVideoElement): Promise<{ rawValue: string }[]>;
-};
-type DetectorConstructor = new (options: { formats: string[] }) => Detector;
 
 export function StudioCheckInPage() {
   const { user, isLoading } = useAuth();
@@ -85,60 +81,39 @@ export function StudioCheckInPage() {
   useEffect(() => {
     if (!scanning) return;
     let stopped = false;
-    let stream: MediaStream | null = null;
-    let timer: ReturnType<typeof setInterval> | undefined;
+    let controls: IScannerControls | undefined;
     scannedRef.current = false;
     const start = async () => {
-      const Constructor = (
-        window as typeof window & { BarcodeDetector?: DetectorConstructor }
-      ).BarcodeDetector;
-      if (!Constructor || !navigator.mediaDevices?.getUserMedia) {
+      const video = videoRef.current;
+      if (!video || !navigator.mediaDevices?.getUserMedia) {
         setMessage(
-          'Thiết bị này chưa hỗ trợ quét QR bằng camera. Hãy nhập mã vé.',
+          'Không truy cập được camera. Hãy mở trang bằng HTTPS, cấp quyền camera hoặc nhập mã vé.',
         );
         setScanning(false);
         return;
       }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false,
-        });
-        if (stopped) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        const video = videoRef.current;
-        if (!video) return;
-        video.srcObject = stream;
-        await video.play();
-        const detector = new Constructor({ formats: ['qr_code'] });
-        let detecting = false;
-        timer = setInterval(() => {
-          if (scannedRef.current || detecting || video.readyState < 2) return;
-          detecting = true;
-          void detector
-            .detect(video)
-            .then((found) => {
-              const value = found[0]?.rawValue;
-              if (!value || scannedRef.current || stopped) return;
-              scannedRef.current = true;
-              setCode(value.replace(/^OS-TICKET:/i, ''));
-              setScanning(false);
-              void lookup(value);
-            })
-            .catch(() => {
-              setMessage(
-                'Không đọc được khung hình. Hãy thử lại hoặc nhập mã vé.',
-              );
-            })
-            .finally(() => {
-              detecting = false;
-            });
-        }, 350);
-      } catch {
+        const reader = new BrowserQRCodeReader();
+        controls = await reader.decodeFromVideoDevice(
+          undefined,
+          video,
+          (result) => {
+            const value = result?.getText();
+            if (!value || scannedRef.current || stopped) return;
+            scannedRef.current = true;
+            controls?.stop();
+            setCode(value.replace(/^OS-TICKET:/i, ''));
+            setScanning(false);
+            void lookup(value);
+          },
+        );
+        if (stopped) controls.stop();
+      } catch (error) {
+        if (stopped) return;
         setMessage(
-          'Không mở được camera. Hãy cấp quyền camera hoặc nhập mã vé.',
+          error instanceof Error && error.name === 'NotAllowedError'
+            ? 'Bạn chưa cấp quyền camera cho trang này. Hãy cho phép camera trong cài đặt trình duyệt rồi thử lại.'
+            : 'Không mở được camera. Hãy dùng trang HTTPS, kiểm tra quyền camera hoặc nhập mã vé.',
         );
         setScanning(false);
       }
@@ -146,9 +121,7 @@ export function StudioCheckInPage() {
     void start();
     return () => {
       stopped = true;
-      if (timer) clearInterval(timer);
-      if (stream) stream.getTracks().forEach((track) => track.stop());
-      if (videoRef.current) videoRef.current.srcObject = null;
+      controls?.stop();
     };
   }, [lookup, scanning]);
 
