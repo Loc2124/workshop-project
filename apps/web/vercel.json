@@ -2,9 +2,9 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://workshop-api-h00x.onrender.com/:path*"
+      "destination": "https://api.openslot.io.vn/:path*"
     },
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {

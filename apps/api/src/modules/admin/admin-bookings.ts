@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query, withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
 import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
+import { queueBookingEmail } from '../../services/booking-emails.js';
 const status = z.enum(['pending', 'confirmed', 'cancelled', 'completed']);
 const date = z.iso.date();
 export const adminBookingsQuery = z
@@ -314,5 +315,6 @@ export async function changeAdminBooking(
       }
     }
   });
+  if (input.status === 'cancelled') queueBookingEmail(id, 'booking_cancelled');
   return getAdminBooking(id);
 }

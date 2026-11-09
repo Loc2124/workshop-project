@@ -1,10 +1,13 @@
 import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'node:crypto';
 import jwt from 'jsonwebtoken';
+import { newPasswordSchema } from '@workshop/shared';
 import { loadConfig } from '../../config.js';
 import { AppError } from '../../errors/app-error.js';
 import {
   createAuthSession,
+  createPasswordReset,
+  completePasswordReset,
   createUser,
   findActiveAuthSession,
   findUserByEmail,
@@ -16,6 +19,8 @@ import {
 } from './auth.repository.js';
 import type { LoginInput, RegisterInput } from './auth.schemas.js';
 import { assertPasswordNotCompromised } from './password-check.js';
+import { queueEmail } from '../../services/email.js';
+import { emailTemplate } from '../../services/templates.js';
 
 const {
   JWT_SECRET: jwtSecret,
@@ -42,7 +47,7 @@ export async function registerCustomer(
   }
 
   await assertPasswordNotCompromised(input.password);
-  const passwordHash = await argon2.hash(input.password);
+  const passwordHash = await hashPassword(input.password);
   let created: Awaited<ReturnType<typeof createUser>>;
   try {
     created = await createUser(email, passwordHash, fullName);
@@ -56,6 +61,71 @@ export async function registerCustomer(
   return {
     user: serializePublicUser(created),
   };
+}
+
+export async function requestPasswordReset(emailInput: string): Promise<void> {
+  const user = await findUserByEmail(emailInput.trim().toLowerCase());
+  if (!user || user.isBlocked) return;
+  const token = randomBytes(32).toString('hex');
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  await createPasswordReset(user.id, tokenHash);
+  const resetUrl = new URL('/dat-lai-mat-khau', loadConfig().CLIENT_URL);
+  resetUrl.searchParams.set('token', token);
+  const content = emailTemplate({
+    title: 'Đặt lại mật khẩu Open Slot',
+    paragraphs: [
+      `Xin chào ${user.fullName}, chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.`,
+      'Liên kết có hiệu lực trong 30 phút và chỉ dùng được một lần. Nếu bạn không yêu cầu, hãy bỏ qua email này.',
+    ],
+    cta: { label: 'Đặt lại mật khẩu', href: resetUrl.toString() },
+  });
+  queueEmail({
+    to: user.email,
+    subject: 'Đặt lại mật khẩu Open Slot',
+    ...content,
+    type: 'password_reset',
+    idempotencyKey: `password-reset:${tokenHash}`,
+  });
+}
+
+export async function resetPassword(
+  token: string,
+  password: string,
+): Promise<boolean> {
+  const parsed = newPasswordSchema.safeParse(password);
+  if (!parsed.success)
+    throw new AppError(
+      422,
+      'UNPROCESSABLE_ENTITY',
+      parsed.error.issues[0]?.message ?? 'Mật khẩu chưa đạt yêu cầu.',
+    );
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  const user = await completePasswordReset(tokenHash, await hashPassword(password));
+  if (!user) return false;
+  const content = emailTemplate({
+    title: 'Mật khẩu đã được thay đổi',
+    paragraphs: [
+      `Xin chào ${user.fullName}, mật khẩu tài khoản Open Slot của bạn vừa được thay đổi.`,
+      'Tất cả phiên đăng nhập cũ đã được kết thúc. Nếu bạn không thực hiện thay đổi này, hãy liên hệ hotro@openslot.vn ngay.',
+    ],
+    cta: {
+      label: 'Đăng nhập Open Slot',
+      href: new URL('/dang-nhap', loadConfig().CLIENT_URL).toString(),
+    },
+  });
+  queueEmail({
+    to: user.email,
+    subject: 'Mật khẩu Open Slot đã được thay đổi',
+    ...content,
+    type: 'password_changed',
+    idempotencyKey: `password-changed:${tokenHash}`,
+  });
+  return true;
+}
+
+export async function hashPassword(password: string): Promise<string> {
+  await assertPasswordNotCompromised(password);
+  return argon2.hash(password);
 }
 
 export async function loginCustomer(input: LoginInput): Promise<{

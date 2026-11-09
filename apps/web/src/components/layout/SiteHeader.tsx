@@ -79,6 +79,17 @@ export function SiteHeader() {
   }, [menuOpen]);
   function active(to: string) {
     const current = pathname.replace(/\/+$/, '') || '/';
+    return (
+      current === to ||
+      (to === '/kham-pha' &&
+        (current === '/explore' ||
+          current.startsWith('/studios/') ||
+          current.startsWith('/workshop/') ||
+          current.startsWith('/workshops/')))
+    );
+  }
+  function currentPage(to: string) {
+    const current = pathname.replace(/\/+$/, '') || '/';
     return current === to || (to === '/kham-pha' && current === '/explore');
   }
   const navigation = (mobile = false) =>
@@ -87,7 +98,7 @@ export function SiteHeader() {
         key={to}
         to={to}
         onClick={closeMenus}
-        aria-current={active(to) ? 'page' : undefined}
+        aria-current={currentPage(to) ? 'page' : undefined}
         className={`inline-flex items-center underline-offset-8 transition-colors hover:text-primary ${mobile ? 'min-h-12 w-full rounded-lg px-3 py-2 text-base' : 'min-h-11 text-sm'} ${active(to) ? mobile ? 'bg-[#DCEFC8] font-semibold text-[#2A4710]' : 'font-semibold text-primary underline' : 'font-normal text-ink'}`}
       >
         {label}

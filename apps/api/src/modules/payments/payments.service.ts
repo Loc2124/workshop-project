@@ -6,6 +6,7 @@ import {
   processPaymentWebhook,
 } from './payments.repository.js';
 import { createPaymentProvider } from './providers/index.js';
+import { queuePaidBookingEmail } from '../../services/booking-emails.js';
 
 export async function confirmStudioPayment(
   studioId: string,
@@ -48,6 +49,8 @@ export async function receivePaymentWebhook(
     verification,
     payload,
   );
+  if (verification.signatureValid && verification.success && verification.orderCode !== null)
+    queuePaidBookingEmail(String(verification.orderCode));
   return { ...verification, result };
 }
 

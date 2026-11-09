@@ -21,6 +21,7 @@ import {
   quoteSeatCancellation,
   cancelBookingSeats,
 } from './partial-seats.repository.js';
+import { queueBookingEmail } from '../../services/booking-emails.js';
 
 export async function createCustomerBooking(
   userId: string,
@@ -86,6 +87,7 @@ export async function createCustomerBooking(
     };
   }
   if (!result.booking.checkoutRequired) {
+    queueBookingEmail(result.booking.id, 'booking_confirmed');
     return { booking: result.booking, checkoutUrl: null };
   }
 
@@ -128,6 +130,7 @@ export async function createCustomerBooking(
     await failCheckout(result.booking.id);
     throw new Error('Unable to persist the PayOS checkout link.');
   }
+  queueBookingEmail(result.booking.id, 'booking_hold');
   return {
     booking: result.booking,
     checkoutUrl: payment.checkoutUrl,
@@ -173,6 +176,7 @@ export async function cancelBookingForCustomer(
       'Không thể hủy đơn ở trạng thái hiện tại hoặc đã quá hạn hủy.',
     );
   }
+  queueBookingEmail(bookingId, 'booking_cancelled');
   return { ok: true };
 }
 

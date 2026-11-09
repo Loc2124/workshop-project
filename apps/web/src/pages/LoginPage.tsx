@@ -1,6 +1,6 @@
 import { LoadingState } from '../components/ui/LoadingState';
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { AuthField } from '../components/ui/auth-field';
 import { AuthLayout } from '../components/layout/AuthLayout';
@@ -23,7 +23,6 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [forgotNotice, setForgotNotice] = useState(false);
   const registrationComplete = location.state?.registrationComplete === true;
 
   function clearField(field: string) {
@@ -122,20 +121,14 @@ export function LoginPage() {
                 clearField('password');
               }}
               labelAction={
-                <button
-                  type="button"
+                <Link
                   className="text-sm text-primary underline-offset-4 hover:underline"
-                  onClick={() => setForgotNotice(true)}
+                  to="/quen-mat-khau"
                 >
                   Quên mật khẩu?
-                </button>
+                </Link>
               }
             />
-            {forgotNotice && (
-              <p role="status" className="text-sm text-muted">
-                Chức năng khôi phục mật khẩu chưa được hỗ trợ.
-              </p>
-            )}
             <label
               className="flex min-h-8 cursor-pointer items-center gap-3 text-sm"
               htmlFor="rememberMe"

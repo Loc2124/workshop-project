@@ -3,6 +3,7 @@ import { calculateDeposit } from '@workshop/shared';
 import { AppError } from '../../errors/app-error.js';
 import { query, withTransaction } from '../../db/pool.js';
 import { releaseExpiredHolds } from '../bookings/bookings.repository.js';
+import { loadConfig } from '../../config.js';
 import {
   cancelChangedScheduleBookings,
   expireScheduleResponses,
@@ -295,7 +296,7 @@ export async function updateSession(
           sessionId,
           existing.scheduleVersion + 1,
           `Giờ mới: ${when(startsAt)}–${when(endsAt)}. Vui lòng chọn giữ chỗ hoặc hủy trước ${when(responseDeadline!)}. Nếu không phản hồi, đặt chỗ sẽ tự hủy và số tiền đã trả được hoàn toàn bộ trong tối đa 7 ngày làm việc.`,
-          process.env.WEB_ORIGIN ?? 'http://localhost:3000',
+          loadConfig().CLIENT_URL,
         ],
       );
       await client.query(

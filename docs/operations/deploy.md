@@ -16,7 +16,8 @@ Trang khám phá có thể xin quyền vị trí trình duyệt để chọn t�
 
 - API có cấu hình deploy trên Render và endpoint `GET /health`.
 - Frontend trong `apps/web` có giao diện khách, xác thực, đặt chỗ, lịch sử và vé; xem README để biết phạm vi còn thiếu.
-- Migration booking/thanh toán mới nhất trong repository là `034_customer_booking_payments.sql`. Chưa xác nhận URL công khai, giá trị `WEB_ORIGIN` production hoặc migration đã chạy ở từng database; kiểm tra lịch sử trước khi triển khai.
+- Domain web production: `https://www.openslot.io.vn/`. DNS đã được cấu hình; đặt `WEB_ORIGIN`, `CLIENT_URL`, `PAYOS_RETURN_URL` và `PAYOS_CANCEL_URL` trên Render dùng origin `https://www.openslot.io.vn` (không có dấu `/` cuối). Xác nhận TLS và domain đã được thêm vào project hosting trước khi smoke test.
+- Migration booking/thanh toán mới nhất trong repository là `034_customer_booking_payments.sql`. Chưa xác nhận migration đã chạy ở từng database; kiểm tra lịch sử trước khi triển khai.
 - `packages/shared` được biên dịch sang JavaScript trước khi chạy API; build command trên Render biên dịch package này trước workspace API.
 - `JWT_SECRET` phải là chuỗi base64url ngẫu nhiên dài ít nhất 43 ký tự, có tối thiểu 16 ký tự khác nhau. Sinh bằng `node -e "console.log(require('node:crypto').randomBytes(32).toString('base64url'))"`; đặt trực tiếp trong secret manager/dashboard, không ghi vào Git hoặc log.
 - Production yêu cầu `WEB_ORIGIN` dùng HTTPS. Nếu thay `JWT_SECRET`, access token hiện hành không còn hợp lệ nhưng phiên có refresh token còn hạn có thể lấy access token mới; để thu hồi mọi phiên, thu hồi các dòng `auth_sessions` của user.
@@ -37,12 +38,14 @@ Cấu hình static site với root repository hoặc thư mục phù hợp monor
 - Install: `npm ci --include=dev` tại root.
 - Build: `npm run build --workspace @workshop/web`.
 - Publish directory: thư mục output Vite, thường là `apps/web/dist`.
-- Build environment: `VITE_API_BASE_URL=https://<api-domain>`.
-- For the Vercel/Render production deployment, set `VITE_API_BASE_URL=/api`; the Vercel rewrite proxies API calls to Render under the web origin. On Render set `AUTH_COOKIE_PATH_PREFIX=/api` (the Blueprint default) so auth cookies use paths that match `/api/auth/*` in the browser. Set `WEB_ORIGIN` to the exact Vercel production origin, such as `https://<project>.vercel.app`.
+- Build environment for direct API access: `VITE_API_BASE_URL=https://api.openslot.io.vn`. For production Vercel, use `/api` so requests pass through the configured Vercel rewrite to the API custom domain.
+- For the Vercel/Render production deployment, set `VITE_API_BASE_URL=/api`; the Vercel rewrite proxies API calls to Render under the web origin. On Render set `AUTH_COOKIE_PATH_PREFIX=/api` (the Blueprint default) so auth cookies use paths that match `/api/auth/*` in the browser. Set both `WEB_ORIGIN` and `CLIENT_URL` to `https://www.openslot.io.vn`.
+- In Vercel Project Settings → Environment Variables, set `VITE_API_BASE_URL=/api` and `VITE_REVERSE_GEOCODE_URL=https://nominatim.openstreetmap.org/reverse` for Production, then redeploy. Do not add API/database/payment/email secrets to Vercel; email and PayOS credentials belong in Render only.
+- In Vercel Project Settings → Domains, attach `www.openslot.io.vn` to the production project and choose it as the primary domain. Configure the apex `openslot.io.vn` to redirect to `www` if it is also attached.
 - Reverse geocoding: `VITE_REVERSE_GEOCODE_URL=https://nominatim.openstreetmap.org/reverse` (tọa độ trình duyệt được gửi tới endpoint này khi người dùng cho phép định vị).
 - SPA fallback: mọi đường dẫn frontend cần được rewrite về `/index.html`.
 
-Output hiện tại là `apps/web/dist`; dùng cấu hình rewrite/cache trong `apps/web/vercel.json` khi triển khai Vercel. Thư mục `apps/web/build` chứa mã hỗ trợ build cần được commit. Chỉ đưa URL API công khai vào biến `VITE_*`; không đưa database URL, JWT secret, PayOS key hoặc secret nào vào bundle frontend. Sau khi có domain web, đặt `WEB_ORIGIN` ở Render thành origin đầy đủ, ví dụ `https://workshop.example.com`.
+Output hiện tại là `apps/web/dist`; dùng cấu hình rewrite/cache trong `apps/web/vercel.json` khi triển khai Vercel. Thư mục `apps/web/build` chứa mã hỗ trợ build cần được commit. Chỉ đưa URL API công khai vào biến `VITE_*`; không đưa database URL, JWT secret, PayOS key hoặc secret nào vào bundle frontend. Domain web production là `https://www.openslot.io.vn`; cấu hình origin trên Render không kèm dấu `/` cuối.
 
 ## 3. Biến môi trường API
 
@@ -92,13 +95,13 @@ Không chạy test hoặc `migrate:test` trên project dev/demo. Migration đã 
 
 ## 6. Smoke test sau deploy
 
-1. Mở `https://<api-domain>/health`; cần nhận HTTP 200 và `{"ok":true}`.
+1. Mở `https://api.openslot.io.vn/health`; cần nhận HTTP 200 và `{"ok":true}`.
 2. Mở web production và kiểm tra assets được tải, các route SPA tải lại trực tiếp được.
 3. Gọi API catalog/booking từ web và kiểm tra CORS chỉ cho phép origin đã cấu hình.
 4. Đăng nhập và xác nhận cookie được lưu với thuộc tính phù hợp; không chia sẻ giá trị cookie.
 5. Ghi lại URL HTTPS, thời điểm và kết quả smoke test; không ghi secret.
 
-Migration dev/demo, URL công khai, kết nối API tới Supabase và giá trị `WEB_ORIGIN` production chưa được xác nhận trong repository.
+Migration dev/demo và kết nối API tới Supabase chưa được xác nhận trong repository. Domain web production là `https://www.openslot.io.vn`; `render.yaml` đặt sẵn `WEB_ORIGIN`, `CLIENT_URL` và URL return/cancel PayOS theo domain này.
 
 ## 7. Booking, thanh toán và đối soát
 
@@ -113,7 +116,7 @@ Migration dev/demo, URL công khai, kết nối API tới Supabase và giá tr�
 Nhắc lịch chạy trong tiến trình API, không thay thế dịch vụ email. Phải kiểm tra khả năng chạy lại sau khi host ngủ và không gửi nhắc lịch cũ. Chưa có biến môi trường/API cho chi hộ, ví Bảo Kim hoặc payout; không sao chép tên biến dự đoán vào dashboard. Quy trình mục tiêu và các điều cần xác nhận nằm ở [vận hành dòng tiền](payment-operations.md).
 
 - Production dùng `PAYMENT_PROVIDER=payos`; nhập ba credential PayOS qua secret manager, không đưa chúng vào `VITE_*` hoặc repository.
-- Đặt `PAYOS_RETURN_URL` và `PAYOS_CANCEL_URL` tới web production (lần lượt `/payment/return` và `/payment/cancel`), và đặt `PAYOS_WEBHOOK_URL` là `https://<api-domain>/webhooks/payos`; đăng ký URL webhook chính xác trong PayOS. Chỉ webhook hợp lệ mới xác nhận thanh toán; URL return/cancel của trình duyệt không phải bằng chứng đã trả tiền.
+- Đặt `PAYOS_RETURN_URL` và `PAYOS_CANCEL_URL` tới web production (lần lượt `/payment/return` và `/payment/cancel`), và đặt `PAYOS_WEBHOOK_URL` là `https://api.openslot.io.vn/webhooks/payos`; đăng ký URL webhook chính xác trong PayOS. Chỉ webhook hợp lệ mới xác nhận thanh toán; URL return/cancel của trình duyệt không phải bằng chứng đã trả tiền.
 - PayOS thu tiền cọc về một tài khoản nền tảng. Hiện chưa có chi trả studio; dòng tiền mục tiêu dùng chi hộ/nguồn ví Bảo Kim theo bản nháp, không phải tích hợp đã có.
 - `EXPIRY_JOB_INTERVAL_SECONDS` mặc định 60 giây. Worker dùng advisory lock; cleanup theo yêu cầu vẫn chạy trước thao tác đặt chỗ và trước khi trả chỗ còn trống.
 - Mock checkout và nút xác nhận mô phỏng chỉ hoạt động khi API không ở production và `PAYMENT_PROVIDER=mock`.

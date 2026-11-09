@@ -18,6 +18,7 @@ import {
 } from './bookings.service.js';
 import { confirmStudioPayment } from '../payments/payments.service.js';
 import { listStudioBookings } from './bookings.repository.js';
+import { queueBookingEmail } from '../../services/booking-emails.js';
 import {
   confirmStudioPaymentSchema,
   createBookingSchema,
@@ -142,6 +143,7 @@ router.post(
         'Khoản thanh toán đã thay đổi hoặc không còn phải thu.',
       );
     }
+    queueBookingEmail(String(request.params.id), 'payment_confirmed');
     response.json({ ok: true });
   },
 );

@@ -11,9 +11,7 @@ const {
 } = loadConfig();
 const app = createApp();
 
-if (trustProxyHops > 0) {
-  app.set('trust proxy', trustProxyHops);
-}
+if (trustProxyHops > 0) app.set('trust proxy', trustProxyHops);
 
 startBookingExpiryJob(expiryJobIntervalSeconds);
 startAttendanceJob();

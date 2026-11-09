@@ -44,6 +44,7 @@ import {
   countStudiosForAdmin,
   listStudioStatusHistory,
 } from './admin.repository.js';
+import { queueStudioDecisionEmail } from '../../services/studio-emails.js';
 export async function getStudioForAdmin(studioId: string) {
   const studio = (await listStudiosForAdmin(undefined, undefined, studioId))[0];
   if (!studio)
@@ -91,6 +92,8 @@ export async function setStudioStatus(
   if (!studio) {
     throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy studio cần duyệt.');
   }
+  if (status === 'approved' || status === 'rejected')
+    queueStudioDecisionEmail(studioId, status, reason);
   return { studio: await withStudioImages(studio) };
 }
 

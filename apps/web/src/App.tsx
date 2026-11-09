@@ -77,6 +77,16 @@ const RegisterPage = lazy(() =>
     default: module.RegisterPage,
   })),
 );
+const ForgotPasswordPage = lazy(() =>
+  import('./pages/ForgotPasswordPage').then((module) => ({
+    default: module.ForgotPasswordPage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import('./pages/ResetPasswordPage').then((module) => ({
+    default: module.ResetPasswordPage,
+  })),
+);
 const CustomerBookingsPage = lazy(() =>
   import('./pages/CustomerBookingsPage').then((module) => ({
     default: module.CustomerBookingsPage,
@@ -153,6 +163,8 @@ function App() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/kham-pha" element={<ExplorePage />} />
           <Route path="/dang-ky-studio" element={<StudioRegistrationPage />} />
+          <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
+          <Route path="/dat-lai-mat-khau" element={<ResetPasswordPage />} />
           <Route path="/danh-cho-nghe-nhan" element={<ArtisanPage />} />
           <Route path="/ve-open-slot" element={<AboutPage />} />
           <Route path="/studios/:slug" element={<StudioPage />} />
@@ -160,6 +172,7 @@ function App() {
           <Route path="/workshops/:id" element={<WorkshopPage />} />
           <Route element={<RequireCustomer />}>
             <Route path="/me/bookings" element={<CustomerBookingsPage />} />
+            <Route path="/lich-dat-cua-toi" element={<Navigate to="/me/bookings" replace />} />
             <Route
               path="/me/refund-accounts"
               element={<SavedRefundAccountsPage />}

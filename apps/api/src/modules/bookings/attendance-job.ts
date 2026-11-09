@@ -1,6 +1,9 @@
 import { query, withTransaction } from '../../db/pool.js';
 import { releaseUnconfirmedBookings } from './attendance-confirmation.js';
 import { expireScheduleResponses } from './schedule-changes.js';
+import { sendEmail } from '../../services/email.js';
+import { emailTemplate } from '../../services/templates.js';
+import { loadConfig } from '../../config.js';
 
 export async function runAttendanceReminders(sessionIds?: string[]) {
   await withTransaction(async (client) => {
@@ -59,7 +62,7 @@ export async function runAttendanceReminders(sessionIds?: string[]) {
               title,
               body +
                 '\n' +
-                (process.env.WEB_ORIGIN ?? 'http://localhost:3000') +
+                loadConfig().CLIENT_URL +
                 href,
               `${b.id}:attendance-confirmation:${b.scheduleVersion}`,
               b.scheduleVersion,
@@ -98,7 +101,7 @@ export async function runAttendanceReminders(sessionIds?: string[]) {
             title,
             body +
               '\n' +
-              (process.env.WEB_ORIGIN ?? 'http://localhost:3000') +
+              loadConfig().CLIENT_URL +
               href,
             `${b.id}:${b.kind}:${b.startsAt.toISOString()}`,
           ],
@@ -108,8 +111,6 @@ export async function runAttendanceReminders(sessionIds?: string[]) {
   });
 }
 export async function sendQueuedEmails(bookingIds?: string[]) {
-  const endpoint = process.env.EMAIL_DELIVERY_URL;
-  if (!endpoint) return;
   const batch = await withTransaction(async (client) => {
     await client.query(
       `UPDATE email_outbox SET status='failed' WHERE status='processing' AND locked_at<now()-interval '10 minutes' AND ($1::uuid[] IS NULL OR booking_id=ANY($1))`,
@@ -158,23 +159,17 @@ export async function sendQueuedEmails(bookingIds?: string[]) {
         );
         continue;
       }
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Idempotency-Key': email.idempotency_key,
-          ...(process.env.EMAIL_DELIVERY_TOKEN
-            ? { Authorization: 'Bearer ' + process.env.EMAIL_DELIVERY_TOKEN }
-            : {}),
-        },
-        body: JSON.stringify({
-          to: email.recipient,
-          subject: email.subject,
-          text: email.body,
-        }),
-        signal: AbortSignal.timeout(10000),
+      const content = emailTemplate({
+        title: email.subject,
+        paragraphs: [email.body],
       });
-      if (!response.ok) throw new Error('Email delivery failed');
+      await sendEmail({
+        to: email.recipient,
+        subject: email.subject,
+        ...content,
+        type: 'attendance_confirmation',
+        idempotencyKey: `email-outbox:${email.idempotency_key}`,
+      });
       await query(
         `UPDATE email_outbox SET status='sent',sent_at=COALESCE(sent_at,clock_timestamp()) WHERE id=$1 AND status='processing'`,
         [email.id],

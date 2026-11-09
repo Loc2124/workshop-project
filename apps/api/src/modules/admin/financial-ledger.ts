@@ -5,6 +5,7 @@ import { withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
 import { writeAuditLog } from './audit-log.js';
 import { decryptFinancialAccount } from '../payments/financial-account-crypto.js';
+import { queueRefundEmail } from '../../services/booking-emails.js';
 
 export const financialLedgerRouter = Router();
 const calendarInput = z
@@ -981,6 +982,7 @@ financialLedgerRouter.post(
         },
       )
       .parse(req.body);
+    const refundNotice: { value?: { bookingId: string; amount: string; reference?: string } } = {};
     await withTransaction(async (client) => {
       const result = await client.query<{
         bookingId: string;
@@ -1020,6 +1022,17 @@ financialLedgerRouter.post(
           'CONFLICT',
           'Không thể ghi nhận kết quả giao dịch này.',
         );
+      if (
+        input.result === 'succeeded' &&
+        transfer.direction === 'outbound' &&
+        ['customer_refund', 'platform_advance'].includes(transfer.purpose)
+      ) {
+        refundNotice.value = {
+          bookingId: transfer.bookingId,
+          amount: transfer.amount,
+          reference: input.reference,
+        };
+      }
       await client.query(
         `INSERT INTO financial_transfer_events(transfer_id,actor_id,event,details) VALUES($1,$2,$3,$4::jsonb)`,
         [
@@ -1181,6 +1194,8 @@ financialLedgerRouter.post(
         },
       });
     });
+    if (refundNotice.value)
+      queueRefundEmail(refundNotice.value.bookingId, id, refundNotice.value.amount, refundNotice.value.reference);
     res.json({ ok: true, status: input.result });
   },
 );

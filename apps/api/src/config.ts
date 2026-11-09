@@ -14,6 +14,7 @@ const configSchema = z.object({
     .url()
     .default('http://localhost:3000')
     .transform((value) => new URL(value).origin),
+  CLIENT_URL: z.url().optional(),
   JWT_SECRET: z.string().refine(isStrongJwtSecret, {
     message:
       'must be a random base64url secret with at least 43 characters and 16 distinct characters',
@@ -62,8 +63,10 @@ const configSchema = z.object({
     .default(60),
   PAYMENT_PROVIDER: z.enum(['mock', 'payos']).default('mock'),
   PAYMENT_MIN_AMOUNT: z.coerce.number().int().positive().optional(),
-  EMAIL_DELIVERY_URL: z.url().optional(),
-  EMAIL_DELIVERY_TOKEN: z.string().min(1).optional(),
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(1).default('Open Slot <noreply@mail.openslot.vn>'),
+  CRON_SECRET: z.string().min(32).optional(),
+  RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
   PAYOS_CLIENT_ID: z.string().min(1).optional(),
   PAYOS_API_KEY: z.string().min(1).optional(),
   PAYOS_CHECKSUM_KEY: z.string().min(1).optional(),
@@ -105,9 +108,10 @@ function isValidJwtExpiresIn(value: string): boolean {
 
 export type ApiConfig = Omit<
   z.infer<typeof configSchema>,
-  'PORT' | 'API_PORT'
+  'PORT' | 'API_PORT' | 'CLIENT_URL'
 > & {
   API_PORT: number;
+  CLIENT_URL: string;
 };
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
@@ -118,8 +122,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     'PAYOS_CHECKSUM_KEY',
     'PAYOS_WEBHOOK_URL',
     'PAYMENT_MIN_AMOUNT',
-    'EMAIL_DELIVERY_URL',
-    'EMAIL_DELIVERY_TOKEN',
+    'RESEND_API_KEY',
+    'CRON_SECRET',
+    'RESEND_WEBHOOK_SECRET',
   ]) {
     if (paymentEnv[key] === '') delete paymentEnv[key];
   }
@@ -149,10 +154,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
 
   if (
     result.data.NODE_ENV === 'production' &&
-    new URL(result.data.WEB_ORIGIN).protocol !== 'https:'
+    new URL(result.data.CLIENT_URL ?? result.data.WEB_ORIGIN).protocol !== 'https:'
   ) {
     throw new Error(
-      'Invalid API configuration: WEB_ORIGIN must use HTTPS in production.',
+      'Invalid API configuration: CLIENT_URL must use HTTPS in production.',
     );
   }
 
@@ -186,8 +191,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     );
   }
 
+  const clientUrl = new URL(result.data.CLIENT_URL ?? result.data.WEB_ORIGIN).origin;
   return {
     ...result.data,
+    WEB_ORIGIN: clientUrl,
+    CLIENT_URL: clientUrl,
     COOKIE_SAME_SITE: cookieSameSite,
     API_PORT: result.data.PORT ?? result.data.API_PORT ?? 4000,
   };

@@ -33,11 +33,11 @@ services:
       - key: PAYOS_CHECKSUM_KEY
         sync: false
       - key: PAYOS_RETURN_URL
-        sync: false
+        value: https://www.openslot.io.vn/payment/return
       - key: PAYOS_CANCEL_URL
-        sync: false
+        value: https://www.openslot.io.vn/payment/cancel
       - key: PAYOS_WEBHOOK_URL
-        sync: false
+        value: https://api.openslot.io.vn/webhooks/payos
       - key: EXPIRY_JOB_INTERVAL_SECONDS
         value: '60'
       - key: DB_POOL_MAX
@@ -47,6 +47,16 @@ services:
       - key: RANKER_URL
         value: http://localhost:8001
       - key: WEB_ORIGIN
+        value: https://www.openslot.io.vn
+      - key: CLIENT_URL
+        value: https://www.openslot.io.vn
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: RESEND_WEBHOOK_SECRET
         sync: false
       - key: DATABASE_URL
         sync: false

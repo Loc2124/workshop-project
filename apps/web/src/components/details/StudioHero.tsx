@@ -43,6 +43,13 @@ export function StudioHero({
   const href = workshop
     ? `/workshop/${workshop.slug ?? workshop.id}#lich-trai-nghiem`
     : '#workshop-tai-studio';
+  const scrollToWorkshops = () => {
+    if (!workshop) {
+      document
+        .getElementById('workshop-tai-studio')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
   const prices = (
     available.length
       ? available.map((item) => item.price)
@@ -149,7 +156,7 @@ export function StudioHero({
                 ))}
               </dl>
             )}
-            <Link to={href} className={action}>
+            <Link to={href} onClick={scrollToWorkshops} className={action}>
               {label}
               {!single && <ArrowDown size={16} aria-hidden="true" />}
             </Link>
@@ -185,7 +192,7 @@ export function StudioHero({
         </div>
       </section>
       <div className="fixed inset-x-0 bottom-0 z-40 bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 md:hidden">
-        <Link to={href} className={`${action} w-full`}>
+        <Link to={href} onClick={scrollToWorkshops} className={`${action} w-full`}>
           {label}
           {!single && <ArrowDown size={16} aria-hidden="true" />}
         </Link>

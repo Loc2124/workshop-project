@@ -20,6 +20,7 @@ import { corsForWeb } from './middleware/cors.js';
 import bookingRoutes from './modules/bookings/bookings.routes.js';
 import paymentRoutes from './modules/payments/payments.routes.js';
 import paymentWebhookRoutes from './modules/payments/webhook.routes.js';
+import { emailRouter, resendWebhookRouter } from './modules/email/email.routes.js';
 
 export function createApp() {
   const app = express();
@@ -27,7 +28,8 @@ export function createApp() {
   // API responses can contain account-specific data. Do not let browsers or
   // proxies reuse them, and avoid conditional 304 responses for stale entries.
   app.disable('etag');
-  app.use(corsForWeb(loadConfig().WEB_ORIGIN));
+  app.set('trust proxy', 1);
+  app.use(corsForWeb(loadConfig().CLIENT_URL));
   app.use((_request, response, next) => {
     response.setHeader('Cache-Control', 'no-store');
     next();
@@ -44,6 +46,8 @@ export function createApp() {
           'res.headers["set-cookie"]',
           'req.headers.x-signature',
           'req.headers.x-payos-signature',
+          'req.headers.svix-signature',
+          'req.url',
         ],
         censor: '[Redacted]',
       },
@@ -51,12 +55,18 @@ export function createApp() {
   );
   app.use(createApiRateLimiter());
   app.use(
+    '/webhooks/resend',
+    express.raw({ type: 'application/json', limit: '100kb', inflate: false }),
+    resendWebhookRouter,
+  );
+  app.use(
     '/webhooks',
     express.raw({ type: 'application/json', limit: '100kb', inflate: false }),
     paymentWebhookRoutes,
   );
   app.use(express.json({ limit: '100kb', inflate: false }));
   app.use(cookieParser());
+  app.use(emailRouter);
 
   app.get('/health', (_request, response) => {
     response.json({ ok: true });

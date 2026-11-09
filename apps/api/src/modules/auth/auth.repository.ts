@@ -182,6 +182,65 @@ export async function revokeAuthSessionById(
   );
 }
 
+export async function createPasswordReset(
+  userId: string,
+  tokenHash: string,
+): Promise<void> {
+  await withTransaction(async (client) => {
+    await client.query(
+      `UPDATE password_resets SET used_at=now()
+       WHERE user_id=$1 AND used_at IS NULL`,
+      [userId],
+    );
+    await client.query(
+      `INSERT INTO password_resets(user_id,token_hash,expires_at)
+       VALUES($1,$2,now()+interval '30 minutes')`,
+      [userId, tokenHash],
+    );
+  });
+}
+
+export async function completePasswordReset(
+  tokenHash: string,
+  passwordHash: string,
+): Promise<{ email: string; fullName: string } | null> {
+  return withTransaction(async (client) => {
+    const reset = await client.query<{
+      id: string;
+      userId: string;
+      email: string;
+      fullName: string;
+    }>(
+      `SELECT p.id,p.user_id AS "userId",u.email,u.full_name AS "fullName"
+       FROM password_resets p JOIN users u ON u.id=p.user_id
+       WHERE p.token_hash=$1 AND p.used_at IS NULL AND p.expires_at>now()
+       FOR UPDATE OF p`,
+      [tokenHash],
+    );
+    const row = reset.rows[0];
+    if (!row) return null;
+    const consumed = await client.query(
+      `UPDATE password_resets SET used_at=now()
+       WHERE id=$1 AND used_at IS NULL AND expires_at>now() RETURNING id`,
+      [row.id],
+    );
+    if (!consumed.rowCount) return null;
+    await client.query('UPDATE users SET password_hash=$2 WHERE id=$1', [
+      row.userId,
+      passwordHash,
+    ]);
+    await client.query(
+      'UPDATE auth_sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL',
+      [row.userId],
+    );
+    await client.query(
+      'UPDATE password_resets SET used_at=COALESCE(used_at,now()) WHERE user_id=$1',
+      [row.userId],
+    );
+    return { email: row.email, fullName: row.fullName };
+  });
+}
+
 async function findRefreshSessionForUpdate(
   client: PoolClient,
   refreshTokenHash: string,
