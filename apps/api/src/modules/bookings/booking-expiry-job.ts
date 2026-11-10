@@ -14,7 +14,8 @@ export async function releaseExpiredBookingHolds(
       'SELECT pg_try_advisory_xact_lock($1, $2) AS acquired',
       [EXPIRY_LOCK_NAMESPACE, EXPIRY_LOCK_ID],
     );
-    if (!lock.rows[0]?.acquired) return { count: 0, expiredBookingIds: [] as string[] };
+    if (!lock.rows[0]?.acquired)
+      return { count: 0, expiredBookingIds: [] as string[] };
 
     const expiredBookings = await client.query<{ id: string }>(
       `SELECT id FROM bookings WHERE status='pending' AND reservation_status='pending'
@@ -34,7 +35,10 @@ export async function releaseExpiredBookingHolds(
     );
     const sessionIds = expired.rows.map(({ sessionId }) => sessionId);
     await releaseExpiredHolds(client, sessionIds);
-    return { count: sessionIds.length, expiredBookingIds: expiredBookings.rows.map(({ id }) => id) };
+    return {
+      count: sessionIds.length,
+      expiredBookingIds: expiredBookings.rows.map(({ id }) => id),
+    };
   });
   for (const bookingId of result.expiredBookingIds)
     queueBookingEmail(bookingId, 'booking_expired');

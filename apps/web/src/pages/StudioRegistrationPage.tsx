@@ -323,214 +323,235 @@ function StudioRegistrationForm() {
                           className="space-y-5"
                         >
                           <section className="space-y-5 rounded-xl border border-line bg-surface p-5">
-                          <h2 className="font-heading text-xl font-semibold">Cơ bản</h2>
-                          <AuthField
-                            id="studio-name"
-                            name="name"
-                            label="Tên studio"
-                            autoComplete="organization"
-                            required
-                            minLength={2}
-                            maxLength={120}
-                            value={values.name}
-                            error={errors.name}
-                            onChange={(event) =>
-                              update('name', event.target.value)
-                            }
-                          />
-                          <div>
-                            <fieldset
-                              id="studio-categoryIds"
-                              tabIndex={-1}
-                              aria-describedby={
-                                errors.categoryIds
-                                  ? 'studio-categoryIds-error'
-                                  : undefined
-                              }
-                            >
-                              <legend className="mb-2 text-sm font-semibold">
-                                Các loại workshop của studio
-                              </legend>
-                              <div className="grid gap-2 sm:grid-cols-2">
-                                {categories.map((category) => (
-                                  <label
-                                    key={category.id}
-                                    className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${values.categoryIds.includes(category.id) ? 'border-primary bg-primary/5 text-primary' : 'border-line bg-paper hover:border-primary/50'}`}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      name="categoryIds"
-                                      value={category.id}
-                                      checked={values.categoryIds.includes(
-                                        category.id,
-                                      )}
-                                      onChange={(event) => {
-                                        const ids = event.target.checked
-                                          ? [...values.categoryIds, category.id]
-                                          : values.categoryIds.filter(
-                                              (id) => id !== category.id,
-                                            );
-                                        draft.update('categoryIds', ids);
-                                        if (!ids.includes('other'))
-                                          draft.update(
-                                            'proposedCategoryName',
-                                            '',
-                                          );
-                                        update('categoryId', ids[0] ?? '');
-                                        setErrors((current) => ({
-                                          ...current,
-                                          categoryIds: '',
-                                        }));
-                                      }}
-                                      className="sr-only"
-                                    />
-                                    {(() => {
-                                      const Icon = getCategoryIcon(category.id);
-                                      return <Icon size={20} aria-hidden="true" className="shrink-0" />;
-                                    })()}
-                                    <span className="flex-1 font-semibold">{category.name}</span>
-                                    {values.categoryIds.includes(category.id) && <Check size={18} aria-hidden="true" />}
-                                  </label>
-                                ))}
-                              </div>
-                            </fieldset>
-                            {fieldError('categoryIds')}
-                            {categoryQuery.error && (
-                              <p
-                                role="alert"
-                                className="mt-2 text-sm text-brick"
-                              >
-                                Chưa tải được loại workshop.{' '}
-                                <Button
-                                  variant="outline"
-                                  type="button"
-                                  onClick={() => void categoryQuery.refetch()}
-                                >
-                                  Thử lại
-                                </Button>
-                              </p>
-                            )}
-                            {values.categoryIds.includes('other') && (
-                              <div className="mt-4">
-                                <AuthField
-                                  id="studio-proposedCategoryName"
-                                  name="proposedCategoryName"
-                                  label="Loại workshop khác"
-                                  required
-                                  minLength={2}
-                                  maxLength={80}
-                                  value={values.proposedCategoryName}
-                                  error={errors.proposedCategoryName}
-                                  onChange={(event) =>
-                                    update(
-                                      'proposedCategoryName',
-                                      event.target.value,
-                                    )
-                                  }
-                                  placeholder="Ví dụ: Thêu tay"
-                                  hint="Nhập tên loại, không phải tên buổi trải nghiệm. Admin sẽ xét duyệt cùng hồ sơ studio trước khi thêm vào danh mục chung."
-                                />
-                              </div>
-                            )}
-                            <p className="mt-2 text-sm text-muted">
-                              Chọn một hoặc nhiều loại workshop. Chọn “Khác” nếu
-                              chưa có loại phù hợp.
-                            </p>
-                            {categoryQuery.isPending && (
-                              <LoadingState
-                                label="Đang tải loại workshop…"
-                                className="mt-2 text-sm text-muted"
-                              />
-                            )}
-                          </div>
-                          <div>
-                            <label
-                              htmlFor="studio-description"
-                              className="mb-2 block text-sm font-semibold"
-                            >
-                              Giới thiệu studio{' '}
-                              <span className="font-normal text-muted">
-                                (không bắt buộc)
-                              </span>
-                            </label>
-                            <textarea
-                              id="studio-description"
-                              name="description"
-                              className={`${selectClass} min-h-32 py-3`}
-                              maxLength={2000}
-                              value={values.description}
+                            <h2 className="font-heading text-xl font-semibold">
+                              Cơ bản
+                            </h2>
+                            <AuthField
+                              id="studio-name"
+                              name="name"
+                              label="Tên studio"
+                              autoComplete="organization"
+                              required
+                              minLength={2}
+                              maxLength={120}
+                              value={values.name}
+                              error={errors.name}
                               onChange={(event) =>
-                                update('description', event.target.value)
+                                update('name', event.target.value)
                               }
-                              aria-invalid={
-                                Boolean(errors.description) || undefined
-                              }
-                              aria-describedby={
-                                errors.description
-                                  ? 'studio-description-hint studio-description-error'
-                                  : 'studio-description-hint'
-                              }
-                              placeholder="Chia sẻ về nghề, không gian và trải nghiệm bạn muốn mang đến."
                             />
-                            <p
-                              id="studio-description-hint"
-                              className="mt-2 text-sm text-muted"
-                            >
-                              Tối đa 2000 ký tự.
-                            </p>
-                            {fieldError('description')}
-                          </div>
+                            <div>
+                              <fieldset
+                                id="studio-categoryIds"
+                                tabIndex={-1}
+                                aria-describedby={
+                                  errors.categoryIds
+                                    ? 'studio-categoryIds-error'
+                                    : undefined
+                                }
+                              >
+                                <legend className="mb-2 text-sm font-semibold">
+                                  Các loại workshop của studio
+                                </legend>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  {categories.map((category) => (
+                                    <label
+                                      key={category.id}
+                                      className={`flex min-h-16 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 text-base transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary ${values.categoryIds.includes(category.id) ? 'border-primary bg-primary/5 text-primary' : 'border-line bg-paper hover:border-primary/50'}`}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        name="categoryIds"
+                                        value={category.id}
+                                        checked={values.categoryIds.includes(
+                                          category.id,
+                                        )}
+                                        onChange={(event) => {
+                                          const ids = event.target.checked
+                                            ? [
+                                                ...values.categoryIds,
+                                                category.id,
+                                              ]
+                                            : values.categoryIds.filter(
+                                                (id) => id !== category.id,
+                                              );
+                                          draft.update('categoryIds', ids);
+                                          if (!ids.includes('other'))
+                                            draft.update(
+                                              'proposedCategoryName',
+                                              '',
+                                            );
+                                          update('categoryId', ids[0] ?? '');
+                                          setErrors((current) => ({
+                                            ...current,
+                                            categoryIds: '',
+                                          }));
+                                        }}
+                                        className="sr-only"
+                                      />
+                                      {(() => {
+                                        const Icon = getCategoryIcon(
+                                          category.id,
+                                        );
+                                        return (
+                                          <Icon
+                                            size={20}
+                                            aria-hidden="true"
+                                            className="shrink-0"
+                                          />
+                                        );
+                                      })()}
+                                      <span className="flex-1 font-semibold">
+                                        {category.name}
+                                      </span>
+                                      {values.categoryIds.includes(
+                                        category.id,
+                                      ) && (
+                                        <Check size={18} aria-hidden="true" />
+                                      )}
+                                    </label>
+                                  ))}
+                                </div>
+                              </fieldset>
+                              {fieldError('categoryIds')}
+                              {categoryQuery.error && (
+                                <p
+                                  role="alert"
+                                  className="mt-2 text-sm text-brick"
+                                >
+                                  Chưa tải được loại workshop.{' '}
+                                  <Button
+                                    variant="outline"
+                                    type="button"
+                                    onClick={() => void categoryQuery.refetch()}
+                                  >
+                                    Thử lại
+                                  </Button>
+                                </p>
+                              )}
+                              {values.categoryIds.includes('other') && (
+                                <div className="mt-4">
+                                  <AuthField
+                                    id="studio-proposedCategoryName"
+                                    name="proposedCategoryName"
+                                    label="Loại workshop khác"
+                                    required
+                                    minLength={2}
+                                    maxLength={80}
+                                    value={values.proposedCategoryName}
+                                    error={errors.proposedCategoryName}
+                                    onChange={(event) =>
+                                      update(
+                                        'proposedCategoryName',
+                                        event.target.value,
+                                      )
+                                    }
+                                    placeholder="Ví dụ: Thêu tay"
+                                    hint="Nhập tên loại, không phải tên buổi trải nghiệm. Admin sẽ xét duyệt cùng hồ sơ studio trước khi thêm vào danh mục chung."
+                                  />
+                                </div>
+                              )}
+                              <p className="mt-2 text-sm text-muted">
+                                Chọn một hoặc nhiều loại workshop. Chọn “Khác”
+                                nếu chưa có loại phù hợp.
+                              </p>
+                              {categoryQuery.isPending && (
+                                <LoadingState
+                                  label="Đang tải loại workshop…"
+                                  className="mt-2 text-sm text-muted"
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <label
+                                htmlFor="studio-description"
+                                className="mb-2 block text-sm font-semibold"
+                              >
+                                Giới thiệu studio{' '}
+                                <span className="font-normal text-muted">
+                                  (không bắt buộc)
+                                </span>
+                              </label>
+                              <textarea
+                                id="studio-description"
+                                name="description"
+                                className={`${selectClass} min-h-32 py-3`}
+                                maxLength={2000}
+                                value={values.description}
+                                onChange={(event) =>
+                                  update('description', event.target.value)
+                                }
+                                aria-invalid={
+                                  Boolean(errors.description) || undefined
+                                }
+                                aria-describedby={
+                                  errors.description
+                                    ? 'studio-description-hint studio-description-error'
+                                    : 'studio-description-hint'
+                                }
+                                placeholder="Chia sẻ về nghề, không gian và trải nghiệm bạn muốn mang đến."
+                              />
+                              <p
+                                id="studio-description-hint"
+                                className="mt-2 text-sm text-muted"
+                              >
+                                Tối đa 2000 ký tự.
+                              </p>
+                              {fieldError('description')}
+                            </div>
                           </section>
                           <section className="space-y-5 rounded-xl border border-line bg-surface p-5">
-                          <h2 className="font-heading text-xl font-semibold">Địa điểm</h2>
-                          <div>
-                            <label
-                              htmlFor="studio-provinceId"
-                              className="mb-2 block text-sm font-semibold"
-                            >
-                              Tỉnh / thành phố
-                            </label>
-                            <select
-                              id="studio-provinceId"
-                              name="provinceId"
+                            <h2 className="font-heading text-xl font-semibold">
+                              Địa điểm
+                            </h2>
+                            <div>
+                              <label
+                                htmlFor="studio-provinceId"
+                                className="mb-2 block text-sm font-semibold"
+                              >
+                                Tỉnh / thành phố
+                              </label>
+                              <select
+                                id="studio-provinceId"
+                                name="provinceId"
+                                required
+                                value={values.provinceId}
+                                onChange={(event) =>
+                                  update('provinceId', event.target.value)
+                                }
+                                className={selectClass}
+                                aria-invalid={
+                                  Boolean(errors.provinceId) || undefined
+                                }
+                                aria-describedby={
+                                  errors.provinceId
+                                    ? 'studio-provinceId-error'
+                                    : undefined
+                                }
+                              >
+                                <option value="">Chọn tỉnh / thành phố</option>
+                                {studioProvinces.map((province) => (
+                                  <option value={province.id} key={province.id}>
+                                    {province.name}
+                                  </option>
+                                ))}
+                              </select>
+                              {fieldError('provinceId')}
+                            </div>
+                            <AuthField
+                              id="studio-address"
+                              name="address"
+                              label="Địa chỉ cụ thể"
+                              autoComplete="street-address"
                               required
-                              value={values.provinceId}
+                              maxLength={500}
+                              value={values.address}
+                              error={errors.address}
+                              hint="Số nhà, tên đường và phường/xã để khách tìm đến studio."
                               onChange={(event) =>
-                                update('provinceId', event.target.value)
+                                update('address', event.target.value)
                               }
-                              className={selectClass}
-                              aria-invalid={
-                                Boolean(errors.provinceId) || undefined
-                              }
-                              aria-describedby={
-                                errors.provinceId
-                                  ? 'studio-provinceId-error'
-                                  : undefined
-                              }
-                            >
-                              <option value="">Chọn tỉnh / thành phố</option>
-                              {studioProvinces.map((province) => (
-                                <option value={province.id} key={province.id}>
-                                  {province.name}
-                                </option>
-                              ))}
-                            </select>
-                            {fieldError('provinceId')}
-                          </div>
-                          <AuthField
-                            id="studio-address"
-                            name="address"
-                            label="Địa chỉ cụ thể"
-                            autoComplete="street-address"
-                            required
-                            maxLength={500}
-                            value={values.address}
-                            error={errors.address}
-                            hint="Số nhà, tên đường và phường/xã để khách tìm đến studio."
-                            onChange={(event) =>
-                              update('address', event.target.value)
-                            }
-                          />
+                            />
                           </section>
                           <StudioEvidenceFields
                             values={values}
@@ -694,7 +715,10 @@ function StudioRegistrationForm() {
                           </Link>
                         </Button>
                       </div>
-                      {(missingFields.length > 0 || photosBusy || !catalogReady || Boolean(authError)) && (
+                      {(missingFields.length > 0 ||
+                        photosBusy ||
+                        !catalogReady ||
+                        Boolean(authError)) && (
                         <p
                           id="studio-missing-fields"
                           role="status"
@@ -713,8 +737,16 @@ function StudioRegistrationForm() {
                                         draft.setStep(0);
                                         const parsed = formValidation;
                                         if (!parsed.success)
-                                          setErrors(authFieldErrors(parsed.error));
-                                        requestAnimationFrame(() => document.getElementById(missingFieldTargets[label])?.focus());
+                                          setErrors(
+                                            authFieldErrors(parsed.error),
+                                          );
+                                        requestAnimationFrame(() =>
+                                          document
+                                            .getElementById(
+                                              missingFieldTargets[label],
+                                            )
+                                            ?.focus(),
+                                        );
                                       }}
                                     >
                                       {label}
@@ -722,9 +754,18 @@ function StudioRegistrationForm() {
                                   </li>
                                 ))}
                               </ul>
-                              <p className="mt-2">Nút “Xem lại hồ sơ” sẽ bật khi các mục bắt buộc hợp lệ và ảnh không còn đang tải.</p>
+                              <p className="mt-2">
+                                Nút “Xem lại hồ sơ” sẽ bật khi các mục bắt buộc
+                                hợp lệ và ảnh không còn đang tải.
+                              </p>
                             </>
-                          ) : photosBusy ? 'Đang tải ảnh, vui lòng chờ hoàn tất.' : authError ? 'Cần kết nối tài khoản ổn định để tiếp tục.' : 'Đang tải danh sách bộ môn hoặc yêu cầu hồ sơ; nút sẽ bật sau khi dữ liệu sẵn sàng.'}
+                          ) : photosBusy ? (
+                            'Đang tải ảnh, vui lòng chờ hoàn tất.'
+                          ) : authError ? (
+                            'Cần kết nối tài khoản ổn định để tiếp tục.'
+                          ) : (
+                            'Đang tải danh sách bộ môn hoặc yêu cầu hồ sơ; nút sẽ bật sau khi dữ liệu sẵn sàng.'
+                          )}
                         </p>
                       )}
                     </form>

@@ -72,7 +72,10 @@ export function MobileFilterSheet({
                 <span>Bộ lọc{activeCount > 0 && ` (${activeCount})`}</span>
               </button>
             </DialogTrigger>
-            <DialogContent className="h-[min(90dvh,720px)] bg-paper md:hidden" sheet>
+            <DialogContent
+              className="h-[min(90dvh,720px)] bg-paper md:hidden"
+              sheet
+            >
               <div className="flex h-full min-h-0 flex-col">
                 <header className="border-b border-line px-5 py-4 pr-14">
                   <DialogTitle className="font-heading text-xl font-semibold leading-tight text-ink">
@@ -101,7 +104,9 @@ export function MobileFilterSheet({
                   </div>
                   {children && (
                     <fieldset className="grid gap-2 pb-5">
-                      <legend className="mb-2 text-[13px] font-bold text-stone-700">Sắp xếp</legend>
+                      <legend className="mb-2 text-[13px] font-bold text-stone-700">
+                        Sắp xếp
+                      </legend>
                       {children}
                     </fieldset>
                   )}

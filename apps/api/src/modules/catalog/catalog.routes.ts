@@ -20,25 +20,41 @@ import {
 } from './catalog.service.js';
 
 const router = Router();
-router.get('/workshops/:id/schedule-subscription/unsubscribe', async (request, response) => {
-  const workshopId = String(request.params.id);
-  const token = typeof request.query.token === 'string' ? request.query.token : '';
-  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(workshopId))
-    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy workshop.');
-  if (!/^[a-f0-9]{64}$/i.test(token))
-    throw new AppError(400, 'BAD_REQUEST', 'Liên kết hủy nhận thông báo không hợp lệ.');
-  const result = await query(
-    `DELETE FROM workshop_schedule_subscriptions sub
+router.get(
+  '/workshops/:id/schedule-subscription/unsubscribe',
+  async (request, response) => {
+    const workshopId = String(request.params.id);
+    const token =
+      typeof request.query.token === 'string' ? request.query.token : '';
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        workshopId,
+      )
+    )
+      throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy workshop.');
+    if (!/^[a-f0-9]{64}$/i.test(token))
+      throw new AppError(
+        400,
+        'BAD_REQUEST',
+        'Liên kết hủy nhận thông báo không hợp lệ.',
+      );
+    const result = await query(
+      `DELETE FROM workshop_schedule_subscriptions sub
      USING workshop_schedule_unsubscribe_tokens token
      WHERE sub.workshop_id=$1 AND token.workshop_id=sub.workshop_id
        AND token.user_id=sub.user_id AND token.token_hash=$2
      RETURNING sub.workshop_id`,
-    [workshopId, createHash('sha256').update(token).digest('hex')],
-  );
-  response.type('html').send(result.rowCount
-    ? '<!doctype html><html lang="vi"><meta charset="utf-8"><title>Đã hủy đăng ký</title><body style="font:16px Arial;background:#FFFBF2;color:#1C1A16;padding:32px"><h1>Đã hủy nhận thông báo lịch mới</h1><p>Bạn sẽ không nhận email lịch mới cho workshop này nữa.</p></body></html>'
-    : '<!doctype html><html lang="vi"><meta charset="utf-8"><title>Liên kết đã dùng</title><body style="font:16px Arial;background:#FFFBF2;color:#1C1A16;padding:32px"><h1>Liên kết đã được dùng hoặc không hợp lệ</h1></body></html>');
-});
+      [workshopId, createHash('sha256').update(token).digest('hex')],
+    );
+    response
+      .type('html')
+      .send(
+        result.rowCount
+          ? '<!doctype html><html lang="vi"><meta charset="utf-8"><title>Đã hủy đăng ký</title><body style="font:16px Arial;background:#FFFBF2;color:#1C1A16;padding:32px"><h1>Đã hủy nhận thông báo lịch mới</h1><p>Bạn sẽ không nhận email lịch mới cho workshop này nữa.</p></body></html>'
+          : '<!doctype html><html lang="vi"><meta charset="utf-8"><title>Liên kết đã dùng</title><body style="font:16px Arial;background:#FFFBF2;color:#1C1A16;padding:32px"><h1>Liên kết đã được dùng hoặc không hợp lệ</h1></body></html>',
+      );
+  },
+);
 router.post(
   '/workshops/:id/schedule-subscription',
   requireAuth(['customer']),

@@ -154,10 +154,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
 
   if (
     result.data.NODE_ENV === 'production' &&
-    new URL(result.data.CLIENT_URL ?? result.data.WEB_ORIGIN).protocol !== 'https:'
+    new URL(result.data.CLIENT_URL ?? result.data.WEB_ORIGIN).protocol !==
+      'https:'
   ) {
     throw new Error(
-      'Invalid API configuration: CLIENT_URL must use HTTPS in production.',
+      'Invalid API configuration: CLIENT_URL and WEB_ORIGIN must use HTTPS in production.',
     );
   }
 
@@ -191,7 +192,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ApiConfig {
     );
   }
 
-  const clientUrl = new URL(result.data.CLIENT_URL ?? result.data.WEB_ORIGIN).origin;
+  const clientUrl = new URL(result.data.CLIENT_URL ?? result.data.WEB_ORIGIN)
+    .origin;
   return {
     ...result.data,
     WEB_ORIGIN: clientUrl,

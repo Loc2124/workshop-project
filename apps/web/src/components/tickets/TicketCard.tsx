@@ -31,12 +31,14 @@ export function TicketCard(
     ? formatSessionDate(session.startAt, { parts: true })
     : undefined;
   const statusBadge = (
-    <span className={`rounded-md px-2.5 py-1 text-[13px] font-semibold ${!session.startAt ? 'max-[480px]:hidden bg-[#E8E4D8] text-[#4A453C]' : session.statusLabel === 'Còn chỗ' && session.seatsLeft <= 3 ? 'bg-secondary text-white' : session.statusLabel === 'Còn chỗ' ? 'bg-[#DCEFC8] text-[#2A4710]' : 'bg-[#E8E4D8] text-[#4A453C]'}`}>
+    <span
+      className={`rounded-md px-2.5 py-1 text-[13px] font-semibold ${!session.startAt ? 'max-[480px]:hidden bg-[#E8E4D8] text-[#4A453C]' : session.statusLabel === 'Còn chỗ' && session.seatsLeft <= 3 ? 'bg-secondary text-white' : session.statusLabel === 'Còn chỗ' ? 'bg-[#DCEFC8] text-[#2A4710]' : 'bg-[#E8E4D8] text-[#4A453C]'}`}
+    >
       {!session.startAt
         ? 'Chưa có lịch'
         : session.statusLabel === 'Còn chỗ'
-        ? `Còn ${session.seatsLeft} chỗ`
-        : session.statusLabel}
+          ? `Còn ${session.seatsLeft} chỗ`
+          : session.statusLabel}
     </span>
   );
   return (
@@ -50,7 +52,7 @@ export function TicketCard(
     >
       <article
         className={cn(
-        'flex h-full min-w-0 overflow-hidden rounded-ticket border border-line bg-white max-[480px]:flex-col',
+          'flex h-full min-w-0 overflow-hidden rounded-ticket border border-line bg-white max-[480px]:flex-col',
           featured && 'min-h-72',
         )}
       >
@@ -70,7 +72,9 @@ export function TicketCard(
           >
             {date?.day ?? '—'}
           </span>
-          <span className="mt-2 text-[13px] font-bold">{date ? `THG ${date.month}` : '—'}</span>
+          <span className="mt-2 text-[13px] font-bold">
+            {date ? `THG ${date.month}` : '—'}
+          </span>
           <span className="mt-2 text-sm font-bold">{date?.time}</span>
         </TicketStub>
         <div
@@ -105,13 +109,19 @@ export function TicketCard(
             >
               {workshop.title}
             </h3>
-            {session.startAt && <p className="mt-2 text-[13px] font-semibold tabular-nums text-stone-700">{formatSlot(session.startAt).split(' · ')[0]} · {session.durationMinutes} phút</p>}
+            {session.startAt && (
+              <p className="mt-2 text-[13px] font-semibold tabular-nums text-stone-700">
+                {formatSlot(session.startAt).split(' · ')[0]} ·{' '}
+                {session.durationMinutes} phút
+              </p>
+            )}
             <div className="mb-3 mt-2 flex min-w-0 flex-col items-start gap-1.5 text-[13px] text-stone-700">
               <span
                 className="line-clamp-2"
                 title={`${studio.name} · ${studio.provinceName}`}
               >
-                <span className="font-semibold text-ink">{studio.name}</span> · {studio.provinceName}
+                <span className="font-semibold text-ink">{studio.name}</span> ·{' '}
+                {studio.provinceName}
               </span>
               {studio.trustLevel === 'verified' && (
                 <StudioTrustBadge level="verified" />
@@ -146,7 +156,9 @@ export function TicketCard(
                   />
                   <TicketRating workshop={workshop} />
                 </div>
-                <div className={`flex min-w-0 flex-wrap items-center gap-2 ${session.actionLabel === 'Nhận thông báo khi có lịch' ? 'max-[480px]:w-full' : ''}`}>
+                <div
+                  className={`flex min-w-0 flex-wrap items-center gap-2 ${session.actionLabel === 'Nhận thông báo khi có lịch' ? 'max-[480px]:w-full' : ''}`}
+                >
                   {statusBadge}
                   <TicketAction label={session.actionLabel} />
                 </div>

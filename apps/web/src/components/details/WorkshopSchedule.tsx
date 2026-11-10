@@ -207,7 +207,9 @@ export function WorkshopSchedule({
         />
         {workshopSessionRange(session)}
       </time>
-      <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${confirmed ? 'bg-[#DCEFC8] text-[#2A4710]' : sessionStatus(session, now) === 'available' && session.availableSeats <= 3 ? 'bg-secondary text-white' : sessionStatus(session, now) === 'available' ? 'bg-[#DCEFC8] text-[#2A4710]' : 'bg-[#E8E4D8] text-[#4A453C]'}`}>
+      <span
+        className={`rounded-md px-2.5 py-1 text-xs font-semibold ${confirmed ? 'bg-[#DCEFC8] text-[#2A4710]' : sessionStatus(session, now) === 'available' && session.availableSeats <= 3 ? 'bg-secondary text-white' : sessionStatus(session, now) === 'available' ? 'bg-[#DCEFC8] text-[#2A4710]' : 'bg-[#E8E4D8] text-[#4A453C]'}`}
+      >
         {confirmed
           ? 'Đã đặt ' + confirmed.quantity + ' chỗ'
           : sessionStatus(session, now) === 'available'
@@ -296,7 +298,9 @@ export function WorkshopSchedule({
             </fieldset>
           ) : (
             <p className="text-sm font-semibold text-stone-700">
-              {sessions.length === 0 ? 'Hiện chưa có lịch.' : 'Các buổi trước đã kết thúc. Studio chưa công bố lịch tiếp theo.'}
+              {sessions.length === 0
+                ? 'Hiện chưa có lịch.'
+                : 'Các buổi trước đã kết thúc. Studio chưa công bố lịch tiếp theo.'}
             </p>
           )}
           {sessions.length > 1 && !showOtherSessions && (
@@ -452,22 +456,24 @@ export function WorkshopSchedule({
               )}
             </>
           )}
-          {sessions.length > 0 && <button
-            type="submit"
-            disabled={!selected || locked}
-            aria-describedby={error ? 'booking-error' : undefined}
-            className={cn(primary, 'w-full')}
-          >
-            {pending
-              ? 'Đang đặt chỗ…'
-              : confirmed
-                ? 'Đã đặt chỗ'
-                : !selected
-                  ? 'Hiện chưa có lịch'
-                  : paymentChoice === 'deposit'
-                  ? 'Đặt chỗ · Cọc ' + formatPrice(depositAmount) + ' đ'
-                  : 'Đặt chỗ · Trả tại studio'}
-          </button>}
+          {sessions.length > 0 && (
+            <button
+              type="submit"
+              disabled={!selected || locked}
+              aria-describedby={error ? 'booking-error' : undefined}
+              className={cn(primary, 'w-full')}
+            >
+              {pending
+                ? 'Đang đặt chỗ…'
+                : confirmed
+                  ? 'Đã đặt chỗ'
+                  : !selected
+                    ? 'Hiện chưa có lịch'
+                    : paymentChoice === 'deposit'
+                      ? 'Đặt chỗ · Cọc ' + formatPrice(depositAmount) + ' đ'
+                      : 'Đặt chỗ · Trả tại studio'}
+            </button>
+          )}
           {error && (
             <p id="booking-error" role="alert" className="text-sm text-brick">
               {error}
@@ -501,27 +507,29 @@ export function WorkshopSchedule({
           )}
         </form>
       </section>
-      {sessions.length > 0 && <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:hidden">
-        {total !== undefined && (
-          <span className="flex min-w-0 flex-col">
-            <span className="text-lg font-bold tabular-nums">
-              {formatPrice(total)} đ
+      {sessions.length > 0 && (
+        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-4 bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:hidden">
+          {total !== undefined && (
+            <span className="flex min-w-0 flex-col">
+              <span className="text-lg font-bold tabular-nums">
+                {formatPrice(total)} đ
+              </span>
+              <span className="text-xs text-stone-600">
+                {depositAmount > 0
+                  ? `Cọc ${formatPrice(depositAmount)} đ · còn ${formatPrice(balanceAmount)} đ tại studio`
+                  : 'Thanh toán tại studio'}
+              </span>
             </span>
-            <span className="text-xs text-stone-600">
-              {depositAmount > 0
-                ? `Cọc ${formatPrice(depositAmount)} đ · còn ${formatPrice(balanceAmount)} đ tại studio`
-                : 'Thanh toán tại studio'}
-            </span>
-          </span>
-        )}
-        <a
-          href="#lich-trai-nghiem"
-          onClick={() => heading.current?.focus({ preventScroll: true })}
-          className={cn(primary, 'flex-1')}
-        >
-          {confirmed ? 'Xem đặt chỗ' : selected ? 'Chọn lịch' : 'Xem lịch'}
-        </a>
-      </div>}
+          )}
+          <a
+            href="#lich-trai-nghiem"
+            onClick={() => heading.current?.focus({ preventScroll: true })}
+            className={cn(primary, 'flex-1')}
+          >
+            {confirmed ? 'Xem đặt chỗ' : selected ? 'Chọn lịch' : 'Xem lịch'}
+          </a>
+        </div>
+      )}
     </>
   );
 }

@@ -27,7 +27,7 @@ const {
 } = loadConfig();
 const cookieSecure = cookieSecureValue === 'true';
 const rememberCookieName = `${refreshCookieName}_remember`;
-const authCookiePath = `${authCookiePathPrefix}/auth` || '/auth';
+const authCookiePath = `${authCookiePathPrefix}/auth`;
 const accessCookieOptions = {
   httpOnly: true,
   sameSite: cookieSameSite,
@@ -56,16 +56,22 @@ const forgotPasswordIpLimiter = rateLimit({
   limit: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Vui lòng thử lại sau.' } },
+  message: {
+    error: { code: 'TOO_MANY_REQUESTS', message: 'Vui lòng thử lại sau.' },
+  },
 });
 const forgotPasswordEmailLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: 5,
   keyGenerator: (request) =>
-    String(request.body?.email ?? '').trim().toLowerCase() || 'missing-email',
+    String(request.body?.email ?? '')
+      .trim()
+      .toLowerCase() || 'missing-email',
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { code: 'TOO_MANY_REQUESTS', message: 'Vui lòng thử lại sau.' } },
+  message: {
+    error: { code: 'TOO_MANY_REQUESTS', message: 'Vui lòng thử lại sau.' },
+  },
 });
 
 router.post(
@@ -76,7 +82,8 @@ router.post(
   async (request, response) => {
     await requestPasswordReset(request.body.email);
     response.status(202).json({
-      message: 'Nếu email tồn tại, hướng dẫn đặt lại mật khẩu sẽ được gửi đến hộp thư.',
+      message:
+        'Nếu email tồn tại, hướng dẫn đặt lại mật khẩu sẽ được gửi đến hộp thư.',
     });
   },
 );
@@ -90,9 +97,16 @@ router.post(
     }),
   ),
   async (request, response) => {
-    const reset = await resetPassword(request.body.token, request.body.password);
+    const reset = await resetPassword(
+      request.body.token,
+      request.body.password,
+    );
     if (!reset)
-      throw new AppError(422, 'UNPROCESSABLE_ENTITY', 'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.');
+      throw new AppError(
+        422,
+        'UNPROCESSABLE_ENTITY',
+        'Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.',
+      );
     response.json({ ok: true, message: 'Mật khẩu đã được thay đổi.' });
   },
 );

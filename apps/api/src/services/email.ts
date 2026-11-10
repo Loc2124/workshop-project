@@ -20,7 +20,9 @@ type EmailLog = {
   idempotency_key: string | null;
 };
 
-export async function sendEmail(input: SendEmailInput): Promise<{ id: string }> {
+export async function sendEmail(
+  input: SendEmailInput,
+): Promise<{ id: string }> {
   const recipient = input.to.trim().toLowerCase();
   const suppressed = await query(
     'SELECT 1 FROM email_suppressions WHERE email=$1',
@@ -52,8 +54,7 @@ export async function sendEmail(input: SendEmailInput): Promise<{ id: string }> 
       'SELECT id,status FROM email_logs WHERE idempotency_key=$1',
       [input.idempotencyKey],
     );
-    if (existing.rows[0]?.status === 'sent')
-      return { id: existing.rows[0].id };
+    if (existing.rows[0]?.status === 'sent') return { id: existing.rows[0].id };
     if (existing.rows[0]?.status === 'pending')
       return { id: existing.rows[0].id };
     logId = existing.rows[0]?.id;
@@ -62,7 +63,13 @@ export async function sendEmail(input: SendEmailInput): Promise<{ id: string }> 
     const created = await query<{ id: string }>(
       `INSERT INTO email_logs(email_type,recipient,subject,html_body,text_body)
        VALUES($1,$2,$3,$4,$5) RETURNING id`,
-      [input.type ?? 'transactional', recipient, input.subject, input.html, input.text],
+      [
+        input.type ?? 'transactional',
+        recipient,
+        input.subject,
+        input.html,
+        input.text,
+      ],
     );
     logId = created.rows[0]!.id;
   }
@@ -100,9 +107,12 @@ async function deliverLog(id: string): Promise<{ id: string }> {
       signal: AbortSignal.timeout(15000),
     });
     const result: unknown = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(`Resend returned HTTP ${response.status}.`);
+    if (!response.ok)
+      throw new Error(`Resend returned HTTP ${response.status}.`);
     const resendId =
-      typeof result === 'object' && result !== null && 'id' in result &&
+      typeof result === 'object' &&
+      result !== null &&
+      'id' in result &&
       typeof result.id === 'string'
         ? result.id
         : null;
@@ -112,11 +122,12 @@ async function deliverLog(id: string): Promise<{ id: string }> {
     );
     return { id };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Email delivery failed.';
-    await query(`UPDATE email_logs SET status='failed',last_error=$2 WHERE id=$1`, [
-      id,
-      message.slice(0, 500),
-    ]);
+    const message =
+      error instanceof Error ? error.message : 'Email delivery failed.';
+    await query(
+      `UPDATE email_logs SET status='failed',last_error=$2 WHERE id=$1`,
+      [id, message.slice(0, 500)],
+    );
     throw error;
   }
 }

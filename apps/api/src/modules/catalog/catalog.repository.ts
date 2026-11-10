@@ -470,18 +470,30 @@ export async function findStudioCandidates(
       return `$${studioValues.length}`;
     };
     if (filters.provinceId !== undefined)
-      studioConditions.push(`st.province_id = ${addStudioValue(filters.provinceId)}`);
+      studioConditions.push(
+        `st.province_id = ${addStudioValue(filters.provinceId)}`,
+      );
     if (filters.areaIds !== undefined)
-      studioConditions.push(`st.area_id = ANY(${addStudioValue(filters.areaIds)}::uuid[])`);
+      studioConditions.push(
+        `st.area_id = ANY(${addStudioValue(filters.areaIds)}::uuid[])`,
+      );
 
     const hasWorkshopFilter = Boolean(
-      filters.categoryId || filters.level || filters.audience || filters.takeawaySameDay,
+      filters.categoryId ||
+      filters.level ||
+      filters.audience ||
+      filters.takeawaySameDay,
     );
     const hasSessionFilter = Boolean(
-      filters.dateFrom || filters.dateTo || filters.priceMin !== undefined || filters.priceMax !== undefined,
+      filters.dateFrom ||
+      filters.dateTo ||
+      filters.priceMin !== undefined ||
+      filters.priceMax !== undefined,
     );
     if (hasWorkshopFilter)
-      studioConditions.push(`EXISTS (SELECT 1 FROM filtered_workshops fw WHERE fw."studioId" = st.id)`);
+      studioConditions.push(
+        `EXISTS (SELECT 1 FROM filtered_workshops fw WHERE fw."studioId" = st.id)`,
+      );
     if (filters.query?.trim()) {
       const terms = filters.query
         .normalize('NFD')
@@ -571,10 +583,14 @@ export async function findStudioCandidates(
     const ctes = `WITH ${eligibleSessions}, ${filteredWorkshops}, ${studioWorkshopRows}, ${studioStats}, ${studiosCte}`;
     const studioOrderBy = (() => {
       switch (filters.sort) {
-        case 'price-asc': return '"startingPrice" ASC NULLS LAST, "verifiedPriority" DESC';
-        case 'price-desc': return '"startingPrice" DESC NULLS LAST, "verifiedPriority" DESC';
-        case 'soonest': return '"nextStartsAt" ASC NULLS LAST, "verifiedPriority" DESC';
-        default: return 'relevance DESC, "verifiedPriority" DESC, "nextStartsAt" ASC NULLS LAST';
+        case 'price-asc':
+          return '"startingPrice" ASC NULLS LAST, "verifiedPriority" DESC';
+        case 'price-desc':
+          return '"startingPrice" DESC NULLS LAST, "verifiedPriority" DESC';
+        case 'soonest':
+          return '"nextStartsAt" ASC NULLS LAST, "verifiedPriority" DESC';
+        default:
+          return 'relevance DESC, "verifiedPriority" DESC, "nextStartsAt" ASC NULLS LAST';
       }
     })();
     const countResult = await client.query<CandidateCount>(
@@ -596,7 +612,11 @@ export async function findStudioCandidates(
          "categoryIds", "startingPrice", "availableSessions"
        FROM page
        ORDER BY ${studioOrderBy}, id`,
-      [...studioValues, filters.pageSize, (filters.page - 1) * filters.pageSize],
+      [
+        ...studioValues,
+        filters.pageSize,
+        (filters.page - 1) * filters.pageSize,
+      ],
     );
 
     return {

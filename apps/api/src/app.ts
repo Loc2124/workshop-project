@@ -20,7 +20,10 @@ import { corsForWeb } from './middleware/cors.js';
 import bookingRoutes from './modules/bookings/bookings.routes.js';
 import paymentRoutes from './modules/payments/payments.routes.js';
 import paymentWebhookRoutes from './modules/payments/webhook.routes.js';
-import { emailRouter, resendWebhookRouter } from './modules/email/email.routes.js';
+import {
+  emailRouter,
+  resendWebhookRouter,
+} from './modules/email/email.routes.js';
 
 export function createApp() {
   const app = express();

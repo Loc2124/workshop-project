@@ -141,7 +141,9 @@ export function StudioCheckInPage() {
           body: JSON.stringify({
             code: code.trim(),
             expectedVersion: ticket.version,
-            ...(ticket.canConfirmManually ? { reason: manualReason.trim() } : {}),
+            ...(ticket.canConfirmManually
+              ? { reason: manualReason.trim() }
+              : {}),
           }),
         },
       );
@@ -284,7 +286,10 @@ export function StudioCheckInPage() {
               className="absolute inset-0 size-full object-cover"
               aria-label="Camera quét mã QR"
             />
-            <div aria-hidden="true" className="pointer-events-none absolute inset-[12%] z-10">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-[12%] z-10"
+            >
               <span className="absolute left-0 top-0 size-8 rounded-tl-lg border-l-[3px] border-t-[3px] border-white" />
               <span className="absolute right-0 top-0 size-8 rounded-tr-lg border-r-[3px] border-t-[3px] border-white" />
               <span className="absolute bottom-0 left-0 size-8 rounded-bl-lg border-b-[3px] border-l-[3px] border-white" />
@@ -327,7 +332,8 @@ export function StudioCheckInPage() {
                   ? 'Vé đã hủy'
                   : ticket.attendanceStatus === 'absent'
                     ? 'Đã ghi vắng'
-                : Date.parse(ticket.serverNow) >= Date.parse(ticket.endsAt) &&
+                    : Date.parse(ticket.serverNow) >=
+                          Date.parse(ticket.endsAt) &&
                         ticket.attendanceStatus === 'unmarked'
                       ? 'Đã qua buổi · Chưa check-in'
                       : ticket.ticketStatus === 'used'
@@ -424,9 +430,7 @@ export function StudioCheckInPage() {
                 disabled={busy !== null || manualReason.trim().length < 3}
                 onClick={() => void confirm()}
               >
-                {busy === 'check-in'
-                  ? 'Đang xác nhận…'
-                  : 'Xác nhận đã tham dự'}
+                {busy === 'check-in' ? 'Đang xác nhận…' : 'Xác nhận đã tham dự'}
               </Button>
             </div>
           ) : (
@@ -436,7 +440,7 @@ export function StudioCheckInPage() {
                   ? 'Chỉ check-in từ giờ bắt đầu buổi học.'
                   : Date.parse(ticket.serverNow) >= Date.parse(ticket.endsAt)
                     ? 'Buổi đã qua. QR hết hiệu lực; dùng mã 8 ký tự và xác nhận thủ công nếu đã đối chiếu khách thực sự tham dự.'
-                  : 'Vé chưa đủ điều kiện check-in. Kiểm tra trạng thái đặt chỗ và lịch học.'}
+                    : 'Vé chưa đủ điều kiện check-in. Kiểm tra trạng thái đặt chỗ và lịch học.'}
               </p>
             )
           )}

@@ -80,8 +80,14 @@ function queueScheduleEmails(workshopId: string, sessionId: string) {
         [workshopId, subscriber.userId, hash],
       );
       const date = new Intl.DateTimeFormat('vi-VN', {
-        weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Ho_Chi_Minh',
+        weekday: 'long',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+        timeZone: 'Asia/Ho_Chi_Minh',
       }).format(subscriber.startsAt);
       const unsubscribeUrl = new URL(
         `/api/workshops/${workshopId}/schedule-subscription/unsubscribe?token=${token}`,
@@ -95,9 +101,15 @@ function queueScheduleEmails(workshopId: string, sessionId: string) {
         ],
         cta: {
           label: 'Xem workshop và đặt chỗ',
-          href: new URL(`/workshop/${subscriber.slug}`, config.CLIENT_URL).toString(),
+          href: new URL(
+            `/workshop/${subscriber.slug}`,
+            config.CLIENT_URL,
+          ).toString(),
         },
-        unsubscribe: { label: 'Hủy nhận thông báo workshop này', href: unsubscribeUrl },
+        unsubscribe: {
+          label: 'Hủy nhận thông báo workshop này',
+          href: unsubscribeUrl,
+        },
       });
       queueEmail({
         to: subscriber.email,
@@ -107,7 +119,9 @@ function queueScheduleEmails(workshopId: string, sessionId: string) {
         idempotencyKey: `schedule:${sessionId}:${subscriber.userId}`,
       });
     }
-  })().catch((error: unknown) => console.error('Schedule announcement failed.', error));
+  })().catch((error: unknown) =>
+    console.error('Schedule announcement failed.', error),
+  );
 }
 
 export async function updateStudioSession(

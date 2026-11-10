@@ -444,11 +444,7 @@
 @media (max-width: 480px) {
   .horizontal-ticket > article {
     mask:
-      radial-gradient(
-        circle at 0 calc(75cqw - 1px),
-        transparent 8px,
-        #000 9px
-      ),
+      radial-gradient(circle at 0 calc(75cqw - 1px), transparent 8px, #000 9px),
       radial-gradient(
         circle at 100% calc(75cqw - 1px),
         transparent 8px,

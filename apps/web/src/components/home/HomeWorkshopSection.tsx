@@ -34,8 +34,13 @@ export function HomeWorkshopSection({
       <PageContainer as="section" id="workshops" className="home-schedule">
         <div className="rounded-2xl bg-soft p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
           <div>
-            <h2 className="font-heading text-xl font-semibold">Chưa có workshop mở đăng ký</h2>
-            <p className="mt-2 text-sm text-stone-700">Bạn có thể khám phá studio và xem những trải nghiệm sắp được tổ chức.</p>
+            <h2 className="font-heading text-xl font-semibold">
+              Chưa có workshop mở đăng ký
+            </h2>
+            <p className="mt-2 text-sm text-stone-700">
+              Bạn có thể khám phá studio và xem những trải nghiệm sắp được tổ
+              chức.
+            </p>
           </div>
           <Button asChild className="mt-4 shrink-0 sm:mt-0">
             <Link to={browseUrl}>Khám phá studio</Link>

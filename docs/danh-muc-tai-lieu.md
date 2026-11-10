@@ -88,10 +88,11 @@ Kết quả lần đồng bộ: 61 file Markdown, toàn bộ liên kết nội b
 | [features/workshop-moderation.md](features/workshop-moderation.md)                                   | Hiện hành; xem nhãn trong file     | docs/workshop-moderation.md               |
 | [features/workshop-publication-policy.md](features/workshop-publication-policy.md)                   | Hiện hành; xem nhãn trong file     | docs/workshop-publication-policy.md       |
 | [operations/deploy.md](operations/deploy.md)                                                         | Hiện hành; xem nhãn trong file     | docs/deploy.md                            |
+| [operations/email-setup.md](operations/email-setup.md)                                               | Hiện hành; xem nhãn trong file     | docs/email-setup.md                       |
 | [operations/payment-operations.md](operations/payment-operations.md)                                 | Hiện hành; xem nhãn trong file     | Giữ nguyên hoặc tài liệu chỉ mục mới      |
 | [operations/production-readiness-checklist.md](operations/production-readiness-checklist.md)         | Hiện hành; xem nhãn trong file     | Giữ nguyên hoặc tài liệu chỉ mục mới      |
 | [policy/README.md](policy/README.md)                                                                 | Bản nháp/quyết định có phân loại   | Giữ nguyên hoặc tài liệu chỉ mục mới      |
-| [policy/financial-calendar-and-settlement.md](policy/financial-calendar-and-settlement.md) | Quyết định đã chốt | Lịch ngày làm việc và quyết toán |
+| [policy/financial-calendar-and-settlement.md](policy/financial-calendar-and-settlement.md)           | Quyết định đã chốt                 | Lịch ngày làm việc và quyết toán          |
 | [policy/bang-chuyen-trang-thai.md](policy/bang-chuyen-trang-thai.md)                                 | Bản nháp/quyết định có phân loại   | Giữ nguyên hoặc tài liệu chỉ mục mới      |
 | [policy/chinh-sach-dat-cho-khach.md](policy/chinh-sach-dat-cho-khach.md)                             | Bản nháp/quyết định có phân loại   | Giữ nguyên hoặc tài liệu chỉ mục mới      |
 | [policy/dieu-khoan-studio.md](policy/dieu-khoan-studio.md)                                           | Bản nháp/quyết định có phân loại   | Giữ nguyên hoặc tài liệu chỉ mục mới      |

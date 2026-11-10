@@ -49,7 +49,11 @@ export async function receivePaymentWebhook(
     verification,
     payload,
   );
-  if (verification.signatureValid && verification.success && verification.orderCode !== null)
+  if (
+    verification.signatureValid &&
+    verification.success &&
+    verification.orderCode !== null
+  )
     queuePaidBookingEmail(String(verification.orderCode));
   return { ...verification, result };
 }

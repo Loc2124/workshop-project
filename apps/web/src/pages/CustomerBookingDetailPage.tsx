@@ -577,15 +577,16 @@ export function CustomerBookingDetailPage() {
                           ? ticket.attendanceMethod === 'manual_confirmation'
                             ? 'Đã tham dự · Xác nhận thủ công'
                             : 'Đã tham dự'
-                          : sessionEnded && ticket.attendanceStatus === 'unmarked'
+                          : sessionEnded &&
+                              ticket.attendanceStatus === 'unmarked'
                             ? 'Đã qua buổi · Chưa check-in'
-                          : ticket.attendanceStatus === 'absent'
-                            ? 'Vắng mặt'
-                            : ticket.status === 'valid'
-                              ? 'Còn hiệu lực'
-                              : ticket.status === 'used'
-                                ? 'Đã sử dụng'
-                                : 'Đã vô hiệu'}
+                            : ticket.attendanceStatus === 'absent'
+                              ? 'Vắng mặt'
+                              : ticket.status === 'valid'
+                                ? 'Còn hiệu lực'
+                                : ticket.status === 'used'
+                                  ? 'Đã sử dụng'
+                                  : 'Đã vô hiệu'}
                       </p>
                       {!sessionEnded && ticket.status === 'valid' && (
                         <p className="mt-1 text-xs text-stone-600">
@@ -600,10 +601,10 @@ export function CustomerBookingDetailPage() {
                       {ticket.manualCode &&
                         ticket.status === 'valid' &&
                         ticket.attendanceStatus === 'unmarked' && (
-                        <p className="mt-1 font-mono text-sm font-semibold tracking-widest text-stone-700">
-                          Mã nhập tay: {ticket.manualCode}
-                        </p>
-                      )}
+                          <p className="mt-1 font-mono text-sm font-semibold tracking-widest text-stone-700">
+                            Mã nhập tay: {ticket.manualCode}
+                          </p>
+                        )}
                       {ticket.attendanceStatus === 'attended' && (
                         <p className="mt-1 text-xs text-stone-600">
                           {ticket.attendanceMarkedAt
@@ -611,7 +612,8 @@ export function CustomerBookingDetailPage() {
                             : 'Đã ghi nhận tham dự'}
                           {ticket.attendanceMarkedBy
                             ? ` bởi ${ticket.attendanceMarkedBy}`
-                            : ''}.
+                            : ''}
+                          .
                         </p>
                       )}
                     </div>

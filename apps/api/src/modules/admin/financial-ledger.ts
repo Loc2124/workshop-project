@@ -982,7 +982,9 @@ financialLedgerRouter.post(
         },
       )
       .parse(req.body);
-    const refundNotice: { value?: { bookingId: string; amount: string; reference?: string } } = {};
+    const refundNotice: {
+      value?: { bookingId: string; amount: string; reference?: string };
+    } = {};
     await withTransaction(async (client) => {
       const result = await client.query<{
         bookingId: string;
@@ -1195,7 +1197,12 @@ financialLedgerRouter.post(
       });
     });
     if (refundNotice.value)
-      queueRefundEmail(refundNotice.value.bookingId, id, refundNotice.value.amount, refundNotice.value.reference);
+      queueRefundEmail(
+        refundNotice.value.bookingId,
+        id,
+        refundNotice.value.amount,
+        refundNotice.value.reference,
+      );
     res.json({ ok: true, status: input.result });
   },
 );

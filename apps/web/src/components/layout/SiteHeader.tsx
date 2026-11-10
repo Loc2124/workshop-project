@@ -99,7 +99,7 @@ export function SiteHeader() {
         to={to}
         onClick={closeMenus}
         aria-current={currentPage(to) ? 'page' : undefined}
-        className={`inline-flex items-center underline-offset-8 transition-colors hover:text-primary ${mobile ? 'min-h-12 w-full rounded-lg px-3 py-2 text-base' : 'min-h-11 text-sm'} ${active(to) ? mobile ? 'bg-[#DCEFC8] font-semibold text-[#2A4710]' : 'font-semibold text-primary underline' : 'font-normal text-ink'}`}
+        className={`inline-flex items-center underline-offset-8 transition-colors hover:text-primary ${mobile ? 'min-h-12 w-full rounded-lg px-3 py-2 text-base' : 'min-h-11 text-sm'} ${active(to) ? (mobile ? 'bg-[#DCEFC8] font-semibold text-[#2A4710]' : 'font-semibold text-primary underline') : 'font-normal text-ink'}`}
       >
         {label}
       </Link>
@@ -188,11 +188,11 @@ export function SiteHeader() {
           )}
           {user && (
             <div className="shrink-0">
-            <Suspense
-              fallback={<span aria-hidden="true" className="block size-11" />}
-            >
-              <NotificationsMenu userId={user.id} />
-            </Suspense>
+              <Suspense
+                fallback={<span aria-hidden="true" className="block size-11" />}
+              >
+                <NotificationsMenu userId={user.id} />
+              </Suspense>
             </div>
           )}
           {user && (
@@ -267,7 +267,9 @@ export function SiteHeader() {
                     {user.role === 'customer' && (
                       <button
                         type="button"
-                        onClick={() => toast.info('Trang tài khoản sẽ được bổ sung sau.')}
+                        onClick={() =>
+                          toast.info('Trang tài khoản sẽ được bổ sung sau.')
+                        }
                         className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
                       >
                         Tài khoản
@@ -337,58 +339,123 @@ export function SiteHeader() {
           className="fixed inset-x-0 bottom-0 top-20 z-40 xl:hidden"
           onClick={closeMenus}
         >
-          <div aria-hidden="true" className="absolute inset-0 bg-ink/25 backdrop-blur-sm" />
-        <nav
-          id="mobile-navigation"
-          aria-label="Điều hướng trên điện thoại"
-          className="relative mx-auto max-h-[calc(100dvh-5rem)] max-w-page overflow-y-auto bg-surface px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-overlay md:px-6"
-          onClick={(event) => event.stopPropagation()}
-        >
-          <div className="flex flex-col items-start gap-1">{navigation(true)}</div>
-          {user && (
-            <section className="mt-3 border-t border-line pt-3">
-              <div className="px-3 py-2">
-                <p className="text-sm font-semibold text-ink">{user.fullName}</p>
-                <p className="mt-0.5 truncate text-[13px] text-muted">{user.email}</p>
-              </div>
-              <div className="flex flex-col">
-                {user.role === 'customer' ? (
-                  <>
-                    <Link to="/me/bookings" onClick={closeMenus} className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft">Lịch đặt của tôi</Link>
-                    <button type="button" onClick={() => toast.info('Trang tài khoản sẽ được bổ sung sau.')} className="flex min-h-12 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft">Tài khoản</button>
-                  </>
-                ) : (
-                  <Link to={studiosQuery.data?.some((studio) => studio.role === 'owner') ? '/studio' : '/dang-ky-studio'} onClick={closeMenus} className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft">{studiosQuery.data?.some((studio) => studio.role === 'owner') ? 'Quản lý studio' : 'Mở studio trên Open Slot'}</Link>
-                )}
-                {studiosQuery.data?.some((studio) => studio.status === 'approved' && !studio.isDraft) && <Link to="/check-in" onClick={closeMenus} className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft">Check-in vé</Link>}
-                {user.role === 'admin' && <Link to="/admin" onClick={closeMenus} className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft">Duyệt nội dung</Link>}
-                <button type="button" disabled={isLoggingOut} onClick={() => void handleLogout()} className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-brick hover:bg-soft disabled:opacity-50"><LogOut size={17} aria-hidden="true" />{isLoggingOut ? 'Đang thoát…' : 'Đăng xuất'}</button>
-              </div>
-            </section>
-          )}
-          {!isLoading && !authError && !user && (
-            <div className="mt-4 flex items-center gap-6 sm:hidden">
-              {pathname !== '/dang-nhap' && (
-                <AuthLink
-                  to="/dang-nhap"
-                  onClick={closeMenus}
-                  className="inline-flex min-h-12 items-center"
-                >
-                  Đăng nhập
-                </AuthLink>
-              )}
-              {pathname !== '/dang-ky' && (
-                <AuthLink
-                  to="/dang-ky"
-                  onClick={closeMenus}
-                  className="inline-flex min-h-12 items-center bg-primary px-5 text-white hover:bg-primary-hover"
-                >
-                  Tạo tài khoản
-                </AuthLink>
-              )}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-ink/25 backdrop-blur-sm"
+          />
+          <nav
+            id="mobile-navigation"
+            aria-label="Điều hướng trên điện thoại"
+            className="relative mx-auto max-h-[calc(100dvh-5rem)] max-w-page overflow-y-auto bg-surface px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-overlay md:px-6"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex flex-col items-start gap-1">
+              {navigation(true)}
             </div>
-          )}
-        </nav>
+            {user && (
+              <section className="mt-3 border-t border-line pt-3">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-semibold text-ink">
+                    {user.fullName}
+                  </p>
+                  <p className="mt-0.5 truncate text-[13px] text-muted">
+                    {user.email}
+                  </p>
+                </div>
+                <div className="flex flex-col">
+                  {user.role === 'customer' ? (
+                    <>
+                      <Link
+                        to="/me/bookings"
+                        onClick={closeMenus}
+                        className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
+                      >
+                        Lịch đặt của tôi
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          toast.info('Trang tài khoản sẽ được bổ sung sau.')
+                        }
+                        className="flex min-h-12 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
+                      >
+                        Tài khoản
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      to={
+                        studiosQuery.data?.some(
+                          (studio) => studio.role === 'owner',
+                        )
+                          ? '/studio'
+                          : '/dang-ky-studio'
+                      }
+                      onClick={closeMenus}
+                      className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
+                    >
+                      {studiosQuery.data?.some(
+                        (studio) => studio.role === 'owner',
+                      )
+                        ? 'Quản lý studio'
+                        : 'Mở studio trên Open Slot'}
+                    </Link>
+                  )}
+                  {studiosQuery.data?.some(
+                    (studio) => studio.status === 'approved' && !studio.isDraft,
+                  ) && (
+                    <Link
+                      to="/check-in"
+                      onClick={closeMenus}
+                      className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
+                    >
+                      Check-in vé
+                    </Link>
+                  )}
+                  {user.role === 'admin' && (
+                    <Link
+                      to="/admin"
+                      onClick={closeMenus}
+                      className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
+                    >
+                      Duyệt nội dung
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    disabled={isLoggingOut}
+                    onClick={() => void handleLogout()}
+                    className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-brick hover:bg-soft disabled:opacity-50"
+                  >
+                    <LogOut size={17} aria-hidden="true" />
+                    {isLoggingOut ? 'Đang thoát…' : 'Đăng xuất'}
+                  </button>
+                </div>
+              </section>
+            )}
+            {!isLoading && !authError && !user && (
+              <div className="mt-4 flex items-center gap-6 sm:hidden">
+                {pathname !== '/dang-nhap' && (
+                  <AuthLink
+                    to="/dang-nhap"
+                    onClick={closeMenus}
+                    className="inline-flex min-h-12 items-center"
+                  >
+                    Đăng nhập
+                  </AuthLink>
+                )}
+                {pathname !== '/dang-ky' && (
+                  <AuthLink
+                    to="/dang-ky"
+                    onClick={closeMenus}
+                    className="inline-flex min-h-12 items-center bg-primary px-5 text-white hover:bg-primary-hover"
+                  >
+                    Tạo tài khoản
+                  </AuthLink>
+                )}
+              </div>
+            )}
+          </nav>
         </div>
       )}
       {authError && (

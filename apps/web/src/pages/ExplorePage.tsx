@@ -352,7 +352,11 @@ export function ExplorePage() {
               <option value="price-asc">Giá thấp đến cao</option>
               <option value="price-desc">Giá cao đến thấp</option>
             </select>
-            <ChevronDown aria-hidden="true" size={16} className="pointer-events-none absolute right-3 text-[#5E584D]" />
+            <ChevronDown
+              aria-hidden="true"
+              size={16}
+              className="pointer-events-none absolute right-3 text-[#5E584D]"
+            />
           </label>
         </ExploreFilters>
         {(countActiveFilters(filters) > 0 || appliedQuery.trim()) && (
@@ -364,7 +368,15 @@ export function ExplorePage() {
               onChange={updateFilters}
               compact
             />
-            {countActiveFilters(filters) > 0 && <button type="button" onClick={clearFilters} className="h-9 shrink-0 text-sm font-semibold text-primary underline">Xóa bộ lọc</button>}
+            {countActiveFilters(filters) > 0 && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="h-9 shrink-0 text-sm font-semibold text-primary underline"
+              >
+                Xóa bộ lọc
+              </button>
+            )}
           </div>
         )}
         <section
@@ -381,7 +393,12 @@ export function ExplorePage() {
               className="font-heading text-xl font-semibold"
             >
               {view === 'studios' ? 'Studio nổi bật' : 'Workshop sắp tới'}
-              {totalCount > 0 && <> · <span aria-live="polite">{totalCount}</span></>}
+              {totalCount > 0 && (
+                <>
+                  {' '}
+                  · <span aria-live="polite">{totalCount}</span>
+                </>
+              )}
             </h2>
             {titleLocation && (
               <p className="text-sm text-stone-600">Ở {titleLocation}</p>
@@ -394,16 +411,39 @@ export function ExplorePage() {
             loading={
               view === 'studios' ? studiosCatalog.isLoading : catalog.isLoading
             }
-            emptyState={view === 'workshops' && totalCount === 0 ? (
-              <div className="mx-auto flex max-w-md flex-col items-center">
-                <CalendarDays aria-hidden="true" className="mb-4 text-[#5E584D]" size={30} />
-                <h3 className="font-heading text-lg font-semibold text-ink">Chưa có workshop {filters.categoryId ? getCategoryMeta(filters.categoryId).name : ''} phù hợp</h3>
-                <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <button type="button" onClick={clearFilters} className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover">Xóa bộ lọc</button>
-                  <Link to={`/dang-nhap?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`} className="inline-flex h-11 items-center justify-center rounded-lg border border-[#DDD6C4] bg-white px-4 text-sm font-semibold text-[#2A4710] hover:bg-[#DCEFC8]">Nhận thông báo khi có lịch</Link>
+            emptyState={
+              view === 'workshops' && totalCount === 0 ? (
+                <div className="mx-auto flex max-w-md flex-col items-center">
+                  <CalendarDays
+                    aria-hidden="true"
+                    className="mb-4 text-[#5E584D]"
+                    size={30}
+                  />
+                  <h3 className="font-heading text-lg font-semibold text-ink">
+                    Chưa có workshop{' '}
+                    {filters.categoryId
+                      ? getCategoryMeta(filters.categoryId).name
+                      : ''}{' '}
+                    phù hợp
+                  </h3>
+                  <div className="mt-5 flex flex-wrap justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={clearFilters}
+                      className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover"
+                    >
+                      Xóa bộ lọc
+                    </button>
+                    <Link
+                      to={`/dang-nhap?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+                      className="inline-flex h-11 items-center justify-center rounded-lg border border-[#DDD6C4] bg-white px-4 text-sm font-semibold text-[#2A4710] hover:bg-[#DCEFC8]"
+                    >
+                      Nhận thông báo khi có lịch
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ) : undefined}
+              ) : undefined
+            }
             studios={visibleStudios}
             view={view}
             workshops={visibleWorkshops}

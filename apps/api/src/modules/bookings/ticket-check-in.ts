@@ -69,11 +69,7 @@ export async function findTicketForCheckIn(
   );
   const ticket = result.rows[0];
   if (!ticket)
-    throw new AppError(
-      404,
-      'NOT_FOUND',
-      'Không tìm thấy vé tại studio này.',
-    );
+    throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy vé tại studio này.');
   const isQrCode = qrTicketCodePattern.test(code);
   if (isQrCode && ticket.serverNow.getTime() >= ticket.endsAt.getTime())
     throw new AppError(

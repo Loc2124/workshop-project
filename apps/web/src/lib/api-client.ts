@@ -136,11 +136,7 @@ async function request<T>(
     throw classifyRequestError(error, init.signal);
   }
 
-  if (
-    response.status === 401 &&
-    canRefresh &&
-    !path.startsWith('/auth/')
-  ) {
+  if (response.status === 401 && canRefresh && !path.startsWith('/auth/')) {
     await refreshSession();
     if (init.signal?.aborted)
       throw classifyRequestError(undefined, init.signal);

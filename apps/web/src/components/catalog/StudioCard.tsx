@@ -28,10 +28,14 @@ export const StudioCard = memo(function StudioCard({
           categoryId={studio.categoryId}
           alt={`Không gian ${studio.name}`}
         >
-          {studio.workshopCount > 0 && <>
-            <span className="font-heading text-4xl font-bold leading-none">{studio.workshopCount}</span>
-            <span className="mt-2 text-[13px] font-bold">WORKSHOP</span>
-          </>}
+          {studio.workshopCount > 0 && (
+            <>
+              <span className="font-heading text-4xl font-bold leading-none">
+                {studio.workshopCount}
+              </span>
+              <span className="mt-2 text-[13px] font-bold">WORKSHOP</span>
+            </>
+          )}
         </TicketStub>
         <div className="@container flex min-w-0 flex-1 flex-col p-3 lg:p-5">
           <p className="text-[13px] font-bold text-stone-700">
@@ -81,7 +85,11 @@ export const StudioCard = memo(function StudioCard({
               />
             </div>
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              {studio.availableSessions > 0 && <span className="rounded-lg border border-[#B4532A]/30 bg-[#FCE0DB] px-2.5 py-1.5 text-[13px] font-bold text-[#9B2C1A]">{studio.availableSessions} buổi còn chỗ</span>}
+              {studio.availableSessions > 0 && (
+                <span className="rounded-lg border border-[#B4532A]/30 bg-[#FCE0DB] px-2.5 py-1.5 text-[13px] font-bold text-[#9B2C1A]">
+                  {studio.availableSessions} buổi còn chỗ
+                </span>
+              )}
               <TicketAction />
             </div>
           </footer>

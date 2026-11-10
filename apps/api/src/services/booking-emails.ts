@@ -19,7 +19,12 @@ type BookingEmailRow = {
 
 export function queueBookingEmail(
   bookingId: string,
-  type: 'booking_hold' | 'booking_confirmed' | 'payment_confirmed' | 'booking_cancelled' | 'booking_expired',
+  type:
+    | 'booking_hold'
+    | 'booking_confirmed'
+    | 'payment_confirmed'
+    | 'booking_cancelled'
+    | 'booking_expired',
 ) {
   void (async () => {
     const result = await query<BookingEmailRow>(
@@ -36,36 +41,57 @@ export function queueBookingEmail(
       [bookingId],
     );
     const booking = result.rows[0];
-    if (!booking) return;
+    if (!booking?.id) return;
     const date = new Intl.DateTimeFormat('vi-VN', {
-      weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Ho_Chi_Minh',
+      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone: 'Asia/Ho_Chi_Minh',
     }).format(booking.startsAt);
-    const title = type === 'payment_confirmed'
-      ? 'Đã xác nhận thanh toán'
-      : type === 'booking_cancelled'
-        ? 'Đặt chỗ đã được hủy'
-      : type === 'booking_expired'
-        ? 'Đã hết thời gian giữ chỗ'
-      : type === 'booking_hold'
-          ? 'Open Slot đã nhận yêu cầu đặt chỗ'
-          : 'Đặt chỗ của bạn đã được xác nhận';
+    const title =
+      type === 'payment_confirmed'
+        ? 'Đã xác nhận thanh toán'
+        : type === 'booking_cancelled'
+          ? 'Đặt chỗ đã được hủy'
+          : type === 'booking_expired'
+            ? 'Đã hết thời gian giữ chỗ'
+            : type === 'booking_hold'
+              ? 'Open Slot đã nhận yêu cầu đặt chỗ'
+              : 'Đặt chỗ của bạn đã được xác nhận';
     const paragraphs = [
       `Xin chào ${booking.fullName},`,
       `${booking.workshopTitle} tại ${booking.studioName} · ${date}. Mã đơn: ${booking.orderCode}.`,
     ];
     if (type === 'booking_hold' && booking.depositAmount > 0) {
-      paragraphs.push(`Khoản cọc cần thanh toán: ${new Intl.NumberFormat('vi-VN').format(booking.depositAmount)} đ. Mở đơn đặt chỗ để xem hướng dẫn thanh toán và mã chuyển khoản${booking.checkoutUrl ? `: ${booking.checkoutUrl}` : '.'}`);
+      paragraphs.push(
+        `Khoản cọc cần thanh toán: ${new Intl.NumberFormat('vi-VN').format(booking.depositAmount)} đ. Mở đơn đặt chỗ để xem hướng dẫn thanh toán và mã chuyển khoản${booking.checkoutUrl ? `: ${booking.checkoutUrl}` : '.'}`,
+      );
     }
     if (type === 'payment_confirmed') {
-      paragraphs.push(`Mã vé của bạn: ${booking.ticketCodes.join(', ') || 'Đã cập nhật trong tài khoản Open Slot.'}`);
-      paragraphs.push('Hãy xuất trình mã QR trên vé khi đến studio. Mỗi khách có một mã vé riêng.');
+      paragraphs.push(
+        `Mã vé của bạn: ${booking.ticketCodes.join(', ') || 'Đã cập nhật trong tài khoản Open Slot.'}`,
+      );
+      paragraphs.push(
+        'Hãy xuất trình mã QR trên vé khi đến studio. Mỗi khách có một mã vé riêng.',
+      );
     }
     if (type === 'booking_cancelled')
-      paragraphs.push('Nếu khoản thanh toán cần được hoàn, trạng thái và thông tin đối soát sẽ được cập nhật trong chi tiết đơn.');
+      paragraphs.push(
+        'Nếu khoản thanh toán cần được hoàn, trạng thái và thông tin đối soát sẽ được cập nhật trong chi tiết đơn.',
+      );
     if (type === 'booking_expired')
-      paragraphs.push('Thời gian giữ chỗ đã kết thúc nên chỗ chưa thanh toán được giải phóng. Bạn có thể xem các lịch còn chỗ trên Open Slot.');
-    const url = new URL(`/me/bookings/${booking.id}`, loadConfig().CLIENT_URL).toString();
+      paragraphs.push(
+        'Thời gian giữ chỗ đã kết thúc nên chỗ chưa thanh toán được giải phóng. Bạn có thể xem các lịch còn chỗ trên Open Slot.',
+      );
+    const clientUrl =
+      loadConfig().CLIENT_URL ??
+      loadConfig().WEB_ORIGIN ??
+      'http://localhost:3000';
+    const url = new URL(`/me/bookings/${booking.id}`, clientUrl).toString();
     const content = emailTemplate({
       title,
       paragraphs,
@@ -78,7 +104,9 @@ export function queueBookingEmail(
       type,
       idempotencyKey: `${type}:${booking.id}`,
     });
-  })().catch((error: unknown) => console.error('Booking email preparation failed.', error));
+  })().catch((error: unknown) =>
+    console.error('Booking email preparation failed.', error),
+  );
 }
 
 export function queuePaidBookingEmail(orderCode: string | number) {
@@ -87,10 +115,14 @@ export function queuePaidBookingEmail(orderCode: string | number) {
      WHERE p.order_code::text=$1 AND b.reservation_status='confirmed'
        AND b.paid_amount>0 LIMIT 1`,
     [String(orderCode)],
-  ).then((result) => {
-    const bookingId = result.rows[0]?.id;
-    if (bookingId) queueBookingEmail(bookingId, 'payment_confirmed');
-  }).catch((error: unknown) => console.error('Paid booking email lookup failed.', error));
+  )
+    .then((result) => {
+      const bookingId = result.rows[0]?.id;
+      if (bookingId) queueBookingEmail(bookingId, 'payment_confirmed');
+    })
+    .catch((error: unknown) =>
+      console.error('Paid booking email lookup failed.', error),
+    );
 }
 
 export function queueRefundEmail(
@@ -100,7 +132,11 @@ export function queueRefundEmail(
   reference?: string | null,
 ) {
   void (async () => {
-    const result = await query<{ email: string; fullName: string; workshopTitle: string }>(
+    const result = await query<{
+      email: string;
+      fullName: string;
+      workshopTitle: string;
+    }>(
       `SELECT u.email,u.full_name AS "fullName",w.title AS "workshopTitle"
        FROM bookings b JOIN users u ON u.id=b.user_id JOIN sessions s ON s.id=b.session_id
        JOIN workshops w ON w.id=s.workshop_id WHERE b.id=$1`,
@@ -108,7 +144,9 @@ export function queueRefundEmail(
     );
     const customer = result.rows[0];
     if (!customer) return;
-    const formattedAmount = new Intl.NumberFormat('vi-VN').format(Number(amount));
+    const formattedAmount = new Intl.NumberFormat('vi-VN').format(
+      Number(amount),
+    );
     const content = emailTemplate({
       title: 'Khoản hoàn tiền đã được chuyển',
       paragraphs: [
@@ -117,7 +155,10 @@ export function queueRefundEmail(
       ],
       cta: {
         label: 'Xem chi tiết đặt chỗ',
-        href: new URL(`/me/bookings/${bookingId}`, loadConfig().CLIENT_URL).toString(),
+        href: new URL(
+          `/me/bookings/${bookingId}`,
+          loadConfig().CLIENT_URL,
+        ).toString(),
       },
     });
     queueEmail({
@@ -127,5 +168,7 @@ export function queueRefundEmail(
       type: 'refund_sent',
       idempotencyKey: `refund-sent:${transferId}`,
     });
-  })().catch((error: unknown) => console.error('Refund email preparation failed.', error));
+  })().catch((error: unknown) =>
+    console.error('Refund email preparation failed.', error),
+  );
 }

@@ -100,7 +100,10 @@ export async function resetPassword(
       parsed.error.issues[0]?.message ?? 'Mật khẩu chưa đạt yêu cầu.',
     );
   const tokenHash = createHash('sha256').update(token).digest('hex');
-  const user = await completePasswordReset(tokenHash, await hashPassword(password));
+  const user = await completePasswordReset(
+    tokenHash,
+    await hashPassword(password),
+  );
   if (!user) return false;
   const content = emailTemplate({
     title: 'Mật khẩu đã được thay đổi',

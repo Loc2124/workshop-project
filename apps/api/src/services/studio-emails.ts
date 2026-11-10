@@ -9,7 +9,12 @@ export function queueStudioDecisionEmail(
   reason?: string,
 ) {
   void (async () => {
-    const result = await query<{ email: string; fullName: string; name: string; reviewedAt: Date | null }>(
+    const result = await query<{
+      email: string;
+      fullName: string;
+      name: string;
+      reviewedAt: Date | null;
+    }>(
       `SELECT u.email,u.full_name AS "fullName",st.name,st.reviewed_at AS "reviewedAt"
        FROM studios st JOIN studio_members sm ON sm.studio_id=st.id AND sm.role='owner'
        JOIN users u ON u.id=sm.user_id WHERE st.id=$1 ORDER BY sm.created_at LIMIT 1`,
@@ -18,7 +23,9 @@ export function queueStudioDecisionEmail(
     const owner = result.rows[0];
     if (!owner) return;
     const approved = status === 'approved';
-    const title = approved ? 'Hồ sơ studio đã được duyệt' : 'Cần cập nhật hồ sơ studio';
+    const title = approved
+      ? 'Hồ sơ studio đã được duyệt'
+      : 'Cần cập nhật hồ sơ studio';
     const content = emailTemplate({
       title,
       paragraphs: [
@@ -29,7 +36,10 @@ export function queueStudioDecisionEmail(
       ],
       cta: {
         label: approved ? 'Quản lý studio' : 'Cập nhật hồ sơ',
-        href: new URL(approved ? '/studio' : '/dang-ky-studio', loadConfig().CLIENT_URL).toString(),
+        href: new URL(
+          approved ? '/studio' : '/dang-ky-studio',
+          loadConfig().CLIENT_URL,
+        ).toString(),
       },
     });
     queueEmail({
@@ -39,5 +49,7 @@ export function queueStudioDecisionEmail(
       type: approved ? 'studio_approved' : 'studio_rejected',
       idempotencyKey: `studio-decision:${studioId}:${status}:${owner.reviewedAt?.toISOString() ?? 'unknown'}`,
     });
-  })().catch((error: unknown) => console.error('Studio decision email failed.', error));
+  })().catch((error: unknown) =>
+    console.error('Studio decision email failed.', error),
+  );
 }

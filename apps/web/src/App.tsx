@@ -172,7 +172,10 @@ function App() {
           <Route path="/workshops/:id" element={<WorkshopPage />} />
           <Route element={<RequireCustomer />}>
             <Route path="/me/bookings" element={<CustomerBookingsPage />} />
-            <Route path="/lich-dat-cua-toi" element={<Navigate to="/me/bookings" replace />} />
+            <Route
+              path="/lich-dat-cua-toi"
+              element={<Navigate to="/me/bookings" replace />}
+            />
             <Route
               path="/me/refund-accounts"
               element={<SavedRefundAccountsPage />}

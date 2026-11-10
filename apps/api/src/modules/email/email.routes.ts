@@ -4,7 +4,11 @@ import { z } from 'zod';
 import { loadConfig } from '../../config.js';
 import { AppError } from '../../errors/app-error.js';
 import { query } from '../../db/pool.js';
-import { retryFailedEmails, sendEmail, processResendEvent } from '../../services/email.js';
+import {
+  retryFailedEmails,
+  sendEmail,
+  processResendEvent,
+} from '../../services/email.js';
 import { emailTemplate } from '../../services/templates.js';
 
 export const emailRouter = Router();
@@ -12,7 +16,8 @@ export const resendWebhookRouter = Router();
 
 emailRouter.get('/cron/remind', async (request, response) => {
   const secret = loadConfig().CRON_SECRET;
-  if (!secret) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Cron chưa được cấu hình.');
+  if (!secret)
+    throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Cron chưa được cấu hình.');
   if (request.get('Authorization') !== `Bearer ${secret}`)
     throw new AppError(401, 'UNAUTHORIZED', 'Không được phép gọi cron.');
 
@@ -52,8 +57,14 @@ emailRouter.get('/cron/remind', async (request, response) => {
     if (!claim.rowCount) continue;
     try {
       const when = new Intl.DateTimeFormat('vi-VN', {
-        weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Ho_Chi_Minh',
+        weekday: 'long',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hourCycle: 'h23',
+        timeZone: 'Asia/Ho_Chi_Minh',
       }).format(booking.startsAt);
       const content = emailTemplate({
         title: 'Workshop của bạn diễn ra vào ngày mai',
@@ -62,7 +73,13 @@ emailRouter.get('/cron/remind', async (request, response) => {
           `${booking.workshopTitle} tại ${booking.studioName} bắt đầu lúc ${when} (giờ Việt Nam).`,
           `Mã đơn ${booking.orderCode} · Mã vé: ${booking.ticketCodes.join(', ') || 'xem trong tài khoản Open Slot'}.`,
         ],
-        cta: { label: 'Xem lịch đặt của tôi', href: new URL('/lich-dat-cua-toi', loadConfig().CLIENT_URL).toString() },
+        cta: {
+          label: 'Xem lịch đặt của tôi',
+          href: new URL(
+            '/lich-dat-cua-toi',
+            loadConfig().CLIENT_URL,
+          ).toString(),
+        },
       });
       await sendEmail({
         to: booking.email,
@@ -78,17 +95,28 @@ emailRouter.get('/cron/remind', async (request, response) => {
       );
       sent++;
     } catch (error) {
-      await query('UPDATE bookings SET reminder24h_lock_at=NULL WHERE id=$1', [booking.id]);
+      await query('UPDATE bookings SET reminder24h_lock_at=NULL WHERE id=$1', [
+        booking.id,
+      ]);
       failed++;
-      console.error(`24-hour reminder failed for booking ${booking.id}.`, error);
+      console.error(
+        `24-hour reminder failed for booking ${booking.id}.`,
+        error,
+      );
     }
   }
-  response.json({ ok: true, remindersSent: sent, remindersFailed: failed, emailsRetried: retried });
+  response.json({
+    ok: true,
+    remindersSent: sent,
+    remindersFailed: failed,
+    emailsRetried: retried,
+  });
 });
 
 resendWebhookRouter.post('/', async (request, response) => {
   const secret = loadConfig().RESEND_WEBHOOK_SECRET;
-  if (!secret) throw new AppError(404, 'NOT_FOUND', 'Webhook chưa được cấu hình.');
+  if (!secret)
+    throw new AppError(404, 'NOT_FOUND', 'Webhook chưa được cấu hình.');
   if (!Buffer.isBuffer(request.body))
     throw new AppError(400, 'BAD_REQUEST', 'Nội dung webhook không hợp lệ.');
   const raw = request.body.toString('utf8');
@@ -100,18 +128,25 @@ resendWebhookRouter.post('/', async (request, response) => {
   } catch {
     throw new AppError(400, 'BAD_REQUEST', 'JSON webhook không hợp lệ.');
   }
-  const event = z.object({
-    type: z.string(),
-    data: z.object({
-      email_id: z.string().optional(),
-      to: z.union([z.string(), z.array(z.string())]).optional(),
-    }).passthrough(),
-  }).safeParse(parsedBody);
-  if (!event.success) throw new AppError(400, 'BAD_REQUEST', 'Dữ liệu webhook không hợp lệ.');
+  const event = z
+    .object({
+      type: z.string(),
+      data: z
+        .object({
+          email_id: z.string().optional(),
+          to: z.union([z.string(), z.array(z.string())]).optional(),
+        })
+        .passthrough(),
+    })
+    .safeParse(parsedBody);
+  if (!event.success)
+    throw new AppError(400, 'BAD_REQUEST', 'Dữ liệu webhook không hợp lệ.');
   if (['email.bounced', 'email.complained'].includes(event.data.type)) {
     const recipients = Array.isArray(event.data.data.to)
       ? event.data.data.to
-      : event.data.data.to ? [event.data.data.to] : [];
+      : event.data.data.to
+        ? [event.data.data.to]
+        : [];
     const resendId = event.data.data.email_id;
     for (const email of recipients) {
       await processResendEvent({
@@ -125,11 +160,16 @@ resendWebhookRouter.post('/', async (request, response) => {
   response.sendStatus(204);
 });
 
-function verifyResendSignature(request: Request, raw: string, secret: string): boolean {
+function verifyResendSignature(
+  request: Request,
+  raw: string,
+  secret: string,
+): boolean {
   const id = request.get('svix-id');
   const timestamp = request.get('svix-timestamp');
   const signatures = request.get('svix-signature');
-  if (!id || !timestamp || !signatures || !/^\d+$/.test(timestamp)) return false;
+  if (!id || !timestamp || !signatures || !/^\d+$/.test(timestamp))
+    return false;
   if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
   const key = secret.startsWith('whsec_')
     ? Buffer.from(secret.slice('whsec_'.length), 'base64')

@@ -27,6 +27,7 @@
   "docs/workshop-moderation.md": "docs/features/workshop-moderation.md",
   "docs/workshop-publication-policy.md": "docs/features/workshop-publication-policy.md",
   "docs/deploy.md": "docs/operations/deploy.md",
+  "docs/email-setup.md": "docs/operations/email-setup.md",
   "docs/mobile-performance.md": "docs/archive/performance/mobile-performance.md",
   "docs/mobile-performance.json": "docs/archive/performance/mobile-performance.json",
   "docs/performance-client.md": "docs/archive/performance/performance-client.md",

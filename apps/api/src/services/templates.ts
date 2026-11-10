@@ -44,7 +44,9 @@ export function emailTemplate(input: {
     ...input.paragraphs,
     ...(input.cta ? ['', `${input.cta.label}: ${input.cta.href}`] : []),
     ...(input.footnote ? ['', input.footnote] : []),
-    ...(input.unsubscribe ? ['', `${input.unsubscribe.label}: ${input.unsubscribe.href}`] : []),
+    ...(input.unsubscribe
+      ? ['', `${input.unsubscribe.label}: ${input.unsubscribe.href}`]
+      : []),
     '',
     'Open Slot · https://www.openslot.io.vn',
     'Hỗ trợ: hotro@openslot.vn',

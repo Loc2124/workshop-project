@@ -16,7 +16,10 @@ const ticketSchema = z.object({
   seq: z.number(),
   status: z.string(),
   attendanceStatus: z.enum(['unmarked', 'attended', 'absent']),
-  attendanceMethod: z.enum(['check_in', 'manual_confirmation']).nullable().optional(),
+  attendanceMethod: z
+    .enum(['check_in', 'manual_confirmation'])
+    .nullable()
+    .optional(),
   version: z.number(),
   paidAmount: z.number(),
   depositAmount: z.number(),
@@ -85,8 +88,8 @@ export function TicketAttendanceEditor({
   }, []);
   const requiresManualReason = Boolean(
     selected &&
-      selected.status === 'attended' &&
-      now >= Date.parse(selected.ticket.endsAt),
+    selected.status === 'attended' &&
+    now >= Date.parse(selected.ticket.endsAt),
   );
   const update = useMutation({
     mutationFn: async () => {
@@ -100,7 +103,7 @@ export function TicketAttendanceEditor({
             ? { reason, ...(refundAction ? { refundAction } : {}) }
             : requiresManualReason
               ? { reason }
-            : {}),
+              : {}),
         }),
       });
     },

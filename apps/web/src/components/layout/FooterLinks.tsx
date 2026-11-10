@@ -22,7 +22,9 @@ function FooterGroup({
   className?: string;
 }) {
   return (
-    <div className={`footer-link-group flex min-w-0 flex-col items-start gap-2 ${className} ${className.includes('footer-discover') ? 'max-[480px]:hidden' : 'max-[480px]:contents'}`}>
+    <div
+      className={`footer-link-group flex min-w-0 flex-col items-start gap-2 ${className} ${className.includes('footer-discover') ? 'max-[480px]:hidden' : 'max-[480px]:contents'}`}
+    >
       <h2 className="mb-1 font-sans text-base font-bold leading-normal max-[480px]:hidden">
         {title}
       </h2>
@@ -118,12 +120,16 @@ export function FooterLinks() {
                   className="rounded-lg hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   Hotline {siteContact.hotline}
-                  {siteContact.workingHours?.trim() && ` · ${siteContact.workingHours}`}
+                  {siteContact.workingHours?.trim() &&
+                    ` · ${siteContact.workingHours}`}
                 </a>
               )}
-              {!siteContact.hotline?.trim() && siteContact.workingHours?.trim() && (
-                <span className="font-normal">{siteContact.workingHours}</span>
-              )}
+              {!siteContact.hotline?.trim() &&
+                siteContact.workingHours?.trim() && (
+                  <span className="font-normal">
+                    {siteContact.workingHours}
+                  </span>
+                )}
             </p>
           )}
         </FooterGroup>

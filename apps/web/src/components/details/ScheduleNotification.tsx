@@ -3,16 +3,21 @@ import { Link, useLocation } from 'react-router-dom';
 import { apiFetch } from '../../lib/api-client';
 import { useAuth } from '../../hooks/useAuth';
 
-export function ScheduleNotification({ workshopId, primary = false }: { workshopId: string; primary?: boolean }) {
+export function ScheduleNotification({
+  workshopId,
+  primary = false,
+}: {
+  workshopId: string;
+  primary?: boolean;
+}) {
   const { user } = useAuth();
   const location = useLocation();
   const [state, setState] = useState<'idle' | 'pending' | 'success' | 'error'>(
     'idle',
   );
-  const buttonClass =
-    primary
-      ? 'inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover'
-      : 'inline-flex min-h-11 items-center justify-center rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-primary hover:text-white';
+  const buttonClass = primary
+    ? 'inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover'
+    : 'inline-flex min-h-11 items-center justify-center rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-primary hover:text-white';
   if (!user)
     return (
       <Link
