@@ -44,7 +44,7 @@ it('shows each individual attendance state and keeps unpaid/refund information d
   const html = render();
   expect(html.match(/<li /g)).toHaveLength(3);
   expect(html).toContain('Vé số 1');
-  expect(html).toContain('Đã đến');
+  expect(html).toContain('Đã tham dự');
   expect(html).toContain('Vé số 2');
   expect(html).toContain('Vắng mặt');
   expect(html).toContain('Vé số 3');

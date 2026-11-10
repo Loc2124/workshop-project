@@ -3,18 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { StatusBadge } from './status-badge';
 describe('status badges', () => {
   it('maps the five review states and keeps unknown states neutral', () => {
-    for (const [status, color] of Object.entries({
-      draft: 'neutral',
-      pending: 'amber',
-      approved: 'emerald',
-      rejected: 'red',
-      needs_changes: 'orange',
+    for (const [status, className] of Object.entries({
+      draft: 'bg-[#E8E4D8]',
+      pending: 'bg-[#FBE8B5]',
+      approved: 'bg-[#DCEFC8]',
+      rejected: 'bg-[#FCE0DB]',
+      needs_changes: 'bg-[#FCE0DB]',
     }))
       expect(renderToStaticMarkup(<StatusBadge status={status} />)).toContain(
-        `bg-${color}-`,
+        className,
       );
     expect(renderToStaticMarkup(<StatusBadge status="custom" />)).toContain(
-      'bg-neutral-100',
+      'bg-[#E8E4D8]',
     );
   });
 });
