@@ -7,7 +7,7 @@ import type {
 } from './payout-provider.js';
 
 const payoutResponseSchema = z.object({
-  code: z.string().optional(),
+  code: z.union([z.string(), z.number()]).optional(),
   desc: z.string().optional(),
   data: z
     .object({
@@ -18,8 +18,47 @@ const payoutResponseSchema = z.object({
       fee: z.number().optional(),
       failureReason: z.string().nullable().optional(),
     })
+    .nullable()
     .optional(),
 });
+
+function deepSortObj(
+  obj: Record<string, unknown>,
+  sortArrays = false,
+): Record<string, unknown> {
+  return Object.keys(obj)
+    .sort()
+    .reduce<Record<string, unknown>>((acc, key) => {
+      const value = obj[key];
+      if (Array.isArray(value)) {
+        if (sortArrays) {
+          acc[key] = value
+            .map((item) =>
+              typeof item === 'object' && item !== null
+                ? deepSortObj(item as Record<string, unknown>, sortArrays)
+                : item,
+            )
+            .sort((a, b) => {
+              if (typeof a !== 'object' && typeof b !== 'object') {
+                return String(a).localeCompare(String(b));
+              }
+              return JSON.stringify(a).localeCompare(JSON.stringify(b));
+            });
+        } else {
+          acc[key] = value.map((item) =>
+            typeof item === 'object' && item !== null
+              ? deepSortObj(item as Record<string, unknown>, sortArrays)
+              : item,
+          );
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        acc[key] = deepSortObj(value as Record<string, unknown>, sortArrays);
+      } else {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+}
 
 export class PayOSPayoutProvider implements PayoutProvider {
   constructor(
@@ -28,34 +67,33 @@ export class PayOSPayoutProvider implements PayoutProvider {
     private readonly checksumKey: string,
   ) {}
 
-  private formatValue(val: unknown): string {
-    if (val === null || val === undefined) return '';
-    if (typeof val === 'object') {
-      return encodeURI(JSON.stringify(val));
-    }
-    return encodeURI(String(val));
-  }
-
   signData(data: Record<string, unknown>): string {
-    const sortedKeys = Object.keys(data).sort();
-    const queryParts = sortedKeys.map((k) => `${k}=${this.formatValue(data[k])}`);
-    const query = queryParts.join('&');
-    return createHmac('sha256', this.checksumKey).update(query).digest('hex');
+    const sortedData = deepSortObj(data, false);
+    const queryString = Object.keys(sortedData)
+      .map((key) => {
+        let value = sortedData[key];
+        if (
+          Array.isArray(value) ||
+          (typeof value === 'object' && value !== null)
+        ) {
+          value = JSON.stringify(value);
+        }
+        if (value === null || value === undefined) value = '';
+        return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+      })
+      .join('&');
+    return createHmac('sha256', this.checksumKey)
+      .update(queryString)
+      .digest('hex');
   }
 
   async executePayout(request: PayoutRequest): Promise<PayoutResult> {
     const payload: Record<string, unknown> = {
       referenceId: request.transferId,
-      validateDestination: true,
-      payouts: [
-        {
-          referenceId: request.transferId,
-          amount: request.amount,
-          description: request.description.slice(0, 25),
-          toBin: request.toBin,
-          toAccountNumber: request.toAccountNumber,
-        },
-      ],
+      amount: request.amount,
+      description: request.description.slice(0, 25),
+      toBin: request.toBin,
+      toAccountNumber: request.toAccountNumber,
     };
 
     const signature = this.signData(payload);
@@ -77,20 +115,26 @@ export class PayOSPayoutProvider implements PayoutProvider {
       const body: unknown = await response.json().catch(() => null);
       const parsed = payoutResponseSchema.safeParse(body);
 
-      if (!response.ok || !parsed.success) {
-        const errorDesc = parsed.success && parsed.data.desc ? parsed.data.desc : 'Lỗi kết nối API payOS.';
+      if (!parsed.success) {
         return {
           status: 'failed',
           reference: `PAYOS-ERR-${Date.now()}`,
           providerFee: 0,
-          failureReason: errorDesc,
+          failureReason: `Phản hồi payOS không hợp lệ (HTTP ${response.status})`,
         };
       }
 
+      const resCode = String(parsed.data.code ?? '');
+      const resDesc = parsed.data.desc;
       const resData = parsed.data.data;
       const remoteStatus = resData?.status?.toLowerCase();
 
-      if (parsed.data.code === '00' || remoteStatus === 'success' || remoteStatus === 'succeeded') {
+      if (
+        resCode === '00' ||
+        resCode === '0' ||
+        remoteStatus === 'success' ||
+        remoteStatus === 'succeeded'
+      ) {
         return {
           status: 'succeeded',
           reference: resData?.id ?? resData?.referenceId ?? request.transferId,
@@ -108,30 +152,37 @@ export class PayOSPayoutProvider implements PayoutProvider {
 
       return {
         status: 'failed',
-        reference: resData?.id ?? resData?.referenceId ?? request.transferId,
+        reference: resData?.id ?? resData?.referenceId ?? `PAYOS-ERR-${Date.now()}`,
         providerFee: resData?.fee ?? 0,
-        failureReason: resData?.failureReason ?? parsed.data.desc ?? 'Lệnh chi payOS bị từ chối.',
+        failureReason:
+          resData?.failureReason ?? resDesc ?? 'Lệnh chi payOS bị từ chối.',
       };
     } catch (error) {
       return {
         status: 'processing',
         reference: request.transferId,
         providerFee: 0,
-        failureReason: error instanceof Error ? error.message : 'Timeout khi gọi payOS Payout API.',
+        failureReason:
+          error instanceof Error
+            ? error.message
+            : 'Timeout khi gọi payOS Payout API.',
       };
     }
   }
 
   async getPayout(payoutId: string): Promise<PayoutResult> {
     try {
-      const response = await fetch(`https://api-merchant.payos.vn/v1/payouts/${payoutId}`, {
-        method: 'GET',
-        headers: {
-          'x-client-id': this.clientId,
-          'x-api-key': this.apiKey,
+      const response = await fetch(
+        `https://api-merchant.payos.vn/v1/payouts/${payoutId}`,
+        {
+          method: 'GET',
+          headers: {
+            'x-client-id': this.clientId,
+            'x-api-key': this.apiKey,
+          },
+          signal: AbortSignal.timeout(10_000),
         },
-        signal: AbortSignal.timeout(10_000),
-      });
+      );
 
       const body: unknown = await response.json().catch(() => null);
       const parsed = payoutResponseSchema.safeParse(body);
