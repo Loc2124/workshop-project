@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../lib/api-client';
 import { PageContainer } from '../components/layout/PageContainer';
+import { formatBankDisplay } from '@workshop/shared';
 
 type SavedAccount = {
   id: string;
@@ -78,7 +79,7 @@ export function SavedRefundAccountsPage() {
             >
               <div>
                 <h2 className="font-semibold text-ink">
-                  Mã ngân hàng {account.bankBin} · ****{account.last4}
+                  {formatBankDisplay(account.bankBin)} · ****{account.last4}
                 </h2>
                 <p className="text-sm text-stone-700">
                   {account.accountHolder}

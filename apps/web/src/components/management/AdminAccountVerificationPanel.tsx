@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
+import { formatBankDisplay } from '@workshop/shared';
 
 type Account = {
   id: string;
@@ -122,10 +123,8 @@ export function AdminAccountVerificationPanel({ userId }: { userId?: string }) {
                     : `Đặt chỗ #${account.orderCode} · Khoản hoàn ${account.refundId?.slice(0, 8)}`}
                 </h3>
                 <p className="text-sm text-stone-700">
-                  {scope === 'studio'
-                    ? account.bankName
-                    : `Mã ngân hàng ${account.bankBin}`}{' '}
-                  · {account.accountHolder} · ****{account.last4}
+                  {formatBankDisplay(account.bankBin, account.bankName)} ·{' '}
+                  {account.accountHolder} · ****{account.last4}
                 </p>
                 {scope === 'refund' && (
                   <p className="text-xs text-stone-600">

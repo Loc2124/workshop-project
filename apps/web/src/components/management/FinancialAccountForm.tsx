@@ -2,6 +2,11 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api-client';
 import { Link } from 'react-router-dom';
+import {
+  VIETNAM_BANKS,
+  formatBankDisplay,
+  getBankByBin,
+} from '@workshop/shared';
 
 type Account = {
   id: string;
@@ -21,6 +26,19 @@ type SavedAccount = {
   last4: string;
 };
 
+const POPULAR_BINS = new Set([
+  '970436', '970415', '970418', '970405', '970422', '970407',
+  '970416', '970432', '970423', '970403', '970437', '970441',
+  '970443', '970426', '970448', '970449', '970440', '970431', '970428',
+]);
+const DIGITAL_BINS = new Set(['546034', '546035', '963369', '971005', '801012']);
+
+const popularBanks = VIETNAM_BANKS.filter((b) => POPULAR_BINS.has(b.bin));
+const digitalBanks = VIETNAM_BANKS.filter((b) => DIGITAL_BINS.has(b.bin));
+const otherBanks = VIETNAM_BANKS.filter(
+  (b) => !POPULAR_BINS.has(b.bin) && !DIGITAL_BINS.has(b.bin),
+);
+
 export function FinancialAccountForm({
   endpoint,
   title,
@@ -33,8 +51,7 @@ export function FinancialAccountForm({
   refund?: boolean;
 }) {
   const client = useQueryClient();
-  const [bankName, setBankName] = useState('');
-  const [bankBin, setBankBin] = useState('');
+  const [selectedBin, setSelectedBin] = useState('');
   const [accountHolder, setAccountHolder] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -54,19 +71,24 @@ export function FinancialAccountForm({
     enabled: refund,
   });
   const save = useMutation({
-    mutationFn: () =>
-      apiFetch(endpoint, {
+    mutationFn: () => {
+      const bank = getBankByBin(selectedBin);
+      const bankDisplayName = bank
+        ? `${bank.shortName} (${bank.code})`
+        : selectedBin;
+      return apiFetch(endpoint, {
         method: 'PUT',
         body: JSON.stringify({
           ...(refund
-            ? { bankBin: bankName }
-            : { bankName, ...(bankBin ? { bankBin } : {}) }),
-          accountHolder,
+            ? { bankBin: selectedBin }
+            : { bankName: bankDisplayName, bankBin: selectedBin }),
+          accountHolder: accountHolder.trim(),
           accountNumber,
           password,
           ...(refund ? { saveForLater } : {}),
         }),
-      }),
+      });
+    },
     onSuccess: async () => {
       setMessage(
         'Đã gửi tài khoản. Quản trị sẽ đối chiếu trước khi chuyển tiền.',
@@ -129,12 +151,6 @@ export function FinancialAccountForm({
           chiếu.
         </p>
       )}
-      {refund && (
-        <p className="mt-1 text-sm text-stone-600">
-          Nếu bạn chưa biết mã ngân hàng, vui lòng liên hệ Open Slot để được hỗ
-          trợ.
-        </p>
-      )}
       {query.isPending ? (
         <p className="mt-3 text-sm">Đang tải tài khoản…</p>
       ) : query.isError ? (
@@ -145,10 +161,8 @@ export function FinancialAccountForm({
         <>
           {current && (
             <p className="mt-3 rounded-lg bg-soft px-3 py-2 text-sm text-ink">
-              {refund
-                ? `Mã ngân hàng ${current.bankBin}`
-                : `${current.bankName}${current.bankBin ? ` (${current.bankBin})` : ''}`} ·
-              ****{current.last4} ·{' '}
+              {formatBankDisplay(current.bankBin, current.bankName)} · ****
+              {current.last4} ·{' '}
               {current.status === 'verified'
                 ? 'Đã đối chiếu'
                 : current.status === 'rejected'
@@ -162,67 +176,80 @@ export function FinancialAccountForm({
             </p>
           ) : (
             <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-sm font-medium">
-                {refund ? 'Mã ngân hàng (6 số)' : 'Tên ngân hàng'}
-                <input
+              <label className="text-sm font-medium sm:col-span-2">
+                Ngân hàng thụ hưởng
+                <select
                   required
-                  maxLength={refund ? 6 : 120}
-                  inputMode={refund ? 'numeric' : undefined}
-                  pattern={refund ? '[0-9]{6}' : undefined}
-                  value={bankName}
-                  onChange={(event) => setBankName(event.target.value)}
-                  autoComplete={refund ? 'off' : 'organization'}
-                  className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3"
-                />
+                  value={selectedBin}
+                  onChange={(event) => setSelectedBin(event.target.value)}
+                  className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
+                >
+                  <option value="">-- Chọn ngân hàng --</option>
+                  <optgroup label="Ngân hàng phổ biến">
+                    {popularBanks.map((b) => (
+                      <option key={b.bin} value={b.bin}>
+                        {b.shortName} ({b.code}) - {b.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Ngân hàng số & Ví điện tử">
+                    {digitalBanks.map((b) => (
+                      <option key={b.bin} value={b.bin}>
+                        {b.shortName} ({b.code})
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Các ngân hàng khác">
+                    {otherBanks.map((b) => (
+                      <option key={b.bin} value={b.bin}>
+                        {b.shortName} ({b.code}) - {b.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
               </label>
-              {!refund && (
-                <label className="text-sm font-medium">
-                  Mã BIN ngân hàng (6 số)
-                  <input
-                    maxLength={6}
-                    inputMode="numeric"
-                    pattern="[0-9]{6}"
-                    placeholder="VD: 970422, 970436..."
-                    value={bankBin}
-                    onChange={(event) => setBankBin(event.target.value)}
-                    autoComplete="off"
-                    className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3"
-                  />
-                </label>
-              )}
-              <label className="text-sm font-medium">
-                Tên chủ tài khoản
-                <input
-                  required
-                  maxLength={160}
-                  value={accountHolder}
-                  onChange={(event) => setAccountHolder(event.target.value)}
-                  className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3"
-                />
-              </label>
+
               <label className="text-sm font-medium">
                 Số tài khoản
                 <input
                   required
                   inputMode="numeric"
                   pattern="[0-9]{4,30}"
+                  placeholder="Nhập số tài khoản ngân hàng"
                   value={accountNumber}
                   onChange={(event) => setAccountNumber(event.target.value)}
                   autoComplete="off"
                   className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3"
                 />
               </label>
-              <label className={`text-sm font-medium ${refund ? '' : 'sm:col-span-2'}`}>
+
+              <label className="text-sm font-medium">
+                Tên chủ tài khoản
+                <input
+                  required
+                  maxLength={160}
+                  placeholder="Ví dụ: NGUYEN VAN A"
+                  value={accountHolder}
+                  onChange={(event) =>
+                    setAccountHolder(event.target.value.toUpperCase())
+                  }
+                  className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3 uppercase"
+                />
+              </label>
+
+              <label className="text-sm font-medium sm:col-span-2">
                 Mật khẩu tài khoản Open Slot
                 <input
                   required
                   type="password"
+                  placeholder="Xác nhận mật khẩu đăng nhập để lưu"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="current-password"
                   className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3"
                 />
               </label>
+
               {refund && (
                 <label className="flex items-start gap-3 text-sm text-stone-700 sm:col-span-2">
                   <input
@@ -238,8 +265,9 @@ export function FinancialAccountForm({
                   </span>
                 </label>
               )}
+
               <button
-                disabled={save.isPending}
+                disabled={save.isPending || !selectedBin}
                 className="min-h-11 rounded-lg bg-primary px-4 font-semibold text-white hover:bg-primary-hover disabled:opacity-50 sm:col-span-2"
               >
                 {save.isPending
@@ -265,7 +293,7 @@ export function FinancialAccountForm({
                     <option value="">Chọn tài khoản</option>
                     {savedAccounts.data?.map((item) => (
                       <option key={item.id} value={item.id}>
-                        Mã ngân hàng {item.bankBin} · ****{item.last4}
+                        {formatBankDisplay(item.bankBin)} · ****{item.last4}
                       </option>
                     ))}
                   </select>

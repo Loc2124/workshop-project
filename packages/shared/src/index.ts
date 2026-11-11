@@ -180,3 +180,4 @@ export * from './reports.js';
 export * from './message-templates.js';
 export * from './settings.js';
 export { createStudioRegistrationSchema } from './studio-registration.js';
+export * from './vietnam-banks.js';
