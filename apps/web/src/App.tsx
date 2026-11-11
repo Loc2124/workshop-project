@@ -310,6 +310,7 @@ function App() {
             'workshops',
             'sessions',
             'bookings',
+            'finances',
             'check-in',
             'members',
             'profile',
@@ -333,6 +334,10 @@ function App() {
             <Route
               path="bookings"
               element={<StudioWorkspacePage section="bookings" />}
+            />
+            <Route
+              path="finances"
+              element={<StudioWorkspacePage section="finances" />}
             />
             <Route path="check-in" element={<StudioCheckInPage />} />
             <Route

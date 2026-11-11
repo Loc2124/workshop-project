@@ -31,6 +31,12 @@ const STUDIO_SECTIONS = [
   { label: 'Workshop', section: 'workshops', icon: PanelsTopLeft },
   { label: 'Lịch buổi học', section: 'sessions', icon: CalendarDays },
   { label: 'Đặt chỗ', section: 'bookings', icon: Ticket },
+  {
+    label: 'Doanh thu & Quyết toán',
+    section: 'finances',
+    icon: WalletCards,
+    ownerOnly: true,
+  },
   { label: 'Check-in vé', section: 'check-in', icon: QrCode },
   { label: 'Thành viên', section: 'members', icon: Users, ownerOnly: true },
   { label: 'Hồ sơ studio', section: 'profile', icon: Store, ownerOnly: true },
@@ -64,6 +70,7 @@ export function StudioDashboard() {
             'workshops',
             'sessions',
             'bookings',
+            'finances',
             'check-in',
             'members',
             'profile',
@@ -88,7 +95,9 @@ export function StudioDashboard() {
       to: studioPage(studio.id, section),
       locked: Boolean(
         locked &&
-        ['sessions', 'bookings', 'check-in', 'members'].includes(section),
+        ['sessions', 'bookings', 'finances', 'check-in', 'members'].includes(
+          section,
+        ),
       ),
       attention:
         section === 'profile' &&

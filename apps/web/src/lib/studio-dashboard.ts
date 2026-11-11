@@ -42,6 +42,7 @@ export function selectDefaultStudio(
     'bookings',
     'check-in',
     'members',
+    'finances',
   ].includes(section);
   if (requestedId) {
     const matched = studios.find((studio) => studio.id === requestedId);

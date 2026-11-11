@@ -43,19 +43,23 @@ type Notification = z.infer<typeof schema>['notifications'][number];
 function notificationCopy(item: Notification) {
   const code = item.orderCode ? ` #${item.orderCode}` : '';
   const title =
-    item.type === 'booking_created'
-      ? item.title.toLowerCase().includes('thanh toán')
-        ? `Đặt chỗ${code} chờ thanh toán cọc`
-        : `Đặt chỗ${code} đã nhận`
-      : item.type === 'deposit_paid'
-        ? `Đã xác nhận tiền cọc cho đặt chỗ${code}`
-        : item.type?.includes('cancel') ||
-            item.type?.includes('expired') ||
-            item.title.toLowerCase().includes('hủy')
-          ? `Đặt chỗ${code} đã bị hủy`
-          : item.type === 'booking_success'
-            ? `Đặt chỗ${code} thành công`
-            : item.title;
+    item.type === 'studio_payout_succeeded'
+      ? item.title || 'Đã chuyển tiền quyết toán'
+      : item.type === 'studio_payout_pending'
+        ? item.title || 'Khoản tiền quyết toán sẵn sàng'
+        : item.type === 'booking_created'
+          ? item.title.toLowerCase().includes('thanh toán')
+            ? `Đặt chỗ${code} chờ thanh toán cọc`
+            : `Đặt chỗ${code} đã nhận`
+          : item.type === 'deposit_paid'
+            ? `Đã xác nhận tiền cọc cho đặt chỗ${code}`
+            : item.type?.includes('cancel') ||
+                item.type?.includes('expired') ||
+                item.title.toLowerCase().includes('hủy')
+              ? `Đặt chỗ${code} đã bị hủy`
+              : item.type === 'booking_success'
+                ? `Đặt chỗ${code} thành công`
+                : item.title;
   const date = item.startsAt
     ? new Intl.DateTimeFormat('vi-VN', {
         day: '2-digit',
@@ -65,9 +69,12 @@ function notificationCopy(item: Notification) {
         timeZone: 'Asia/Ho_Chi_Minh',
       }).format(new Date(item.startsAt))
     : '';
-  const body = [item.workshopTitle, item.studioName, date]
+  const defaultBody = [item.workshopTitle, item.studioName, date]
     .filter(Boolean)
     .join(' · ');
+  const body = item.type?.startsWith('studio_payout')
+    ? item.body || defaultBody
+    : defaultBody;
   const cancelled =
     item.type?.includes('cancel') ||
     item.type?.includes('expired') ||
@@ -75,17 +82,22 @@ function notificationCopy(item: Notification) {
     item.reason?.toLowerCase().includes('hết thời gian');
   const Icon = cancelled
     ? XCircle
-    : item.type === 'deposit_paid' || item.type === 'booking_success'
+    : item.type === 'deposit_paid' ||
+        item.type === 'booking_success' ||
+        item.type === 'studio_payout_succeeded'
       ? CircleCheck
       : item.type === 'booking_created' &&
           item.title.toLowerCase().includes('thanh toán')
         ? Clock3
-        : item.type === 'booking_created'
+        : item.type === 'booking_created' ||
+            item.type === 'studio_payout_pending'
           ? CalendarCheck2
           : Clock3;
   const iconColor = cancelled
     ? 'text-red-700 bg-red-100'
-    : item.type === 'deposit_paid' || item.type === 'booking_success'
+    : item.type === 'deposit_paid' ||
+        item.type === 'booking_success' ||
+        item.type === 'studio_payout_succeeded'
       ? 'text-primary bg-[#dce3c7]'
       : item.type === 'booking_created' &&
           item.title.toLowerCase().includes('thanh toán')
@@ -229,11 +241,16 @@ export function NotificationsMenu({ userId }: { userId: string }) {
               <ul className="space-y-1">
                 {items.map((item) => {
                   const copy = notificationCopy(item);
-                  const target = item.bookingId
-                    ? `/me/bookings/${item.bookingId}`
-                    : item.studioId
-                      ? `/studio/${item.studioId}/${item.workshopId ? 'workshops' : 'profile'}`
-                      : '/me/bookings';
+                  const target =
+                    (item.type?.startsWith('studio_payout') ||
+                      item.type === 'studio_payout_account_reviewed') &&
+                    item.studioId
+                      ? `/studio/${item.studioId}/finances`
+                      : item.bookingId
+                        ? `/me/bookings/${item.bookingId}`
+                        : item.studioId
+                          ? `/studio/${item.studioId}/${item.workshopId ? 'workshops' : 'profile'}`
+                          : '/me/bookings';
                   return (
                     <li key={item.id}>
                       <Link

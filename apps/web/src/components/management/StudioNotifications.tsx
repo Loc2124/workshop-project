@@ -18,6 +18,7 @@ const schema = z.object({
       reason: z.string().nullable(),
       body: z.string().nullable().optional(),
       bookingId: z.string().nullable().optional(),
+      type: z.string().nullable().optional(),
       createdAt: z.string(),
       readAt: z.string().nullable(),
     }),
@@ -68,9 +69,12 @@ export function StudioNotifications({ studioId }: { studioId: string }) {
           <li key={n.id} className="space-y-2 py-3 text-sm">
             <Link
               to={
-                n.bookingId
-                  ? `/workshops/${n.workshopId}`
-                  : `/studio/${studioId}/${n.workshopId ? 'workshops' : 'profile'}`
+                n.type?.startsWith('studio_payout') ||
+                n.type === 'studio_payout_account_reviewed'
+                  ? `/studio/${studioId}/finances`
+                  : n.bookingId
+                    ? `/workshops/${n.workshopId}`
+                    : `/studio/${studioId}/${n.workshopId ? 'workshops' : 'profile'}`
               }
               className="font-medium underline"
             >

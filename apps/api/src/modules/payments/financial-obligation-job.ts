@@ -257,6 +257,17 @@ export async function syncRefundObligations() {
             breakdown,
           ],
         );
+        await client.query(
+          `INSERT INTO user_notifications(user_id,booking_id,type,title,body,href)
+           SELECT sm.user_id,$1,'studio_payout_pending',
+             'Khoản tiền quyết toán sẵn sàng',
+             'Buổi học đã hoàn thành. Khoản tiền cọc '||trim(to_char($2::bigint, '999G999G999G999'))||' đ đã được lên lịch quyết toán. Vui lòng kiểm tra mục Quyết toán.',
+             '/studio/'||$3||'/finances'
+           FROM studio_members sm
+           WHERE sm.studio_id=$3 AND sm.role='owner'
+             AND NOT EXISTS(SELECT 1 FROM user_notifications n WHERE n.user_id=sm.user_id AND n.booking_id=$1 AND n.type='studio_payout_pending')`,
+          [payout.bookingId, net.toString(), payout.studioId],
+        );
       }
       const feeExcess = BigInt(payout.fees) - BigInt(payout.available);
       if (feeExcess > 0n)

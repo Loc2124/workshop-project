@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useMemo, type FormEvent } from 'react';
 import { formatPrice, formatSessionDate } from '../../lib/format';
 import {
   fromVietnamDateTimeLocal,
@@ -19,7 +19,20 @@ import {
 } from '../../types/management';
 import { workshopSelectionSchema } from '../../lib/form-validation';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Clock3, Pencil, Plus, UsersRound } from 'lucide-react';
+import {
+  CalendarDays,
+  Clock3,
+  Pencil,
+  Plus,
+  UsersRound,
+  Search,
+  LayoutGrid,
+  List,
+  Calendar,
+  X,
+  ArrowUpDown,
+  CheckCircle2,
+} from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '../ui/sheet';
 import {
   Dialog,
@@ -325,11 +338,43 @@ function SessionEditor({
   );
 }
 
-const sessionStatusLabels = {
-  scheduled: 'Đã lên lịch',
-  cancelled: 'Đã hủy',
-  completed: 'Đã diễn ra',
-} as const;
+function getRelativeDateTag(
+  startsAtStr: string,
+  endsAtStr: string,
+  status: string,
+) {
+  if (status === 'cancelled') return null;
+  const now = new Date();
+  const ends = new Date(endsAtStr);
+  if (ends.getTime() < now.getTime()) {
+    return { label: 'Đã qua', tone: 'neutral' as const };
+  }
+  const vnNow = new Date(
+    now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }),
+  );
+  const vnStarts = new Date(
+    new Date(startsAtStr).toLocaleString('en-US', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+    }),
+  );
+  const isSameDay =
+    vnNow.getFullYear() === vnStarts.getFullYear() &&
+    vnNow.getMonth() === vnStarts.getMonth() &&
+    vnNow.getDate() === vnStarts.getDate();
+  if (isSameDay) {
+    return { label: 'Hôm nay', tone: 'success' as const };
+  }
+  const tomorrow = new Date(vnNow);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow =
+    tomorrow.getFullYear() === vnStarts.getFullYear() &&
+    tomorrow.getMonth() === vnStarts.getMonth() &&
+    tomorrow.getDate() === vnStarts.getDate();
+  if (isTomorrow) {
+    return { label: 'Ngày mai', tone: 'warning' as const };
+  }
+  return null;
+}
 
 export function StudioSessionManager({
   studio,
@@ -342,9 +387,22 @@ export function StudioSessionManager({
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<StudioSession>();
   const [canceling, setCanceling] = useState<StudioSession>();
+
+  // Bộ lọc & tìm kiếm
+  const [searchQuery, setSearchQuery] = useState('');
+  const [workshopFilter, setWorkshopFilter] = useState('');
+  const [statusTab, setStatusTab] = useState<
+    'upcoming' | 'past' | 'cancelled' | 'all'
+  >('upcoming');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [sortBy, setSortBy] = useState<
+    'nearest' | 'newest' | 'price_desc' | 'fill_rate'
+  >('nearest');
+
   const cancelSession = useCancelStudioSession();
   const availableWorkshops = workshops ?? [];
   const editorOpen = creating || Boolean(editing);
+
   const closeEditor = () => {
     setCreating(false);
     setEditing(undefined);
@@ -362,30 +420,379 @@ export function StudioSessionManager({
     }
   }
 
-  return (
-    <section aria-label="Lịch buổi học" className="space-y-studio-section">
-      <div className="flex flex-col gap-4 rounded-studio-card border border-studio-border bg-studio-surface p-studio-card shadow-studio-card sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm leading-6 text-studio-muted">
-            Theo dõi lịch trải nghiệm, sức chứa và tình trạng từng buổi.
-          </p>
-          {!isLoading && !error && (
-            <p className="mt-2 text-sm font-medium text-studio-primary">
-              {sessions?.length ?? 0} buổi workshop
-            </p>
-          )}
-        </div>
-        {availableWorkshops.length > 0 && (
-          <StudioButton
-            className="shrink-0"
-            onClick={() => setCreating(true)}
-            type="button"
-          >
-            <Plus aria-hidden="true" className="size-4" /> Tạo buổi
-          </StudioButton>
-        )}
-      </div>
+  // Thống kê nhanh
+  const stats = useMemo(() => {
+    const all = sessions ?? [];
+    const now = Date.now();
+    let upcoming = 0;
+    let availableSeats = 0;
+    let fullSessions = 0;
+    let past = 0;
+    let cancelled = 0;
 
+    for (const s of all) {
+      const isCancelled = s.status === 'cancelled';
+      const isPast = Date.parse(s.endsAt) < now;
+      if (isCancelled) {
+        cancelled++;
+      } else if (isPast) {
+        past++;
+      } else {
+        upcoming++;
+        const booked = s.seatsHeld + s.seatsSold;
+        availableSeats += Math.max(0, s.capacity - booked);
+        if (s.capacity > 0 && booked >= s.capacity) {
+          fullSessions++;
+        }
+      }
+    }
+
+    return {
+      upcoming,
+      availableSeats,
+      fullSessions,
+      past,
+      cancelled,
+      total: all.length,
+    };
+  }, [sessions]);
+
+  // Lọc và Sắp xếp: Buổi gần nhất ở trên cùng
+  const filteredSessions = useMemo(() => {
+    if (!sessions) return [];
+    const now = Date.now();
+
+    const list = sessions.filter((s) => {
+      const isCancelled = s.status === 'cancelled';
+      const isPast = Date.parse(s.endsAt) < now;
+
+      // Lọc theo tab trạng thái
+      if (statusTab === 'upcoming' && (isCancelled || isPast)) return false;
+      if (statusTab === 'past' && (isCancelled || !isPast)) return false;
+      if (statusTab === 'cancelled' && !isCancelled) return false;
+
+      // Lọc theo workshop
+      if (workshopFilter && s.workshopId !== workshopFilter) return false;
+
+      // Tìm kiếm theo tên workshop hoặc ngày
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
+        const titleMatch = s.workshopTitle.toLowerCase().includes(q);
+        const dateMatch = formatSessionDate(s.startsAt)
+          .toLowerCase()
+          .includes(q);
+        if (!titleMatch && !dateMatch) return false;
+      }
+
+      return true;
+    });
+
+    // Sắp xếp: "buổi gần nhất ở trên cùng"
+    return list.sort((a, b) => {
+      const aStarts = Date.parse(a.startsAt);
+      const bStarts = Date.parse(b.startsAt);
+      const aEnds = Date.parse(a.endsAt);
+      const bEnds = Date.parse(b.endsAt);
+      const aIsCancelled = a.status === 'cancelled';
+      const bIsCancelled = b.status === 'cancelled';
+
+      if (sortBy === 'nearest') {
+        // Nếu ở tab Đã qua hoặc Đã hủy: buổi vừa qua gần nhất ở trên cùng
+        if (statusTab === 'past' || statusTab === 'cancelled') {
+          return bStarts - aStarts;
+        }
+        // Nếu ở tab Sắp diễn ra: buổi sắp tới gần nhất (hôm nay/ngày mai) ở trên cùng
+        if (statusTab === 'upcoming') {
+          return aStarts - bStarts;
+        }
+        // Ở tab Tất cả: buổi chưa hủy lên trước, buổi sắp tới gần nhất lên đầu, tiếp đến các buổi vừa qua
+        if (aIsCancelled !== bIsCancelled) return aIsCancelled ? 1 : -1;
+        const aIsFuture = aEnds >= now;
+        const bIsFuture = bEnds >= now;
+        if (aIsFuture && !bIsFuture) return -1;
+        if (!aIsFuture && bIsFuture) return 1;
+        if (aIsFuture && bIsFuture) return aStarts - bStarts;
+        return bStarts - aStarts;
+      }
+
+      if (sortBy === 'newest') {
+        return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      }
+
+      if (sortBy === 'price_desc') {
+        return b.price - a.price;
+      }
+
+      if (sortBy === 'fill_rate') {
+        const aRate =
+          a.capacity > 0 ? (a.seatsHeld + a.seatsSold) / a.capacity : 0;
+        const bRate =
+          b.capacity > 0 ? (b.seatsHeld + b.seatsSold) / b.capacity : 0;
+        return bRate - aRate;
+      }
+
+      return aStarts - bStarts;
+    });
+  }, [sessions, statusTab, workshopFilter, searchQuery, sortBy]);
+
+  return (
+    <section aria-label="Lịch buổi học" className="space-y-5">
+      {/* 4 Thẻ chỉ số tổng quan nhanh */}
+      {!isLoading && !error && Boolean(sessions?.length) && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-studio-card border border-studio-border bg-studio-surface p-4 transition-colors hover:border-studio-primary/40">
+            <div className="flex items-center justify-between text-studio-muted">
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                Sắp diễn ra
+              </span>
+              <Calendar className="size-4 text-studio-primary" />
+            </div>
+            <p className="mt-2 font-heading text-2xl sm:text-3xl font-bold tabular-nums text-studio-ink">
+              {stats.upcoming}
+            </p>
+            <p className="mt-1 text-xs text-studio-muted">buổi đang mở</p>
+          </div>
+
+          <div className="rounded-studio-card border border-studio-border bg-studio-surface p-4 transition-colors hover:border-studio-primary/40">
+            <div className="flex items-center justify-between text-studio-muted">
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                Chỗ còn trống
+              </span>
+              <UsersRound className="size-4 text-studio-accent" />
+            </div>
+            <p className="mt-2 font-heading text-2xl sm:text-3xl font-bold tabular-nums text-studio-ink">
+              {stats.availableSeats}
+            </p>
+            <p className="mt-1 text-xs text-studio-muted">
+              ghế sẵn sàng đón khách
+            </p>
+          </div>
+
+          <div className="rounded-studio-card border border-studio-border bg-studio-surface p-4 transition-colors hover:border-studio-primary/40">
+            <div className="flex items-center justify-between text-studio-muted">
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                Đã kín chỗ
+              </span>
+              <CheckCircle2 className="size-4 text-studio-success" />
+            </div>
+            <p className="mt-2 font-heading text-2xl sm:text-3xl font-bold tabular-nums text-studio-success">
+              {stats.fullSessions}
+            </p>
+            <p className="mt-1 text-xs text-studio-muted">
+              buổi đạt 100% sức chứa
+            </p>
+          </div>
+
+          <div className="rounded-studio-card border border-studio-border bg-studio-surface p-4 transition-colors hover:border-studio-primary/40">
+            <div className="flex items-center justify-between text-studio-muted">
+              <span className="text-xs font-semibold uppercase tracking-wider">
+                Tổng số buổi
+              </span>
+              <CalendarDays className="size-4 text-studio-muted" />
+            </div>
+            <p className="mt-2 font-heading text-2xl sm:text-3xl font-bold tabular-nums text-studio-ink">
+              {stats.total}
+            </p>
+            <p className="mt-1 text-xs text-studio-muted">
+              {stats.past} đã xong · {stats.cancelled} đã hủy
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Thanh bộ lọc, tìm kiếm và nút Tạo buổi */}
+      {!isLoading && !error && Boolean(sessions?.length) && (
+        <div className="space-y-3">
+          {/* Tabs trạng thái + Công cụ chế độ xem & Tạo buổi */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-studio-border pb-2">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+              <button
+                type="button"
+                onClick={() => setStatusTab('upcoming')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                  statusTab === 'upcoming'
+                    ? 'bg-studio-primary text-white shadow-xs'
+                    : 'text-studio-muted hover:text-studio-ink hover:bg-studio-subtle'
+                }`}
+              >
+                <span>Sắp diễn ra</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-xs font-bold tabular-nums ${
+                    statusTab === 'upcoming'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-studio-subtle text-studio-muted'
+                  }`}
+                >
+                  {stats.upcoming}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusTab('past')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                  statusTab === 'past'
+                    ? 'bg-studio-primary text-white shadow-xs'
+                    : 'text-studio-muted hover:text-studio-ink hover:bg-studio-subtle'
+                }`}
+              >
+                <span>Đã qua</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-xs font-bold tabular-nums ${
+                    statusTab === 'past'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-studio-subtle text-studio-muted'
+                  }`}
+                >
+                  {stats.past}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusTab('cancelled')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                  statusTab === 'cancelled'
+                    ? 'bg-studio-primary text-white shadow-xs'
+                    : 'text-studio-muted hover:text-studio-ink hover:bg-studio-subtle'
+                }`}
+              >
+                <span>Đã hủy</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-xs font-bold tabular-nums ${
+                    statusTab === 'cancelled'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-studio-subtle text-studio-muted'
+                  }`}
+                >
+                  {stats.cancelled}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusTab('all')}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                  statusTab === 'all'
+                    ? 'bg-studio-primary text-white shadow-xs'
+                    : 'text-studio-muted hover:text-studio-ink hover:bg-studio-subtle'
+                }`}
+              >
+                <span>Tất cả</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-xs font-bold tabular-nums ${
+                    statusTab === 'all'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-studio-subtle text-studio-muted'
+                  }`}
+                >
+                  {stats.total}
+                </span>
+              </button>
+            </div>
+
+            {/* Chuyển chế độ xem Thẻ / Bảng & Nút Tạo buổi */}
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1 rounded-lg border border-studio-border bg-studio-surface p-1">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('grid')}
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-studio-primary text-white shadow-xs'
+                      : 'text-studio-muted hover:text-studio-ink'
+                  }`}
+                  title="Xem dạng thẻ"
+                >
+                  <LayoutGrid className="size-3.5" />
+                  <span className="hidden sm:inline">Dạng thẻ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                    viewMode === 'table'
+                      ? 'bg-studio-primary text-white shadow-xs'
+                      : 'text-studio-muted hover:text-studio-ink'
+                  }`}
+                  title="Xem dạng bảng"
+                >
+                  <List className="size-3.5" />
+                  <span className="hidden sm:inline">Dạng bảng</span>
+                </button>
+              </div>
+
+              {availableWorkshops.length > 0 && (
+                <StudioButton
+                  onClick={() => setCreating(true)}
+                  type="button"
+                  size="sm"
+                  className="shrink-0"
+                >
+                  <Plus aria-hidden="true" className="size-4 mr-1" /> Tạo buổi
+                </StudioButton>
+              )}
+            </div>
+          </div>
+
+          {/* Hàng tìm kiếm & lọc chi tiết */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Ô tìm kiếm */}
+            <div className="relative min-w-56 flex-1">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-studio-muted" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm theo tên workshop hoặc ngày..."
+                className="min-h-10 w-full rounded-studio-control border border-studio-border bg-studio-surface pl-9 pr-8 text-sm text-studio-ink placeholder:text-studio-muted focus:border-studio-primary focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-studio-muted hover:text-studio-ink"
+                  title="Xóa tìm kiếm"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Lọc theo workshop */}
+            {availableWorkshops.length > 1 && (
+              <select
+                aria-label="Lọc theo workshop"
+                value={workshopFilter}
+                onChange={(e) => setWorkshopFilter(e.target.value)}
+                className="min-h-10 rounded-studio-control border border-studio-border bg-studio-surface px-3 text-sm text-studio-ink focus:border-studio-primary focus:outline-none"
+              >
+                <option value="">Tất cả workshop</option>
+                {availableWorkshops.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.title}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Sắp xếp */}
+            <div className="flex items-center gap-1.5 text-xs text-studio-muted">
+              <ArrowUpDown className="size-3.5" />
+              <select
+                aria-label="Sắp xếp"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                className="min-h-10 rounded-studio-control border border-studio-border bg-studio-surface px-2.5 text-sm text-studio-ink focus:border-studio-primary focus:outline-none"
+              >
+                <option value="nearest">Gần nhất trước (Mặc định)</option>
+                <option value="newest">Mới tạo gần đây</option>
+                <option value="fill_rate">Tỷ lệ kín chỗ cao nhất</option>
+                <option value="price_desc">Giá từ cao đến thấp</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hiển thị nội dung chính */}
       {isLoading ? (
         <div className="grid gap-studio-card xl:grid-cols-2">
           {[0, 1, 2].map((item) => (
@@ -405,9 +812,53 @@ export function StudioSessionManager({
             Tải lại lịch
           </StudioButton>
         </StudioCard>
-      ) : sessions?.length ? (
+      ) : !sessions?.length ? (
+        availableWorkshops.length ? (
+          <StudioEmptyState
+            icon={CalendarDays}
+            title="Lịch workshop chưa có buổi nào"
+            description="Tạo một buổi mới để khách có thể chọn ngày và đặt chỗ."
+            action={
+              <StudioButton onClick={() => setCreating(true)}>
+                <Plus aria-hidden="true" className="size-4 mr-1.5" /> Tạo buổi
+                đầu tiên
+              </StudioButton>
+            }
+          />
+        ) : (
+          <StudioEmptyState
+            icon={CalendarDays}
+            title="Tạo workshop trước nhé"
+            description="Sau khi có workshop, bạn có thể thêm ngày giờ và số chỗ cho từng buổi."
+            action={
+              <StudioButton asChild variant="secondary">
+                <Link to={`/studio/${studio.id}/workshops`}>Đến Workshop</Link>
+              </StudioButton>
+            }
+          />
+        )
+      ) : !filteredSessions.length ? (
+        <StudioEmptyState
+          icon={Search}
+          title="Không tìm thấy buổi phù hợp"
+          description="Thử đổi từ khóa tìm kiếm hoặc chuyển sang tab trạng thái khác."
+          action={
+            <StudioButton
+              variant="secondary"
+              onClick={() => {
+                setSearchQuery('');
+                setWorkshopFilter('');
+                setStatusTab('all');
+              }}
+            >
+              Xem tất cả buổi
+            </StudioButton>
+          }
+        />
+      ) : viewMode === 'grid' ? (
+        /* DẠNG THẺ (GRID VIEW) */
         <ul className="grid gap-studio-card xl:grid-cols-2">
-          {sessions.map((session) => {
+          {filteredSessions.map((session) => {
             const starts = formatSessionDate(session.startsAt, { parts: true });
             const ends = formatSessionDate(session.endsAt, { parts: true });
             const booked = session.seatsHeld + session.seatsSold;
@@ -416,124 +867,298 @@ export function StudioSessionManager({
               session.capacity > 0
                 ? Math.min(100, (booked / session.capacity) * 100)
                 : 0;
-            const statusTone =
-              session.status === 'scheduled'
-                ? 'success'
-                : session.status === 'cancelled'
-                  ? 'danger'
-                  : 'neutral';
             const isCancelled = session.status === 'cancelled';
+            const isPast = Date.parse(session.endsAt) < Date.now();
+            const isFull = !isCancelled && remaining === 0;
+
+            const relativeTag = getRelativeDateTag(
+              session.startsAt,
+              session.endsAt,
+              session.status,
+            );
+
+            const statusTone = isCancelled
+              ? 'danger'
+              : isPast
+                ? 'neutral'
+                : isFull
+                  ? 'warning'
+                  : 'success';
+
+            const statusLabel = isCancelled
+              ? 'Đã hủy'
+              : isPast
+                ? 'Đã diễn ra'
+                : isFull
+                  ? 'Đã kín chỗ'
+                  : 'Đã lên lịch';
 
             return (
               <li key={session.id} className="min-w-0">
                 <StudioCard
-                  className={`flex h-full gap-4 p-4 transition duration-200 hover:shadow-studio-card-hover sm:gap-5 sm:p-studio-card ${isCancelled ? 'opacity-60' : ''}`}
+                  className={`flex h-full flex-col justify-between p-4 transition duration-200 hover:shadow-studio-card-hover sm:p-5 ${
+                    isCancelled ? 'opacity-60 bg-studio-subtle/50' : ''
+                  }`}
                 >
-                  <div className="flex w-[4.75rem] shrink-0 flex-col items-center justify-center self-start rounded-studio-control bg-studio-selected px-2 py-3 text-center text-studio-primary">
-                    <span className="font-heading text-2xl font-bold leading-none">
-                      {starts.day}
-                    </span>
-                    <span className="mt-1 text-[0.65rem] font-bold uppercase tracking-wide">
-                      Tháng {starts.month}
-                    </span>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <StudioBadge tone={statusTone}>
-                          {sessionStatusLabels[session.status]}
-                        </StudioBadge>
-                        <h2 className="mt-2 font-heading text-lg font-semibold leading-snug text-studio-ink">
-                          {session.workshopTitle}
-                        </h2>
-                      </div>
+                  <div className="flex gap-4 sm:gap-5">
+                    {/* Ô ngày tháng nổi bật */}
+                    <div className="flex w-[4.75rem] shrink-0 flex-col items-center justify-center self-start rounded-studio-control bg-studio-selected px-2 py-3 text-center text-studio-primary">
+                      <span className="font-heading text-2xl font-bold leading-none">
+                        {starts.day}
+                      </span>
+                      <span className="mt-1 text-[0.65rem] font-bold uppercase tracking-wide">
+                        Tháng {starts.month}
+                      </span>
                     </div>
-                    <p className="mt-2 inline-flex items-center gap-2 text-sm text-studio-muted">
-                      <Clock3 aria-hidden="true" className="size-4 shrink-0" />
-                      <span>
-                        {starts.time} – {ends.time}
-                        {starts.date !== ends.date ? ` · ${ends.date}` : ''}
-                      </span>
-                    </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                      <span className="font-semibold text-studio-ink">
-                        {formatPrice(session.price)}đ
-                      </span>
-                      {!isCancelled && (
-                        <span className="inline-flex items-center gap-1.5 text-studio-muted">
-                          <UsersRound aria-hidden="true" className="size-4" />
-                          Còn {remaining}/{session.capacity} chỗ
+
+                    {/* Nội dung buổi học */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <StudioBadge tone={statusTone}>
+                          {statusLabel}
+                        </StudioBadge>
+                        {relativeTag && (
+                          <StudioBadge tone={relativeTag.tone}>
+                            {relativeTag.label}
+                          </StudioBadge>
+                        )}
+                      </div>
+
+                      <h3 className="mt-2 font-heading text-lg font-semibold leading-snug text-studio-ink">
+                        {session.workshopTitle}
+                      </h3>
+
+                      <p className="mt-1.5 inline-flex items-center gap-2 text-sm text-studio-muted">
+                        <Clock3
+                          aria-hidden="true"
+                          className="size-4 shrink-0"
+                        />
+                        <span>
+                          {starts.time} – {ends.time}
+                          {starts.date !== ends.date ? ` · ${ends.date}` : ''}
                         </span>
+                      </p>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                        <span className="font-semibold text-studio-ink">
+                          {formatPrice(session.price)}đ
+                        </span>
+                        {!isCancelled && (
+                          <span className="inline-flex items-center gap-1.5 text-studio-muted font-medium">
+                            <UsersRound aria-hidden="true" className="size-4" />
+                            Còn {remaining}/{session.capacity} chỗ
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Thanh tỷ lệ lấp đầy */}
+                      {!isCancelled && (
+                        <div className="mt-3">
+                          <div
+                            aria-label={`Đã đặt ${booked} trên ${session.capacity} chỗ`}
+                            aria-valuemax={session.capacity}
+                            aria-valuemin={0}
+                            aria-valuenow={Math.min(booked, session.capacity)}
+                            className="h-2 overflow-hidden rounded-full bg-studio-subtle"
+                            role="progressbar"
+                          >
+                            <div
+                              className={`h-full rounded-full transition-[width] duration-studio motion-reduce:transition-none ${
+                                isFull ? 'bg-amber-500' : 'bg-studio-primary'
+                              }`}
+                              style={{ width: `${progress}%` }}
+                            />
+                          </div>
+                        </div>
                       )}
                     </div>
-                    {!isCancelled && (
-                      <div className="mt-3">
-                        <div
-                          aria-label={`Đã đặt ${booked} trên ${session.capacity} chỗ`}
-                          aria-valuemax={session.capacity}
-                          aria-valuemin={0}
-                          aria-valuenow={Math.min(booked, session.capacity)}
-                          className="h-2 overflow-hidden rounded-full bg-studio-subtle"
-                          role="progressbar"
-                        >
-                          <div
-                            className="h-full rounded-full bg-studio-primary transition-[width] duration-studio motion-reduce:transition-none"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                    {session.status === 'scheduled' && (
-                      <div className="mt-4 flex flex-wrap gap-2 border-t border-studio-border pt-3">
-                        <StudioButton
-                          disabled={Boolean(canceling)}
-                          onClick={() => setEditing(session)}
-                          type="button"
-                          variant="secondary"
-                        >
-                          <Pencil aria-hidden="true" className="size-4" />
-                          Sửa lịch
-                        </StudioButton>
-                        <StudioButton
-                          disabled={Boolean(canceling)}
-                          onClick={() => setCanceling(session)}
-                          type="button"
-                          variant="ghost"
-                        >
-                          Hủy buổi
-                        </StudioButton>
-                      </div>
-                    )}
                   </div>
+
+                  {/* Thao tác Sửa / Hủy */}
+                  {session.status === 'scheduled' && !isPast && (
+                    <div className="mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-studio-border pt-3">
+                      <StudioButton
+                        disabled={Boolean(canceling)}
+                        onClick={() => setEditing(session)}
+                        type="button"
+                        variant="secondary"
+                        className="text-xs min-h-9"
+                      >
+                        <Pencil aria-hidden="true" className="size-3.5 mr-1" />
+                        Sửa lịch
+                      </StudioButton>
+                      <StudioButton
+                        disabled={Boolean(canceling)}
+                        onClick={() => setCanceling(session)}
+                        type="button"
+                        variant="ghost"
+                        className="text-xs min-h-9 text-studio-danger hover:bg-studio-danger/10"
+                      >
+                        Hủy buổi
+                      </StudioButton>
+                    </div>
+                  )}
                 </StudioCard>
               </li>
             );
           })}
         </ul>
-      ) : availableWorkshops.length ? (
-        <StudioEmptyState
-          icon={CalendarDays}
-          title="Lịch workshop chưa có buổi nào"
-          description="Tạo một buổi mới để khách có thể chọn ngày và đặt chỗ."
-          action={
-            <StudioButton onClick={() => setCreating(true)}>
-              <Plus aria-hidden="true" className="size-4" /> Tạo buổi đầu tiên
-            </StudioButton>
-          }
-        />
       ) : (
-        <StudioEmptyState
-          icon={CalendarDays}
-          title="Tạo workshop trước nhé"
-          description="Sau khi có workshop, bạn có thể thêm ngày giờ và số chỗ cho từng buổi."
-          action={
-            <StudioButton asChild variant="secondary">
-              <Link to={`/studio/${studio.id}/workshops`}>Đến Workshop</Link>
-            </StudioButton>
-          }
-        />
+        /* DẠNG BẢNG GỌN (TABLE VIEW) - RẤT DỄ THEO DÕI KHI CÓ NHIỀU BUỔI */
+        <div className="overflow-hidden rounded-studio-card border border-studio-border bg-studio-surface shadow-studio-card">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[850px] table-fixed border-collapse text-left">
+              <colgroup>
+                <col className="w-[24%]" />
+                <col className="w-[28%]" />
+                <col className="w-[14%]" />
+                <col className="w-[18%]" />
+                <col className="w-[16%]" />
+              </colgroup>
+              <thead className="bg-studio-subtle text-xs font-semibold uppercase tracking-wide text-studio-muted">
+                <tr>
+                  <th className="px-4 py-3.5">Thời gian buổi học</th>
+                  <th className="px-3 py-3.5">Workshop</th>
+                  <th className="px-3 py-3.5">Giá vé</th>
+                  <th className="px-3 py-3.5">Tình trạng chỗ</th>
+                  <th className="px-4 py-3.5 text-right">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-studio-border text-sm">
+                {filteredSessions.map((session) => {
+                  const starts = formatSessionDate(session.startsAt, {
+                    parts: true,
+                  });
+                  const ends = formatSessionDate(session.endsAt, {
+                    parts: true,
+                  });
+                  const booked = session.seatsHeld + session.seatsSold;
+                  const remaining = Math.max(0, session.capacity - booked);
+                  const progress =
+                    session.capacity > 0
+                      ? Math.min(100, (booked / session.capacity) * 100)
+                      : 0;
+                  const isCancelled = session.status === 'cancelled';
+                  const isPast = Date.parse(session.endsAt) < Date.now();
+                  const isFull = !isCancelled && remaining === 0;
+
+                  const relativeTag = getRelativeDateTag(
+                    session.startsAt,
+                    session.endsAt,
+                    session.status,
+                  );
+
+                  return (
+                    <tr
+                      key={session.id}
+                      className={`hover:bg-studio-selected/50 transition-colors ${
+                        isCancelled ? 'opacity-60 bg-studio-subtle/30' : ''
+                      }`}
+                    >
+                      {/* Cột thời gian */}
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-studio-ink">
+                            {starts.date}
+                          </span>
+                          {relativeTag && (
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${
+                                relativeTag.tone === 'success'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {relativeTag.label}
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 text-xs text-studio-muted flex items-center gap-1">
+                          <Clock3 className="size-3.5" />
+                          {starts.time} – {ends.time}
+                        </p>
+                      </td>
+
+                      {/* Cột Workshop */}
+                      <td className="px-3 py-4">
+                        <p
+                          className="font-semibold text-studio-ink truncate"
+                          title={session.workshopTitle}
+                        >
+                          {session.workshopTitle}
+                        </p>
+                        <div className="mt-1">
+                          {isCancelled ? (
+                            <StudioBadge tone="danger">Đã hủy</StudioBadge>
+                          ) : isPast ? (
+                            <StudioBadge tone="neutral">Đã diễn ra</StudioBadge>
+                          ) : isFull ? (
+                            <StudioBadge tone="warning">Kín chỗ</StudioBadge>
+                          ) : (
+                            <StudioBadge tone="success">Đang mở</StudioBadge>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Cột Giá */}
+                      <td className="px-3 py-4">
+                        <span className="font-medium tabular-nums text-studio-ink">
+                          {formatPrice(session.price)}đ
+                        </span>
+                      </td>
+
+                      {/* Cột Sức chứa */}
+                      <td className="px-3 py-4">
+                        {!isCancelled ? (
+                          <div className="space-y-1">
+                            <span className="text-xs text-studio-ink font-medium">
+                              Còn {remaining}/{session.capacity} chỗ
+                            </span>
+                            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-studio-subtle">
+                              <div
+                                className={`h-full rounded-full ${isFull ? 'bg-amber-500' : 'bg-studio-primary'}`}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-studio-muted">—</span>
+                        )}
+                      </td>
+
+                      {/* Cột Thao tác */}
+                      <td className="px-4 py-4 text-right">
+                        {session.status === 'scheduled' && !isPast ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditing(session)}
+                              className="rounded px-2.5 py-1 text-xs font-semibold text-studio-primary hover:bg-studio-selected transition-colors"
+                            >
+                              Sửa
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCanceling(session)}
+                              className="rounded px-2.5 py-1 text-xs font-semibold text-studio-danger hover:bg-studio-danger/10 transition-colors"
+                            >
+                              Hủy
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-studio-muted">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
+      {/* Sheet sửa/tạo buổi */}
       <Sheet open={editorOpen} onOpenChange={(open) => !open && closeEditor()}>
         <SheetContent
           side="right"
@@ -552,6 +1177,7 @@ export function StudioSessionManager({
         </SheetContent>
       </Sheet>
 
+      {/* Hộp thoại hủy buổi */}
       <Dialog
         open={Boolean(canceling)}
         onOpenChange={(open) =>
@@ -570,7 +1196,8 @@ export function StudioSessionManager({
                   {canceling.workshopTitle}
                 </span>{' '}
                 bắt đầu lúc {formatSessionDate(canceling.startsAt)} sẽ được đánh
-                dấu đã hủy.
+                dấu đã hủy. Toàn bộ tiền cọc và tiền đã thanh toán của khách sẽ
+                được hoàn trả đầy đủ.
               </>
             )}
           </DialogDescription>

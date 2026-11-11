@@ -49,12 +49,19 @@ const StudioMembersManager = lazy(() =>
     default: module.StudioMembersManager,
   })),
 );
+const StudioFinancesManager = lazy(() =>
+  import('../components/management/StudioFinancesManager').then((module) => ({
+    default: module.StudioFinancesManager,
+  })),
+);
 
-type Section = 'workshops' | 'sessions' | 'bookings' | 'profile' | 'members';
+type Section =
+  'workshops' | 'sessions' | 'bookings' | 'finances' | 'profile' | 'members';
 const titles: Record<Section, string> = {
   workshops: 'Workshop',
   sessions: 'Lịch buổi học',
   bookings: 'Đặt chỗ',
+  finances: 'Doanh thu & Quyết toán',
   profile: 'Hồ sơ studio',
   members: 'Quản lý thành viên',
 };
@@ -104,23 +111,23 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
   if (
     studio &&
     studio.status !== 'approved' &&
-    ['sessions', 'bookings', 'members'].includes(section)
+    ['sessions', 'bookings', 'finances', 'members'].includes(section)
   )
     return <Navigate to={`/studio/${studio.id}`} replace />;
   if (
     studio &&
     studio.role !== 'owner' &&
-    ['profile', 'members'].includes(section)
+    ['profile', 'members', 'finances'].includes(section)
   )
     return <Navigate to={`/studio/${studio.id}`} replace />;
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-line pb-4">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-studio-border pb-4">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
             {titles[section]}
           </h1>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-sm text-studio-muted">
             {studio?.name ?? 'Chọn studio để tiếp tục quản lý.'}
           </p>
         </div>
@@ -183,6 +190,7 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
           {section === 'bookings' && (
             <StudioBookingManager studioId={studio.id} />
           )}
+          {section === 'finances' && <StudioFinancesManager studio={studio} />}
           {section === 'members' && <StudioMembersManager studio={studio} />}
           {section === 'profile' && (
             <>

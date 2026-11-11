@@ -210,6 +210,23 @@ export async function processTransferResult(
       ],
     );
   }
+  if (
+    input.result === 'succeeded' &&
+    transfer.direction === 'outbound' &&
+    transfer.purpose === 'studio_payout'
+  ) {
+    await client.query(
+      `INSERT INTO user_notifications(user_id,booking_id,type,title,body,href)
+       SELECT sm.user_id,$1::uuid,'studio_payout_succeeded','Open Slot đã chuyển tiền quyết toán',$2,'/studio/'||$3::uuid||'/finances'
+       FROM studio_members sm
+       WHERE sm.studio_id=$3::uuid AND sm.role='owner'`,
+      [
+        transfer.bookingId,
+        `Đã chuyển ${Number(transfer.amount).toLocaleString('vi-VN')} đ quyết toán cho buổi học. Mã đối chiếu: ${input.reference ?? 'VietQR'}. Vui lòng kiểm tra tài khoản ngân hàng.`,
+        transfer.studioId,
+      ],
+    );
+  }
   if (input.result === 'failed') {
     const remaining = await client.query<{
       amount: string;
