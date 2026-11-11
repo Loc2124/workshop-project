@@ -48,7 +48,10 @@ payoutAccountsRouter.put(
     const input = z
       .object({
         bankName: z.string().trim().min(2).max(120),
-        bankBin: z.string().regex(/^[0-9]{6}$/).optional(),
+        bankBin: z
+          .string()
+          .regex(/^[0-9]{6}$/)
+          .optional(),
         accountHolder: z.string().trim().min(2).max(160),
         accountNumber: z.string().regex(/^[0-9]{4,30}$/),
         password: z.string().min(1).max(200),

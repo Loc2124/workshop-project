@@ -94,14 +94,22 @@ export function FooterLinks() {
           <Link
             className={linkClass}
             to="/tro-giup"
-            aria-current={currentPath === '/tro-giup' || currentPath === '/faq' ? 'page' : undefined}
+            aria-current={
+              currentPath === '/tro-giup' || currentPath === '/faq'
+                ? 'page'
+                : undefined
+            }
           >
             Câu hỏi thường gặp
           </Link>
           <Link
             className={linkClass}
             to="/lien-he"
-            aria-current={currentPath === '/lien-he' || currentPath === '/contact' ? 'page' : undefined}
+            aria-current={
+              currentPath === '/lien-he' || currentPath === '/contact'
+                ? 'page'
+                : undefined
+            }
           >
             Liên hệ hỗ trợ
           </Link>

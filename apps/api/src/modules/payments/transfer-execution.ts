@@ -3,7 +3,6 @@ import { getPool, withTransaction } from '../../db/pool.js';
 import { loadConfig } from '../../config.js';
 import { AppError } from '../../errors/app-error.js';
 import { decryptFinancialAccount } from './financial-account-crypto.js';
-import { queueRefundEmail } from '../../services/booking-emails.js';
 import { writeAuditLog } from '../admin/audit-log.js';
 import { createPayoutProvider } from './providers/index.js';
 import type { PayoutResult } from './providers/payout-provider.js';
@@ -86,7 +85,9 @@ export async function processTransferResult(
     providerFee?: number;
     reason: string;
   },
-  refundNoticeRef?: { value?: { bookingId: string; amount: string; reference?: string } },
+  refundNoticeRef?: {
+    value?: { bookingId: string; amount: string; reference?: string };
+  },
 ) {
   const result = await client.query<{
     bookingId: string;
@@ -165,12 +166,7 @@ export async function processTransferResult(
     if (input.reference && input.provider)
       await client.query(
         `INSERT INTO booking_refund_receipts(booking_id,amount,reference,actor_id,refunded_at) VALUES($1,$2,$3,$4,clock_timestamp())`,
-        [
-          transfer.bookingId,
-          transfer.amount,
-          input.reference,
-          actorId,
-        ],
+        [transfer.bookingId, transfer.amount, input.reference, actorId],
       );
     if (transfer.sourceKey.startsWith('ticket:')) {
       const ticketId = transfer.sourceKey.slice('ticket:'.length);
@@ -255,8 +251,7 @@ export async function processTransferResult(
       [transfer.obligationId],
     );
     const paid =
-      BigInt(remaining.rows[0]!.settled) >=
-      BigInt(remaining.rows[0]!.amount);
+      BigInt(remaining.rows[0]!.settled) >= BigInt(remaining.rows[0]!.amount);
     await client.query(
       `UPDATE financial_obligations SET status=$2,updated_at=clock_timestamp() WHERE id=$1`,
       [transfer.obligationId, paid ? 'paid' : 'partially_paid'],
@@ -304,7 +299,9 @@ export async function processTransferResult(
 export async function executeAutomatedPayoutTransfer(
   transferId: string,
   actorId: string,
-  refundNoticeRef?: { value?: { bookingId: string; amount: string; reference?: string } },
+  refundNoticeRef?: {
+    value?: { bookingId: string; amount: string; reference?: string };
+  },
 ): Promise<{
   status: 'succeeded' | 'failed' | 'manual_review' | 'processing';
   reference?: string;
@@ -357,7 +354,9 @@ export async function executeAutomatedPayoutTransfer(
       [transfer.destinationStudioAccountId],
     );
     accountData = acc.rows[0] ?? null;
-  } else if (['customer_refund', 'platform_advance'].includes(transfer.purpose)) {
+  } else if (
+    ['customer_refund', 'platform_advance'].includes(transfer.purpose)
+  ) {
     const acc = await getPool().query<{
       bankBin: string | null;
       accountHolder: string;
@@ -374,7 +373,11 @@ export async function executeAutomatedPayoutTransfer(
   }
 
   if (!accountData) {
-    throw new AppError(409, 'CONFLICT', 'Không tìm thấy tài khoản thụ hưởng của giao dịch.');
+    throw new AppError(
+      409,
+      'CONFLICT',
+      'Không tìm thấy tài khoản thụ hưởng của giao dịch.',
+    );
   }
 
   if (!accountData.bankBin || accountData.bankBin.trim().length !== 6) {
@@ -382,7 +385,8 @@ export async function executeAutomatedPayoutTransfer(
     await withTransaction(async (client: PoolClient) => {
       await processTransferResult(client, transferId, actorId, {
         result: 'manual_review',
-        reason: 'Tài khoản thụ hưởng chưa có mã BIN ngân hàng 6 chữ số. Cần chi thủ công.',
+        reason:
+          'Tài khoản thụ hưởng chưa có mã BIN ngân hàng 6 chữ số. Cần chi thủ công.',
       });
     });
     return {
@@ -461,7 +465,9 @@ export async function executeAutomatedPayoutTransfer(
         result: 'manual_review',
         reference: payoutResult.reference,
         provider: currentProvider,
-        reason: payoutResult.failureReason || 'Lệnh chi payOS đang xử lý hoặc cần kiểm tra đối soát',
+        reason:
+          payoutResult.failureReason ||
+          'Lệnh chi payOS đang xử lý hoặc cần kiểm tra đối soát',
       });
     }
   });

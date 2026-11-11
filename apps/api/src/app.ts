@@ -33,7 +33,9 @@ export function createApp() {
   app.disable('etag');
   app.set('trust proxy', 1);
   const config = loadConfig();
-  const corsOrigins = [config.CLIENT_URL, config.WEB_ORIGIN].filter(Boolean) as string[];
+  const corsOrigins = [config.CLIENT_URL, config.WEB_ORIGIN].filter(
+    Boolean,
+  ) as string[];
   app.use(corsForWeb(corsOrigins));
   app.use((_request, response, next) => {
     response.setHeader('Cache-Control', 'no-store');

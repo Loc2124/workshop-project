@@ -152,7 +152,8 @@ export class PayOSPayoutProvider implements PayoutProvider {
 
       return {
         status: 'failed',
-        reference: resData?.id ?? resData?.referenceId ?? `PAYOS-ERR-${Date.now()}`,
+        reference:
+          resData?.id ?? resData?.referenceId ?? `PAYOS-ERR-${Date.now()}`,
         providerFee: resData?.fee ?? 0,
         failureReason:
           resData?.failureReason ?? resDesc ?? 'Lệnh chi payOS bị từ chối.',

@@ -37,7 +37,11 @@ router.get(
     );
     const userRole = membershipCheck.rows[0]?.role;
     if (!isSystemAdmin && !userRole) {
-      throw new AppError(403, 'FORBIDDEN', 'Bạn không có quyền truy cập studio này.');
+      throw new AppError(
+        403,
+        'FORBIDDEN',
+        'Bạn không có quyền truy cập studio này.',
+      );
     }
 
     // Lấy danh sách thành viên
@@ -118,7 +122,11 @@ router.post(
         [studioId, userId],
       );
       if (!ownerCheck.rows[0]) {
-        throw new AppError(403, 'FORBIDDEN', 'Chỉ chủ sở hữu studio mới có quyền mời nhân viên.');
+        throw new AppError(
+          403,
+          'FORBIDDEN',
+          'Chỉ chủ sở hữu studio mới có quyền mời nhân viên.',
+        );
       }
     }
 
@@ -133,7 +141,11 @@ router.post(
       [studioId, normalizedEmail],
     );
     if (existingMember.rows.length > 0) {
-      throw new AppError(409, 'CONFLICT', 'Tài khoản này đã là thành viên của studio.');
+      throw new AppError(
+        409,
+        'CONFLICT',
+        'Tài khoản này đã là thành viên của studio.',
+      );
     }
 
     // Tạo token ngẫu nhiên và băm hash
@@ -190,7 +202,11 @@ router.delete(
         [studioId, userId],
       );
       if (!ownerCheck.rows[0]) {
-        throw new AppError(403, 'FORBIDDEN', 'Chỉ chủ sở hữu studio mới có quyền thu hồi lời mời.');
+        throw new AppError(
+          403,
+          'FORBIDDEN',
+          'Chỉ chủ sở hữu studio mới có quyền thu hồi lời mời.',
+        );
       }
     }
 
@@ -200,7 +216,11 @@ router.delete(
     );
 
     if (updateResult.rowCount === 0) {
-      throw new AppError(404, 'NOT_FOUND', 'Lời mời không tồn tại hoặc đã được xử lý.');
+      throw new AppError(
+        404,
+        'NOT_FOUND',
+        'Lời mời không tồn tại hoặc đã được xử lý.',
+      );
     }
 
     response.json({ ok: true, message: 'Đã thu hồi lời mời.' });
@@ -225,12 +245,20 @@ router.delete(
         [studioId, userId],
       );
       if (!ownerCheck.rows[0]) {
-        throw new AppError(403, 'FORBIDDEN', 'Chỉ chủ sở hữu studio mới có quyền gỡ nhân viên.');
+        throw new AppError(
+          403,
+          'FORBIDDEN',
+          'Chỉ chủ sở hữu studio mới có quyền gỡ nhân viên.',
+        );
       }
     }
 
     if (targetUserId === userId) {
-      throw new AppError(400, 'BAD_REQUEST', 'Chủ sở hữu không thể tự gỡ quyền của chính mình.');
+      throw new AppError(
+        400,
+        'BAD_REQUEST',
+        'Chủ sở hữu không thể tự gỡ quyền của chính mình.',
+      );
     }
 
     // Chỉ gỡ được staff
@@ -240,7 +268,11 @@ router.delete(
     );
 
     if (deleteResult.rowCount === 0) {
-      throw new AppError(404, 'NOT_FOUND', 'Nhân viên không tồn tại trong studio này.');
+      throw new AppError(
+        404,
+        'NOT_FOUND',
+        'Nhân viên không tồn tại trong studio này.',
+      );
     }
 
     response.json({ ok: true, message: 'Đã gỡ quyền nhân viên khỏi studio.' });
@@ -248,25 +280,28 @@ router.delete(
 );
 
 // 5. GET /studios/invitations/lookup?token=... - Tra cứu lời mời công khai
-router.get('/invitations/lookup', async (request: Request, response: Response) => {
-  const token = typeof request.query.token === 'string' ? request.query.token.trim() : '';
-  if (!token) {
-    throw new AppError(400, 'BAD_REQUEST', 'Mã lời mời không hợp lệ.');
-  }
+router.get(
+  '/invitations/lookup',
+  async (request: Request, response: Response) => {
+    const token =
+      typeof request.query.token === 'string' ? request.query.token.trim() : '';
+    if (!token) {
+      throw new AppError(400, 'BAD_REQUEST', 'Mã lời mời không hợp lệ.');
+    }
 
-  const tokenHash = hashToken(token);
-  const result = await query<{
-    id: string;
-    email: string;
-    role: string;
-    expiresAt: string;
-    status: string;
-    studioId: string;
-    studioName: string;
-    studioAddress: string;
-    inviterName: string;
-  }>(
-    `SELECT 
+    const tokenHash = hashToken(token);
+    const result = await query<{
+      id: string;
+      email: string;
+      role: string;
+      expiresAt: string;
+      status: string;
+      studioId: string;
+      studioName: string;
+      studioAddress: string;
+      inviterName: string;
+    }>(
+      `SELECT 
       i.id,
       i.email,
       i.role,
@@ -280,38 +315,43 @@ router.get('/invitations/lookup', async (request: Request, response: Response) =
     JOIN studios st ON st.id = i.studio_id
     JOIN users u ON u.id = i.created_by
     WHERE i.token_hash = $1`,
-    [tokenHash],
-  );
-
-  const invitation = result.rows[0];
-  if (!invitation) {
-    throw new AppError(404, 'NOT_FOUND', 'Lời mời không tồn tại hoặc liên kết không đúng.');
-  }
-
-  const isExpired = new Date(invitation.expiresAt).getTime() <= Date.now();
-  if (invitation.status !== 'pending' || isExpired) {
-    throw new AppError(
-      410,
-      'GONE',
-      invitation.status === 'accepted'
-        ? 'Lời mời này đã được chấp nhận trước đó.'
-        : 'Lời mời này đã hết hạn hoặc bị thu hồi.',
+      [tokenHash],
     );
-  }
 
-  response.json({
-    invitation: {
-      id: invitation.id,
-      email: invitation.email,
-      role: invitation.role,
-      expiresAt: invitation.expiresAt,
-      studioId: invitation.studioId,
-      studioName: invitation.studioName,
-      studioAddress: invitation.studioAddress,
-      inviterName: invitation.inviterName,
-    },
-  });
-});
+    const invitation = result.rows[0];
+    if (!invitation) {
+      throw new AppError(
+        404,
+        'NOT_FOUND',
+        'Lời mời không tồn tại hoặc liên kết không đúng.',
+      );
+    }
+
+    const isExpired = new Date(invitation.expiresAt).getTime() <= Date.now();
+    if (invitation.status !== 'pending' || isExpired) {
+      throw new AppError(
+        410,
+        'GONE',
+        invitation.status === 'accepted'
+          ? 'Lời mời này đã được chấp nhận trước đó.'
+          : 'Lời mời này đã hết hạn hoặc bị thu hồi.',
+      );
+    }
+
+    response.json({
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        expiresAt: invitation.expiresAt,
+        studioId: invitation.studioId,
+        studioName: invitation.studioName,
+        studioAddress: invitation.studioAddress,
+        inviterName: invitation.inviterName,
+      },
+    });
+  },
+);
 
 // 6. POST /studios/invitations/accept - Chấp nhận lời mời
 router.post(

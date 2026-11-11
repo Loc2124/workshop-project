@@ -20,7 +20,8 @@ export function NotFoundPage() {
           Không tìm thấy trang
         </h1>
         <p className="mt-3 text-base text-muted">
-          Trang bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc đường dẫn bị thay đổi.
+          Trang bạn đang tìm kiếm không tồn tại, đã bị xóa hoặc đường dẫn bị
+          thay đổi.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button

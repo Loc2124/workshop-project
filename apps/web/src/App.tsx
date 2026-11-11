@@ -306,7 +306,14 @@ function App() {
             path="/studio/studios/:studioId"
             element={<LegacyStudioDetail />}
           />
-          {['workshops', 'sessions', 'bookings', 'check-in', 'members', 'profile'].map((section) => (
+          {[
+            'workshops',
+            'sessions',
+            'bookings',
+            'check-in',
+            'members',
+            'profile',
+          ].map((section) => (
             <Route
               key={section}
               path={`/studio/${section}`}

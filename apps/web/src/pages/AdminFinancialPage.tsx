@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { formatBankDisplay } from '@workshop/shared';
 import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../lib/api-client';
 import { formatPrice } from '../lib/format';
@@ -23,6 +24,29 @@ type Obligation = {
   reason: string;
   createdAt: string;
   dueState: 'overdue' | 'due_soon' | null;
+  destinationBankBin?: string | null;
+  destinationBankName?: string | null;
+  destinationHolder?: string | null;
+  destinationLast4?: string | null;
+  destinationStatus?: 'pending' | 'verified' | null;
+};
+type VietqrPreview = {
+  obligationId: string;
+  kind: 'customer_refund' | 'studio_payout';
+  bookingId: string;
+  orderCode: string;
+  studioName: string;
+  amount: number;
+  accountId: string;
+  accountStatus: string;
+  bankBin: string | null;
+  bankName: string | null;
+  bankDisplay: string;
+  accountHolder: string;
+  accountNumber: string;
+  last4: string;
+  transferContent: string;
+  vietqrUrl: string | null;
 };
 type Transfer = {
   id: string;
@@ -229,6 +253,13 @@ export function AdminFinancialPage() {
   const [queueFilter, setQueueFilter] = useState<
     'all' | 'uncertain' | 'overdue' | 'due_soon' | 'failed'
   >('all');
+  const [vietqrModal, setVietqrModal] = useState<VietqrPreview | null>(null);
+  const [vietqrReference, setVietqrReference] = useState('');
+  const [vietqrFee, setVietqrFee] = useState('0');
+  const [vietqrReason, setVietqrReason] = useState(
+    'Quản trị quét mã VietQR chuyển khoản và xác nhận hoàn tất.',
+  );
+  const [copiedField, setCopiedField] = useState<string | null>(null);
   const obligations = useQuery({
     queryKey: ['private', userId, 'financial-obligations'],
     queryFn: () =>
@@ -282,8 +313,59 @@ export function AdminFinancialPage() {
       client.invalidateQueries({
         queryKey: ['private', userId, 'financial-calendar'],
       }),
+      client.invalidateQueries({
+        queryKey: ['private', userId, 'studio-bank-accounts'],
+      }),
+      client.invalidateQueries({
+        queryKey: ['private', userId, 'refund-bank-accounts'],
+      }),
     ]);
   };
+  const openVietqr = useMutation({
+    mutationFn: (obligationId: string) =>
+      apiFetch<VietqrPreview>(
+        `/admin/tai-chinh/nghia-vu/${obligationId}/vietqr`,
+      ),
+    onSuccess: (data) => {
+      setVietqrModal(data);
+      setVietqrReference(
+        `FT${data.orderCode}${Date.now().toString().slice(-4)}`,
+      );
+      setVietqrFee('0');
+      setVietqrReason(
+        'Quản trị quét mã VietQR chuyển khoản và xác nhận hoàn tất.',
+      );
+      setCopiedField(null);
+    },
+    onError: (e) => setFeedback(errorMessage(e)),
+  });
+  const confirmVietqr = useMutation({
+    mutationFn: (preview: VietqrPreview) =>
+      apiFetch(
+        `/admin/tai-chinh/nghia-vu/${preview.obligationId}/chuyen-nhanh-vietqr`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            amount: preview.amount,
+            reference: vietqrReference.trim(),
+            provider: 'VietQR Napas 247',
+            providerFee: Number(vietqrFee) || 0,
+            idempotencyKey: crypto.randomUUID(),
+            reason:
+              vietqrReason.trim() ||
+              'Quản trị quét mã VietQR chuyển khoản và xác nhận hoàn tất.',
+          }),
+        },
+      ),
+    onSuccess: async () => {
+      setVietqrModal(null);
+      setFeedback(
+        'Đã xác nhận chuyển khoản VietQR thành công và gửi thông báo cho người nhận.',
+      );
+      await refresh();
+    },
+    onError: (e) => setFeedback(errorMessage(e)),
+  });
   const createTransfer = useMutation({
     mutationFn: ({ o, purpose }: { o: Obligation; purpose: string }) =>
       apiFetch(`/admin/tai-chinh/nghia-vu/${o.id}/chuyen-tien`, {
@@ -542,88 +624,141 @@ export function AdminFinancialPage() {
                     <p className="text-xs font-medium text-stone-600">
                       Hạn: {dateTime(o.dueAt)}
                     </p>
+                    {['customer_refund', 'studio_payout'].includes(o.kind) && (
+                      <p className="text-sm text-stone-700">
+                        {o.destinationLast4 ? (
+                          <>
+                            Tài khoản nhận:{' '}
+                            <strong>
+                              {formatBankDisplay(
+                                o.destinationBankBin,
+                                o.destinationBankName,
+                              )}
+                            </strong>{' '}
+                            · {o.destinationHolder} · ****{o.destinationLast4}{' '}
+                            <span className="text-xs text-stone-500">
+                              (
+                              {o.destinationStatus === 'verified'
+                                ? 'Đã đối chiếu'
+                                : 'Có thể quét VietQR ngay'}
+                              )
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-amber-900">
+                            Chờ người nhận bổ sung tài khoản ngân hàng.
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                   {remaining > 0 &&
                     o.status !== 'manual_review' &&
                     o.status !== 'cancelled' &&
                     o.status !== 'paid' && (
                       <div className="w-full space-y-2 md:max-w-xs">
-                        {o.kind === 'customer_refund' && (
-                          <label className="block text-xs font-medium">
-                            Loại chi
-                            <select
-                              value={selectedPurpose[o.id] ?? 'customer_refund'}
-                              onChange={(e) =>
-                                setSelectedPurpose((x) => ({
-                                  ...x,
-                                  [o.id]: e.target.value as
-                                    'customer_refund' | 'platform_advance',
-                                }))
-                              }
-                              className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
+                        {['customer_refund', 'studio_payout'].includes(
+                          o.kind,
+                        ) &&
+                          o.destinationLast4 && (
+                            <button
+                              type="button"
+                              onClick={() => openVietqr.mutate(o.id)}
+                              disabled={openVietqr.isPending}
+                              className="min-h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:opacity-50"
                             >
-                              <option value="customer_refund">
-                                Hoàn từ tiền studio đã gửi
-                              </option>
-                              <option value="platform_advance">
-                                Open Slot tạm ứng
-                              </option>
-                            </select>
-                          </label>
-                        )}
-                        <label className="block text-xs font-medium">
-                          Số tiền
-                          <input
-                            type="number"
-                            min="1"
-                            max={remaining}
-                            value={transferAmounts[o.id] ?? remaining}
-                            onChange={(e) =>
-                              setTransferAmounts((x) => ({
-                                ...x,
-                                [o.id]: e.target.value,
-                              }))
-                            }
-                            className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                          />
-                        </label>
-                        <label className="block text-xs font-medium">
-                          Lý do
-                          <textarea
-                            value={reason[o.id] ?? ''}
-                            onChange={(e) =>
-                              setReason((x) => ({
-                                ...x,
-                                [o.id]: e.target.value,
-                              }))
-                            }
-                            className="mt-1 min-h-16 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-                            placeholder="Ghi căn cứ lập giao dịch (tối thiểu 10 ký tự nếu nhập)"
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            createTransfer.mutate({
-                              o,
-                              purpose:
-                                o.kind === 'customer_refund'
-                                  ? (selectedPurpose[o.id] ?? 'customer_refund')
-                                  : o.kind === 'studio_recovery'
-                                    ? 'studio_repayment'
-                                    : 'studio_payout',
-                            })
-                          }
-                          disabled={
-                            createTransfer.isPending ||
-                            remaining <= 0 ||
-                            (Boolean(reason[o.id]?.trim()) &&
-                              (reason[o.id]?.trim().length ?? 0) < 10)
-                          }
-                          className="min-h-10 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
-                        >
-                          Lập giao dịch chờ duyệt
-                        </button>
+                              {openVietqr.isPending &&
+                              openVietqr.variables === o.id
+                                ? 'Đang tạo mã VietQR…'
+                                : 'Quét VietQR & Xác nhận chuyển (1 bước)'}
+                            </button>
+                          )}
+                        <details className="rounded-lg border border-stone-200 bg-soft/60 p-3">
+                          <summary className="cursor-pointer text-xs font-semibold text-stone-700">
+                            Lập giao dịch thủ công (nhiều bước)
+                          </summary>
+                          <div className="mt-3 space-y-2">
+                            {o.kind === 'customer_refund' && (
+                              <label className="block text-xs font-medium">
+                                Loại chi
+                                <select
+                                  value={
+                                    selectedPurpose[o.id] ?? 'customer_refund'
+                                  }
+                                  onChange={(e) =>
+                                    setSelectedPurpose((x) => ({
+                                      ...x,
+                                      [o.id]: e.target.value as
+                                        'customer_refund' | 'platform_advance',
+                                    }))
+                                  }
+                                  className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
+                                >
+                                  <option value="customer_refund">
+                                    Hoàn từ tiền cọc đang giữ / Studio đã gửi
+                                  </option>
+                                  <option value="platform_advance">
+                                    Open Slot tạm ứng
+                                  </option>
+                                </select>
+                              </label>
+                            )}
+                            <label className="block text-xs font-medium">
+                              Số tiền
+                              <input
+                                type="number"
+                                min="1"
+                                max={remaining}
+                                value={transferAmounts[o.id] ?? remaining}
+                                onChange={(e) =>
+                                  setTransferAmounts((x) => ({
+                                    ...x,
+                                    [o.id]: e.target.value,
+                                  }))
+                                }
+                                className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
+                              />
+                            </label>
+                            <label className="block text-xs font-medium">
+                              Lý do
+                              <textarea
+                                value={reason[o.id] ?? ''}
+                                onChange={(e) =>
+                                  setReason((x) => ({
+                                    ...x,
+                                    [o.id]: e.target.value,
+                                  }))
+                                }
+                                className="mt-1 min-h-16 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
+                                placeholder="Ghi căn cứ lập giao dịch (tối thiểu 10 ký tự nếu nhập)"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                createTransfer.mutate({
+                                  o,
+                                  purpose:
+                                    o.kind === 'customer_refund'
+                                      ? (selectedPurpose[o.id] ??
+                                        'customer_refund')
+                                      : o.kind === 'studio_recovery'
+                                        ? 'studio_repayment'
+                                        : 'studio_payout',
+                                })
+                              }
+                              disabled={
+                                createTransfer.isPending ||
+                                remaining <= 0 ||
+                                (Boolean(reason[o.id]?.trim()) &&
+                                  (reason[o.id]?.trim().length ?? 0) < 10)
+                              }
+                              className="min-h-10 w-full rounded-lg border border-primary bg-white px-4 text-sm font-semibold text-primary hover:bg-paper disabled:opacity-50"
+                            >
+                              Lập giao dịch chờ duyệt
+                            </button>
+                          </div>
+                        </details>
                       </div>
                     )}
                 </article>
@@ -818,14 +953,38 @@ export function AdminFinancialPage() {
                   </div>
                 )}
                 {t.status === 'pending_approval' && (
-                  <button
-                    type="button"
-                    onClick={() => approve.mutate(t)}
-                    disabled={approve.isPending}
-                    className="min-h-10 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-soft disabled:opacity-50"
-                  >
-                    Duyệt giao dịch
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => approve.mutate(t)}
+                      disabled={approve.isPending}
+                      className="min-h-10 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-soft disabled:opacity-50"
+                    >
+                      Duyệt giao dịch
+                    </button>
+                    {t.direction === 'outbound' && (
+                      <button
+                        type="button"
+                        onClick={() => openVietqr.mutate(t.obligationId)}
+                        disabled={openVietqr.isPending}
+                        className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+                      >
+                        Quét VietQR & Xác nhận chuyển (1 bước)
+                      </button>
+                    )}
+                  </div>
+                )}
+                {t.status === 'approved' && t.direction === 'outbound' && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openVietqr.mutate(t.obligationId)}
+                      disabled={openVietqr.isPending}
+                      className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+                    >
+                      Mở mã VietQR chuyển khoản
+                    </button>
+                  </div>
                 )}
                 {['approved', 'manual_review'].includes(t.status) && (
                   <div className="grid gap-2 rounded-lg bg-soft p-3 sm:grid-cols-[1fr_1fr_9rem_auto] sm:items-end">
@@ -1178,6 +1337,162 @@ export function AdminFinancialPage() {
             )}
           </div>
         </section>
+      )}
+      {vietqrModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="vietqr-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        >
+          <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-stone-200 bg-white p-5 shadow-xl space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                  Chuyển khoản nhanh Napas 247
+                </p>
+                <h2
+                  id="vietqr-modal-title"
+                  className="font-heading text-xl font-semibold text-ink"
+                >
+                  {vietqrModal.kind === 'customer_refund'
+                    ? 'Hoàn tiền cho khách hàng'
+                    : 'Chi trả cho Studio'}{' '}
+                  · #{vietqrModal.orderCode}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVietqrModal(null)}
+                className="min-h-10 rounded-lg border border-stone-300 px-3 text-sm font-medium hover:bg-soft"
+              >
+                Đóng
+              </button>
+            </div>
+
+            {vietqrModal.vietqrUrl ? (
+              <div className="flex flex-col items-center rounded-xl border border-stone-200 bg-soft p-4">
+                <img
+                  src={vietqrModal.vietqrUrl}
+                  alt={`Mã VietQR chuyển khoản cho ${vietqrModal.accountHolder}`}
+                  className="h-64 w-64 rounded-lg bg-white object-contain p-2 shadow-sm"
+                />
+                <p className="mt-2 text-center text-xs text-stone-600">
+                  Mở ứng dụng ngân hàng bất kỳ để quét mã VietQR (đã điền sẵn số
+                  tiền và nội dung chuyển khoản).
+                </p>
+              </div>
+            ) : (
+              <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
+                Tài khoản này chưa có mã BIN 6 chữ số để tạo ảnh QR tự động. Vui
+                lòng chuyển khoản theo số tài khoản bên dưới.
+              </p>
+            )}
+
+            <div className="space-y-2 rounded-xl border border-stone-200 bg-white p-4 text-sm">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-stone-600">Ngân hàng:</span>
+                <strong>{vietqrModal.bankDisplay}</strong>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-stone-600">Chủ tài khoản:</span>
+                <strong>{vietqrModal.accountHolder}</strong>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-stone-600">Số tài khoản:</span>
+                <div className="flex items-center gap-2">
+                  <strong className="tabular-nums">
+                    {vietqrModal.accountNumber}
+                  </strong>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(
+                        vietqrModal.accountNumber,
+                      );
+                      setCopiedField('account');
+                    }}
+                    className="rounded border border-stone-300 px-2 py-0.5 text-xs font-medium hover:bg-soft"
+                  >
+                    {copiedField === 'account' ? 'Đã chép' : 'Sao chép'}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-stone-600">Số tiền chuyển:</span>
+                <strong className="text-base text-primary">
+                  {money(vietqrModal.amount)}
+                </strong>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-stone-600">Nội dung:</span>
+                <div className="flex items-center gap-2">
+                  <strong className="tabular-nums">
+                    {vietqrModal.transferContent}
+                  </strong>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(
+                        vietqrModal.transferContent,
+                      );
+                      setCopiedField('content');
+                    }}
+                    className="rounded border border-stone-300 px-2 py-0.5 text-xs font-medium hover:bg-soft"
+                  >
+                    {copiedField === 'content' ? 'Đã chép' : 'Sao chép'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3 border-t border-stone-200 pt-3">
+              <div className="grid gap-3 sm:grid-cols-[1fr_9rem]">
+                <label className="block text-xs font-medium">
+                  Mã giao dịch / Mã đối chiếu ngân hàng
+                  <input
+                    value={vietqrReference}
+                    onChange={(e) => setVietqrReference(e.target.value)}
+                    placeholder="Ví dụ: FT26315..."
+                    className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
+                  />
+                </label>
+                <label className="block text-xs font-medium">
+                  Phí chuyển (đ)
+                  <input
+                    type="number"
+                    min="0"
+                    value={vietqrFee}
+                    onChange={(e) => setVietqrFee(e.target.value)}
+                    className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
+                  />
+                </label>
+              </div>
+              <label className="block text-xs font-medium">
+                Ghi chú đối chiếu
+                <input
+                  value={vietqrReason}
+                  onChange={(e) => setVietqrReason(e.target.value)}
+                  className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => confirmVietqr.mutate(vietqrModal)}
+                disabled={
+                  confirmVietqr.isPending ||
+                  vietqrReference.trim().length < 3 ||
+                  vietqrReason.trim().length < 10
+                }
+                className="min-h-11 w-full rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
+              >
+                {confirmVietqr.isPending
+                  ? 'Đang xác nhận…'
+                  : 'Xác nhận đã chuyển khoản hoàn tất'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

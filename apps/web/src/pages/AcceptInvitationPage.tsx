@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate, Link, useLocation } from 'react-router-dom';
+import {
+  useSearchParams,
+  useNavigate,
+  Link,
+  useLocation,
+} from 'react-router-dom';
 import {
   Building2,
   CheckCircle2,
@@ -135,8 +140,9 @@ export function AcceptInvitationPage() {
               Tham gia thành công!
             </h1>
             <p className="text-sm text-muted">
-              Bạn đã trở thành nhân viên của <strong>{invitation?.studioName}</strong>. Đang
-              chuyển hướng bạn đến trang quản lý...
+              Bạn đã trở thành nhân viên của{' '}
+              <strong>{invitation?.studioName}</strong>. Đang chuyển hướng bạn
+              đến trang quản lý...
             </p>
             <div className="pt-2">
               <Button
@@ -199,8 +205,8 @@ export function AcceptInvitationPage() {
               <div className="space-y-4">
                 <div className="rounded-md border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800">
                   <p>
-                    Vui lòng đăng nhập bằng tài khoản Open Slot của bạn để chấp nhận lời mời và
-                    bắt đầu làm việc cùng studio.
+                    Vui lòng đăng nhập bằng tài khoản Open Slot của bạn để chấp
+                    nhận lời mời và bắt đầu làm việc cùng studio.
                   </p>
                 </div>
                 <Button asChild className="w-full">
@@ -230,11 +236,13 @@ export function AcceptInvitationPage() {
                   </span>
                 </div>
 
-                {user.email.toLowerCase() !== invitation.email.toLowerCase() && (
+                {user.email.toLowerCase() !==
+                  invitation.email.toLowerCase() && (
                   <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded border border-amber-200">
-                    * Lưu ý: Lời mời này ban đầu gửi đến <strong>{invitation.email}</strong>.
-                    Bạn đang đăng nhập bằng <strong>{user.email}</strong>, bạn vẫn có thể nhấn
-                    tham gia bằng tài khoản hiện tại.
+                    * Lưu ý: Lời mời này ban đầu gửi đến{' '}
+                    <strong>{invitation.email}</strong>. Bạn đang đăng nhập bằng{' '}
+                    <strong>{user.email}</strong>, bạn vẫn có thể nhấn tham gia
+                    bằng tài khoản hiện tại.
                   </p>
                 )}
 
@@ -243,7 +251,9 @@ export function AcceptInvitationPage() {
                   disabled={accepting}
                   className="w-full"
                 >
-                  {accepting ? 'Đang kích hoạt...' : 'Chấp nhận lời mời & Tham gia'}
+                  {accepting
+                    ? 'Đang kích hoạt...'
+                    : 'Chấp nhận lời mời & Tham gia'}
                   {!accepting && <ArrowRight className="size-4 ml-1.5" />}
                 </Button>
               </div>

@@ -12,7 +12,9 @@ export function hasDashboardRole(
     return Boolean(studios?.some((studio) => studio.role === 'owner'));
   if (role === 'studio_member')
     return Boolean(
-      studios?.some((studio) => studio.role === 'owner' || studio.role === 'staff'),
+      studios?.some(
+        (studio) => studio.role === 'owner' || studio.role === 'staff',
+      ),
     );
   return false;
 }

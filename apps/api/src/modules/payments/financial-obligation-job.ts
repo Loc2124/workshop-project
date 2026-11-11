@@ -22,32 +22,73 @@ export async function syncRefundObligations() {
       originalDue: string;
       legacySettled: string;
       eventAt: Date;
+      collectedDeposit: string;
+      totalRefundDue: string;
+      hasSettlementSnapshot: boolean;
+      existingId: string | null;
+      existingAmount: string | null;
+      existingStatus: string | null;
+      existingRelatedId: string | null;
+      settledOutbound: string;
     }>(
       `SELECT b.id AS "bookingId",w.studio_id AS "studioId",t.id AS "ticketId",
          'ticket:'||t.id::text AS "sourceKey",'ticket'::text AS kind,
          t.refund_due_amount::text AS "originalDue",t.refunded_amount::text AS "legacySettled",
-         COALESCE(t.refund_started_at,b.cancelled_at,b.created_at) AS "eventAt"
+         COALESCE(t.refund_started_at,b.cancelled_at,b.created_at) AS "eventAt",
+         COALESCE((SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'),0)::text AS "collectedDeposit",
+         (b.refund_due_amount+b.extra_refund_due_amount)::text AS "totalRefundDue",
+         EXISTS(SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id=b.id) AS "hasSettlementSnapshot",
+         o.id AS "existingId",o.amount::text AS "existingAmount",o.status AS "existingStatus",
+         o.related_obligation_id AS "existingRelatedId",
+         COALESCE((SELECT sum(ft.amount) FROM financial_transfers ft WHERE ft.obligation_id=o.id AND ft.direction='outbound' AND ft.purpose IN ('customer_refund','platform_advance') AND ft.status='succeeded'),0)::text AS "settledOutbound"
        FROM tickets t JOIN bookings b ON b.id=t.booking_id JOIN sessions s ON s.id=b.session_id
        JOIN workshops w ON w.id=s.workshop_id
-       WHERE t.refund_due_amount>0 OR EXISTS(SELECT 1 FROM financial_obligations o WHERE o.kind='customer_refund' AND o.source_key='ticket:'||t.id::text)
+       LEFT JOIN financial_obligations o ON o.kind='customer_refund' AND o.source_key='ticket:'||t.id::text
+       WHERE (t.refund_due_amount>t.refunded_amount AND (o.id IS NULL OR o.status NOT IN ('paid','cancelled') OR o.amount<t.refund_due_amount))
+          OR (o.id IS NOT NULL AND o.status NOT IN ('paid','cancelled','manual_review'))
        UNION ALL
        SELECT b.id,w.studio_id,NULL::uuid,'extra:'||x.id::text,'extra'::text,
-         x.amount::text,x.refunded_amount::text,x.created_at
+         x.amount::text,x.refunded_amount::text,x.created_at,
+         COALESCE((SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'),0)::text AS "collectedDeposit",
+         (b.refund_due_amount+b.extra_refund_due_amount)::text AS "totalRefundDue",
+         EXISTS(SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id=b.id) AS "hasSettlementSnapshot",
+         o.id AS "existingId",o.amount::text AS "existingAmount",o.status AS "existingStatus",
+         o.related_obligation_id AS "existingRelatedId",
+         COALESCE((SELECT sum(ft.amount) FROM financial_transfers ft WHERE ft.obligation_id=o.id AND ft.direction='outbound' AND ft.purpose IN ('customer_refund','platform_advance') AND ft.status='succeeded'),0)::text AS "settledOutbound"
        FROM booking_extra_refunds x JOIN bookings b ON b.id=x.booking_id
        JOIN sessions s ON s.id=b.session_id JOIN workshops w ON w.id=s.workshop_id
-       WHERE x.amount>0 OR EXISTS(SELECT 1 FROM financial_obligations o WHERE o.kind='customer_refund' AND o.source_key='extra:'||x.id::text)
+       LEFT JOIN financial_obligations o ON o.kind='customer_refund' AND o.source_key='extra:'||x.id::text
+       WHERE (x.amount>x.refunded_amount AND (o.id IS NULL OR o.status NOT IN ('paid','cancelled') OR o.amount<x.amount))
+          OR (o.id IS NOT NULL AND o.status NOT IN ('paid','cancelled','manual_review'))
        ORDER BY 1,4`,
     );
     for (const source of sources.rows) {
       const outstanding =
         BigInt(source.originalDue) - BigInt(source.legacySettled);
+      const precalcTarget = outstanding + BigInt(source.settledOutbound);
+      const coveredByPlatformDeposit =
+        !source.hasSettlementSnapshot &&
+        BigInt(source.collectedDeposit) > 0n &&
+        BigInt(source.totalRefundDue) <= BigInt(source.collectedDeposit);
+      if (
+        source.existingId &&
+        precalcTarget > 0n &&
+        BigInt(source.existingAmount ?? '0') === precalcTarget &&
+        (coveredByPlatformDeposit
+          ? source.existingStatus !== 'awaiting_funds' &&
+            !source.existingRelatedId
+          : Boolean(source.existingRelatedId))
+      ) {
+        continue;
+      }
       const refundKey = source.sourceKey;
       const prior = await client.query<{
         id: string;
         amount: string;
         status: string;
+        relatedId: string | null;
       }>(
-        `SELECT id,amount::text,status FROM financial_obligations WHERE kind='customer_refund' AND source_key=$1 FOR UPDATE`,
+        `SELECT id,amount::text,status,related_obligation_id AS "relatedId" FROM financial_obligations WHERE kind='customer_refund' AND source_key=$1 FOR UPDATE`,
         [refundKey],
       );
       if (outstanding <= 0n && !prior.rows[0]) continue;
@@ -64,13 +105,17 @@ export async function syncRefundObligations() {
         );
         continue;
       }
+      const initialRefundStatus = coveredByPlatformDeposit
+        ? 'awaiting_approval'
+        : 'awaiting_funds';
       const refund = await client.query<{ id: string }>(
         `INSERT INTO financial_obligations(booking_id,studio_id,ticket_id,kind,source_key,amount,due_at,status,reason)
-         VALUES($1,$2,$3,'customer_refund',$4,$5,financial_obligation_deadline('customer_refund',$6),'awaiting_funds',$7)
+         VALUES($1,$2,$3,'customer_refund',$4,$5,financial_obligation_deadline('customer_refund',$6),$7,$8)
          ON CONFLICT(kind,source_key) DO UPDATE SET
            amount=GREATEST(financial_obligations.amount,EXCLUDED.amount),
            status=CASE WHEN EXCLUDED.amount<financial_obligations.amount THEN 'manual_review'
-                       WHEN EXCLUDED.amount>financial_obligations.amount THEN 'awaiting_funds'
+                       WHEN EXCLUDED.amount>financial_obligations.amount THEN EXCLUDED.status
+                       WHEN financial_obligations.status='awaiting_funds' AND EXCLUDED.status='awaiting_approval' THEN 'awaiting_approval'
                        ELSE financial_obligations.status END,
            due_at=LEAST(financial_obligations.due_at,EXCLUDED.due_at),updated_at=clock_timestamp()
          RETURNING id`,
@@ -81,38 +126,58 @@ export async function syncRefundObligations() {
           source.sourceKey,
           targetTotal.toString(),
           source.eventAt,
+          initialRefundStatus,
           source.kind === 'ticket'
             ? 'Hoàn tiền theo vé'
             : 'Hoàn khoản thu thừa',
         ],
       );
       const refundId = refund.rows[0]!.id;
-      const recovery = await client.query<{ id: string }>(
-        `INSERT INTO financial_obligations(booking_id,studio_id,ticket_id,kind,source_key,amount,due_at,status,reason,related_obligation_id)
-         VALUES($1,$2,$3,'studio_recovery',$4,$5,financial_obligation_deadline('customer_refund',$6),'awaiting_funds',$7,$8)
-         ON CONFLICT(kind,source_key) DO UPDATE SET
-           amount=GREATEST(financial_obligations.amount,EXCLUDED.amount),
-           status=CASE WHEN EXCLUDED.amount<financial_obligations.amount THEN 'manual_review'
-                       WHEN EXCLUDED.amount>financial_obligations.amount THEN 'awaiting_funds'
-                       ELSE financial_obligations.status END,
-           due_at=LEAST(financial_obligations.due_at,EXCLUDED.due_at),updated_at=clock_timestamp()
-         RETURNING id`,
-        [
-          source.bookingId,
-          source.studioId,
-          source.ticketId,
-          `funding:${source.sourceKey}`,
-          targetTotal.toString(),
-          source.eventAt,
-          'Studio hoàn tiền về Open Slot trước khi nền tảng chuyển cho khách',
-          refundId,
-        ],
-      );
-      await client.query(
-        `UPDATE financial_obligations SET related_obligation_id=$2,updated_at=clock_timestamp()
-         WHERE id=$1 AND related_obligation_id IS DISTINCT FROM $2`,
-        [refundId, recovery.rows[0]!.id],
-      );
+      if (coveredByPlatformDeposit) {
+        if (prior.rows[0]?.relatedId) {
+          await client.query(
+            `UPDATE financial_obligations o
+             SET status='cancelled',updated_at=clock_timestamp()
+             WHERE o.id=$1 AND o.kind='studio_recovery'
+               AND o.status NOT IN ('paid','cancelled')
+               AND NOT EXISTS(SELECT 1 FROM financial_transfers t WHERE t.obligation_id=o.id AND t.status<>'failed')`,
+            [prior.rows[0].relatedId],
+          );
+          await client.query(
+            `UPDATE financial_obligations SET related_obligation_id=NULL,updated_at=clock_timestamp()
+             WHERE id=$1 AND related_obligation_id=$2
+               AND EXISTS(SELECT 1 FROM financial_obligations r WHERE r.id=$2 AND r.status='cancelled')`,
+            [refundId, prior.rows[0].relatedId],
+          );
+        }
+      } else {
+        const recovery = await client.query<{ id: string }>(
+          `INSERT INTO financial_obligations(booking_id,studio_id,ticket_id,kind,source_key,amount,due_at,status,reason,related_obligation_id)
+           VALUES($1,$2,$3,'studio_recovery',$4,$5,financial_obligation_deadline('customer_refund',$6),'awaiting_funds',$7,$8)
+           ON CONFLICT(kind,source_key) DO UPDATE SET
+             amount=GREATEST(financial_obligations.amount,EXCLUDED.amount),
+             status=CASE WHEN EXCLUDED.amount<financial_obligations.amount THEN 'manual_review'
+                         WHEN EXCLUDED.amount>financial_obligations.amount THEN 'awaiting_funds'
+                         ELSE financial_obligations.status END,
+             due_at=LEAST(financial_obligations.due_at,EXCLUDED.due_at),updated_at=clock_timestamp()
+           RETURNING id`,
+          [
+            source.bookingId,
+            source.studioId,
+            source.ticketId,
+            `funding:${source.sourceKey}`,
+            targetTotal.toString(),
+            source.eventAt,
+            'Studio hoàn tiền về Open Slot trước khi nền tảng chuyển cho khách',
+            refundId,
+          ],
+        );
+        await client.query(
+          `UPDATE financial_obligations SET related_obligation_id=$2,updated_at=clock_timestamp()
+           WHERE id=$1 AND related_obligation_id IS DISTINCT FROM $2`,
+          [refundId, recovery.rows[0]!.id],
+        );
+      }
     }
     await client.query(
       `INSERT INTO user_notifications(user_id,booking_id,type,title,body,href)
@@ -145,6 +210,8 @@ export async function syncRefundObligations() {
            w.studio_id,financial_obligation_deadline('studio_payout',s.ends_at) AS due_at
          FROM bookings b JOIN sessions s ON s.id=b.session_id
          JOIN workshops w ON w.id=s.workshop_id LEFT JOIN payments p ON p.booking_id=b.id
+         WHERE s.ends_at<=clock_timestamp()
+           AND NOT EXISTS(SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id=b.id)
          GROUP BY b.id,b.session_id,w.studio_id,s.ends_at
        )
        SELECT session_id AS "sessionId",studio_id AS "studioId",booking_id AS "bookingId",due_at AS "dueAt",

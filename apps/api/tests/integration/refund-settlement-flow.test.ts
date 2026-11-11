@@ -5,6 +5,7 @@ import { afterAll, beforeAll, expect, it, vi } from 'vitest';
 import {
   app,
   account,
+  mockWebhook,
   placeBooking,
   publicWorkshop,
   session,
@@ -283,4 +284,119 @@ it('keeps saved accounts separate and resolves uncertain, failed, partial, and c
       )
     ).rows[0].total,
   ).toBe(3);
+});
+
+it('settles deposit-covered refund in 1 step via VietQR without requiring studio_recovery', async () => {
+  const { workshopId } = await publicWorkshop(30);
+  const slot = await session(workshopId, 2);
+  const customer = await account();
+  const admin = await account('admin');
+  const password = 'VietQR refund password 2026!';
+  await query('UPDATE users SET password_hash=$2 WHERE id=$1', [
+    customer.id,
+    await argon2.hash(password),
+  ]);
+
+  const booked = await placeBooking(customer, slot);
+  expect(booked.status).toBe(201);
+  const bookingId = booked.body.booking.id as string;
+  const orderCode = booked.body.booking.orderCode as number;
+  const depositAmount = booked.body.booking.depositAmount as number;
+
+  const paid = await request(app)
+    .post('/webhooks/mock')
+    .set('Content-Type', 'application/json')
+    .send(mockWebhook(orderCode, depositAmount, `PAY-${orderCode}`, true));
+  expect(paid.status).toBe(200);
+
+  const quoteRes = await request(app)
+    .get(`/bookings/${bookingId}/cancellation-quote`)
+    .set('Cookie', customer.cookie);
+  expect(quoteRes.status).toBe(200);
+  const quoteToken = (quoteRes.body.quote?.quoteToken ??
+    quoteRes.body.quote?.token ??
+    quoteRes.body.quoteToken) as string;
+
+  const cancelRes = await request(app)
+    .post(`/bookings/${bookingId}/cancel`)
+    .set('Cookie', customer.cookie)
+    .send({ quoteToken });
+  expect(cancelRes.status).toBe(200);
+
+  await syncRefundObligations();
+
+  const obRows = await query<{ id: string; kind: string; status: string }>(
+    `SELECT id, kind, status FROM financial_obligations WHERE booking_id=$1 AND status<>'cancelled'`,
+    [bookingId],
+  );
+  expect(obRows.rows).toHaveLength(1);
+  expect(obRows.rows[0]).toMatchObject({
+    kind: 'customer_refund',
+    status: 'awaiting_approval',
+  });
+  const refundObligationId = obRows.rows[0]!.id;
+
+  const saveAcc = await request(app)
+    .put(`/refunds/${refundObligationId}/account`)
+    .set('Cookie', customer.cookie)
+    .send({
+      bankBin: '970422',
+      accountHolder: 'TRAN VAN B',
+      accountNumber: '098765432100',
+      password,
+      saveForLater: false,
+    });
+  expect(saveAcc.status).toBe(200);
+
+  const vietqrRes = await request(app)
+    .get(`/admin/tai-chinh/nghia-vu/${refundObligationId}/vietqr`)
+    .set('Cookie', admin.cookie);
+  expect(vietqrRes.status).toBe(200);
+  expect(vietqrRes.body).toMatchObject({
+    obligationId: refundObligationId,
+    kind: 'customer_refund',
+    amount: depositAmount,
+    bankBin: '970422',
+    accountHolder: 'TRAN VAN B',
+    accountNumber: '098765432100',
+    transferContent: `OS HOAN ${orderCode}`,
+  });
+  expect(vietqrRes.body.vietqrUrl).toContain(
+    `https://img.vietqr.io/image/970422-098765432100-compact2.png?amount=${depositAmount}`,
+  );
+
+  const quickSettle = await request(app)
+    .post(`/admin/tai-chinh/nghia-vu/${refundObligationId}/chuyen-nhanh-vietqr`)
+    .set('Cookie', admin.cookie)
+    .send({
+      amount: depositAmount,
+      reference: `FT-VIETQR-${orderCode}`,
+      provider: 'VietQR Napas 247',
+      providerFee: 0,
+      idempotencyKey: randomUUID(),
+      reason: 'Quản trị quét mã VietQR chuyển khoản hoàn cọc cho khách.',
+    });
+  expect(quickSettle.status).toBe(200);
+  expect(quickSettle.body).toMatchObject({
+    ok: true,
+    status: 'succeeded',
+    reference: `FT-VIETQR-${orderCode}`,
+  });
+
+  const finalObligation = await query<{ status: string }>(
+    `SELECT status FROM financial_obligations WHERE id=$1`,
+    [refundObligationId],
+  );
+  expect(finalObligation.rows[0]!.status).toBe('paid');
+
+  const finalBooking = await query<{
+    refund_status: string;
+    refunded_amount: number;
+  }>(`SELECT refund_status, refunded_amount FROM bookings WHERE id=$1`, [
+    bookingId,
+  ]);
+  expect(finalBooking.rows[0]).toMatchObject({
+    refund_status: 'refunded',
+    refunded_amount: depositAmount,
+  });
 });

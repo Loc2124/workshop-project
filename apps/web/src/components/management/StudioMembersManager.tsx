@@ -13,10 +13,7 @@ import {
 import { apiFetch } from '../../lib/api-client';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import {
-  StudioCard,
-  StudioBadge,
-} from './StudioPrimitives';
+import { StudioCard, StudioBadge } from './StudioPrimitives';
 import type { MemberStudio } from '../../types/management';
 
 interface StudioMember {
@@ -54,7 +51,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
   const [email, setEmail] = useState('');
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
-  const [inviteSuccessLink, setInviteSuccessLink] = useState<string | null>(null);
+  const [inviteSuccessLink, setInviteSuccessLink] = useState<string | null>(
+    null,
+  );
   const [copied, setCopied] = useState(false);
 
   // Action states
@@ -69,7 +68,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
       setData(res);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Không thể tải danh sách thành viên.',
+        err instanceof Error
+          ? err.message
+          : 'Không thể tải danh sách thành viên.',
       );
     } finally {
       setLoading(false);
@@ -104,7 +105,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
       void loadMembers();
     } catch (err) {
       setInviteError(
-        err instanceof Error ? err.message : 'Không thể tạo lời mời. Vui lòng thử lại.',
+        err instanceof Error
+          ? err.message
+          : 'Không thể tạo lời mời. Vui lòng thử lại.',
       );
     } finally {
       setInviting(false);
@@ -171,11 +174,14 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
         <div className="flex gap-3">
           <ShieldCheck className="size-5 shrink-0 text-studio-ink mt-0.5" />
           <div className="text-sm space-y-1">
-            <p className="font-semibold text-studio-ink">Phân quyền nhân viên studio</p>
+            <p className="font-semibold text-studio-ink">
+              Phân quyền nhân viên studio
+            </p>
             <p className="text-muted">
-              Nhân viên được mời sẽ có quyền truy cập vào bảng quản lý của studio để xem lịch
-              buổi học, danh sách đặt chỗ và thực hiện soát vé (check-in) cho khách. Nhân viên
-              sẽ <strong>không thể</strong> can thiệp vào tài khoản ngân hàng nhận tiền hay xóa studio.
+              Nhân viên được mời sẽ có quyền truy cập vào bảng quản lý của
+              studio để xem lịch buổi học, danh sách đặt chỗ và thực hiện soát
+              vé (check-in) cho khách. Nhân viên sẽ <strong>không thể</strong>{' '}
+              can thiệp vào tài khoản ngân hàng nhận tiền hay xóa studio.
             </p>
           </div>
         </div>
@@ -185,7 +191,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
       <StudioCard>
         <div className="flex items-center gap-2 border-b border-line pb-3">
           <UserPlus className="size-5 text-primary" />
-          <h2 className="font-heading text-lg font-semibold">Mời nhân viên mới</h2>
+          <h2 className="font-heading text-lg font-semibold">
+            Mời nhân viên mới
+          </h2>
         </div>
 
         <form onSubmit={handleInvite} className="mt-4 space-y-4">
@@ -218,7 +226,10 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
             <div className="rounded-md border border-emerald-300 bg-emerald-50/70 p-4 space-y-2">
               <div className="flex items-center gap-2 text-emerald-800 font-medium text-sm">
                 <Check className="size-4" />
-                <span>Đã tạo liên kết mời thành công! Hãy gửi liên kết này cho nhân viên của bạn:</span>
+                <span>
+                  Đã tạo liên kết mời thành công! Hãy gửi liên kết này cho nhân
+                  viên của bạn:
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <input
@@ -249,7 +260,8 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
                 </Button>
               </div>
               <p className="text-xs text-emerald-700">
-                * Liên kết mời có hiệu lực trong vòng 7 ngày. Nhân viên chỉ cần mở liên kết và đăng nhập bằng tài khoản của họ để tham gia.
+                * Liên kết mời có hiệu lực trong vòng 7 ngày. Nhân viên chỉ cần
+                mở liên kết và đăng nhập bằng tài khoản của họ để tham gia.
               </p>
             </div>
           )}
@@ -261,7 +273,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
         <StudioCard>
           <div className="flex items-center gap-2 border-b border-line pb-3">
             <Clock className="size-5 text-amber-600" />
-            <h2 className="font-heading text-lg font-semibold">Lời mời đang chờ ({invitations.length})</h2>
+            <h2 className="font-heading text-lg font-semibold">
+              Lời mời đang chờ ({invitations.length})
+            </h2>
           </div>
 
           <div className="mt-4 overflow-x-auto">
@@ -369,7 +383,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
                           />
                         ) : (
                           <div className="flex size-8 items-center justify-center rounded-full bg-studio-subtle font-semibold text-xs text-studio-ink">
-                            {member.fullName ? member.fullName.charAt(0).toUpperCase() : 'U'}
+                            {member.fullName
+                              ? member.fullName.charAt(0).toUpperCase()
+                              : 'U'}
                           </div>
                         )}
                         <div>
@@ -401,10 +417,14 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
                           className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs h-8 px-2.5"
                         >
                           <Trash2 className="size-3.5 mr-1" />
-                          {removingId === member.userId ? 'Đang gỡ...' : 'Gỡ quyền'}
+                          {removingId === member.userId
+                            ? 'Đang gỡ...'
+                            : 'Gỡ quyền'}
                         </Button>
                       ) : (
-                        <span className="text-xs text-muted italic">Mặc định</span>
+                        <span className="text-xs text-muted italic">
+                          Mặc định
+                        </span>
                       )}
                     </td>
                   </tr>

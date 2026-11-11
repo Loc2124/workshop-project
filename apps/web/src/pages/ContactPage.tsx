@@ -38,7 +38,11 @@ export function ContactPage() {
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!formData.fullName.trim() || !formData.email.trim() || !formData.message.trim()) {
+    if (
+      !formData.fullName.trim() ||
+      !formData.email.trim() ||
+      !formData.message.trim()
+    ) {
       toast.error('Vui lòng điền đầy đủ các thông tin bắt buộc.');
       return;
     }
@@ -48,7 +52,9 @@ export function ContactPage() {
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSuccess(true);
-      toast.success('Cảm ơn bạn đã liên hệ! Đội ngũ Open Slot sẽ phản hồi trong vòng 24 giờ.');
+      toast.success(
+        'Cảm ơn bạn đã liên hệ! Đội ngũ Open Slot sẽ phản hồi trong vòng 24 giờ.',
+      );
     }, 800);
   };
 
@@ -81,7 +87,8 @@ export function ContactPage() {
             Chúng tôi luôn ở đây để lắng nghe bạn
           </h1>
           <p className="mt-3 text-base sm:text-lg text-muted max-w-xl mx-auto">
-            Dù bạn cần tư vấn chọn workshop, hỗ trợ vé đặt hay muốn kết nối hợp tác mở xưởng thủ công, đừng ngần ngại nhắn tin cho chúng tôi.
+            Dù bạn cần tư vấn chọn workshop, hỗ trợ vé đặt hay muốn kết nối hợp
+            tác mở xưởng thủ công, đừng ngần ngại nhắn tin cho chúng tôi.
           </p>
         </div>
 
@@ -111,7 +118,8 @@ export function ContactPage() {
                         {siteContact.hotline}
                       </a>
                       <p className="text-xs text-muted mt-0.5">
-                        Thời gian: {siteContact.workingHours || '08:30 - 21:00 hàng ngày'}
+                        Thời gian:{' '}
+                        {siteContact.workingHours || '08:30 - 21:00 hàng ngày'}
                       </p>
                     </div>
                   </div>
@@ -167,19 +175,25 @@ export function ContactPage() {
                     <p className="text-sm font-semibold text-ink">
                       Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh
                     </p>
-                    <p className="text-xs text-muted mt-0.5">
-                      Việt Nam
-                    </p>
+                    <p className="text-xs text-muted mt-0.5">Việt Nam</p>
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-line pt-6">
-                <h3 className="text-sm font-bold text-ink mb-2">Bạn là Nghệ nhân hoặc Studio?</h3>
+                <h3 className="text-sm font-bold text-ink mb-2">
+                  Bạn là Nghệ nhân hoặc Studio?
+                </h3>
                 <p className="text-xs text-muted leading-relaxed mb-4">
-                  Đăng ký tham gia mạng lưới studio thủ công để tiếp cận hàng nghìn học viên yêu mến sáng tạo.
+                  Đăng ký tham gia mạng lưới studio thủ công để tiếp cận hàng
+                  nghìn học viên yêu mến sáng tạo.
                 </p>
-                <Button size="sm" variant="outline" asChild className="w-full text-xs">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  asChild
+                  className="w-full text-xs"
+                >
                   <Link to="/dang-ky-studio">
                     <Building2 className="mr-1.5 h-3.5 w-3.5" />
                     Đăng ký mở Studio của bạn
@@ -201,7 +215,10 @@ export function ContactPage() {
                     Lời nhắn đã được gửi thành công!
                   </h3>
                   <p className="text-sm text-muted max-w-md mx-auto leading-relaxed">
-                    Cảm ơn bạn đã dành thời gian liên hệ. Chúng tôi đã nhận được thông tin và sẽ gửi phản hồi chi tiết tới email <strong className="text-ink">{formData.email}</strong> sớm nhất.
+                    Cảm ơn bạn đã dành thời gian liên hệ. Chúng tôi đã nhận được
+                    thông tin và sẽ gửi phản hồi chi tiết tới email{' '}
+                    <strong className="text-ink">{formData.email}</strong> sớm
+                    nhất.
                   </p>
                   <Button
                     type="button"
@@ -220,13 +237,17 @@ export function ContactPage() {
                       <span>Gửi lời nhắn cho chúng tôi</span>
                     </h2>
                     <p className="text-xs text-muted mt-1">
-                      Vui lòng điền thông tin bên dưới, chuyên viên hỗ trợ sẽ phản hồi bạn trong thời gian sớm nhất.
+                      Vui lòng điền thông tin bên dưới, chuyên viên hỗ trợ sẽ
+                      phản hồi bạn trong thời gian sớm nhất.
                     </p>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <label htmlFor="fullName" className="text-xs font-semibold text-ink">
+                      <label
+                        htmlFor="fullName"
+                        className="text-xs font-semibold text-ink"
+                      >
                         Họ và tên <span className="text-rose-500">*</span>
                       </label>
                       <input
@@ -234,21 +255,28 @@ export function ContactPage() {
                         type="text"
                         required
                         value={formData.fullName}
-                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, fullName: e.target.value })
+                        }
                         placeholder="Ví dụ: Nguyễn Văn An"
                         className="w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label htmlFor="phone" className="text-xs font-semibold text-ink">
+                      <label
+                        htmlFor="phone"
+                        className="text-xs font-semibold text-ink"
+                      >
                         Số điện thoại
                       </label>
                       <input
                         id="phone"
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
                         placeholder="Ví dụ: 0901234567"
                         className="w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
@@ -256,7 +284,10 @@ export function ContactPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label htmlFor="email" className="text-xs font-semibold text-ink">
+                    <label
+                      htmlFor="email"
+                      className="text-xs font-semibold text-ink"
+                    >
                       Địa chỉ Email <span className="text-rose-500">*</span>
                     </label>
                     <input
@@ -264,32 +295,50 @@ export function ContactPage() {
                       type="email"
                       required
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                       placeholder="ban@example.com"
                       className="w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label htmlFor="topic" className="text-xs font-semibold text-ink">
+                    <label
+                      htmlFor="topic"
+                      className="text-xs font-semibold text-ink"
+                    >
                       Chủ đề hỗ trợ
                     </label>
                     <select
                       id="topic"
                       value={formData.topic}
-                      onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, topic: e.target.value })
+                      }
                       className="w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm text-ink focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                     >
-                      <option value="tu-van">Tư vấn thông tin workshop & Đặt chỗ</option>
-                      <option value="hoan-huy">Hỗ trợ hủy vé, đổi lịch & Hoàn tiền</option>
-                      <option value="studio-partner">Hợp tác mở Studio & Đăng tải workshop</option>
-                      <option value="ky-thuat">Báo lỗi kỹ thuật hoặc sự cố tài khoản</option>
+                      <option value="tu-van">
+                        Tư vấn thông tin workshop & Đặt chỗ
+                      </option>
+                      <option value="hoan-huy">
+                        Hỗ trợ hủy vé, đổi lịch & Hoàn tiền
+                      </option>
+                      <option value="studio-partner">
+                        Hợp tác mở Studio & Đăng tải workshop
+                      </option>
+                      <option value="ky-thuat">
+                        Báo lỗi kỹ thuật hoặc sự cố tài khoản
+                      </option>
                       <option value="khac">Nội dung khác</option>
                     </select>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label htmlFor="message" className="text-xs font-semibold text-ink">
+                    <label
+                      htmlFor="message"
+                      className="text-xs font-semibold text-ink"
+                    >
                       Nội dung tin nhắn <span className="text-rose-500">*</span>
                     </label>
                     <textarea
@@ -297,7 +346,9 @@ export function ContactPage() {
                       rows={4}
                       required
                       value={formData.message}
-                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, message: e.target.value })
+                      }
                       placeholder="Mô tả chi tiết thắc mắc hoặc yêu cầu của bạn để chúng tôi hỗ trợ tốt nhất..."
                       className="w-full rounded-xl border border-line bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                     />

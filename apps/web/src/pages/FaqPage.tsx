@@ -25,7 +25,8 @@ const faqs: FaqItem[] = [
   {
     id: 'hv-1',
     category: 'hoc-vien',
-    question: 'Tôi chưa từng làm đồ thủ công bao giờ thì có tham gia workshop được không?',
+    question:
+      'Tôi chưa từng làm đồ thủ công bao giờ thì có tham gia workshop được không?',
     answer:
       'Hoàn toàn được! Đại đa số các workshop trên Open Slot đều được thiết kế thân thiện cho người mới bắt đầu (Beginner-friendly). Nghệ nhân tại studio sẽ hướng dẫn bạn tỉ mỉ từng bước từ khâu làm quen dụng cụ, tạo hình đến hoàn thiện sản phẩm. Bạn chỉ cần mang theo sự cởi mở và sẵn sàng trải nghiệm.',
   },
@@ -174,7 +175,8 @@ export function FaqPage() {
             Câu hỏi thường gặp
           </h1>
           <p className="mt-3 text-base sm:text-lg text-muted max-w-xl mx-auto">
-            Mọi thông tin bạn cần về cách chọn workshop, thanh toán, tham gia lớp học và mở không gian sáng tạo.
+            Mọi thông tin bạn cần về cách chọn workshop, thanh toán, tham gia
+            lớp học và mở không gian sáng tạo.
           </p>
 
           {/* Search Bar */}
@@ -215,9 +217,12 @@ export function FaqPage() {
         {filteredFaqs.length === 0 ? (
           <div className="rounded-2xl border border-line bg-surface p-12 text-center shadow-xs">
             <HelpCircle className="mx-auto h-12 w-12 text-muted mb-3" />
-            <h2 className="text-lg font-semibold text-ink">Không tìm thấy câu trả lời phù hợp</h2>
+            <h2 className="text-lg font-semibold text-ink">
+              Không tìm thấy câu trả lời phù hợp
+            </h2>
             <p className="mt-1 text-sm text-muted">
-              Thử tìm kiếm với từ khóa khác hoặc liên hệ trực tiếp với chúng tôi để được giải đáp.
+              Thử tìm kiếm với từ khóa khác hoặc liên hệ trực tiếp với chúng tôi
+              để được giải đáp.
             </p>
             <Button
               variant="outline"
@@ -251,7 +256,9 @@ export function FaqPage() {
                     </span>
                     <span
                       className={`shrink-0 rounded-full p-1.5 transition-transform duration-200 ${
-                        isOpen ? 'rotate-180 bg-primary/10 text-primary' : 'bg-soft text-muted'
+                        isOpen
+                          ? 'rotate-180 bg-primary/10 text-primary'
+                          : 'bg-soft text-muted'
                       }`}
                     >
                       <ChevronDown className="h-4 w-4" aria-hidden="true" />
@@ -276,19 +283,24 @@ export function FaqPage() {
               Vẫn còn câu hỏi chưa được giải đáp?
             </h2>
             <p className="text-sm text-muted max-w-md">
-              Đội ngũ hỗ trợ của Open Slot luôn túc trực để hỗ trợ bạn từ việc đặt lịch, thanh toán đến chuẩn bị cho buổi trải nghiệm.
+              Đội ngũ hỗ trợ của Open Slot luôn túc trực để hỗ trợ bạn từ việc
+              đặt lịch, thanh toán đến chuẩn bị cho buổi trải nghiệm.
             </p>
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-2 text-xs text-ink">
               {siteContact.hotline && (
                 <div className="flex items-center gap-1.5">
                   <Phone className="h-4 w-4 text-primary" />
-                  <span>Hotline: <strong>{siteContact.hotline}</strong></span>
+                  <span>
+                    Hotline: <strong>{siteContact.hotline}</strong>
+                  </span>
                 </div>
               )}
               {siteContact.email && (
                 <div className="flex items-center gap-1.5">
                   <Mail className="h-4 w-4 text-primary" />
-                  <span>Email: <strong>{siteContact.email}</strong></span>
+                  <span>
+                    Email: <strong>{siteContact.email}</strong>
+                  </span>
                 </div>
               )}
             </div>
