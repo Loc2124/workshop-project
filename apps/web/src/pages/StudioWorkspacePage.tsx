@@ -39,20 +39,25 @@ const StudioEvidenceEditor = lazy(() =>
     default: module.StudioEvidenceEditor,
   })),
 );
+const StudioMembersManager = lazy(() =>
+  import('../components/management/StudioMembersManager').then((module) => ({
+    default: module.StudioMembersManager,
+  })),
+);
 
-type Section = 'workshops' | 'sessions' | 'bookings' | 'profile';
+type Section = 'workshops' | 'sessions' | 'bookings' | 'profile' | 'members';
 const titles: Record<Section, string> = {
   workshops: 'Workshop',
   sessions: 'Lịch buổi học',
   bookings: 'Đặt chỗ',
   profile: 'Hồ sơ studio',
+  members: 'Quản lý thành viên',
 };
 export function StudioWorkspacePage({ section }: { section: Section }) {
   const [search] = useSearchParams();
   const { studioId } = useParams();
   const studiosQuery = useMyStudios();
-  const studios =
-    studiosQuery.data?.filter((studio) => studio.role === 'owner') ?? [];
+  const studios = studiosQuery.data ?? [];
   const requested = studioId ?? search.get('studioId');
   const studio = requested
     ? studios.find((item) => item.id === requested)
@@ -93,7 +98,13 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
   if (
     studio &&
     studio.status !== 'approved' &&
-    ['sessions', 'bookings'].includes(section)
+    ['sessions', 'bookings', 'members'].includes(section)
+  )
+    return <Navigate to={`/studio/${studio.id}`} replace />;
+  if (
+    studio &&
+    studio.role !== 'owner' &&
+    ['profile', 'members'].includes(section)
   )
     return <Navigate to={`/studio/${studio.id}`} replace />;
   return (
@@ -165,6 +176,9 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
           )}
           {section === 'bookings' && (
             <StudioBookingManager studioId={studio.id} />
+          )}
+          {section === 'members' && (
+            <StudioMembersManager studio={studio} />
           )}
           {section === 'profile' && (
             <>

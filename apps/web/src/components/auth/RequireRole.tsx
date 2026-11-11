@@ -9,7 +9,13 @@ import {
 } from '../../lib/dashboard-access';
 import { Button } from '../ui/button';
 
-function StudioOwnerGate({ children }: { children: ReactNode }) {
+function StudioMembershipGate({
+  role,
+  children,
+}: {
+  role: 'studio_owner' | 'studio_member';
+  children: ReactNode;
+}) {
   const { user } = useAuth();
   const studios = useMyStudios();
   if (studios.isPending)
@@ -28,7 +34,7 @@ function StudioOwnerGate({ children }: { children: ReactNode }) {
         </Button>
       </div>
     );
-  return hasDashboardRole(user, studios.data, 'studio_owner') ? (
+  return hasDashboardRole(user, studios.data, role) ? (
     children
   ) : (
     <Navigate to="/khong-co-quyen" replace />
@@ -61,6 +67,11 @@ export function RequireRole({
       <Navigate to="/khong-co-quyen" replace />
     );
   return (
-    <StudioOwnerGate key={user.id}>{children ?? <Outlet />}</StudioOwnerGate>
+    <StudioMembershipGate
+      key={user.id}
+      role={role === 'studio_owner' ? 'studio_owner' : 'studio_member'}
+    >
+      {children ?? <Outlet />}
+    </StudioMembershipGate>
   );
 }

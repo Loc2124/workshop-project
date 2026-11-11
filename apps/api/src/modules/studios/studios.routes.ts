@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { depositSettingsRouter } from './deposit-settings.js';
 import { payoutAccountsRouter } from './payout-accounts.js';
+import { studioMembersRouter } from './members.routes.js';
 import {
   createStudioEvidenceSchema,
   createStudioRegistrationSchema,
@@ -14,6 +15,7 @@ import { registerStudio, startStudioDraft } from './studios.service.js';
 const router = Router();
 router.use(depositSettingsRouter);
 router.use(payoutAccountsRouter);
+router.use(studioMembersRouter);
 router.post(
   '/drafts',
   requireAuth(['customer', 'studio_owner', 'admin']),

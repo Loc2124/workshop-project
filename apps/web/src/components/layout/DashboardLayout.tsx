@@ -58,7 +58,7 @@ export type DashboardMenuItem = {
 };
 export type DashboardLayoutProps = {
   menuItems: DashboardMenuItem[];
-  roleLabel: 'Quản lý studio' | 'Quản trị';
+  roleLabel: 'Quản lý studio' | 'Quản trị' | 'Nhân viên studio';
   user: AuthUser & { avatarUrl?: string };
   studioSwitcher?: ReactNode;
   workspace?: { name: string; to: string };

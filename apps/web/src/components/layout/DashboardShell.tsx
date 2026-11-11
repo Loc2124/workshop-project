@@ -26,14 +26,15 @@ const STUDIO_SECTIONS = [
   { label: 'Lịch buổi học', section: 'sessions', icon: CalendarDays },
   { label: 'Đặt chỗ', section: 'bookings', icon: Ticket },
   { label: 'Check-in vé', section: 'check-in', icon: QrCode },
-  { label: 'Hồ sơ studio', section: 'profile', icon: Store },
+  { label: 'Thành viên', section: 'members', icon: Users, ownerOnly: true },
+  { label: 'Hồ sơ studio', section: 'profile', icon: Store, ownerOnly: true },
 ];
 
 export function StudioDashboard() {
   const { user } = useAuth();
   const { studioId } = useParams();
   const { pathname, search } = useLocation();
-  const studios = useMyStudios().data?.filter((s) => s.role === 'owner') ?? [];
+  const studios = useMyStudios().data ?? [];
   const studio = studios.find((s) => s.id === studioId);
   if (!user) return null;
   if (!studioId) {
@@ -46,7 +47,7 @@ export function StudioDashboard() {
       <Navigate
         to={studioPage(
           selected.id,
-          ['workshops', 'sessions', 'bookings', 'check-in', 'profile'].includes(section)
+          ['workshops', 'sessions', 'bookings', 'check-in', 'members', 'profile'].includes(section)
             ? section
             : '',
         )}
@@ -55,14 +56,18 @@ export function StudioDashboard() {
     ) : null;
   }
   if (!studio) return <Navigate to="/studio" replace />;
+  const isStaff = studio.role === 'staff';
   const locked = studio.status !== 'approved' || studio.isDraft;
-  const menuItems: DashboardMenuItem[] = STUDIO_SECTIONS.map(
+  const visibleSections = STUDIO_SECTIONS.filter(
+    (item) => !item.ownerOnly || !isStaff,
+  );
+  const menuItems: DashboardMenuItem[] = visibleSections.map(
     ({ label, section, icon }) => ({
       label,
       icon,
       to: studioPage(studio.id, section),
       locked: Boolean(
-        locked && ['sessions', 'bookings', 'check-in'].includes(section),
+        locked && ['sessions', 'bookings', 'check-in', 'members'].includes(section),
       ),
       attention:
         section === 'profile' &&
@@ -72,7 +77,7 @@ export function StudioDashboard() {
   return (
     <DashboardLayout
       menuItems={menuItems}
-      roleLabel="Quản lý studio"
+      roleLabel={isStaff ? 'Nhân viên studio' : 'Quản lý studio'}
       user={user}
       workspace={{
         name: studio.isDraft ? 'Hồ sơ nháp' : studio.name,

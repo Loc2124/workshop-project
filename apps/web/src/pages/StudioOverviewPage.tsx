@@ -33,7 +33,7 @@ export function StudioOverviewPage() {
   const { studioId } = useParams();
   const studiosQuery = useMyStudios();
   const studio = studiosQuery.data?.find(
-    (item) => item.id === studioId && item.role === 'owner',
+    (item) => item.id === studioId,
   );
   const workshops = useStudioWorkshops(
     studio && !studio.isDraft ? studio.id : '',

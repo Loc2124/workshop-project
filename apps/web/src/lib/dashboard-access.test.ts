@@ -16,7 +16,17 @@ describe('dashboard access', () => {
         'studio_owner',
       ),
     ).toBe(false);
+    expect(
+      hasDashboardRole(
+        { role: 'customer' },
+        [{ role: 'staff' }],
+        'studio_member',
+      ),
+    ).toBe(true);
     expect(hasDashboardRole({ role: 'customer' }, [], 'studio_owner')).toBe(
+      false,
+    );
+    expect(hasDashboardRole({ role: 'customer' }, [], 'studio_member')).toBe(
       false,
     );
   });

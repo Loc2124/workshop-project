@@ -138,6 +138,11 @@ const ContactPage = lazy(() =>
     default: module.ContactPage,
   })),
 );
+const AcceptInvitationPage = lazy(() =>
+  import('./pages/AcceptInvitationPage').then((module) => ({
+    default: module.AcceptInvitationPage,
+  })),
+);
 function LegacyStudioDetail() {
   const { studioId } = useParams();
   return (
@@ -188,6 +193,7 @@ function App() {
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/lien-he" element={<ContactPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/tham-gia-studio" element={<AcceptInvitationPage />} />
           <Route path="/khong-co-quyen" element={<ForbiddenPage />} />
           <Route path="/403" element={<ForbiddenPage />} />
           <Route path="/404" element={<NotFoundPage />} />
@@ -294,13 +300,13 @@ function App() {
             </Suspense>
           }
         />
-        <Route element={<RequireRole role="studio_owner" />}>
+        <Route element={<RequireRole role="studio_member" />}>
           <Route path="/studio" element={<StudioDashboard />} />
           <Route
             path="/studio/studios/:studioId"
             element={<LegacyStudioDetail />}
           />
-          {['workshops', 'sessions', 'bookings', 'check-in', 'profile'].map((section) => (
+          {['workshops', 'sessions', 'bookings', 'check-in', 'members', 'profile'].map((section) => (
             <Route
               key={section}
               path={`/studio/${section}`}
@@ -322,6 +328,10 @@ function App() {
               element={<StudioWorkspacePage section="bookings" />}
             />
             <Route path="check-in" element={<StudioCheckInPage />} />
+            <Route
+              path="members"
+              element={<StudioWorkspacePage section="members" />}
+            />
             <Route
               path="profile"
               element={<StudioWorkspacePage section="profile" />}
