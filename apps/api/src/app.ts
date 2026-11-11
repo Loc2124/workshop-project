@@ -32,7 +32,9 @@ export function createApp() {
   // proxies reuse them, and avoid conditional 304 responses for stale entries.
   app.disable('etag');
   app.set('trust proxy', 1);
-  app.use(corsForWeb(loadConfig().CLIENT_URL));
+  const config = loadConfig();
+  const corsOrigins = [config.CLIENT_URL, config.WEB_ORIGIN].filter(Boolean) as string[];
+  app.use(corsForWeb(corsOrigins));
   app.use((_request, response, next) => {
     response.setHeader('Cache-Control', 'no-store');
     next();
