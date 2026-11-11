@@ -42,7 +42,7 @@ export function SavedRefundAccountsPage() {
     <PageContainer as="main" className="py-8 pb-16">
       <Link
         to="/me/bookings"
-        className="text-sm font-semibold text-olive underline"
+        className="text-sm font-semibold text-primary underline"
       >
         Về lịch đặt của tôi
       </Link>
@@ -55,7 +55,7 @@ export function SavedRefundAccountsPage() {
         hoàn đang xử lý vẫn giữ bản ghi riêng để đối soát.
       </p>
       {feedback && (
-        <p role="status" className="mt-4 rounded-lg bg-cream p-3 text-sm">
+        <p role="status" className="mt-4 rounded-lg bg-soft p-3 text-sm">
           {feedback}
         </p>
       )}

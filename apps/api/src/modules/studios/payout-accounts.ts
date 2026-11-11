@@ -29,7 +29,7 @@ payoutAccountsRouter.get(path, async (req, res) => {
       'Chỉ chủ studio được xem tài khoản nhận tiền.',
     );
   const accounts = await query(
-    `SELECT id,bank_name AS "bankName",account_holder AS "accountHolder",account_last4 AS "last4",
+    `SELECT id,bank_name AS "bankName",bank_bin AS "bankBin",account_holder AS "accountHolder",account_last4 AS "last4",
       status,is_current AS "isCurrent",created_at AS "createdAt",verified_at AS "verifiedAt"
      FROM studio_payout_accounts WHERE studio_id=$1 ORDER BY created_at DESC LIMIT 20`,
     [studioId],
@@ -48,6 +48,7 @@ payoutAccountsRouter.put(
     const input = z
       .object({
         bankName: z.string().trim().min(2).max(120),
+        bankBin: z.string().regex(/^[0-9]{6}$/).optional(),
         accountHolder: z.string().trim().min(2).max(160),
         accountNumber: z.string().regex(/^[0-9]{4,30}$/),
         password: z.string().min(1).max(200),
@@ -82,11 +83,12 @@ payoutAccountsRouter.put(
         [studioId],
       );
       const result = await client.query<{ id: string }>(
-        `INSERT INTO studio_payout_accounts(studio_id,bank_name,account_holder,account_last4,encrypted_number,encryption_iv,encryption_tag,changed_by)
-       VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+        `INSERT INTO studio_payout_accounts(studio_id,bank_name,bank_bin,account_holder,account_last4,encrypted_number,encryption_iv,encryption_tag,changed_by)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
         [
           studioId,
           input.bankName,
+          input.bankBin ?? null,
           input.accountHolder,
           input.accountNumber.slice(-4),
           account.encrypted,

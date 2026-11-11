@@ -34,6 +34,7 @@ export function FinancialAccountForm({
 }) {
   const client = useQueryClient();
   const [bankName, setBankName] = useState('');
+  const [bankBin, setBankBin] = useState('');
   const [accountHolder, setAccountHolder] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -57,7 +58,9 @@ export function FinancialAccountForm({
       apiFetch(endpoint, {
         method: 'PUT',
         body: JSON.stringify({
-          [refund ? 'bankBin' : 'bankName']: bankName,
+          ...(refund
+            ? { bankBin: bankName }
+            : { bankName, ...(bankBin ? { bankBin } : {}) }),
           accountHolder,
           accountNumber,
           password,
@@ -141,8 +144,10 @@ export function FinancialAccountForm({
       ) : (
         <>
           {current && (
-            <p className="mt-3 rounded-lg bg-cream px-3 py-2 text-sm text-ink">
-              {refund ? `Mã ngân hàng ${current.bankBin}` : current.bankName} ·
+            <p className="mt-3 rounded-lg bg-soft px-3 py-2 text-sm text-ink">
+              {refund
+                ? `Mã ngân hàng ${current.bankBin}`
+                : `${current.bankName}${current.bankBin ? ` (${current.bankBin})` : ''}`} ·
               ****{current.last4} ·{' '}
               {current.status === 'verified'
                 ? 'Đã đối chiếu'
@@ -158,7 +163,7 @@ export function FinancialAccountForm({
           ) : (
             <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-2">
               <label className="text-sm font-medium">
-                {refund ? 'Mã ngân hàng (6 số)' : 'Ngân hàng'}
+                {refund ? 'Mã ngân hàng (6 số)' : 'Tên ngân hàng'}
                 <input
                   required
                   maxLength={refund ? 6 : 120}
@@ -170,6 +175,21 @@ export function FinancialAccountForm({
                   className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3"
                 />
               </label>
+              {!refund && (
+                <label className="text-sm font-medium">
+                  Mã BIN ngân hàng (6 số)
+                  <input
+                    maxLength={6}
+                    inputMode="numeric"
+                    pattern="[0-9]{6}"
+                    placeholder="VD: 970422, 970436..."
+                    value={bankBin}
+                    onChange={(event) => setBankBin(event.target.value)}
+                    autoComplete="off"
+                    className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3"
+                  />
+                </label>
+              )}
               <label className="text-sm font-medium">
                 Tên chủ tài khoản
                 <input
@@ -192,7 +212,7 @@ export function FinancialAccountForm({
                   className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 px-3"
                 />
               </label>
-              <label className="text-sm font-medium">
+              <label className={`text-sm font-medium ${refund ? '' : 'sm:col-span-2'}`}>
                 Mật khẩu tài khoản Open Slot
                 <input
                   required
@@ -220,7 +240,7 @@ export function FinancialAccountForm({
               )}
               <button
                 disabled={save.isPending}
-                className="min-h-11 rounded-lg bg-olive px-4 font-semibold text-white disabled:opacity-50 sm:col-span-2"
+                className="min-h-11 rounded-lg bg-primary px-4 font-semibold text-white hover:bg-primary-hover disabled:opacity-50 sm:col-span-2"
               >
                 {save.isPending
                   ? 'Đang lưu…'
@@ -253,7 +273,7 @@ export function FinancialAccountForm({
                     type="button"
                     disabled={!savedSelected || !password || reuse.isPending}
                     onClick={() => reuse.mutate()}
-                    className="min-h-11 rounded-lg border border-olive px-4 text-sm font-semibold text-olive disabled:opacity-50"
+                    className="min-h-11 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-soft disabled:opacity-50"
                   >
                     Dùng cho khoản hoàn này
                   </button>
@@ -266,7 +286,7 @@ export function FinancialAccountForm({
           {refund && (
             <Link
               to="/me/refund-accounts"
-              className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-olive underline"
+              className="mt-3 inline-flex min-h-10 items-center text-sm font-semibold text-primary underline"
             >
               Quản lý tài khoản đã lưu
             </Link>

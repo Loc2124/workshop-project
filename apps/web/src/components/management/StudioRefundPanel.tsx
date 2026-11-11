@@ -110,7 +110,7 @@ export function StudioRefundPanel({
                 ? ` · Hạn ${new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', dateStyle: 'short' }).format(new Date(r.dueAt))}`
                 : ''}
             </p>
-            <p className="rounded-lg bg-cream px-3 py-2 text-stone-700">
+            <p className="rounded-lg bg-soft px-3 py-2 text-stone-700">
               Lý do: {r.reason} · Khoản gốc {formatPrice(Number(r.amount))} đ ·
               Đã nhận {formatPrice(Number(r.receivedAmount))} đ
             </p>
@@ -166,7 +166,7 @@ export function StudioRefundPanel({
               </>
             )}
             {r.status === 'awaiting_approval' && (
-              <p className="rounded-lg bg-cream px-3 py-2 text-stone-700">
+              <p className="rounded-lg bg-soft px-3 py-2 text-stone-700">
                 Đã nhận thông tin chuyển khoản. Chờ Open Slot đối soát.
               </p>
             )}

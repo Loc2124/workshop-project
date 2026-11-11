@@ -137,7 +137,7 @@ export function AdminAccountVerificationPanel({ userId }: { userId?: string }) {
                 )}
               </div>
               <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${account.status === 'verified' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-950'}`}
+                className={`rounded-sm px-2.5 py-1 text-xs font-medium ${account.status === 'verified' ? 'bg-[#DCEFC8] text-[#2A4710]' : 'bg-[#FBE8B5] text-[#7A4B00]'}`}
               >
                 {account.isCurrent === false
                   ? 'Đã thay đổi'
@@ -158,14 +158,14 @@ export function AdminAccountVerificationPanel({ userId }: { userId?: string }) {
                   });
                 else reveal.mutate({ scope, account });
               }}
-              className="min-h-10 text-sm font-semibold text-olive underline disabled:opacity-50"
+              className="min-h-10 text-sm font-semibold text-primary underline disabled:opacity-50"
             >
               {revealed[account.id]
                 ? 'Ẩn số tài khoản'
                 : 'Xem số tài khoản để đối chiếu'}
             </button>
             {revealed[account.id] && (
-              <p className="rounded-lg bg-cream p-3 font-semibold tabular-nums text-ink">
+              <p className="rounded-lg bg-soft p-3 font-semibold tabular-nums text-ink">
                 {revealed[account.id]}
               </p>
             )}
@@ -174,6 +174,9 @@ export function AdminAccountVerificationPanel({ userId }: { userId?: string }) {
                 <label className="text-xs font-medium">
                   Mã chứng từ đối chiếu
                   <input
+                    minLength={5}
+                    maxLength={300}
+                    placeholder="Tối thiểu 5 ký tự"
                     value={reference[account.id] ?? ''}
                     onChange={(event) =>
                       setReference((state) => ({
@@ -187,6 +190,9 @@ export function AdminAccountVerificationPanel({ userId }: { userId?: string }) {
                 <label className="text-xs font-medium">
                   Lý do / kết quả kiểm tra
                   <input
+                    minLength={10}
+                    maxLength={500}
+                    placeholder="Tối thiểu 10 ký tự"
                     value={reason[account.id] ?? ''}
                     onChange={(event) =>
                       setReason((state) => ({
@@ -201,13 +207,13 @@ export function AdminAccountVerificationPanel({ userId }: { userId?: string }) {
                   type="button"
                   disabled={
                     review.isPending ||
-                    !reference[account.id]?.trim() ||
-                    !reason[account.id]?.trim()
+                    (reference[account.id]?.trim().length ?? 0) < 5 ||
+                    (reason[account.id]?.trim().length ?? 0) < 10
                   }
                   onClick={() =>
                     review.mutate({ scope, account, decision: 'verified' })
                   }
-                  className="min-h-10 rounded-lg bg-olive px-3 text-sm font-semibold text-white disabled:opacity-50"
+                  className="min-h-10 rounded-lg bg-primary px-3 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
                 >
                   Đã đối chiếu
                 </button>
@@ -215,13 +221,13 @@ export function AdminAccountVerificationPanel({ userId }: { userId?: string }) {
                   type="button"
                   disabled={
                     review.isPending ||
-                    !reference[account.id]?.trim() ||
-                    !reason[account.id]?.trim()
+                    (reference[account.id]?.trim().length ?? 0) < 5 ||
+                    (reason[account.id]?.trim().length ?? 0) < 10
                   }
                   onClick={() =>
                     review.mutate({ scope, account, decision: 'rejected' })
                   }
-                  className="min-h-10 rounded-lg border border-stone-400 px-3 text-sm font-semibold disabled:opacity-50"
+                  className="min-h-10 rounded-lg border border-stone-400 px-3 text-sm font-semibold hover:bg-soft disabled:opacity-50"
                 >
                   Yêu cầu nhập lại
                 </button>
@@ -239,7 +245,7 @@ export function AdminAccountVerificationPanel({ userId }: { userId?: string }) {
         hoặc studio đổi tài khoản, lệnh chi cũ phải được xử lý lại.
       </p>
       {feedback && (
-        <p role="status" className="rounded-lg bg-cream p-3 text-sm">
+        <p role="status" className="rounded-lg bg-soft p-3 text-sm">
           {feedback}
         </p>
       )}

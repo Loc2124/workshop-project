@@ -63,7 +63,7 @@ export function CustomerRefundAccounts({ bookingId }: { bookingId: string }) {
         <div key={refund.refundId} className="space-y-2">
           <p
             role="status"
-            className="rounded-lg bg-cream p-3 text-sm font-medium text-ink"
+            className="rounded-lg bg-soft p-3 text-sm font-medium text-ink"
           >
             Hoàn {formatPrice(Number(refund.amount))} đ
             {Number(refund.settledAmount) > 0 && refund.status !== 'paid'

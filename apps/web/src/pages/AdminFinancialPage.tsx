@@ -109,17 +109,17 @@ const statusName = (value: string) =>
     succeeded: 'Thành công',
   })[value] ?? value;
 const stateColor = (value: string) =>
-  value === 'paid' || value === 'succeeded'
-    ? 'bg-emerald-100 text-emerald-900'
+  value === 'paid' || value === 'succeeded' || value === 'approved'
+    ? 'bg-[#DCEFC8] text-[#2A4710]'
     : value === 'manual_review' || value === 'failed'
-      ? 'bg-rose-100 text-rose-900'
-      : value === 'approved' || value === 'processing'
-        ? 'bg-sky-100 text-sky-900'
-        : 'bg-amber-100 text-amber-950';
+      ? 'bg-[#FCE0DB] text-[#9B2C1A]'
+      : value === 'cancelled'
+        ? 'bg-[#E8E4D8] text-[#4A453C]'
+        : 'bg-[#FBE8B5] text-[#7A4B00]';
 function Badge({ value }: { value: string }) {
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${stateColor(value)}`}
+      className={`inline-flex rounded-sm px-2.5 py-1 text-xs font-medium ${stateColor(value)}`}
     >
       {statusName(value)}
     </span>
@@ -144,9 +144,9 @@ function TransferHistory({ id, userId }: { id: string; userId?: string }) {
   return (
     <details
       onToggle={(event) => setOpen(event.currentTarget.open)}
-      className="border-t border-stone-200 pt-3 text-sm"
+      className="border-t border-line pt-3 text-sm"
     >
-      <summary className="min-h-9 cursor-pointer font-semibold text-olive">
+      <summary className="min-h-9 cursor-pointer font-semibold text-primary">
         Lịch sử xử lý và mã đối chiếu
       </summary>
       {open &&
@@ -291,12 +291,18 @@ export function AdminFinancialPage() {
         body: JSON.stringify({
           amount: Number(
             transferAmounts[o.id] ||
-              Math.max(0, Number(o.amount) - Number(o.settledAmount)),
+              Math.max(
+                0,
+                Number(o.amount) -
+                  Number(o.settledAmount) -
+                  Number(o.reservedAmount),
+              ),
           ),
           purpose,
           idempotencyKey: crypto.randomUUID(),
           reason:
-            reason[o.id] || 'Quản trị lập giao dịch theo nghĩa vụ đã ghi nhận.',
+            reason[o.id]?.trim() ||
+            'Quản trị lập giao dịch theo nghĩa vụ đã ghi nhận.',
         }),
       }),
     onSuccess: async () => {
@@ -429,15 +435,15 @@ export function AdminFinancialPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="space-y-5">
       <header className="space-y-2">
-        <p className="text-sm font-semibold uppercase tracking-[.14em] text-olive">
+        <p className="text-xs font-semibold uppercase tracking-[.14em] text-primary">
           Vận hành
         </p>
-        <h1 className="font-heading text-3xl font-semibold text-ink">
+        <h1 className="font-heading text-2xl font-semibold text-ink">
           Tài chính & quyết toán
         </h1>
-        <p className="max-w-3xl text-sm leading-6 text-stone-700">
+        <p className="max-w-3xl text-sm leading-6 text-muted">
           Theo dõi hạn hoàn, khoản studio cần chuyển về Open Slot và từng lần
           chuyển. Mọi khoản chuyển cần duyệt; ghi nhận thành công phải có mã đối
           chiếu, nhà cung cấp và phí thực tế.
@@ -445,7 +451,7 @@ export function AdminFinancialPage() {
       </header>
       <nav
         aria-label="Các mục tài chính"
-        className="flex gap-2 overflow-x-auto border-b border-stone-200"
+        className="flex gap-2 overflow-x-auto border-b border-line"
       >
         {(
           [
@@ -462,7 +468,7 @@ export function AdminFinancialPage() {
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`min-h-11 shrink-0 border-b-2 px-4 text-sm font-semibold ${tab === key ? 'border-olive text-olive' : 'border-transparent text-stone-600 hover:text-ink'}`}
+            className={`min-h-11 shrink-0 border-b-2 px-4 text-sm font-semibold ${tab === key ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'}`}
           >
             {label}
           </button>
@@ -471,7 +477,7 @@ export function AdminFinancialPage() {
       {feedback && (
         <p
           role="status"
-          className="rounded-lg bg-cream px-4 py-3 text-sm text-ink"
+          className="rounded-lg bg-soft px-4 py-3 text-sm text-ink"
         >
           {feedback}
         </p>
@@ -592,7 +598,7 @@ export function AdminFinancialPage() {
                               }))
                             }
                             className="mt-1 min-h-16 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-                            placeholder="Ghi căn cứ lập giao dịch"
+                            placeholder="Ghi căn cứ lập giao dịch (tối thiểu 10 ký tự nếu nhập)"
                           />
                         </label>
                         <button
@@ -608,8 +614,13 @@ export function AdminFinancialPage() {
                                     : 'studio_payout',
                             })
                           }
-                          disabled={createTransfer.isPending || remaining <= 0}
-                          className="min-h-10 w-full rounded-lg bg-olive px-4 text-sm font-semibold text-white hover:bg-olive/90 disabled:opacity-50"
+                          disabled={
+                            createTransfer.isPending ||
+                            remaining <= 0 ||
+                            (Boolean(reason[o.id]?.trim()) &&
+                              (reason[o.id]?.trim().length ?? 0) < 10)
+                          }
+                          className="min-h-10 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
                         >
                           Lập giao dịch chờ duyệt
                         </button>
@@ -629,7 +640,7 @@ export function AdminFinancialPage() {
           }
         >
           {tab === 'queue' && (
-            <div className="rounded-xl border border-stone-200 bg-cream p-4">
+            <div className="rounded-xl border border-line bg-soft p-4">
               <h2 className="font-heading text-lg font-semibold text-ink">
                 Khoản cần xử lý
               </h2>
@@ -645,7 +656,7 @@ export function AdminFinancialPage() {
                 <button
                   type="button"
                   onClick={() => setTab('obligations')}
-                  className="mt-2 min-h-10 rounded-lg border border-olive px-3 text-sm font-semibold text-olive"
+                  className="mt-2 min-h-10 rounded-lg border border-primary bg-surface px-3 text-sm font-semibold text-primary hover:bg-paper"
                 >
                   Xem nghĩa vụ sắp hoặc đã quá hạn
                 </button>
@@ -666,7 +677,9 @@ export function AdminFinancialPage() {
                           {money(
                             Math.max(
                               0,
-                              Number(o.amount) - Number(o.settledAmount),
+                              Number(o.amount) -
+                                Number(o.settledAmount) -
+                                Number(o.reservedAmount),
                             ),
                           )}
                         </span>
@@ -703,7 +716,7 @@ export function AdminFinancialPage() {
                     type="button"
                     aria-pressed={queueFilter === key}
                     onClick={() => setQueueFilter(key)}
-                    className={`min-h-10 rounded-full border px-3 text-sm font-medium ${queueFilter === key ? 'border-olive bg-olive text-white' : 'border-stone-300 bg-white text-ink'}`}
+                    className={`min-h-10 rounded-full border px-3 text-sm font-medium ${queueFilter === key ? 'border-primary bg-primary text-white' : 'border-stone-300 bg-white text-ink hover:bg-paper'}`}
                   >
                     {label}
                   </button>
@@ -798,7 +811,7 @@ export function AdminFinancialPage() {
                     <button
                       type="button"
                       onClick={() => setTab('obligations')}
-                      className="min-h-9 font-semibold text-olive underline"
+                      className="min-h-9 font-semibold text-primary underline"
                     >
                       Xem khoản cần xử lý
                     </button>
@@ -809,13 +822,13 @@ export function AdminFinancialPage() {
                     type="button"
                     onClick={() => approve.mutate(t)}
                     disabled={approve.isPending}
-                    className="min-h-10 rounded-lg border border-olive px-4 text-sm font-semibold text-olive hover:bg-cream disabled:opacity-50"
+                    className="min-h-10 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-soft disabled:opacity-50"
                   >
                     Duyệt giao dịch
                   </button>
                 )}
                 {['approved', 'manual_review'].includes(t.status) && (
-                  <div className="grid gap-2 rounded-lg bg-cream p-3 sm:grid-cols-[1fr_1fr_9rem_auto] sm:items-end">
+                  <div className="grid gap-2 rounded-lg bg-soft p-3 sm:grid-cols-[1fr_1fr_9rem_auto] sm:items-end">
                     <label className="text-xs font-medium">
                       Nhà cung cấp
                       <input
@@ -894,7 +907,7 @@ export function AdminFinancialPage() {
                         transferDetails[t.id]?.fee === '' ||
                         Number(transferDetails[t.id]?.fee) < 0
                       }
-                      className="min-h-10 rounded-lg bg-olive px-4 text-sm font-semibold text-white disabled:opacity-50"
+                      className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
                     >
                       Đã chuyển xong
                     </button>
@@ -1034,7 +1047,7 @@ export function AdminFinancialPage() {
                       !v.reference.trim() ||
                       !v.provider.trim()
                     }
-                    className="min-h-10 rounded-lg bg-olive px-4 text-sm font-semibold text-white disabled:opacity-50"
+                    className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
                   >
                     Ghi phí thật
                   </button>
@@ -1115,7 +1128,7 @@ export function AdminFinancialPage() {
             </label>
             <button
               disabled={saveDay.isPending}
-              className="min-h-11 rounded-lg bg-olive px-5 font-semibold text-white disabled:opacity-50"
+              className="min-h-11 rounded-lg bg-primary px-5 font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
             >
               {saveDay.isPending ? 'Đang lưu…' : 'Lưu ngày'}
             </button>
@@ -1166,6 +1179,6 @@ export function AdminFinancialPage() {
           </div>
         </section>
       )}
-    </main>
+    </div>
   );
 }

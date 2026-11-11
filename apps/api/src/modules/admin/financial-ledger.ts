@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import type { PoolClient } from 'pg';
-import { withTransaction } from '../../db/pool.js';
+import { getPool, withTransaction } from '../../db/pool.js';
+import { loadConfig } from '../../config.js';
 import { AppError } from '../../errors/app-error.js';
 import { writeAuditLog } from './audit-log.js';
 import { decryptFinancialAccount } from '../payments/financial-account-crypto.js';
 import { queueRefundEmail } from '../../services/booking-emails.js';
+import { createPayoutProvider } from '../payments/providers/index.js';
+import {
+  applySessionFee,
+  processTransferResult,
+  executeAutomatedPayoutTransfer,
+} from '../payments/transfer-execution.js';
 
 export const financialLedgerRouter = Router();
 const calendarInput = z
@@ -33,77 +40,6 @@ const transferInput = z
     reason: z.string().trim().min(10).max(500),
   })
   .strict();
-
-/** Apply a real provider fee to the payout for the same session/booking first.
- * If that payout has already been committed/settled, keep the uncovered amount
- * as a recovery for that booking; never move it to another session's payout.
- */
-async function applySessionFee(
-  client: PoolClient,
-  bookingId: string,
-  studioId: string,
-  fee: number,
-  sourceKey: string,
-  reason: string,
-  deferUntilPayout = false,
-) {
-  if (fee <= 0) return;
-  const payout = await client.query<{
-    id: string | null;
-    amount: string | null;
-    status: string | null;
-    sessionId: string;
-  }>(
-    `SELECT o.id,o.amount::text,o.status,b.session_id AS "sessionId"
-     FROM bookings b LEFT JOIN financial_obligations o ON o.booking_id=b.id AND o.kind='studio_payout'
-     WHERE b.id=$1 FOR UPDATE OF b`,
-    [bookingId],
-  );
-  const row = payout.rows[0];
-  if (!row) return;
-  if (!row.id && deferUntilPayout) {
-    const snapshot = await client.query(
-      `SELECT 1 FROM studio_settlement_snapshots WHERE booking_id=$1`,
-      [bookingId],
-    );
-    if (!snapshot.rowCount) return;
-  }
-  let unapplied = BigInt(fee);
-  if (
-    row.id &&
-    row.amount &&
-    row.status !== 'paid' &&
-    row.status !== 'cancelled'
-  ) {
-    const committed = await client.query<{ amount: string }>(
-      `SELECT COALESCE(sum(amount),0)::text AS amount FROM financial_transfers WHERE obligation_id=$1 AND direction='outbound' AND status<>'failed'`,
-      [row.id],
-    );
-    const available = BigInt(row.amount) - BigInt(committed.rows[0]!.amount);
-    const offset =
-      available > 0n ? (unapplied < available ? unapplied : available) : 0n;
-    if (offset > 0n) {
-      const revised = BigInt(row.amount) - offset;
-      if (revised > 0n)
-        await client.query(
-          `UPDATE financial_obligations SET amount=$2,reason=reason||' Phí nhà cung cấp của cùng buổi đã được trừ.',updated_at=clock_timestamp() WHERE id=$1`,
-          [row.id, revised.toString()],
-        );
-      else
-        await client.query(
-          `UPDATE financial_obligations SET status='cancelled',reason=reason||' Khoản chi được bù hết bằng phí thực tế của cùng buổi.',updated_at=clock_timestamp() WHERE id=$1`,
-          [row.id],
-        );
-      unapplied -= offset;
-    }
-  }
-  if (unapplied > 0n)
-    await client.query(
-      `INSERT INTO financial_obligations(booking_id,studio_id,kind,source_key,amount,due_at,status,reason)
-     VALUES($1,$2,'studio_recovery',$3,$4,NULL,'awaiting_funds',$5) ON CONFLICT(kind,source_key) DO NOTHING`,
-      [bookingId, studioId, sourceKey, unapplied.toString(), reason],
-    );
-}
 
 financialLedgerRouter.get('/lich-nghi', async (req, res) => {
   const year = z.coerce
@@ -350,12 +286,13 @@ financialLedgerRouter.get('/tai-khoan-studio', async (_req, res) => {
       studioId: string;
       studioName: string;
       bankName: string;
+      bankBin: string | null;
       accountHolder: string;
       status: string;
       last4: string;
       createdAt: Date;
     }>(
-      `SELECT a.id,a.studio_id AS "studioId",st.name AS "studioName",a.bank_name AS "bankName",a.status,
+      `SELECT a.id,a.studio_id AS "studioId",st.name AS "studioName",a.bank_name AS "bankName",a.bank_bin AS "bankBin",a.status,
       a.account_holder AS "accountHolder",a.account_last4 AS last4,
       a.created_at AS "createdAt"
      FROM studio_payout_accounts a JOIN studios st ON st.id=a.studio_id
@@ -369,6 +306,7 @@ financialLedgerRouter.get('/tai-khoan-studio', async (_req, res) => {
       studioId: row.studioId,
       studioName: row.studioName,
       bankName: row.bankName,
+      bankBin: row.bankBin,
       accountHolder: row.accountHolder,
       last4: row.last4,
       status: row.status,
@@ -879,6 +817,8 @@ financialLedgerRouter.post('/chuyen-tien/:id/duyet', async (req, res) => {
     .object({ reason: z.string().trim().min(10).max(500) })
     .strict()
     .parse(req.body);
+
+  let isOutbound = false;
   await withTransaction(async (client) => {
     const requested = await client.query<{
       purpose: string;
@@ -890,9 +830,15 @@ financialLedgerRouter.post('/chuyen-tien/:id/duyet', async (req, res) => {
        JOIN financial_obligations o ON o.id=t.obligation_id WHERE t.id=$1 FOR UPDATE OF t`,
       [id],
     );
+    if (!requested.rows[0]) {
+      throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy giao dịch.');
+    }
+    const purpose = requested.rows[0].purpose;
+    isOutbound = ['customer_refund', 'platform_advance', 'studio_payout'].includes(purpose);
+
     let destinationId: string | null = null;
     let customerDestinationId: string | null = null;
-    if (requested.rows[0]?.purpose === 'studio_payout') {
+    if (purpose === 'studio_payout') {
       const destination = await client.query<{ id: string }>(
         `SELECT id FROM studio_payout_accounts WHERE studio_id=$1 AND is_current AND status='verified' FOR SHARE`,
         [requested.rows[0].studioId],
@@ -905,15 +851,11 @@ financialLedgerRouter.post('/chuyen-tien/:id/duyet', async (req, res) => {
         );
       destinationId = destination.rows[0].id;
     }
-    if (
-      ['customer_refund', 'platform_advance'].includes(
-        requested.rows[0]?.purpose ?? '',
-      )
-    ) {
+    if (['customer_refund', 'platform_advance'].includes(purpose)) {
       const destination = await client.query<{ id: string }>(
         `SELECT id FROM customer_refund_accounts WHERE refund_id=$1 AND is_current
            AND status='verified' AND purged_at IS NULL FOR SHARE`,
-        [requested.rows[0]!.obligationId],
+        [requested.rows[0].obligationId],
       );
       if (!destination.rows[0])
         throw new AppError(
@@ -956,6 +898,28 @@ financialLedgerRouter.post('/chuyen-tien/:id/duyet', async (req, res) => {
       after: { transferId: id, amount: transfer.amount },
     });
   });
+
+  if (loadConfig().PAYOUT_PROVIDER !== 'manual' && isOutbound) {
+    const refundNotice: {
+      value?: { bookingId: string; amount: string; reference?: string };
+    } = {};
+    const payoutResult = await executeAutomatedPayoutTransfer(id, req.user!.sub, refundNotice);
+    if (refundNotice.value) {
+      queueRefundEmail(
+        refundNotice.value.bookingId,
+        id,
+        refundNotice.value.amount,
+        refundNotice.value.reference,
+      );
+    }
+    return res.json({
+      ok: true,
+      status: payoutResult.status,
+      reference: payoutResult.reference,
+      errorMessage: payoutResult.errorMessage,
+    });
+  }
+
   res.json({ ok: true, status: 'approved' });
 });
 
@@ -986,215 +950,13 @@ financialLedgerRouter.post(
       value?: { bookingId: string; amount: string; reference?: string };
     } = {};
     await withTransaction(async (client) => {
-      const result = await client.query<{
-        bookingId: string;
-        studioId: string;
-        obligationId: string;
-        relatedId: string | null;
-        kind: string;
-        direction: string;
-        purpose: string;
-        amount: string;
-        providerFee: string | null;
-        sourceKey: string;
-        userId: string;
-      }>(
-        `UPDATE financial_transfers t SET status=$2,reference=COALESCE($3,t.reference),provider=COALESCE($4,t.provider),provider_fee=COALESCE($5,t.provider_fee),settled_at=CASE WHEN $2='succeeded' THEN clock_timestamp() ELSE NULL END,failure_reason=CASE WHEN $2='succeeded' THEN NULL ELSE $6 END
-       FROM financial_obligations o WHERE t.id=$1 AND t.obligation_id=o.id AND t.status IN ('recorded','approved','processing','pending_approval','manual_review')
-       AND t.approved_by IS NOT NULL
-       AND ($2<>'succeeded' OR t.purpose<>'studio_payout' OR EXISTS(
-         SELECT 1 FROM studio_payout_accounts a WHERE a.id=t.destination_studio_account_id AND a.is_current AND a.status='verified'))
-       AND ($2<>'succeeded' OR t.purpose NOT IN ('customer_refund','platform_advance') OR EXISTS(
-         SELECT 1 FROM customer_refund_accounts a WHERE a.id=t.destination_customer_account_id
-           AND a.refund_id=o.id AND a.is_current AND a.status='verified' AND a.purged_at IS NULL))
-       RETURNING o.booking_id AS "bookingId",o.studio_id AS "studioId",o.id AS "obligationId",o.related_obligation_id AS "relatedId",o.kind,o.source_key AS "sourceKey",t.direction,t.purpose,t.amount::text,t.provider_fee::text AS "providerFee",(SELECT user_id FROM bookings WHERE id=o.booking_id) AS "userId"`,
-        [
-          id,
-          input.result,
-          input.reference ?? null,
-          input.provider ?? null,
-          input.providerFee ?? null,
-          input.result === 'succeeded' ? null : input.reason,
-        ],
+      await processTransferResult(
+        client,
+        id,
+        req.user!.sub,
+        input,
+        refundNotice,
       );
-      const transfer = result.rows[0];
-      if (!transfer)
-        throw new AppError(
-          409,
-          'CONFLICT',
-          'Không thể ghi nhận kết quả giao dịch này.',
-        );
-      if (
-        input.result === 'succeeded' &&
-        transfer.direction === 'outbound' &&
-        ['customer_refund', 'platform_advance'].includes(transfer.purpose)
-      ) {
-        refundNotice.value = {
-          bookingId: transfer.bookingId,
-          amount: transfer.amount,
-          reference: input.reference,
-        };
-      }
-      await client.query(
-        `INSERT INTO financial_transfer_events(transfer_id,actor_id,event,details) VALUES($1,$2,$3,$4::jsonb)`,
-        [
-          id,
-          req.user!.sub,
-          input.result === 'succeeded'
-            ? 'succeeded'
-            : input.result === 'failed'
-              ? 'failed'
-              : 'manual_review',
-          JSON.stringify({
-            reason: input.reason,
-            reference: input.reference ?? null,
-            provider: input.provider ?? null,
-            providerFee: input.providerFee ?? null,
-          }),
-        ],
-      );
-      if (
-        input.result === 'succeeded' &&
-        transfer.direction === 'outbound' &&
-        ['customer_refund', 'platform_advance'].includes(transfer.purpose)
-      ) {
-        if (input.reference && input.provider)
-          await client.query(
-            `INSERT INTO booking_refund_receipts(booking_id,amount,reference,actor_id,refunded_at) VALUES($1,$2,$3,$4,clock_timestamp())`,
-            [
-              transfer.bookingId,
-              transfer.amount,
-              input.reference,
-              req.user!.sub,
-            ],
-          );
-        if (transfer.sourceKey.startsWith('ticket:')) {
-          const ticketId = transfer.sourceKey.slice('ticket:'.length);
-          const changed = await client.query(
-            `UPDATE tickets SET refunded_amount=LEAST(refund_due_amount,refunded_amount+$2) WHERE id=$1 AND booking_id=$3 RETURNING id`,
-            [ticketId, transfer.amount, transfer.bookingId],
-          );
-          if (!changed.rowCount)
-            throw new AppError(
-              409,
-              'CONFLICT',
-              'Không tìm thấy vé gắn với khoản hoàn này.',
-            );
-          await client.query(
-            `UPDATE bookings b SET refund_due_amount=x.due,refunded_amount=x.refunded,refund_status=CASE WHEN x.due+b.extra_refund_due_amount>x.refunded+b.extra_refunded_amount THEN 'pending' WHEN x.due+b.extra_refund_due_amount>0 THEN 'refunded' ELSE 'not_applicable' END,status=CASE WHEN b.reservation_status='cancelled' AND x.due+b.extra_refund_due_amount<=x.refunded+b.extra_refunded_amount THEN 'cancelled'::booking_status ELSE b.status END FROM (SELECT COALESCE(sum(refund_due_amount),0)::int due,COALESCE(sum(refunded_amount),0)::int refunded FROM booking_seats WHERE booking_id=$1) x WHERE b.id=$1`,
-            [transfer.bookingId],
-          );
-        } else if (transfer.sourceKey.startsWith('extra:')) {
-          const extraId = transfer.sourceKey.slice('extra:'.length);
-          const changed = await client.query(
-            `UPDATE booking_extra_refunds SET refunded_amount=LEAST(amount,refunded_amount+$2) WHERE id=$1 AND booking_id=$3 RETURNING id`,
-            [extraId, transfer.amount, transfer.bookingId],
-          );
-          if (!changed.rowCount)
-            throw new AppError(
-              409,
-              'CONFLICT',
-              'Không tìm thấy khoản thu thừa gắn với yêu cầu hoàn.',
-            );
-          await client.query(
-            `UPDATE bookings b SET extra_refunded_amount=x.refunded,refund_status=CASE WHEN b.refund_due_amount+b.extra_refund_due_amount>b.refunded_amount+x.refunded THEN 'pending' WHEN b.refund_due_amount+b.extra_refund_due_amount>0 THEN 'refunded' ELSE 'not_applicable' END,status=CASE WHEN b.reservation_status='cancelled' AND b.refund_due_amount+b.extra_refund_due_amount<=b.refunded_amount+x.refunded THEN 'cancelled'::booking_status ELSE b.status END FROM (SELECT COALESCE(sum(refunded_amount),0)::int refunded FROM booking_extra_refunds WHERE booking_id=$1) x WHERE b.id=$1`,
-            [transfer.bookingId],
-          );
-        }
-        await client.query(
-          `INSERT INTO user_notifications(user_id,booking_id,type,title,body,href) VALUES($1::uuid,$2::uuid,'deposit_refunded','Đã chuyển khoản hoàn tiền',$3,'/me/bookings/'||$2::uuid::text)`,
-          [
-            transfer.userId,
-            transfer.bookingId,
-            `Khoản hoàn ${Number(transfer.amount).toLocaleString('vi-VN')} đ đã được chuyển. Mã đối chiếu: ${input.reference}.`,
-          ],
-        );
-      }
-      if (input.result === 'failed') {
-        const remaining = await client.query<{
-          amount: string;
-          settled: string;
-          reserved: string;
-        }>(
-          `SELECT o.amount::text,
-           COALESCE(sum(t.amount) FILTER(WHERE t.status='succeeded'),0)::text AS settled,
-           COALESCE(sum(t.amount) FILTER(WHERE t.status NOT IN ('succeeded','failed')),0)::text AS reserved
-         FROM financial_obligations o LEFT JOIN financial_transfers t ON t.obligation_id=o.id
-         WHERE o.id=$1 GROUP BY o.id`,
-          [transfer.obligationId],
-        );
-        const totals = remaining.rows[0]!;
-        await client.query(
-          `UPDATE financial_obligations SET status=$2,updated_at=clock_timestamp() WHERE id=$1`,
-          [
-            transfer.obligationId,
-            BigInt(totals.reserved) > 0n
-              ? 'awaiting_approval'
-              : BigInt(totals.settled) > 0n
-                ? 'partially_paid'
-                : 'failed',
-          ],
-        );
-      }
-      if (input.result === 'manual_review') {
-        await client.query(
-          `UPDATE financial_obligations SET status='manual_review',updated_at=clock_timestamp() WHERE id=$1`,
-          [transfer.obligationId],
-        );
-      }
-      if (input.result === 'succeeded') {
-        const remaining = await client.query<{
-          amount: string;
-          settled: string;
-        }>(
-          `SELECT o.amount::text,COALESCE(sum(t.amount) FILTER(WHERE t.status='succeeded'),0)::text AS settled FROM financial_obligations o LEFT JOIN financial_transfers t ON t.obligation_id=o.id WHERE o.id=$1 GROUP BY o.id`,
-          [transfer.obligationId],
-        );
-        const paid =
-          BigInt(remaining.rows[0]!.settled) >=
-          BigInt(remaining.rows[0]!.amount);
-        await client.query(
-          `UPDATE financial_obligations SET status=$2,updated_at=clock_timestamp() WHERE id=$1`,
-          [transfer.obligationId, paid ? 'paid' : 'partially_paid'],
-        );
-        if (paid && transfer.kind === 'studio_recovery' && transfer.relatedId) {
-          await client.query(
-            `UPDATE financial_obligations SET status=CASE WHEN status IN ('awaiting_funds','partially_paid') THEN 'awaiting_approval' ELSE status END,updated_at=clock_timestamp() WHERE id=$1`,
-            [transfer.relatedId],
-          );
-        }
-        if (
-          transfer.direction === 'outbound' &&
-          transfer.providerFee &&
-          Number(transfer.providerFee) > 0 &&
-          ['customer_refund', 'platform_advance', 'studio_payout'].includes(
-            transfer.purpose,
-          )
-        ) {
-          await applySessionFee(
-            client,
-            transfer.bookingId,
-            transfer.studioId,
-            Number(transfer.providerFee),
-            `fee:transfer:${id}`,
-            `Phí thực tế nhà cung cấp ${input.provider} cho giao dịch ${transfer.purpose}. Studio chịu khoản phí này.`,
-            true,
-          );
-        }
-      }
-      await writeAuditLog(client, {
-        actorId: req.user!.sub,
-        action: `financial.transfer.${input.result}`,
-        targetType: 'booking',
-        targetId: transfer.bookingId,
-        targetName: 'Kết quả giao dịch',
-        reason: input.reason,
-        after: {
-          transferId: id,
-          result: input.result,
-          reference: input.reference ?? null,
-        },
-      });
     });
     if (refundNotice.value)
       queueRefundEmail(
@@ -1204,5 +966,74 @@ financialLedgerRouter.post(
         refundNotice.value.reference,
       );
     res.json({ ok: true, status: input.result });
+  },
+);
+
+financialLedgerRouter.post(
+  '/chuyen-tien/:id/dong-bo-payout',
+  async (req, res) => {
+    const id = z.uuid().parse(req.params.id);
+    const provider = createPayoutProvider();
+    const transferRes = await getPool().query<{
+      status: string;
+      reference: string | null;
+      purpose: string;
+    }>(
+      `SELECT status, reference, purpose FROM financial_transfers WHERE id = $1`,
+      [id],
+    );
+    const transfer = transferRes.rows[0];
+    if (!transfer) {
+      throw new AppError(404, 'NOT_FOUND', 'Không tìm thấy giao dịch.');
+    }
+    if (!['processing', 'manual_review', 'approved'].includes(transfer.status)) {
+      return res.json({
+        ok: true,
+        status: transfer.status,
+        message: 'Giao dịch đã ở trạng thái kết thúc, không cần đồng bộ.',
+      });
+    }
+
+    const syncRef = transfer.reference ?? id;
+    const remote = await provider.getPayout(syncRef);
+    if (remote.status === 'succeeded' || remote.status === 'failed') {
+      const refundNotice: {
+        value?: { bookingId: string; amount: string; reference?: string };
+      } = {};
+      await withTransaction(async (client) => {
+        await processTransferResult(
+          client,
+          id,
+          req.user!.sub,
+          {
+            result: remote.status as 'succeeded' | 'failed',
+            reference: remote.reference,
+            provider: loadConfig().PAYOUT_PROVIDER,
+            providerFee: remote.providerFee,
+            reason:
+              remote.status === 'succeeded'
+                ? 'Đồng bộ kết quả thành công từ payOS'
+                : remote.failureReason || 'Đồng bộ kết quả thất bại từ payOS',
+          },
+          refundNotice,
+        );
+      });
+      if (refundNotice.value) {
+        queueRefundEmail(
+          refundNotice.value.bookingId,
+          id,
+          refundNotice.value.amount,
+          refundNotice.value.reference,
+        );
+      }
+    }
+
+    res.json({
+      ok: true,
+      status: remote.status,
+      reference: remote.reference,
+      providerFee: remote.providerFee,
+      failureReason: remote.failureReason,
+    });
   },
 );

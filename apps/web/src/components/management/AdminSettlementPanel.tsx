@@ -61,18 +61,18 @@ export function AdminSettlementPanel({ userId }: { userId?: string }) {
       {query.data.map((item) => (
         <article
           key={item.bookingId}
-          className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5"
+          className="rounded-sm border border-line bg-surface p-4 sm:p-5"
         >
-          <div className="flex flex-wrap items-start justify-between gap-2 border-b border-stone-200 pb-3">
+          <div className="flex flex-wrap items-start justify-between gap-2 border-b border-line pb-3">
             <div>
               <h2 className="font-heading text-lg font-semibold text-ink">
                 #{item.orderCode} · {item.workshopTitle}
               </h2>
-              <p className="text-sm text-stone-600">
+              <p className="text-sm text-muted">
                 Studio {item.studioName} · Chốt lúc {time(item.closedAt)}
               </p>
             </div>
-            <strong className="text-lg tabular-nums text-olive">
+            <strong className="text-lg tabular-nums text-primary">
               {money(item.netAmount)}
             </strong>
           </div>

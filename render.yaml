@@ -38,6 +38,12 @@ services:
         value: https://www.openslot.io.vn/payment/cancel
       - key: PAYOS_WEBHOOK_URL
         value: https://api.openslot.io.vn/webhooks/payos
+      - key: PAYOS_PAYOUT_CLIENT_ID
+        sync: false
+      - key: PAYOS_PAYOUT_API_KEY
+        sync: false
+      - key: PAYOS_PAYOUT_CHECKSUM_KEY
+        sync: false
       - key: EXPIRY_JOB_INTERVAL_SECONDS
         value: '60'
       - key: DB_POOL_MAX
