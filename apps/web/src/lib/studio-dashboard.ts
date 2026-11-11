@@ -4,8 +4,67 @@ import type {
   StudioWorkshop,
 } from '../types/management';
 
+export const activeStudioKey = (userId: string) =>
+  `open-slot.active-studio.${userId}`;
+
+export function readActiveStudioId(userId?: string | null): string | null {
+  if (!userId) return null;
+  try {
+    return sessionStorage.getItem(activeStudioKey(userId));
+  } catch {
+    return null;
+  }
+}
+
+export function writeActiveStudioId(
+  userId: string | null | undefined,
+  studioId: string | null | undefined,
+) {
+  if (!userId || !studioId) return;
+  try {
+    sessionStorage.setItem(activeStudioKey(userId), studioId);
+  } catch {
+    /* Storage can be disabled. */
+  }
+}
+
 export function studioPage(studioId: string, section = '') {
   return `/studio/${encodeURIComponent(studioId)}${section ? `/${section}` : ''}`;
+}
+export function selectDefaultStudio(
+  studios: MemberStudio[],
+  requestedId?: string | null,
+  section = '',
+  lastActiveStudioId?: string | null,
+) {
+  const requiresApproved = [
+    'sessions',
+    'bookings',
+    'check-in',
+    'members',
+  ].includes(section);
+  if (requestedId) {
+    const matched = studios.find((studio) => studio.id === requestedId);
+    if (
+      matched &&
+      (!requiresApproved || (matched.status === 'approved' && !matched.isDraft))
+    ) {
+      return matched;
+    }
+  }
+  if (lastActiveStudioId) {
+    const remembered = studios.find(
+      (studio) => studio.id === lastActiveStudioId && !studio.isDraft,
+    );
+    if (remembered && (!requiresApproved || remembered.status === 'approved')) {
+      return remembered;
+    }
+  }
+  const approved = studios.find(
+    (studio) => studio.status === 'approved' && !studio.isDraft,
+  );
+  if (requiresApproved && approved) return approved;
+  return approved ?? studios.find((studio) => !studio.isDraft) ?? studios[0];
 }
 export function switchStudioPath(pathname: string, studioId: string) {
   return studioPage(

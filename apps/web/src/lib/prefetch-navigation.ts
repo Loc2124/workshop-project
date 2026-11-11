@@ -7,6 +7,7 @@ import { queryKeys } from './query-keys';
 import { geographyQueries } from './geography-queries';
 import { catalogKeys } from '../hooks/useCatalog';
 import { catalogService } from '../services/catalogService';
+import { readActiveStudioId } from './studio-dashboard';
 
 export async function prefetchNavigation(client: QueryClient, url: URL) {
   const path = url.pathname.split('/').filter(Boolean);
@@ -150,11 +151,36 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
       queryFn: ({ signal }) => managementService.listMyStudios(signal),
       staleTime: 30_000,
     });
-    const studio = (studios as MemberStudio[]).find(
-      (item) => item.role === 'owner' && (!id || item.id === id),
+    const isSectionOnly = [
+      'workshops',
+      'sessions',
+      'bookings',
+      'check-in',
+      'members',
+      'profile',
+    ].includes(id);
+    const targetId = isSectionOnly ? '' : id;
+    const owned = (studios as MemberStudio[]).filter(
+      (item) => item.role === 'owner' && (!targetId || item.id === targetId),
     );
+    const section = isSectionOnly ? id : (path[2] ?? '');
+    const rememberedId = readActiveStudioId(user.id);
+    const studio =
+      (rememberedId
+        ? owned.find(
+            (item) =>
+              item.id === rememberedId &&
+              !item.isDraft &&
+              (!['sessions', 'bookings', 'check-in', 'members'].includes(
+                section,
+              ) ||
+                item.status === 'approved'),
+          )
+        : undefined) ??
+      owned.find((item) => item.status === 'approved' && !item.isDraft) ??
+      owned.find((item) => !item.isDraft) ??
+      owned[0];
     if (!current() || !studio || studio.isDraft) return;
-    const section = path[2] ?? '';
     if (
       ['sessions', 'bookings'].includes(section) &&
       studio.status !== 'approved'

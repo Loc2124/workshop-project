@@ -108,7 +108,7 @@ export async function listMemberStudios(
      LEFT JOIN areas a
        ON a.id = st.area_id AND a.province_id = st.province_id
      WHERE sm.user_id = $1 AND (NOT st.is_draft OR sm.role = 'owner')
-     ORDER BY st.created_at DESC, st.id`,
+     ORDER BY st.is_draft ASC, (st.status = 'approved') DESC, st.created_at DESC, st.id`,
     [userId],
   );
   return result.rows;

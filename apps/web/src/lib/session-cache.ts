@@ -7,6 +7,7 @@ import {
   notifySessionCacheChange,
 } from './session-events';
 import { studioDraftKey } from './studio-registration-draft';
+import { activeStudioKey } from './studio-dashboard';
 import { clearUserBookingRequests } from './booking-request';
 
 export const authQueryKey = ['auth', 'me'] as const;
@@ -33,6 +34,7 @@ function removeDraft(userId: string | null | undefined) {
   if (!userId) return;
   try {
     sessionStorage.removeItem(studioDraftKey(userId));
+    sessionStorage.removeItem(activeStudioKey(userId));
   } catch {
     /* Storage can be disabled. */
   }

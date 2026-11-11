@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  selectDefaultStudio,
   studioDashboardStats,
   studioState,
   switchStudioPath,
 } from './studio-dashboard';
-import type { StudioSession, StudioWorkshop } from '../types/management';
+import type {
+  MemberStudio,
+  StudioSession,
+  StudioWorkshop,
+} from '../types/management';
 
 describe('studio dashboard', () => {
   it('preserves the section when switching studios', () => {
@@ -42,5 +47,68 @@ describe('studio dashboard', () => {
   it('distinguishes drafts from submitted pending profiles', () => {
     expect(studioState({ status: 'pending', isDraft: true })).toBe('draft');
     expect(studioState({ status: 'pending' })).toBe('pending');
+  });
+  it('prefers approved non-draft studios over newer draft studios when selecting a default studio', () => {
+    const draft = {
+      id: 'draft-1',
+      status: 'pending',
+      isDraft: true,
+    } as MemberStudio;
+    const pending = {
+      id: 'pending-1',
+      status: 'pending',
+      isDraft: false,
+    } as MemberStudio;
+    const approved = {
+      id: 'approved-1',
+      status: 'approved',
+      isDraft: false,
+    } as MemberStudio;
+
+    expect(
+      selectDefaultStudio([draft, pending, approved], null, 'check-in')?.id,
+    ).toBe('approved-1');
+    expect(selectDefaultStudio([draft, pending], null)?.id).toBe('pending-1');
+    expect(selectDefaultStudio([draft], null)?.id).toBe('draft-1');
+    expect(selectDefaultStudio([draft, approved], 'draft-1')?.id).toBe(
+      'draft-1',
+    );
+    expect(
+      selectDefaultStudio([draft, approved], 'draft-1', 'check-in')?.id,
+    ).toBe('approved-1');
+  });
+  it('restores the last active studio when returning from public pages', () => {
+    const draft = {
+      id: 'draft-1',
+      status: 'pending',
+      isDraft: true,
+    } as MemberStudio;
+    const approved1 = {
+      id: 'approved-1',
+      status: 'approved',
+      isDraft: false,
+    } as MemberStudio;
+    const approved2 = {
+      id: 'approved-2',
+      status: 'approved',
+      isDraft: false,
+    } as MemberStudio;
+
+    expect(
+      selectDefaultStudio(
+        [draft, approved1, approved2],
+        null,
+        'check-in',
+        'approved-2',
+      )?.id,
+    ).toBe('approved-2');
+    expect(
+      selectDefaultStudio(
+        [draft, approved1, approved2],
+        null,
+        'check-in',
+        'draft-1',
+      )?.id,
+    ).toBe('approved-1');
   });
 });

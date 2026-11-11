@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -17,7 +18,12 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { DashboardLayout, type DashboardMenuItem } from './DashboardLayout';
 import { useMyStudios } from '../../hooks/useManagement';
-import { studioPage } from '../../lib/studio-dashboard';
+import {
+  readActiveStudioId,
+  selectDefaultStudio,
+  studioPage,
+  writeActiveStudioId,
+} from '../../lib/studio-dashboard';
 import { StudioSwitcher } from './StudioSwitcher';
 
 const STUDIO_SECTIONS = [
@@ -36,18 +42,32 @@ export function StudioDashboard() {
   const { pathname, search } = useLocation();
   const studios = useMyStudios().data ?? [];
   const studio = studios.find((s) => s.id === studioId);
+  useEffect(() => {
+    if (user && studio && !studio.isDraft) {
+      writeActiveStudioId(user.id, studio.id);
+    }
+  }, [user, studio]);
   if (!user) return null;
   if (!studioId) {
-    const selected =
-      studios.find(
-        (s) => s.id === new URLSearchParams(search).get('studioId'),
-      ) ?? studios[0];
     const section = pathname.split('/')[2];
+    const selected = selectDefaultStudio(
+      studios,
+      new URLSearchParams(search).get('studioId'),
+      section,
+      readActiveStudioId(user.id),
+    );
     return selected ? (
       <Navigate
         to={studioPage(
           selected.id,
-          ['workshops', 'sessions', 'bookings', 'check-in', 'members', 'profile'].includes(section)
+          [
+            'workshops',
+            'sessions',
+            'bookings',
+            'check-in',
+            'members',
+            'profile',
+          ].includes(section)
             ? section
             : '',
         )}
@@ -67,7 +87,8 @@ export function StudioDashboard() {
       icon,
       to: studioPage(studio.id, section),
       locked: Boolean(
-        locked && ['sessions', 'bookings', 'check-in', 'members'].includes(section),
+        locked &&
+        ['sessions', 'bookings', 'check-in', 'members'].includes(section),
       ),
       attention:
         section === 'profile' &&

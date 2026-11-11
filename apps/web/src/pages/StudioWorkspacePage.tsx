@@ -18,6 +18,11 @@ import {
   StudioCard,
 } from '../components/management/StudioPrimitives';
 import { studioApplicationStatus } from '../lib/studio-application-status';
+import {
+  readActiveStudioId,
+  selectDefaultStudio,
+} from '../lib/studio-dashboard';
+import { useAuth } from '../hooks/useAuth';
 
 const StudioWorkshopManager = lazy(() =>
   import('../components/management/StudioWorkshopManager').then((module) => ({
@@ -54,6 +59,7 @@ const titles: Record<Section, string> = {
   members: 'Quản lý thành viên',
 };
 export function StudioWorkspacePage({ section }: { section: Section }) {
+  const { user } = useAuth();
   const [search] = useSearchParams();
   const { studioId } = useParams();
   const studiosQuery = useMyStudios();
@@ -61,7 +67,7 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
   const requested = studioId ?? search.get('studioId');
   const studio = requested
     ? studios.find((item) => item.id === requested)
-    : studios[0];
+    : selectDefaultStudio(studios, null, section, readActiveStudioId(user?.id));
   const coverImage =
     studio?.images?.find((image) => image.id === studio.photoIds?.[0]) ??
     studio?.images?.[0];
@@ -177,9 +183,7 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
           {section === 'bookings' && (
             <StudioBookingManager studioId={studio.id} />
           )}
-          {section === 'members' && (
-            <StudioMembersManager studio={studio} />
-          )}
+          {section === 'members' && <StudioMembersManager studio={studio} />}
           {section === 'profile' && (
             <>
               {studio.rejectionReason &&

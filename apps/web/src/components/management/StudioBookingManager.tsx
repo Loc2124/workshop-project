@@ -145,19 +145,6 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
     );
   return (
     <section aria-label="Quản lý đặt chỗ" className="space-y-studio-section">
-      <StudioCard className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h2 className="font-heading text-lg font-semibold">
-            Check-in bằng vé QR
-          </h2>
-          <p className="mt-1 text-sm text-studio-muted">
-            Quét hoặc nhập mã vé, kiểm tra thông tin rồi xác nhận từng người.
-          </p>
-        </div>
-        <StudioButton asChild>
-          <a href={`/studio/${studioId}/check-in`}>Mở Check-in</a>
-        </StudioButton>
-      </StudioCard>
       <StudioRefundPanel
         studioId={studioId}
         bookings={query.data}

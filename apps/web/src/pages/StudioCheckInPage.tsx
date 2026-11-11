@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import {
+  Navigate,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { Camera, CameraOff, Search } from 'lucide-react';
 import type { IScannerControls } from '@zxing/browser';
 import { z } from 'zod';
 import { useAuth } from '../hooks/useAuth';
 import { useMyStudios } from '../hooks/useOwnedStudios';
+import {
+  readActiveStudioId,
+  writeActiveStudioId,
+} from '../lib/studio-dashboard';
 import { apiFetch } from '../lib/api-client';
 import { formatDate, formatPrice } from '../lib/format';
 import { Button } from '../components/ui/button';
@@ -46,9 +55,15 @@ export function StudioCheckInPage() {
     studios.data?.filter(
       (studio) => studio.status === 'approved' && !studio.isDraft,
     ) ?? [];
-  const requested = studioId ?? search.get('studioId');
+  const requested =
+    studioId ?? search.get('studioId') ?? readActiveStudioId(user?.id);
   const studio =
     available.find((item) => item.id === requested) ?? available[0];
+  useEffect(() => {
+    if (user && studio) {
+      writeActiveStudioId(user.id, studio.id);
+    }
+  }, [user, studio]);
   const [code, setCode] = useState('');
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [manualReason, setManualReason] = useState('');
@@ -199,6 +214,20 @@ export function StudioCheckInPage() {
     return (
       <main className="mx-auto max-w-3xl p-6">Hãy đăng nhập để check-in.</main>
     );
+  const requestedStudio = studioId
+    ? studios.data?.find((item) => item.id === studioId)
+    : undefined;
+  if (
+    requestedStudio &&
+    (requestedStudio.isDraft || requestedStudio.status !== 'approved')
+  ) {
+    return (
+      <Navigate
+        to={`/studio/${encodeURIComponent(requestedStudio.id)}`}
+        replace
+      />
+    );
+  }
   if (!studio)
     return (
       <main className="mx-auto max-w-3xl p-6" role="alert">
@@ -207,6 +236,14 @@ export function StudioCheckInPage() {
           : 'Tài khoản này chưa thuộc studio được duyệt.'}
       </main>
     );
+  if (studioId && studioId !== studio.id) {
+    return (
+      <Navigate
+        to={`/studio/${encodeURIComponent(studio.id)}/check-in`}
+        replace
+      />
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-3xl space-y-5 px-4 py-8 sm:px-6">
