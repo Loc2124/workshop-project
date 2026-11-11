@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   authFieldErrors,
+  forgotPasswordFormSchema,
   loginFormSchema,
   registrationFormSchema,
+  resetPasswordFormSchema,
 } from './auth-validation';
 
 const registration = {
@@ -113,4 +115,33 @@ describe('auth form validation', () => {
       ).toBe(false);
     },
   );
+  it('validates forgot password email format and trims whitespace', () => {
+    expect(forgotPasswordFormSchema.safeParse({ email: '   ' }).success).toBe(
+      false,
+    );
+    expect(
+      forgotPasswordFormSchema.safeParse({ email: 'invalid-email' }).success,
+    ).toBe(false);
+    const valid = forgotPasswordFormSchema.parse({
+      email: '  an@example.com  ',
+    });
+    expect(valid.email).toBe('an@example.com');
+  });
+  it('validates reset password requirements and confirm password match', () => {
+    const mismatch = resetPasswordFormSchema.safeParse({
+      password: 'WillowFern72!',
+      confirmPassword: 'DifferentPassword72!',
+    });
+    expect(mismatch.success).toBe(false);
+    if (!mismatch.success) {
+      expect(authFieldErrors(mismatch.error)).toEqual({
+        confirmPassword: 'Mật khẩu nhập lại không khớp',
+      });
+    }
+    const valid = resetPasswordFormSchema.safeParse({
+      password: 'WillowFern72!',
+      confirmPassword: 'WillowFern72!',
+    });
+    expect(valid.success).toBe(true);
+  });
 });

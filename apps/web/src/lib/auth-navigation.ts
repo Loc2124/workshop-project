@@ -21,7 +21,9 @@ const internalRedirectSchema = z
         !pathname.startsWith('//') &&
         !pathname.includes('\\') &&
         pathname !== '/dang-nhap' &&
-        pathname !== '/dang-ky'
+        pathname !== '/dang-ky' &&
+        pathname !== '/quen-mat-khau' &&
+        pathname !== '/dat-lai-mat-khau'
       );
     } catch {
       return false;
@@ -34,7 +36,7 @@ export function safeAuthRedirect(value: unknown): string {
 }
 
 export function authHref(
-  route: '/dang-nhap' | '/dang-ky',
+  route: '/dang-nhap' | '/dang-ky' | '/quen-mat-khau',
   destination: string,
 ): string {
   const redirect = safeAuthRedirect(destination);

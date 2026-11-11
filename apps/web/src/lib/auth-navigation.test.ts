@@ -19,6 +19,8 @@ describe('authentication navigation', () => {
     'javascript:alert(1)',
     '/dang-nhap',
     '/dang-ky?redirect=/',
+    '/quen-mat-khau',
+    '/dat-lai-mat-khau?token=abc',
     '/DANG-NHAP/',
     '/dang-ky/',
     '/%64ang-nhap',

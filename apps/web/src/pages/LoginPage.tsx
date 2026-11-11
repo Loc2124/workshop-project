@@ -1,6 +1,6 @@
 import { LoadingState } from '../components/ui/LoadingState';
 import { useState, type FormEvent } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { AuthField } from '../components/ui/auth-field';
 import { AuthLayout } from '../components/layout/AuthLayout';
@@ -121,12 +121,12 @@ export function LoginPage() {
                 clearField('password');
               }}
               labelAction={
-                <Link
+                <AuthLink
                   className="text-sm text-primary underline-offset-4 hover:underline"
                   to="/quen-mat-khau"
                 >
                   Quên mật khẩu?
-                </Link>
+                </AuthLink>
               }
             />
             <label
