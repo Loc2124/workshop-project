@@ -58,6 +58,14 @@ services:
         sync: false
       - key: RESEND_WEBHOOK_SECRET
         sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: STUDIO_IMAGE_BUCKET
+        value: studio-images
+      - key: FINANCIAL_ACCOUNT_ENCRYPTION_KEY
+        sync: false
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET

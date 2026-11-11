@@ -10,6 +10,7 @@ import {
   processResendEvent,
 } from '../../services/email.js';
 import { emailTemplate } from '../../services/templates.js';
+import { cleanupImages } from '../images/images.service.js';
 
 export const emailRouter = Router();
 export const resendWebhookRouter = Router();
@@ -105,11 +106,18 @@ emailRouter.get('/cron/remind', async (request, response) => {
       );
     }
   }
+  let imagesCleaned = 0;
+  try {
+    imagesCleaned = await cleanupImages();
+  } catch (error) {
+    console.error('Scheduled image cleanup skipped or failed.', error);
+  }
   response.json({
     ok: true,
     remindersSent: sent,
     remindersFailed: failed,
     emailsRetried: retried,
+    imagesCleaned,
   });
 });
 

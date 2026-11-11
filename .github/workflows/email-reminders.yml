@@ -18,4 +18,4 @@ jobs:
           curl --fail --silent --show-error --max-time 300 \
             --retry 5 --retry-all-errors --retry-delay 10 \
             -H "Authorization: Bearer $CRON_SECRET" \
-            https://workshop-api-h00x.onrender.com/cron/remind
+            https://api.openslot.io.vn/cron/remind

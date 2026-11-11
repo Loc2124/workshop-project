@@ -59,3 +59,17 @@ export function clearBookingRequest(
     /* The same key can safely replay an acknowledged request. */
   }
 }
+export function clearUserBookingRequests(userId: string, storage?: Storage) {
+  try {
+    const target = storage ?? globalThis.localStorage;
+    const prefix = `open-slot:booking-request:[${JSON.stringify(userId)},`;
+    const keys: string[] = [];
+    for (let index = 0; index < target.length; index++) {
+      const key = target.key(index);
+      if (key?.startsWith(prefix)) keys.push(key);
+    }
+    for (const key of keys) target.removeItem(key);
+  } catch {
+    /* Storage can be disabled. */
+  }
+}

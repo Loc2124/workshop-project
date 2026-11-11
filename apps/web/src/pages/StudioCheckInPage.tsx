@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Camera, CameraOff, Search } from 'lucide-react';
-import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser';
+import type { IScannerControls } from '@zxing/browser';
 import { z } from 'zod';
 import { useAuth } from '../hooks/useAuth';
 import { useMyStudios } from '../hooks/useOwnedStudios';
@@ -97,6 +97,7 @@ export function StudioCheckInPage() {
         return;
       }
       try {
+        const { BrowserQRCodeReader } = await import('@zxing/browser');
         const reader = new BrowserQRCodeReader();
         controls = await reader.decodeFromVideoDevice(
           undefined,

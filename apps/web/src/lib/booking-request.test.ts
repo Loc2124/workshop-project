@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { getBookingRequestId, clearBookingRequest } from './booking-request';
+import {
+  getBookingRequestId,
+  clearBookingRequest,
+  clearUserBookingRequests,
+} from './booking-request';
 function storage() {
   const values = new Map<string, string>();
   return {
+    get length() {
+      return values.size;
+    },
+    key: (index: number) => Array.from(values.keys())[index] ?? null,
     getItem: (key: string) => values.get(key) ?? null,
     setItem: (key: string, value: string) => {
       values.set(key, value);
@@ -61,5 +69,27 @@ describe('booking retry identity', () => {
     expect(() =>
       getBookingRequestId('customer-a', 'workshop-a', input, target),
     ).toThrow('Trình duyệt chưa lưu được yêu cầu');
+  });
+  it('clears all stored booking requests for a logged-out user without touching other accounts', () => {
+    const target = storage();
+    const firstA = getBookingRequestId(
+      'customer-a',
+      'workshop-a',
+      input,
+      target,
+    );
+    const firstB = getBookingRequestId(
+      'customer-b',
+      'workshop-a',
+      input,
+      target,
+    );
+    clearUserBookingRequests('customer-a', target);
+    expect(
+      getBookingRequestId('customer-a', 'workshop-a', input, target),
+    ).not.toBe(firstA);
+    expect(getBookingRequestId('customer-b', 'workshop-a', input, target)).toBe(
+      firstB,
+    );
   });
 });

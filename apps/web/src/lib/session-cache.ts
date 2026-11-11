@@ -7,6 +7,7 @@ import {
   notifySessionCacheChange,
 } from './session-events';
 import { studioDraftKey } from './studio-registration-draft';
+import { clearUserBookingRequests } from './booking-request';
 
 export const authQueryKey = ['auth', 'me'] as const;
 type State = { id: string | null | undefined; pending: Promise<void> };
@@ -35,6 +36,7 @@ function removeDraft(userId: string | null | undefined) {
   } catch {
     /* Storage can be disabled. */
   }
+  clearUserBookingRequests(userId);
 }
 export function synchronizeSession(
   client: QueryClient,
