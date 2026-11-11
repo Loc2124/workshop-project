@@ -163,8 +163,6 @@ function App() {
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/kham-pha" element={<ExplorePage />} />
           <Route path="/dang-ky-studio" element={<StudioRegistrationPage />} />
-          <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
-          <Route path="/dat-lai-mat-khau" element={<ResetPasswordPage />} />
           <Route path="/danh-cho-nghe-nhan" element={<ArtisanPage />} />
           <Route path="/ve-open-slot" element={<AboutPage />} />
           <Route path="/studios/:slug" element={<StudioPage />} />
@@ -231,6 +229,42 @@ function App() {
               }
             >
               <RegisterPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/quen-mat-khau"
+          element={
+            <Suspense
+              fallback={
+                <AuthLayout>
+                  <div className="min-h-[520px] space-y-5" role="status">
+                    <Skeleton className="h-12 w-2/3" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                </AuthLayout>
+              }
+            >
+              <ForgotPasswordPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/dat-lai-mat-khau"
+          element={
+            <Suspense
+              fallback={
+                <AuthLayout>
+                  <div className="min-h-[520px] space-y-5" role="status">
+                    <Skeleton className="h-12 w-2/3" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                </AuthLayout>
+              }
+            >
+              <ResetPasswordPage />
             </Suspense>
           }
         />
