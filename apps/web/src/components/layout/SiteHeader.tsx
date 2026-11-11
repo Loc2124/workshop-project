@@ -280,7 +280,7 @@ export function SiteHeader() {
                         studio.status === 'approved' && !studio.isDraft,
                     ) && (
                       <Link
-                        to="/check-in"
+                        to="/studio/check-in"
                         onClick={closeMenus}
                         className="flex min-h-11 items-center rounded-lg px-3 text-sm hover:bg-soft"
                       >
@@ -405,7 +405,7 @@ export function SiteHeader() {
                     (studio) => studio.status === 'approved' && !studio.isDraft,
                   ) && (
                     <Link
-                      to="/check-in"
+                      to="/studio/check-in"
                       onClick={closeMenus}
                       className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
                     >

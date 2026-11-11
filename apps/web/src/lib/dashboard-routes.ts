@@ -59,6 +59,10 @@ const loadStudioWorkspacePage = () =>
   import('../pages/StudioWorkspacePage').then((module) => ({
     default: module.StudioWorkspacePage,
   }));
+const loadStudioCheckInPage = () =>
+  import('../pages/StudioCheckInPage').then((module) => ({
+    default: module.StudioCheckInPage,
+  }));
 const loadStudioDashboard = () =>
   import('../components/layout/DashboardShell').then((module) => ({
     default: module.StudioDashboard,
@@ -82,6 +86,7 @@ export const AdminApprovalPage = lazy(loadAdminApprovalPage);
 export const AdminFinancialPage = lazy(loadAdminFinancialPage);
 export const StudioOverviewPage = lazy(loadStudioOverviewPage);
 export const StudioWorkspacePage = lazy(loadStudioWorkspacePage);
+export const StudioCheckInPage = lazy(loadStudioCheckInPage);
 export const StudioDashboard = lazy(loadStudioDashboard);
 export const AdminDashboard = lazy(loadAdminDashboard);
 const adminLoaders: Record<string, () => Promise<unknown>> = {
@@ -118,7 +123,9 @@ export function prefetchDashboardRoute(to: string) {
       ? (adminLoaders[path[1] ?? ''] ?? loadAdminOverviewPage)
       : path.length <= 2
         ? loadStudioOverviewPage
-        : loadStudioWorkspacePage;
+        : path.at(-1) === 'check-in'
+          ? loadStudioCheckInPage
+          : loadStudioWorkspacePage;
   const promise = loader().catch(() => {
     pending.delete(key);
   });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Camera, CameraOff, Search } from 'lucide-react';
 import type { IScannerControls } from '@zxing/browser';
 import { z } from 'zod';
@@ -40,11 +40,13 @@ export function StudioCheckInPage() {
   const { user, isLoading } = useAuth();
   const studios = useMyStudios();
   const [search, setSearch] = useSearchParams();
+  const { studioId } = useParams();
+  const navigate = useNavigate();
   const available =
     studios.data?.filter(
       (studio) => studio.status === 'approved' && !studio.isDraft,
     ) ?? [];
-  const requested = search.get('studioId');
+  const requested = studioId ?? search.get('studioId');
   const studio =
     available.find((item) => item.id === requested) ?? available[0];
   const [code, setCode] = useState('');
@@ -224,7 +226,12 @@ export function StudioCheckInPage() {
             className="mt-2 min-h-11 w-full rounded-lg border border-line bg-surface px-3"
             value={studio.id}
             onChange={(event) => {
-              setSearch({ studioId: event.target.value });
+              const nextId = event.target.value;
+              if (studioId) {
+                navigate(`/studio/${encodeURIComponent(nextId)}/check-in`);
+              } else {
+                setSearch({ studioId: nextId });
+              }
               setTicket(null);
               setScanning(false);
             }}

@@ -4,6 +4,7 @@ import {
   PanelsTopLeft,
   CalendarDays,
   Ticket,
+  QrCode,
   Store,
   ClipboardCheck,
   Building2,
@@ -24,6 +25,7 @@ const STUDIO_SECTIONS = [
   { label: 'Workshop', section: 'workshops', icon: PanelsTopLeft },
   { label: 'Lịch buổi học', section: 'sessions', icon: CalendarDays },
   { label: 'Đặt chỗ', section: 'bookings', icon: Ticket },
+  { label: 'Check-in vé', section: 'check-in', icon: QrCode },
   { label: 'Hồ sơ studio', section: 'profile', icon: Store },
 ];
 
@@ -44,7 +46,7 @@ export function StudioDashboard() {
       <Navigate
         to={studioPage(
           selected.id,
-          ['workshops', 'sessions', 'bookings', 'profile'].includes(section)
+          ['workshops', 'sessions', 'bookings', 'check-in', 'profile'].includes(section)
             ? section
             : '',
         )}
@@ -59,7 +61,9 @@ export function StudioDashboard() {
       label,
       icon,
       to: studioPage(studio.id, section),
-      locked: Boolean(locked && ['sessions', 'bookings'].includes(section)),
+      locked: Boolean(
+        locked && ['sessions', 'bookings', 'check-in'].includes(section),
+      ),
       attention:
         section === 'profile' &&
         ['rejected', 'needs_changes'].includes(studio.status),

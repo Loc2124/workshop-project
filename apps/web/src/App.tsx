@@ -30,6 +30,7 @@ import {
   AdminFinancialPage,
   StudioOverviewPage,
   StudioWorkspacePage,
+  StudioCheckInPage,
   StudioDashboard,
   AdminDashboard,
 } from './lib/dashboard-routes';
@@ -44,11 +45,6 @@ const HomePage = lazy(() =>
 const ExplorePage = lazy(() =>
   import('./pages/ExplorePage').then((module) => ({
     default: module.ExplorePage,
-  })),
-);
-const StudioCheckInPage = lazy(() =>
-  import('./pages/StudioCheckInPage').then((module) => ({
-    default: module.StudioCheckInPage,
   })),
 );
 const ArtisanPage = lazy(() =>
@@ -178,7 +174,10 @@ function App() {
     <Suspense fallback={<DashboardSkeleton />}>
       <Routes>
         <Route element={<PublicShell />}>
-          <Route path="/check-in" element={<StudioCheckInPage />} />
+          <Route
+            path="/check-in"
+            element={<Navigate to="/studio/check-in" replace />}
+          />
           <Route path="/" element={<HomePage />} />
           <Route path="/explore" element={<ExplorePage />} />
           <Route path="/kham-pha" element={<ExplorePage />} />
@@ -301,7 +300,7 @@ function App() {
             path="/studio/studios/:studioId"
             element={<LegacyStudioDetail />}
           />
-          {['workshops', 'sessions', 'bookings', 'profile'].map((section) => (
+          {['workshops', 'sessions', 'bookings', 'check-in', 'profile'].map((section) => (
             <Route
               key={section}
               path={`/studio/${section}`}
@@ -322,6 +321,7 @@ function App() {
               path="bookings"
               element={<StudioWorkspacePage section="bookings" />}
             />
+            <Route path="check-in" element={<StudioCheckInPage />} />
             <Route
               path="profile"
               element={<StudioWorkspacePage section="profile" />}

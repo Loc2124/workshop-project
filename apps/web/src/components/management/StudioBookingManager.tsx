@@ -155,7 +155,7 @@ export function StudioBookingManager({ studioId }: { studioId: string }) {
           </p>
         </div>
         <StudioButton asChild>
-          <a href={`/check-in?studioId=${studioId}`}>Mở Check-in</a>
+          <a href={`/studio/${studioId}/check-in`}>Mở Check-in</a>
         </StudioButton>
       </StudioCard>
       <StudioRefundPanel
