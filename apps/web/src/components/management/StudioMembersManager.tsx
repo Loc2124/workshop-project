@@ -41,7 +41,8 @@ interface StudioInvitation {
 
 interface MembersData {
   members: StudioMember[];
-  invitations: StudioInvitation[];
+  invitations?: StudioInvitation[];
+  pendingInvitations?: StudioInvitation[];
 }
 
 export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
@@ -160,6 +161,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
     }
   };
 
+  const invitations = data?.invitations ?? data?.pendingInvitations ?? [];
+  const members = data?.members ?? [];
+
   return (
     <div className="space-y-6">
       {/* Intro info banner */}
@@ -253,11 +257,11 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
       </StudioCard>
 
       {/* Pending Invitations */}
-      {data && data.invitations.length > 0 && (
+      {invitations.length > 0 && (
         <StudioCard>
           <div className="flex items-center gap-2 border-b border-line pb-3">
             <Clock className="size-5 text-amber-600" />
-            <h2 className="font-heading text-lg font-semibold">Lời mời đang chờ ({data.invitations.length})</h2>
+            <h2 className="font-heading text-lg font-semibold">Lời mời đang chờ ({invitations.length})</h2>
           </div>
 
           <div className="mt-4 overflow-x-auto">
@@ -272,7 +276,7 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line/60">
-                {data.invitations.map((inv) => (
+                {invitations.map((inv) => (
                   <tr key={inv.id} className="hover:bg-studio-subtle/20">
                     <td className="py-3 px-3 font-medium">{inv.email}</td>
                     <td className="py-3 px-3">
@@ -311,7 +315,7 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
           <div className="flex items-center gap-2">
             <Users className="size-5 text-studio-ink" />
             <h2 className="font-heading text-lg font-semibold">
-              Danh sách thành viên ({data?.members.length ?? 0})
+              Danh sách thành viên ({members.length})
             </h2>
           </div>
           <Button
@@ -353,7 +357,7 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line/60">
-                {data.members.map((member) => (
+                {members.map((member) => (
                   <tr key={member.id} className="hover:bg-studio-subtle/20">
                     <td className="py-3 px-3">
                       <div className="flex items-center gap-2.5">

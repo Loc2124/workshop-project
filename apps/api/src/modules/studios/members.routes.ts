@@ -94,6 +94,7 @@ router.get(
 
     response.json({
       members: membersResult.rows,
+      invitations: pendingInvitations,
       pendingInvitations,
       currentUserRole: userRole ?? 'owner',
     });
