@@ -14,6 +14,10 @@ import {
   registrationFormSchema,
 } from '../lib/auth-validation';
 import { toast } from 'sonner';
+import {
+  PolicyTermsDialog,
+  type PolicyTabKey,
+} from '../components/common/PolicyTermsDialog';
 
 const initialValues = {
   fullName: '',
@@ -40,7 +44,13 @@ export function RegisterPage() {
   const isSubmitting = isRegistering || isLoggingIn;
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [policyNotice, setPolicyNotice] = useState('');
+  const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
+  const [policyDialogTab, setPolicyDialogTab] = useState<PolicyTabKey>('terms');
+
+  const openPolicyDialog = (tab: PolicyTabKey) => {
+    setPolicyDialogTab(tab);
+    setPolicyDialogOpen(true);
+  };
   function update<K extends keyof typeof values>(
     key: K,
     value: (typeof values)[K],
@@ -203,11 +213,7 @@ export function RegisterPage() {
                   <button
                     type="button"
                     className="font-semibold text-primary underline-offset-4 hover:underline"
-                    onClick={() =>
-                      setPolicyNotice(
-                        'Điều khoản sử dụng hiện chưa được cung cấp.',
-                      )
-                    }
+                    onClick={() => openPolicyDialog('terms')}
                   >
                     Điều khoản
                   </button>{' '}
@@ -215,11 +221,7 @@ export function RegisterPage() {
                   <button
                     type="button"
                     className="font-semibold text-primary underline-offset-4 hover:underline"
-                    onClick={() =>
-                      setPolicyNotice(
-                        'Chính sách bảo mật hiện chưa được cung cấp.',
-                      )
-                    }
+                    onClick={() => openPolicyDialog('privacy')}
                   >
                     Chính sách bảo mật
                   </button>
@@ -232,11 +234,6 @@ export function RegisterPage() {
                   className="mt-2 text-sm text-brick"
                 >
                   {errors.acceptedTerms}
-                </p>
-              )}
-              {policyNotice && (
-                <p role="status" className="mt-2 text-sm text-muted">
-                  {policyNotice}
                 </p>
               )}
             </div>
@@ -269,6 +266,11 @@ export function RegisterPage() {
               Đăng nhập
             </AuthLink>
           </p>
+          <PolicyTermsDialog
+            open={policyDialogOpen}
+            onOpenChange={setPolicyDialogOpen}
+            defaultTab={policyDialogTab}
+          />
         </>
       )}
     </AuthLayout>

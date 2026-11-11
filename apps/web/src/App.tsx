@@ -122,6 +122,26 @@ const StudioRegistrationPage = lazy(() =>
     default: module.StudioRegistrationPage,
   })),
 );
+const NotFoundPage = lazy(() =>
+  import('./pages/NotFoundPage').then((module) => ({
+    default: module.NotFoundPage,
+  })),
+);
+const ForbiddenPage = lazy(() =>
+  import('./pages/ForbiddenPage').then((module) => ({
+    default: module.ForbiddenPage,
+  })),
+);
+const FaqPage = lazy(() =>
+  import('./pages/FaqPage').then((module) => ({
+    default: module.FaqPage,
+  })),
+);
+const ContactPage = lazy(() =>
+  import('./pages/ContactPage').then((module) => ({
+    default: module.ContactPage,
+  })),
+);
 function LegacyStudioDetail() {
   const { studioId } = useParams();
   return (
@@ -165,6 +185,13 @@ function App() {
           <Route path="/dang-ky-studio" element={<StudioRegistrationPage />} />
           <Route path="/danh-cho-nghe-nhan" element={<ArtisanPage />} />
           <Route path="/ve-open-slot" element={<AboutPage />} />
+          <Route path="/tro-giup" element={<FaqPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/lien-he" element={<ContactPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/khong-co-quyen" element={<ForbiddenPage />} />
+          <Route path="/403" element={<ForbiddenPage />} />
+          <Route path="/404" element={<NotFoundPage />} />
           <Route path="/studios/:slug" element={<StudioPage />} />
           <Route path="/workshop/:slug" element={<WorkshopPage />} />
           <Route path="/workshops/:id" element={<WorkshopPage />} />
@@ -398,14 +425,9 @@ function App() {
           element={<Navigate to="/admin/ho-so-studio" replace />}
         />
         <Route path="/xuong/:slug" element={<LegacyPublicStudio />} />
-        <Route
-          path="*"
-          element={
-            <main className="mx-auto max-w-3xl px-6 py-20 text-center text-lg text-muted">
-              Không tìm thấy trang.
-            </main>
-          }
-        />
+        <Route element={<PublicShell />}>
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
       </Routes>
     </Suspense>
   );

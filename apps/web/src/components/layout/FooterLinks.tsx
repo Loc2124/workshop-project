@@ -91,26 +91,42 @@ export function FooterLinks() {
           >
             Về Open Slot
           </Link>
-          {information.map((item) => {
-            const id = item.id;
-            return (
-              <Link
-                className={linkClass}
-                key={id}
-                to={`${pathname}${search}#${id}`}
-                aria-haspopup="dialog"
-                onMouseEnter={() =>
-                  void loadInformationDialog().catch(() => {})
-                }
-                onFocus={() => void loadInformationDialog().catch(() => {})}
-                onClick={(event) => {
-                  opener.current = event.currentTarget;
-                }}
-              >
-                {id === 'ho-tro' ? 'Liên hệ hỗ trợ' : item.label}
-              </Link>
-            );
-          })}
+          <Link
+            className={linkClass}
+            to="/tro-giup"
+            aria-current={currentPath === '/tro-giup' || currentPath === '/faq' ? 'page' : undefined}
+          >
+            Câu hỏi thường gặp
+          </Link>
+          <Link
+            className={linkClass}
+            to="/lien-he"
+            aria-current={currentPath === '/lien-he' || currentPath === '/contact' ? 'page' : undefined}
+          >
+            Liên hệ hỗ trợ
+          </Link>
+          {information
+            .filter((item) => item.id !== 'ho-tro')
+            .map((item) => {
+              const id = item.id;
+              return (
+                <Link
+                  className={linkClass}
+                  key={id}
+                  to={`${pathname}${search}#${id}`}
+                  aria-haspopup="dialog"
+                  onMouseEnter={() =>
+                    void loadInformationDialog().catch(() => {})
+                  }
+                  onFocus={() => void loadInformationDialog().catch(() => {})}
+                  onClick={(event) => {
+                    opener.current = event.currentTarget;
+                  }}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           {(siteContact.hotline?.trim() ||
             siteContact.workingHours?.trim()) && (
             <p className="footer-hotline max-w-full break-words text-sm font-semibold leading-relaxed max-[480px]:col-span-2 max-[480px]:flex max-[480px]:min-h-10 max-[480px]:items-center max-[480px]:text-[14px]">

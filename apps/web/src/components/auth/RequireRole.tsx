@@ -31,7 +31,7 @@ function StudioOwnerGate({ children }: { children: ReactNode }) {
   return hasDashboardRole(user, studios.data, 'studio_owner') ? (
     children
   ) : (
-    <Navigate to="/" replace />
+    <Navigate to="/khong-co-quyen" replace />
   );
 }
 export function RequireRole({
@@ -58,7 +58,7 @@ export function RequireRole({
     return hasDashboardRole(user, undefined, role) ? (
       <Fragment key={user.id}>{children ?? <Outlet />}</Fragment>
     ) : (
-      <Navigate to="/" replace />
+      <Navigate to="/khong-co-quyen" replace />
     );
   return (
     <StudioOwnerGate key={user.id}>{children ?? <Outlet />}</StudioOwnerGate>
