@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { queryKeys } from '../api/query-keys';
 
 const mocks = vi.hoisted(() => ({ getPublicFeatured: vi.fn() }));
-vi.mock('../../services/featuredService', () => ({
+vi.mock('@/services/featuredService', () => ({
   getPublicFeatured: mocks.getPublicFeatured,
 }));
 

@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { useProvinces } from '../../hooks/useProvinces';
+import { useProvinces } from '@/hooks/useProvinces';
 import { Input } from '../ui/input';
 
 export type ProvinceOption = {

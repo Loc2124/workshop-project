@@ -1,7 +1,7 @@
 ﻿import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
-import { PageContainer } from '../../components/layout/PageContainer';
+import { Button } from '@/components/ui/button';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 export function NotFoundPage() {
   const navigate = useNavigate();

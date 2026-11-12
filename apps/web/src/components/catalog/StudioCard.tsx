@@ -1,11 +1,11 @@
 import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { StudioTrustBadge } from '../ui/StudioTrustBadge';
-import { formatCategoryLabel } from '../../lib/format';
+import { formatCategoryLabel } from '@/lib/format';
 import { TicketPrice, TicketRating } from '../tickets/TicketContent';
 import { TicketAction } from '../tickets/TicketPrimitives';
 import { TicketStub } from '../tickets/TicketStub';
-import type { StudioListing } from '../../types/studio';
+import type { StudioListing } from '@/types/studio';
 
 export const StudioCard = memo(function StudioCard({
   studio,

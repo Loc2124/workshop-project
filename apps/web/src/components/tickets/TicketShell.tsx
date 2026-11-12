@@ -1,5 +1,5 @@
 import { forwardRef, useId, type HTMLAttributes, type ReactNode } from 'react';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import './tickets.css';
 
 type Props = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {

@@ -1,7 +1,7 @@
 ﻿import type { QueryClient } from '@tanstack/react-query';
-import { invalidateResources } from '../../lib/query-invalidation';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { invalidateResources } from '@/lib/query-invalidation';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -13,17 +13,17 @@ import {
 } from '@workshop/shared';
 import { toast } from 'sonner';
 import { Eye, RotateCcw } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { Skeleton } from '../../components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from '../../components/ui/dialog';
-import { ConfirmReasonDialog } from '../../components/admin/ConfirmReasonDialog';
-import { apiFetch } from '../../lib/api-client';
-import { formatReviewDate } from '../../lib/studio-review';
+} from '@/components/ui/dialog';
+import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { apiFetch } from '@/lib/api-client';
+import { formatReviewDate } from '@/lib/studio-review';
 const schema = z.object({
   key: messageTemplateKeySchema,
   subject: z.string(),

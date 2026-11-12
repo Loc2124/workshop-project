@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { studioVerificationDecisionSchema } from '@workshop/shared';
-import { useSetStudioVerification } from '../../hooks/useManagement';
-import type { AdminStudio } from '../../types/management';
-import { formatDate } from '../../lib/format';
+import { useSetStudioVerification } from '@/hooks/useManagement';
+import type { AdminStudio } from '@/types/management';
+import { formatDate } from '@/lib/format';
 import { Button } from '../ui/button';
 
 const methods = {

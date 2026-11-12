@@ -1,8 +1,8 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
-import { PageContainer } from '../../components/layout/PageContainer';
+import { apiFetch } from '@/lib/api-client';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { formatBankDisplay } from '@workshop/shared';
 
 type SavedAccount = {

@@ -1,16 +1,16 @@
 ﻿import { useEffect, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { AuthLayout } from '../../components/layout/AuthLayout';
-import { AuthField } from '../../components/ui/auth-field';
-import { AuthLink } from '../../components/ui/auth-link';
-import { Button } from '../../components/ui/button';
-import { PasswordChecklist } from '../../components/ui/password-checklist';
-import { ApiError, apiFetch } from '../../lib/api-client';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { AuthField } from '@/components/ui/auth-field';
+import { AuthLink } from '@/components/ui/auth-link';
+import { Button } from '@/components/ui/button';
+import { PasswordChecklist } from '@/components/ui/password-checklist';
+import { ApiError, apiFetch } from '@/lib/api-client';
 import {
   authFieldErrors,
   resetPasswordFormSchema,
-} from '../../lib/auth-validation';
+} from '@/lib/auth-validation';
 
 export function ResetPasswordPage() {
   const [params] = useSearchParams();

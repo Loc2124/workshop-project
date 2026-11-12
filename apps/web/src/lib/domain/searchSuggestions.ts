@@ -1,8 +1,8 @@
 import {
   getCategoryOptions,
   getUpcomingCategories,
-} from '../../constants/categories';
-import type { Workshop } from '../../types/workshop';
+} from '@/constants/categories';
+import type { Workshop } from '@/types/workshop';
 import { rankWorkshops } from './rankWorkshops';
 import {
   normalizeSearchText,

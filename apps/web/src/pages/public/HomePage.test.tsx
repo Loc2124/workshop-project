@@ -2,25 +2,25 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ categories: vi.fn() }));
-vi.mock('../../hooks/useCategories', () => ({
+vi.mock('@/hooks/useCategories', () => ({
   useCategoriesQuery: mocks.categories,
 }));
-vi.mock('../../hooks/useHomeCatalog', () => ({
+vi.mock('@/hooks/useHomeCatalog', () => ({
   useHomeCatalog: () => ({ featuredWorkshops: [], featuredStudios: [] }),
 }));
-vi.mock('../../components/home/HomeSearchHero', () => ({
+vi.mock('@/components/home/HomeSearchHero', () => ({
   HomeSearchHero: () => null,
 }));
-vi.mock('../../components/home/HomeWorkshopSection', () => ({
+vi.mock('@/components/home/HomeWorkshopSection', () => ({
   HomeWorkshopSection: () => null,
 }));
-vi.mock('../../components/home/HomeFeaturedStudios', () => ({
+vi.mock('@/components/home/HomeFeaturedStudios', () => ({
   HomeFeaturedStudios: () => null,
 }));
-vi.mock('../../components/home/HomeProcessSection', () => ({
+vi.mock('@/components/home/HomeProcessSection', () => ({
   HomeProcessSection: () => null,
 }));
-vi.mock('../../components/home/HomeArtisanSection', () => ({
+vi.mock('@/components/home/HomeArtisanSection', () => ({
   HomeArtisanSection: () => null,
 }));
 import { HomePage } from './HomePage';

@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { PanelLeft } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import { Button } from './button';
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from './sheet';
 import {

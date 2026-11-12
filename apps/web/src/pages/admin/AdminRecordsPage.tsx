@@ -1,16 +1,16 @@
-﻿import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+﻿import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { DataTable } from '../../components/admin/DataTable';
-import { StatusBadge } from '../../components/ui/status-badge';
+import { DataTable } from '@/components/admin/DataTable';
+import { StatusBadge } from '@/components/ui/status-badge';
 import {
   adminRecordsFetchers,
   type AdminRecordKind,
   type AdminRecord,
-} from '../../services/adminRecordsService';
-import { formatReviewDate } from '../../lib/studio-review';
-import { formatPrice } from '../../lib/format';
+} from '@/services/adminRecordsService';
+import { formatReviewDate } from '@/lib/studio-review';
+import { formatPrice } from '@/lib/format';
 const labels: Record<string, string> = {
   all: 'Tất cả',
   customer: 'Khách',

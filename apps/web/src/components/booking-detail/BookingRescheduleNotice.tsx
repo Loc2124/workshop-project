@@ -1,6 +1,6 @@
-import { formatDate } from '../../lib/format';
-import { bookingScheduleLabel } from '../../lib/booking-detail';
-import type { CustomerBooking } from '../../services/customerBookingService';
+import { formatDate } from '@/lib/format';
+import { bookingScheduleLabel } from '@/lib/booking-detail';
+import type { CustomerBooking } from '@/services/customerBookingService';
 
 const primary =
   'inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60';

@@ -8,9 +8,9 @@ import {
   type QueryClient,
 } from '@tanstack/react-query';
 import { z } from 'zod';
-import { apiFetch } from '../../lib/api-client';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { apiFetch } from '@/lib/api-client';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import { ClipboardList } from 'lucide-react';
 import {
   StudioButton,

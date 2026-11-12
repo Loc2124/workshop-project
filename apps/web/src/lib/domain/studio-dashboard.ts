@@ -2,7 +2,7 @@ import type {
   MemberStudio,
   StudioSession,
   StudioWorkshop,
-} from '../../types/management';
+} from '@/types/management';
 
 export const activeStudioKey = (userId: string) =>
   `open-slot.active-studio.${userId}`;

@@ -1,14 +1,14 @@
 ﻿import { useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { AuthLayout } from '../../components/layout/AuthLayout';
-import { Button } from '../../components/ui/button';
-import { AuthField } from '../../components/ui/auth-field';
-import { AuthLink } from '../../components/ui/auth-link';
-import { apiFetch } from '../../lib/api-client';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { Button } from '@/components/ui/button';
+import { AuthField } from '@/components/ui/auth-field';
+import { AuthLink } from '@/components/ui/auth-link';
+import { apiFetch } from '@/lib/api-client';
 import {
   authFieldErrors,
   forgotPasswordFormSchema,
-} from '../../lib/auth-validation';
+} from '@/lib/auth-validation';
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');

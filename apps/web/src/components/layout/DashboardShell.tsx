@@ -19,15 +19,15 @@ import {
   Sparkles,
   FolderTree,
 } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout, type DashboardMenuItem } from './DashboardLayout';
-import { useMyStudios } from '../../hooks/useManagement';
+import { useMyStudios } from '@/hooks/useManagement';
 import {
   readActiveStudioId,
   selectDefaultStudio,
   studioPage,
   writeActiveStudioId,
-} from '../../lib/studio-dashboard';
+} from '@/lib/studio-dashboard';
 import { StudioSwitcher } from './StudioSwitcher';
 
 const STUDIO_SECTIONS = [

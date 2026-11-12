@@ -1,14 +1,14 @@
 import { LoadingState } from '../ui/LoadingState';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { shouldRetryApiQuery } from '../../lib/api-client';
+import { shouldRetryApiQuery } from '@/lib/api-client';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import {
   useQuery,
   useQueryClient,
   keepPreviousData,
 } from '@tanstack/react-query';
-import { useAuth } from '../../hooks/useAuth';
-import { scopePrivateKey } from '../../lib/query-keys';
+import { useAuth } from '@/hooks/useAuth';
+import { scopePrivateKey } from '@/lib/query-keys';
 import {
   flexRender,
   getCoreRowModel,
@@ -34,14 +34,14 @@ import {
   readDataTableQuery,
   type DataTableFetcher,
   type DataTableFilter,
-} from '../../lib/data-table';
+} from '@/lib/data-table';
 
 export type {
   DataTableFetcher,
   DataTableQuery,
   DataTableResult,
   DataTableFilter,
-} from '../../lib/data-table';
+} from '@/lib/data-table';
 export type DataTableProps<T, V = unknown> = {
   columns: ColumnDef<T, V>[];
   fetcher: DataTableFetcher<T>;

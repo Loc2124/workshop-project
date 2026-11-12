@@ -1,10 +1,7 @@
 import { Clock3, Pencil, UsersRound } from 'lucide-react';
-import {
-  DEFAULT_CATEGORY,
-  getCategoryMeta,
-} from '../../../constants/categories';
-import { formatPrice } from '../../../lib/format';
-import type { StudioWorkshop } from '../../../types/management';
+import { DEFAULT_CATEGORY, getCategoryMeta } from '@/constants/categories';
+import { formatPrice } from '@/lib/format';
+import type { StudioWorkshop } from '@/types/management';
 import { StudioBadge, StudioButton, StudioCard } from '../StudioPrimitives';
 
 const statusLabels = {

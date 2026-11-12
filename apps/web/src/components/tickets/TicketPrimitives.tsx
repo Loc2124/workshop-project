@@ -2,9 +2,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { toast } from 'sonner';
-import { apiFetch } from '../../lib/api-client';
-import { useAuth } from '../../hooks/useAuth';
-import { cn } from '../../lib/utils';
+import { apiFetch } from '@/lib/api-client';
+import { useAuth } from '@/hooks/useAuth';
+import { cn } from '@/lib/utils';
 import { buttonVariants } from '../ui/button';
 import type { TicketData } from './types';
 

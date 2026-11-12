@@ -1,7 +1,7 @@
 import { Img } from '../ui/Img';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import './studio-workspace.css';
-import { prefetchDashboardRoute } from '../../lib/dashboard-routes';
+import { prefetchDashboardRoute } from '@/lib/dashboard-routes';
 import { DashboardSkeleton } from './DashboardSkeleton';
 import { Fragment, Suspense, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -12,8 +12,8 @@ import {
   Store,
   type LucideIcon,
 } from 'lucide-react';
-import type { AuthUser } from '../../services/authService';
-import { useAuth } from '../../hooks/useAuth';
+import type { AuthUser } from '@/services/authService';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import {
   Sidebar,

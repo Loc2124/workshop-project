@@ -1,12 +1,9 @@
 import { LoadingState } from '../ui/LoadingState';
 import { Fragment, type ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { useMyStudios } from '../../hooks/useOwnedStudios';
-import {
-  hasDashboardRole,
-  type DashboardRole,
-} from '../../lib/dashboard-access';
+import { useAuth } from '@/hooks/useAuth';
+import { useMyStudios } from '@/hooks/useOwnedStudios';
+import { hasDashboardRole, type DashboardRole } from '@/lib/dashboard-access';
 import { Button } from '../ui/button';
 
 function StudioMembershipGate({

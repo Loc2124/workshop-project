@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from '../../ui/dialog';
 import { StudioButton } from '../StudioPrimitives';
-import { formatPrice } from '../../../lib/format';
+import { formatPrice } from '@/lib/format';
 
 export interface BookingMinimal {
   id: string;

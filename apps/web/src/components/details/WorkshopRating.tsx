@@ -1,5 +1,5 @@
 import { Star } from 'lucide-react';
-import type { Workshop } from '../../types/workshop';
+import type { Workshop } from '@/types/workshop';
 import { workshopReviewSummary } from './workshopPresentation';
 
 export function WorkshopRating({ workshop }: { workshop: Workshop }) {

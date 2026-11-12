@@ -1,15 +1,15 @@
-﻿import { LoadingState } from '../../components/ui/LoadingState';
-import { CategoryShortcuts } from '../../components/catalog/CategoryShortcuts';
-import { HomeArtisanSection } from '../../components/home/HomeArtisanSection';
-import { HomeFeaturedStudios } from '../../components/home/HomeFeaturedStudios';
-import { HomeProcessSection } from '../../components/home/HomeProcessSection';
-import { HomeSearchHero } from '../../components/home/HomeSearchHero';
-import { HomeWorkshopSection } from '../../components/home/HomeWorkshopSection';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { SectionHeading } from '../../components/layout/SectionHeading';
-import { Button } from '../../components/ui/button';
-import { useCategoriesQuery } from '../../hooks/useCategories';
-import { useHomeCatalog } from '../../hooks/useHomeCatalog';
+﻿import { LoadingState } from '@/components/ui/LoadingState';
+import { CategoryShortcuts } from '@/components/catalog/CategoryShortcuts';
+import { HomeArtisanSection } from '@/components/home/HomeArtisanSection';
+import { HomeFeaturedStudios } from '@/components/home/HomeFeaturedStudios';
+import { HomeProcessSection } from '@/components/home/HomeProcessSection';
+import { HomeSearchHero } from '@/components/home/HomeSearchHero';
+import { HomeWorkshopSection } from '@/components/home/HomeWorkshopSection';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { SectionHeading } from '@/components/layout/SectionHeading';
+import { Button } from '@/components/ui/button';
+import { useCategoriesQuery } from '@/hooks/useCategories';
+import { useHomeCatalog } from '@/hooks/useHomeCatalog';
 export function HomePage() {
   const home = useHomeCatalog();
   const categoryQuery = useCategoriesQuery();

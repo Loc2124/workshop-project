@@ -3,9 +3,9 @@ import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import { AuthLink } from '../ui/auth-link';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui/button';
-import { studioApplicationStatus } from '../../lib/studio-application-status';
-import type { AuthUser } from '../../services/authService';
-import type { MemberStudio } from '../../types/management';
+import { studioApplicationStatus } from '@/lib/studio-application-status';
+import type { AuthUser } from '@/services/authService';
+import type { MemberStudio } from '@/types/management';
 
 type Props = {
   user: AuthUser | null;

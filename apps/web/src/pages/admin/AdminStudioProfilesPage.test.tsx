@@ -1,4 +1,4 @@
-vi.mock('../../hooks/useSiteSettings', async () => {
+vi.mock('@/hooks/useSiteSettings', async () => {
   const { defaultSiteSettings } = await import('@workshop/shared');
   return {
     useSiteSettings: () => ({ data: defaultSiteSettings, isSuccess: true }),
@@ -17,7 +17,7 @@ const mocks = vi.hoisted(() => ({
   })),
   useSetStudioStatus: vi.fn(),
 }));
-vi.mock('../../hooks/useManagement', () => ({
+vi.mock('@/hooks/useManagement', () => ({
   ...mocks,
   useSetStudioVerification: vi.fn(),
 }));

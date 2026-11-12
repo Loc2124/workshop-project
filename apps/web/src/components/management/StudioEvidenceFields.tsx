@@ -1,14 +1,14 @@
 import { LoadingState } from '../ui/LoadingState';
 import { Img } from '../ui/Img';
-import { queryKeys } from '../../lib/query-keys';
+import { queryKeys } from '@/lib/query-keys';
 import { useEffect, useRef, useState } from 'react';
 import { defaultSiteSettings } from '@workshop/shared';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { Trash2, Star, UploadCloud } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { imageService, type UploadedImage } from '../../services/imageService';
+import { useAuth } from '@/hooks/useAuth';
+import { imageService, type UploadedImage } from '@/services/imageService';
 import { AuthField } from '../ui/auth-field';
 import { toast } from 'sonner';
 

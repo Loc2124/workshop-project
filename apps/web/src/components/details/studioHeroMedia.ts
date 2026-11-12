@@ -1,5 +1,5 @@
-import type { Studio } from '../../types/studio';
-import type { Workshop } from '../../types/workshop';
+import type { Studio } from '@/types/studio';
+import type { Workshop } from '@/types/workshop';
 
 // These project assets contain placeholder motifs, not studio cover photos.
 const motifImages = new Set([

@@ -1,5 +1,5 @@
 import { ClipboardList, Coins, CheckCircle2, UsersRound } from 'lucide-react';
-import { formatPrice } from '../../../lib/format';
+import { formatPrice } from '@/lib/format';
 
 export interface BookingStats {
   totalCount: number;

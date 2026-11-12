@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { apiFetch } from '../../lib/api-client';
-import { useAuth } from '../../hooks/useAuth';
+import { apiFetch } from '@/lib/api-client';
+import { useAuth } from '@/hooks/useAuth';
 
 export function ScheduleNotification({
   workshopId,

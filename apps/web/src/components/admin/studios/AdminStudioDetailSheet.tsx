@@ -1,7 +1,7 @@
 import { ExternalLink } from 'lucide-react';
-import { getCategoryMeta } from '../../../constants/categories';
-import { formatReviewDate } from '../../../lib/studio-review';
-import type { AdminStudio } from '../../../types/management';
+import { getCategoryMeta } from '@/constants/categories';
+import { formatReviewDate } from '@/lib/studio-review';
+import type { AdminStudio } from '@/types/management';
 import { Button } from '../../ui/button';
 import { Img } from '../../ui/Img';
 import {

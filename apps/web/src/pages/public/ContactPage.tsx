@@ -12,10 +12,10 @@ import {
   Building2,
   HeartHandshake,
 } from 'lucide-react';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { PageBreadcrumb } from '../../components/layout/PageBreadcrumb';
-import { Button } from '../../components/ui/button';
-import { useSiteInformation } from '../../hooks/useSiteInformation';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
+import { Button } from '@/components/ui/button';
+import { useSiteInformation } from '@/hooks/useSiteInformation';
 import { toast } from 'sonner';
 
 export function ContactPage() {

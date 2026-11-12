@@ -1,19 +1,19 @@
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 import {
   invalidateResources,
   invalidatePublicCatalog,
-} from '../../lib/query-invalidation';
+} from '@/lib/query-invalidation';
 import { useState, useEffect, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   createStudioEvidenceSchema,
   defaultSiteSettings,
 } from '@workshop/shared';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
-import { authFieldErrors } from '../../lib/auth-validation';
-import type { MemberStudio } from '../../types/management';
+import { apiFetch } from '@/lib/api-client';
+import { authFieldErrors } from '@/lib/auth-validation';
+import type { MemberStudio } from '@/types/management';
 import {
   StudioEvidenceFields,
   type EvidenceValues,
@@ -24,7 +24,7 @@ import {
   StudioField,
   StudioFormSection,
 } from './StudioPrimitives';
-import { imageService } from '../../services/imageService';
+import { imageService } from '@/services/imageService';
 import { toast } from 'sonner';
 
 export function StudioEvidenceEditor({

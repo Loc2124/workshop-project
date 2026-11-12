@@ -6,9 +6,9 @@ import {
   Ticket,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatPrice, formatSessionDate } from '../../../lib/format';
-import { studioPage } from '../../../lib/studio-dashboard';
-import type { StudioSession } from '../../../types/management';
+import { formatPrice, formatSessionDate } from '@/lib/format';
+import { studioPage } from '@/lib/studio-dashboard';
+import type { StudioSession } from '@/types/management';
 import { StudioBadge, StudioButton, StudioCard } from '../StudioPrimitives';
 
 export interface OverviewNextSessionCardProps {

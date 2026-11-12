@@ -1,8 +1,8 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatSessionDate } from '../../../lib/format';
-import { studioPage } from '../../../lib/studio-dashboard';
-import type { StudioSession } from '../../../types/management';
+import { formatSessionDate } from '@/lib/format';
+import { studioPage } from '@/lib/studio-dashboard';
+import type { StudioSession } from '@/types/management';
 import { StudioBadge, StudioCard } from '../StudioPrimitives';
 
 export interface OverviewUpcomingSessionsListProps {

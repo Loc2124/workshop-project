@@ -1,10 +1,10 @@
 ﻿import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
-import { customerBookingService } from '../../services/customerBookingService';
-import { PageContainer } from '../../components/layout/PageContainer';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
+import { customerBookingService } from '@/services/customerBookingService';
+import { PageContainer } from '@/components/layout/PageContainer';
 
 export function MockPaymentPage() {
   const [searchParams] = useSearchParams();

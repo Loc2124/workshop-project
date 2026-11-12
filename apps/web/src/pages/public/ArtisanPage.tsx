@@ -1,14 +1,14 @@
-﻿import { ImagePreload } from '../../components/ui/ImagePreload';
+﻿import { ImagePreload } from '@/components/ui/ImagePreload';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { PageBreadcrumb } from '../../components/layout/PageBreadcrumb';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { MediaImage } from '../../components/ui/MediaImage';
-import { Button } from '../../components/ui/button';
-import { useMyStudios } from '../../hooks/useOwnedStudios';
-import { useAuth } from '../../hooks/useAuth';
-import { authHref } from '../../lib/auth-navigation';
-import { useSiteInformation } from '../../hooks/useSiteInformation';
+import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { MediaImage } from '@/components/ui/MediaImage';
+import { Button } from '@/components/ui/button';
+import { useMyStudios } from '@/hooks/useOwnedStudios';
+import { useAuth } from '@/hooks/useAuth';
+import { authHref } from '@/lib/auth-navigation';
+import { useSiteInformation } from '@/hooks/useSiteInformation';
 
 export function ArtisanPage() {
   const { siteContact, settings } = useSiteInformation();

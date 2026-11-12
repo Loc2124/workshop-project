@@ -1,6 +1,6 @@
 import { LoadingState } from '../ui/LoadingState';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import { useEffect, useId, useState } from 'react';
 import * as Popover from '@radix-ui/react-popover';
 import { useQuery } from '@tanstack/react-query';

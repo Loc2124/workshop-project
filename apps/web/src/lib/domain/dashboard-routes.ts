@@ -1,74 +1,74 @@
 import { lazy } from 'react';
 const loadAdminSettingsPage = () =>
-  import('../../pages/admin/AdminSettingsPage').then((module) => ({
+  import('@/pages/admin/AdminSettingsPage').then((module) => ({
     default: module.AdminSettingsPage,
   }));
 const loadAdminAuditPage = () =>
-  import('../../pages/admin/AdminAuditPage').then((module) => ({
+  import('@/pages/admin/AdminAuditPage').then((module) => ({
     default: module.AdminAuditPage,
   }));
 const loadAdminOverviewPage = () =>
-  import('../../pages/admin/AdminOverviewPage').then((module) => ({
+  import('@/pages/admin/AdminOverviewPage').then((module) => ({
     default: module.default,
   }));
 const loadAdminMessageTemplatesPage = () =>
-  import('../../pages/admin/AdminMessageTemplatesPage').then((module) => ({
+  import('@/pages/admin/AdminMessageTemplatesPage').then((module) => ({
     default: module.AdminMessageTemplatesPage,
   }));
 const loadAdminContentPage = () =>
-  import('../../pages/admin/AdminContentPage').then((module) => ({
+  import('@/pages/admin/AdminContentPage').then((module) => ({
     default: module.AdminContentPage,
   }));
 const loadAdminCategoriesPage = () =>
-  import('../../pages/admin/AdminCategoriesPage').then((module) => ({
+  import('@/pages/admin/AdminCategoriesPage').then((module) => ({
     default: module.AdminCategoriesPage,
   }));
 const loadAdminUsersPage = () =>
-  import('../../pages/admin/AdminUsersPage').then((module) => ({
+  import('@/pages/admin/AdminUsersPage').then((module) => ({
     default: module.AdminUsersPage,
   }));
 const loadAdminBookingsPage = () =>
-  import('../../pages/admin/AdminBookingsPage').then((module) => ({
+  import('@/pages/admin/AdminBookingsPage').then((module) => ({
     default: module.AdminBookingsPage,
   }));
 const loadAdminReportsPage = () =>
-  import('../../pages/admin/AdminReportsPage').then((module) => ({
+  import('@/pages/admin/AdminReportsPage').then((module) => ({
     default: module.AdminReportsPage,
   }));
 const loadAdminWorkshopPage = () =>
-  import('../../pages/admin/AdminWorkshopPage').then((module) => ({
+  import('@/pages/admin/AdminWorkshopPage').then((module) => ({
     default: module.AdminWorkshopPage,
   }));
 const loadAdminStudioProfilesPage = () =>
-  import('../../pages/admin/AdminStudioProfilesPage').then((module) => ({
+  import('@/pages/admin/AdminStudioProfilesPage').then((module) => ({
     default: module.AdminStudioProfilesPage,
   }));
 const loadAdminApprovalPage = () =>
-  import('../../pages/admin/AdminApprovalPage').then((module) => ({
+  import('@/pages/admin/AdminApprovalPage').then((module) => ({
     default: module.AdminApprovalPage,
   }));
 const loadAdminFinancialPage = () =>
-  import('../../pages/admin/AdminFinancialPage').then((module) => ({
+  import('@/pages/admin/AdminFinancialPage').then((module) => ({
     default: module.AdminFinancialPage,
   }));
 const loadStudioOverviewPage = () =>
-  import('../../pages/studio/StudioOverviewPage').then((module) => ({
+  import('@/pages/studio/StudioOverviewPage').then((module) => ({
     default: module.StudioOverviewPage,
   }));
 const loadStudioWorkspacePage = () =>
-  import('../../pages/studio/StudioWorkspacePage').then((module) => ({
+  import('@/pages/studio/StudioWorkspacePage').then((module) => ({
     default: module.StudioWorkspacePage,
   }));
 const loadStudioCheckInPage = () =>
-  import('../../pages/studio/StudioCheckInPage').then((module) => ({
+  import('@/pages/studio/StudioCheckInPage').then((module) => ({
     default: module.StudioCheckInPage,
   }));
 const loadStudioDashboard = () =>
-  import('../../components/layout/DashboardShell').then((module) => ({
+  import('@/components/layout/DashboardShell').then((module) => ({
     default: module.StudioDashboard,
   }));
 const loadAdminDashboard = () =>
-  import('../../components/layout/DashboardShell').then((module) => ({
+  import('@/components/layout/DashboardShell').then((module) => ({
     default: module.AdminDashboard,
   }));
 export const AdminSettingsPage = lazy(loadAdminSettingsPage);

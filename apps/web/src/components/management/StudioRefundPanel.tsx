@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
-import { formatPrice } from '../../lib/format';
+import { apiFetch } from '@/lib/api-client';
+import { formatPrice } from '@/lib/format';
 import { StudioButton, StudioCard } from './StudioPrimitives';
 
 type Repayment = {

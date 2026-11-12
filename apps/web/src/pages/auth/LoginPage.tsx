@@ -1,16 +1,16 @@
-﻿import { LoadingState } from '../../components/ui/LoadingState';
+﻿import { LoadingState } from '@/components/ui/LoadingState';
 import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
-import { AuthField } from '../../components/ui/auth-field';
-import { AuthLayout } from '../../components/layout/AuthLayout';
-import { useAuth } from '../../hooks/useAuth';
-import { authFieldErrors, loginFormSchema } from '../../lib/auth-validation';
+import { Button } from '@/components/ui/button';
+import { AuthField } from '@/components/ui/auth-field';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { useAuth } from '@/hooks/useAuth';
+import { authFieldErrors, loginFormSchema } from '@/lib/auth-validation';
 import {
   authRedirectFromSearch,
   postLoginDestination,
-} from '../../lib/auth-navigation';
-import { AuthLink } from '../../components/ui/auth-link';
+} from '@/lib/auth-navigation';
+import { AuthLink } from '@/components/ui/auth-link';
 import { toast } from 'sonner';
 
 export function LoginPage() {

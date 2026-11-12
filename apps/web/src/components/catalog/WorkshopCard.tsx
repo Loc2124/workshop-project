@@ -1,7 +1,7 @@
 import { memo } from 'react';
-import type { Workshop } from '../../types/workshop';
+import type { Workshop } from '@/types/workshop';
 import { TicketCard, toTicketProps } from '../tickets';
-import { useSessionClock } from '../../hooks/useSessionClock';
+import { useSessionClock } from '@/hooks/useSessionClock';
 
 export const WorkshopCard = memo(function WorkshopCard({
   workshop,

@@ -2,18 +2,18 @@ import { useState, type FormEvent } from 'react';
 import {
   fromVietnamDateTimeLocal,
   toVietnamDateTimeLocal,
-} from '../../../lib/session-form-time';
-import { useSaveStudioSession } from '../../../hooks/useManagement';
+} from '@/lib/session-form-time';
+import { useSaveStudioSession } from '@/hooks/useManagement';
 import type {
   MemberStudio,
   StudioSession,
   StudioWorkshop,
-} from '../../../types/management';
+} from '@/types/management';
 import {
   studioSessionInputSchema,
   studioSessionUpdateInputSchema,
-} from '../../../types/management';
-import { workshopSelectionSchema } from '../../../lib/form-validation';
+} from '@/types/management';
+import { workshopSelectionSchema } from '@/lib/form-validation';
 import {
   Sheet,
   SheetContent,

@@ -3,7 +3,7 @@ import { MapPin } from 'lucide-react';
 import { Deferred } from '../ui/Deferred';
 import { LoadingState } from '../ui/LoadingState';
 import { WorkshopRating } from './WorkshopRating';
-import type { Workshop } from '../../types/workshop';
+import type { Workshop } from '@/types/workshop';
 import type { WorkshopBookingHandler } from './WorkshopSchedule';
 const Schedule = lazy(() =>
   import('./WorkshopSchedule').then((module) => ({

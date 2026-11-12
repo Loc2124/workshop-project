@@ -3,7 +3,7 @@ import { useEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { CategoryShortcuts } from './CategoryShortcuts';
 import { MobileFilterSheet } from './MobileFilterSheet';
 import { CatalogFilterFields } from './CatalogFilterFields';
-import { useCategoriesQuery } from '../../hooks/useCategories';
+import { useCategoriesQuery } from '@/hooks/useCategories';
 
 export function ExploreFilters(
   props: ComponentProps<typeof MobileFilterSheet> & { children: ReactNode },

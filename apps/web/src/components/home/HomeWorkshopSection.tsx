@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import type { useHomeCatalog } from '../../hooks/useHomeCatalog';
+import type { useHomeCatalog } from '@/hooks/useHomeCatalog';
 import { PageContainer } from '../layout/PageContainer';
 import { SectionHeading } from '../layout/SectionHeading';
 import { Button } from '../ui/button';
 import { TicketRow, toTicketProps } from '../tickets';
-import type { Workshop } from '../../types/workshop';
-import { useSessionClock } from '../../hooks/useSessionClock';
-import { sessionStatus } from '../../lib/sessionStatus';
+import type { Workshop } from '@/types/workshop';
+import { useSessionClock } from '@/hooks/useSessionClock';
+import { sessionStatus } from '@/lib/sessionStatus';
 
 type Props = Pick<
   ReturnType<typeof useHomeCatalog>,

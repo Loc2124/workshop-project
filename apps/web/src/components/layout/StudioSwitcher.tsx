@@ -1,12 +1,12 @@
 import { Img } from '../ui/Img';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Check, ChevronsUpDown, Plus, Store } from 'lucide-react';
-import type { MemberStudio } from '../../types/management';
+import type { MemberStudio } from '@/types/management';
 import {
   studioState,
   studioStates,
   switchStudioPath,
-} from '../../lib/studio-dashboard';
+} from '@/lib/studio-dashboard';
 import { useSidebar } from '../ui/sidebar';
 import { StatusBadge } from '../ui/status-badge';
 import {

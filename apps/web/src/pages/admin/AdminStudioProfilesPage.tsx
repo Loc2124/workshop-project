@@ -6,31 +6,31 @@ import {
   defaultSiteSettings,
   type StudioReviewDecision,
 } from '@workshop/shared';
-import { apiFetch } from '../../lib/api-client';
-import { prefetchDefaultTable } from '../../lib/prefetch-table';
-import { queryKeys } from '../../lib/query-keys';
+import { apiFetch } from '@/lib/api-client';
+import { prefetchDefaultTable } from '@/lib/prefetch-table';
+import { queryKeys } from '@/lib/query-keys';
 import {
   invalidatePublicCatalog,
   invalidateResources,
-} from '../../lib/query-invalidation';
-import { studioReviewMissing } from '../../lib/studio-review';
-import { useAuth } from '../../hooks/useAuth';
+} from '@/lib/query-invalidation';
+import { studioReviewMissing } from '@/lib/studio-review';
+import { useAuth } from '@/hooks/useAuth';
 import {
   useAdminStudioDetail,
   useSetStudioStatus,
-} from '../../hooks/useManagement';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
-import type { AdminStudio } from '../../types/management';
-import { DataTable } from '../../components/admin/DataTable';
-import { ConfirmReasonDialog } from '../../components/admin/ConfirmReasonDialog';
-import { ImageGalleryDialog } from '../../components/admin/ImageGalleryDialog';
-import { fetchAdminStudios } from '../../services/adminTableService';
+} from '@/hooks/useManagement';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
+import type { AdminStudio } from '@/types/management';
+import { DataTable } from '@/components/admin/DataTable';
+import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { ImageGalleryDialog } from '@/components/admin/ImageGalleryDialog';
+import { fetchAdminStudios } from '@/services/adminTableService';
 import {
   buildStudioColumns,
   studioFilters,
   studioTabs,
-} from '../../components/admin/studios/AdminStudioTableColumns';
-import { AdminStudioDetailSheet } from '../../components/admin/studios/AdminStudioDetailSheet';
+} from '@/components/admin/studios/AdminStudioTableColumns';
+import { AdminStudioDetailSheet } from '@/components/admin/studios/AdminStudioDetailSheet';
 
 export function AdminStudioProfilesPage({
   showAllTab = false,

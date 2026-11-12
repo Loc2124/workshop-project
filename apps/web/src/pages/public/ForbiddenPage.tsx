@@ -1,8 +1,8 @@
 ﻿import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { useAuth } from '../../hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { useAuth } from '@/hooks/useAuth';
 
 export function ForbiddenPage() {
   const navigate = useNavigate();

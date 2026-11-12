@@ -1,7 +1,7 @@
 import { forwardRef, useId, type ComponentProps, type ReactNode } from 'react';
 import { LoaderCircle, type LucideIcon } from 'lucide-react';
 import { Button, type ButtonProps } from '../ui/button';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 const focus =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2';

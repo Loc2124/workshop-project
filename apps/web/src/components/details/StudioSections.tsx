@@ -1,8 +1,8 @@
 import { Star } from 'lucide-react';
-import type { StudioDetailsContent } from '../../types/studio';
-import type { Workshop } from '../../types/workshop';
+import type { StudioDetailsContent } from '@/types/studio';
+import type { Workshop } from '@/types/workshop';
 import { MediaImage } from '../ui/MediaImage';
-import { studioArtisans } from '../../lib/studioRatings';
+import { studioArtisans } from '@/lib/studioRatings';
 import { ArtisanCard } from './ArtisanCard';
 import { DetailRating, DetailSection } from './DetailPrimitives';
 

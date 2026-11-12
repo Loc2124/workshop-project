@@ -6,10 +6,10 @@ import {
   getCategoryIcon,
   getCategoryOptions,
   getUpcomingCategories,
-} from '../../constants/categories';
-import { normalizeSearchText } from '../../lib/search';
-import type { Workshop } from '../../types/workshop';
-import type { Category } from '../../constants/categories';
+} from '@/constants/categories';
+import { normalizeSearchText } from '@/lib/search';
+import type { Workshop } from '@/types/workshop';
+import type { Category } from '@/constants/categories';
 
 export function CategoryShortcuts({
   selected,

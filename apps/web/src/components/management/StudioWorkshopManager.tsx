@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Images, Plus } from 'lucide-react';
-import type { MemberStudio, StudioWorkshop } from '../../types/management';
+import type { MemberStudio, StudioWorkshop } from '@/types/management';
 import { Sheet, SheetContent } from '../ui/sheet';
 import {
   StudioButton,

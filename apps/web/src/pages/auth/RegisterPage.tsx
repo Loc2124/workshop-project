@@ -1,23 +1,20 @@
-﻿import { LoadingState } from '../../components/ui/LoadingState';
+﻿import { LoadingState } from '@/components/ui/LoadingState';
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AuthLink } from '../../components/ui/auth-link';
-import { authHref, authRedirectFromSearch } from '../../lib/auth-navigation';
-import { Button } from '../../components/ui/button';
-import { AuthField } from '../../components/ui/auth-field';
-import { PasswordChecklist } from '../../components/ui/password-checklist';
-import { ApiError } from '../../lib/api-client';
-import { AuthLayout } from '../../components/layout/AuthLayout';
-import { useAuth } from '../../hooks/useAuth';
-import {
-  authFieldErrors,
-  registrationFormSchema,
-} from '../../lib/auth-validation';
+import { AuthLink } from '@/components/ui/auth-link';
+import { authHref, authRedirectFromSearch } from '@/lib/auth-navigation';
+import { Button } from '@/components/ui/button';
+import { AuthField } from '@/components/ui/auth-field';
+import { PasswordChecklist } from '@/components/ui/password-checklist';
+import { ApiError } from '@/lib/api-client';
+import { AuthLayout } from '@/components/layout/AuthLayout';
+import { useAuth } from '@/hooks/useAuth';
+import { authFieldErrors, registrationFormSchema } from '@/lib/auth-validation';
 import { toast } from 'sonner';
 import {
   PolicyTermsDialog,
   type PolicyTabKey,
-} from '../../components/common/PolicyTermsDialog';
+} from '@/components/common/PolicyTermsDialog';
 
 const initialValues = {
   fullName: '',

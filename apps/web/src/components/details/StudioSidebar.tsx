@@ -1,5 +1,5 @@
 import { ArrowUpRight, Clock3 } from 'lucide-react';
-import type { Studio } from '../../types/studio';
+import type { Studio } from '@/types/studio';
 import { MediaImage } from '../ui/MediaImage';
 
 export function studioAddress(address: string, province: string) {

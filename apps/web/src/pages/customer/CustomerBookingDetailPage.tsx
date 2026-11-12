@@ -5,24 +5,24 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import { apiFetch, ApiError } from '../../lib/api-client';
+import { apiFetch, ApiError } from '@/lib/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
-import { formatPrice } from '../../lib/format';
-import { bookingDetailState } from '../../lib/booking-detail';
-import { customerBookingService } from '../../services/customerBookingService';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
+import { formatPrice } from '@/lib/format';
+import { bookingDetailState } from '@/lib/booking-detail';
+import { customerBookingService } from '@/services/customerBookingService';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { sessionLifecycleLabel } from './CustomerBookingsPage';
-import { BookingSeatCancellation } from '../../components/details/BookingSeatCancellation';
-import { CustomerRefundAccounts } from '../../components/management/CustomerRefundAccounts';
+import { BookingSeatCancellation } from '@/components/details/BookingSeatCancellation';
+import { CustomerRefundAccounts } from '@/components/management/CustomerRefundAccounts';
 
-import { BookingHeroHeader } from '../../components/booking-detail/BookingHeroHeader';
-import { BookingTicketsSection } from '../../components/booking-detail/BookingTicketsSection';
-import { BookingRescheduleNotice } from '../../components/booking-detail/BookingRescheduleNotice';
-import { BookingCancellationDialog } from '../../components/booking-detail/BookingCancellationDialog';
-import { BookingPaymentSummary } from '../../components/booking-detail/BookingPaymentSummary';
+import { BookingHeroHeader } from '@/components/booking-detail/BookingHeroHeader';
+import { BookingTicketsSection } from '@/components/booking-detail/BookingTicketsSection';
+import { BookingRescheduleNotice } from '@/components/booking-detail/BookingRescheduleNotice';
+import { BookingCancellationDialog } from '@/components/booking-detail/BookingCancellationDialog';
+import { BookingPaymentSummary } from '@/components/booking-detail/BookingPaymentSummary';
 
 const primary =
   'inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60';

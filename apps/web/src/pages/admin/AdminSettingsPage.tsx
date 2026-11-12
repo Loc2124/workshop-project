@@ -1,10 +1,10 @@
 ﻿import type { QueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import {
   invalidateResources,
   invalidatePublicCatalog,
-} from '../../lib/query-invalidation';
+} from '@/lib/query-invalidation';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, useWatch, type FieldPathByValue } from 'react-hook-form';
@@ -20,7 +20,7 @@ import {
   Store,
   type LucideIcon,
 } from 'lucide-react';
-import { apiFetch } from '../../lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import {
   Form,
   FormField,
@@ -29,17 +29,17 @@ import {
   FormControl,
   FormDescription,
   FormMessage,
-} from '../../components/ui/form';
+} from '@/components/ui/form';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { LoadingState } from '../../components/ui/LoadingState';
-import { formatReviewDate } from '../../lib/studio-review';
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { formatReviewDate } from '@/lib/studio-review';
 
 const response = z.object({
   settings: siteSettingsSchema,

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import { formatBankDisplay } from '@workshop/shared';
 
 type Account = {

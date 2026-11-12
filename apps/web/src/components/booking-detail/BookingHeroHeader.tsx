@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { bookingDisplayText } from '../../lib/display-text';
-import { bookingScheduleLabel } from '../../lib/booking-detail';
-import { formatPrice } from '../../lib/format';
-import type { CustomerBooking } from '../../services/customerBookingService';
+import { bookingDisplayText } from '@/lib/display-text';
+import { bookingScheduleLabel } from '@/lib/booking-detail';
+import { formatPrice } from '@/lib/format';
+import type { CustomerBooking } from '@/services/customerBookingService';
 
 const secondary =
   'inline-flex min-h-11 items-center justify-center rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-soft disabled:opacity-60';

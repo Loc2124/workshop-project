@@ -1,4 +1,4 @@
-import type { WorkshopSession } from '../../types/workshop';
+import type { WorkshopSession } from '@/types/workshop';
 
 export type SessionStatus =
   'available' | 'full' | 'closed' | 'ongoing' | 'ended' | 'cancelled';

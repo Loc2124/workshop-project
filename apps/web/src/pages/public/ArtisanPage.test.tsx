@@ -1,4 +1,4 @@
-vi.mock('../../hooks/useSiteSettings', async () => {
+vi.mock('@/hooks/useSiteSettings', async () => {
   const { defaultSiteSettings } = await import('@workshop/shared');
   return {
     useSiteSettings: () => ({ data: defaultSiteSettings, isSuccess: true }),
@@ -9,12 +9,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const useMyStudios = vi.hoisted(() => vi.fn());
 const useAuth = vi.hoisted(() => vi.fn());
-vi.mock('../../hooks/useAuth', () => ({ useAuth }));
-vi.mock('../../hooks/useOwnedStudios', () => ({ useMyStudios }));
-vi.mock('../../components/layout/SiteHeader', () => ({
+vi.mock('@/hooks/useAuth', () => ({ useAuth }));
+vi.mock('@/hooks/useOwnedStudios', () => ({ useMyStudios }));
+vi.mock('@/components/layout/SiteHeader', () => ({
   SiteHeader: () => null,
 }));
-vi.mock('../../components/layout/SiteFooter', () => ({
+vi.mock('@/components/layout/SiteFooter', () => ({
   SiteFooter: () => null,
 }));
 import { ArtisanPage } from './ArtisanPage';

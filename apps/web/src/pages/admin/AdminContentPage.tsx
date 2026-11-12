@@ -1,7 +1,7 @@
 ﻿import type { QueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
-import { invalidateResources } from '../../lib/query-invalidation';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
+import { invalidateResources } from '@/lib/query-invalidation';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -25,26 +25,21 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, X, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '../../components/ui/tabs';
-import { Button } from '../../components/ui/button';
-import { Skeleton } from '../../components/ui/skeleton';
-import { MediaImage } from '../../components/ui/MediaImage';
-import { StatusBadge } from '../../components/ui/status-badge';
-import { SearchableFilterSelect } from '../../components/admin/SearchableFilterSelect';
-import { ConfirmReasonDialog } from '../../components/admin/ConfirmReasonDialog';
-import { apiFetch } from '../../lib/api-client';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { MediaImage } from '@/components/ui/MediaImage';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { SearchableFilterSelect } from '@/components/admin/SearchableFilterSelect';
+import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { apiFetch } from '@/lib/api-client';
 import {
   featuredConfigSchema,
   featuredSelectionSchema,
   featuredItemSchema,
   previewKey,
   type FeaturedItem,
-} from '../../services/featuredService';
+} from '@/services/featuredService';
 type Selection = z.infer<typeof featuredSelectionSchema>;
 const same = (a: Selection, b: Selection) =>
   JSON.stringify(a) === JSON.stringify(b);

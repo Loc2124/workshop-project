@@ -1,28 +1,28 @@
 ﻿import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
-import { useSessionClock } from '../../hooks/useSessionClock';
+import { useSessionClock } from '@/hooks/useSessionClock';
 import { useParams } from 'react-router-dom';
-import { CategoryShortcuts } from '../../components/catalog/CategoryShortcuts';
+import { CategoryShortcuts } from '@/components/catalog/CategoryShortcuts';
 import {
   DetailSection,
   DetailState,
-} from '../../components/details/DetailPrimitives';
-import { StudioHero } from '../../components/details/StudioHero';
-import { StudioPhotoGrid } from '../../components/details/StudioPhotoGrid';
+} from '@/components/details/DetailPrimitives';
+import { StudioHero } from '@/components/details/StudioHero';
+import { StudioPhotoGrid } from '@/components/details/StudioPhotoGrid';
 import {
   StudioArtists,
   StudioExtras,
   StudioSidebar,
-} from '../../components/details/StudioSections';
-import { PageBreadcrumb } from '../../components/layout/PageBreadcrumb';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { ReportButton } from '../../components/reports/ReportButton';
-import { TicketCard, toTicketProps } from '../../components/tickets';
-import { ApiError } from '../../lib/api-client';
-import { rankWorkshops } from '../../lib/rankWorkshops';
-import { catalogService } from '../../services/catalogService';
-import type { PublicStudio, Studio } from '../../types/studio';
-import type { Workshop } from '../../types/workshop';
+} from '@/components/details/StudioSections';
+import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { ReportButton } from '@/components/reports/ReportButton';
+import { TicketCard, toTicketProps } from '@/components/tickets';
+import { ApiError } from '@/lib/api-client';
+import { rankWorkshops } from '@/lib/rankWorkshops';
+import { catalogService } from '@/services/catalogService';
+import type { PublicStudio, Studio } from '@/types/studio';
+import type { Workshop } from '@/types/workshop';
 function StudioDetails({
   studio,
   workshops,

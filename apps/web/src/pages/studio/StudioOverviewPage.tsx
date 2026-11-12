@@ -8,37 +8,37 @@ import {
   PlusCircle,
   Store,
 } from 'lucide-react';
-import { apiFetch } from '../../lib/api-client';
-import { StudioNotifications } from '../../components/management/StudioNotifications';
+import { apiFetch } from '@/lib/api-client';
+import { StudioNotifications } from '@/components/management/StudioNotifications';
 import {
   StudioBadge,
   StudioButton as Button,
   StudioCard,
   StudioSkeleton,
-} from '../../components/management/StudioPrimitives';
+} from '@/components/management/StudioPrimitives';
 import {
   useMyStudios,
   useStudioSessions,
   useStudioWorkshops,
-} from '../../hooks/useManagement';
+} from '@/hooks/useManagement';
 import {
   studioDashboardStats,
   studioPage,
   studioState,
   studioStates,
-} from '../../lib/studio-dashboard';
-import { OverviewMetricsCards } from '../../components/management/overview/OverviewMetricsCards';
+} from '@/lib/studio-dashboard';
+import { OverviewMetricsCards } from '@/components/management/overview/OverviewMetricsCards';
 import {
   OverviewChecklistCard,
   type ChecklistItem,
-} from '../../components/management/overview/OverviewChecklistCard';
-import { OverviewQuickActions } from '../../components/management/overview/OverviewQuickActions';
-import { OverviewNextSessionCard } from '../../components/management/overview/OverviewNextSessionCard';
-import { OverviewUpcomingSessionsList } from '../../components/management/overview/OverviewUpcomingSessionsList';
+} from '@/components/management/overview/OverviewChecklistCard';
+import { OverviewQuickActions } from '@/components/management/overview/OverviewQuickActions';
+import { OverviewNextSessionCard } from '@/components/management/overview/OverviewNextSessionCard';
+import { OverviewUpcomingSessionsList } from '@/components/management/overview/OverviewUpcomingSessionsList';
 import {
   OverviewFinancesCard,
   type StudioFinancesData,
-} from '../../components/management/overview/OverviewFinancesCard';
+} from '@/components/management/overview/OverviewFinancesCard';
 
 export function StudioOverviewPage() {
   const { studioId } = useParams();

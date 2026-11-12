@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { CalendarDays } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
-import { getBusinessToday, parseCalendarDate } from '../../lib/calendar-date';
+import { getBusinessToday, parseCalendarDate } from '@/lib/calendar-date';
 import { Button } from './button';
 
 const Calendar = lazy(async () => ({

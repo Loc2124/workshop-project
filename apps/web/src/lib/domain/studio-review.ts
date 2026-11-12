@@ -4,7 +4,7 @@ import {
   defaultSiteSettings,
   type SiteSettings,
 } from '@workshop/shared';
-import type { AdminStudio } from '../../types/management';
+import type { AdminStudio } from '@/types/management';
 
 export function studioReviewMissing(
   studio: Pick<

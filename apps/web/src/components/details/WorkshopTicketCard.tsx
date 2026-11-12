@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
-import type { Workshop } from '../../types/workshop';
-import { formatPrice, formatSessionDate } from '../../lib/format';
-import { upcomingSessions } from '../../lib/workshopDetails';
+import type { Workshop } from '@/types/workshop';
+import { formatPrice, formatSessionDate } from '@/lib/format';
+import { upcomingSessions } from '@/lib/workshopDetails';
 
 export function WorkshopTicketCard({
   workshop,

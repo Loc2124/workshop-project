@@ -9,7 +9,7 @@ import {
   type FieldPath,
   type FieldValues,
 } from 'react-hook-form';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 export const Form = FormProvider;
 const FieldContext = React.createContext<{ name: string } | null>(null);
 const ItemContext = React.createContext<{ id: string } | null>(null);

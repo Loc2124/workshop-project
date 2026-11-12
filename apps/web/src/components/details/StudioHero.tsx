@@ -1,13 +1,13 @@
 import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import { ArrowDown, Star } from 'lucide-react';
-import { studioRating } from '../../lib/studioRatings';
+import { studioRating } from '@/lib/studioRatings';
 import { Link } from 'react-router-dom';
-import type { Studio, PublicStudio } from '../../types/studio';
-import type { Workshop } from '../../types/workshop';
-import { formatPrice, formatSessionDate, formatSlot } from '../../lib/format';
-import { upcomingSessions } from '../../lib/workshopDetails';
+import type { Studio, PublicStudio } from '@/types/studio';
+import type { Workshop } from '@/types/workshop';
+import { formatPrice, formatSessionDate, formatSlot } from '@/lib/format';
+import { upcomingSessions } from '@/lib/workshopDetails';
 import { MediaImage } from '../ui/MediaImage';
-import { getCategoryIcon, getCategoryMeta } from '../../constants/categories';
+import { getCategoryIcon, getCategoryMeta } from '@/constants/categories';
 import { studioHeroImage } from './studioHeroMedia';
 
 export function StudioHero({

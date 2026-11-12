@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
-import { apiFetch } from '../../lib/api-client';
-import { formatPrice } from '../../lib/format';
-import { useAuth } from '../../hooks/useAuth';
+import { apiFetch } from '@/lib/api-client';
+import { formatPrice } from '@/lib/format';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Dialog,
   DialogContent,

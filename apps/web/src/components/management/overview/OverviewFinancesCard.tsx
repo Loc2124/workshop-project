@@ -1,7 +1,7 @@
 import { ArrowRight, WalletCards } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatPrice } from '../../../lib/format';
-import { studioPage } from '../../../lib/studio-dashboard';
+import { formatPrice } from '@/lib/format';
+import { studioPage } from '@/lib/studio-dashboard';
 import { StudioBadge, StudioCard } from '../StudioPrimitives';
 
 export type StudioFinancesData = {

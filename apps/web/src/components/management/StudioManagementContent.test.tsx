@@ -3,12 +3,12 @@ import type { ComponentProps } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
-import type { AuthUser } from '../../services/authService';
+import type { AuthUser } from '@/services/authService';
 import type {
   MemberStudio,
   StudioSession,
   StudioWorkshop,
-} from '../../types/management';
+} from '@/types/management';
 import { StudioManagementContent } from './StudioManagementContent';
 
 const user: AuthUser = {

@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from '../../ui/dialog';
 import { StudioButton } from '../StudioPrimitives';
-import type { StudioSession } from '../../../types/management';
+import type { StudioSession } from '@/types/management';
 
 export interface SessionCancelDialogProps {
   session: StudioSession | undefined;

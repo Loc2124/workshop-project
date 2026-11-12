@@ -1,11 +1,11 @@
 ﻿import { useParams } from 'react-router-dom';
-import { StudioManagementContent } from '../../components/management/StudioManagementContent';
-import { useAuth } from '../../hooks/useAuth';
+import { StudioManagementContent } from '@/components/management/StudioManagementContent';
+import { useAuth } from '@/hooks/useAuth';
 import {
   useMyStudios,
   useStudioSessions,
   useStudioWorkshops,
-} from '../../hooks/useManagement';
+} from '@/hooks/useManagement';
 
 export function StudioManagementDetailPage() {
   const { studioId = '' } = useParams();

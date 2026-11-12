@@ -1,5 +1,5 @@
 import type { ImgHTMLAttributes } from 'react';
-import { imageSources, type ImageVariant } from '../../lib/image-sources';
+import { imageSources, type ImageVariant } from '@/lib/image-sources';
 
 export type ImgProps = ImgHTMLAttributes<HTMLImageElement> & {
   priority?: boolean;

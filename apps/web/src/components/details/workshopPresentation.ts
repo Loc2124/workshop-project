@@ -1,8 +1,8 @@
-import type { Workshop, WorkshopSession } from '../../types/workshop';
-import { rankWorkshops } from '../../lib/rankWorkshops';
-import { sessionStatus } from '../../lib/sessionStatus';
-import { formatSessionDate, formatSlot } from '../../lib/format';
-import { upcomingSessions } from '../../lib/workshopDetails';
+import type { Workshop, WorkshopSession } from '@/types/workshop';
+import { rankWorkshops } from '@/lib/rankWorkshops';
+import { sessionStatus } from '@/lib/sessionStatus';
+import { formatSessionDate, formatSlot } from '@/lib/format';
+import { upcomingSessions } from '@/lib/workshopDetails';
 
 export function workshopSessionRange(session: WorkshopSession) {
   const start = formatSlot(session.startsAt);

@@ -9,7 +9,7 @@ import {
   formatCalendarDate,
   getBusinessToday,
   parseCalendarDate,
-} from '../../lib/calendar-date';
+} from '@/lib/calendar-date';
 import { Button } from './button';
 
 type CalendarProps = {

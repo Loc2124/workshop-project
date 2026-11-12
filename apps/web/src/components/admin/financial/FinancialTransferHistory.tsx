@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../../../lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import {
   dateTime,
   money,

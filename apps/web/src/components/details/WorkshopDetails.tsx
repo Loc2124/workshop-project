@@ -1,9 +1,9 @@
 import { ArrowUpRight, Star } from 'lucide-react';
 import { depositPaymentCopy } from '@workshop/shared';
-import { getCategoryMeta } from '../../constants/categories';
+import { getCategoryMeta } from '@/constants/categories';
 import { Link } from 'react-router-dom';
-import type { Workshop } from '../../types/workshop';
-import { workshopLevel } from '../../lib/workshopDetails';
+import type { Workshop } from '@/types/workshop';
+import { workshopLevel } from '@/lib/workshopDetails';
 import { WorkshopCard } from '../catalog/WorkshopCard';
 import { MediaImage } from '../ui/MediaImage';
 import { DetailSection } from './DetailPrimitives';

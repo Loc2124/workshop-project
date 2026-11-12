@@ -1,11 +1,11 @@
 ﻿import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw } from 'lucide-react';
-import { Button } from '../../components/ui/button';
-import { useAuth } from '../../hooks/useAuth';
-import { apiFetch } from '../../lib/api-client';
-import { AdminSettlementPanel } from '../../components/management/AdminSettlementPanel';
-import { AdminAccountVerificationPanel } from '../../components/management/AdminAccountVerificationPanel';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { apiFetch } from '@/lib/api-client';
+import { AdminSettlementPanel } from '@/components/management/AdminSettlementPanel';
+import { AdminAccountVerificationPanel } from '@/components/management/AdminAccountVerificationPanel';
 import {
   type CalendarDay,
   errorMessage,
@@ -13,15 +13,15 @@ import {
   type PaymentFee,
   type Transfer,
   type VietqrPreview,
-} from '../../components/admin/financial/financialTypes';
-import { FinancialObligationsTab } from '../../components/admin/financial/FinancialObligationsTab';
+} from '@/components/admin/financial/financialTypes';
+import { FinancialObligationsTab } from '@/components/admin/financial/FinancialObligationsTab';
 import {
   FinancialTransfersTab,
   type QueueFilter,
-} from '../../components/admin/financial/FinancialTransfersTab';
-import { FinancialFeesTab } from '../../components/admin/financial/FinancialFeesTab';
-import { FinancialCalendarTab } from '../../components/admin/financial/FinancialCalendarTab';
-import { VietqrTransferModal } from '../../components/admin/financial/VietqrTransferModal';
+} from '@/components/admin/financial/FinancialTransfersTab';
+import { FinancialFeesTab } from '@/components/admin/financial/FinancialFeesTab';
+import { FinancialCalendarTab } from '@/components/admin/financial/FinancialCalendarTab';
+import { VietqrTransferModal } from '@/components/admin/financial/VietqrTransferModal';
 
 export function AdminFinancialPage() {
   const userId = useAuth().user?.id;

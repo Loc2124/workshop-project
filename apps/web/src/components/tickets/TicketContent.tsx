@@ -4,8 +4,8 @@ import {
   formatCategoryLabel,
   formatPrice,
   formatSessionDate,
-} from '../../lib/format';
-import { cn } from '../../lib/utils';
+} from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { SeatsBadge } from '../catalog/SeatsBadge';
 import { MediaImage } from '../ui/MediaImage';
 import { TicketAction } from './TicketPrimitives';

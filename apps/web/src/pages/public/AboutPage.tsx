@@ -1,16 +1,16 @@
-﻿import { ImagePreload } from '../../components/ui/ImagePreload';
+﻿import { ImagePreload } from '@/components/ui/ImagePreload';
 import { useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import {
   DetailHero,
   DetailSection,
-} from '../../components/details/DetailPrimitives';
-import { GreenSection } from '../../components/layout/GreenSection';
-import { PageBreadcrumb } from '../../components/layout/PageBreadcrumb';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { Button } from '../../components/ui/button';
-import { useSiteInformation } from '../../hooks/useSiteInformation';
+} from '@/components/details/DetailPrimitives';
+import { GreenSection } from '@/components/layout/GreenSection';
+import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Button } from '@/components/ui/button';
+import { useSiteInformation } from '@/hooks/useSiteInformation';
 
 const aboutContent = {
   isSimulated: false,

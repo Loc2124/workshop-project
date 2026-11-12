@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
-import { formatPrice } from '../../lib/format';
-import type { CatalogFilters } from '../../types/catalog';
+import { formatPrice } from '@/lib/format';
+import type { CatalogFilters } from '@/types/catalog';
 import type { AreaOption } from './AreaMultiSelect';
 import type { ProvinceOption } from './ProvinceCombobox';
 

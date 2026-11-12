@@ -1,4 +1,4 @@
-import type { Workshop } from '../../types/workshop';
+import type { Workshop } from '@/types/workshop';
 import { upcomingSessions } from './workshopDetails';
 
 export function weightedRating(

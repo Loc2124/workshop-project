@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { catalogService } from '../../services/catalogService';
+import { catalogService } from '@/services/catalogService';
 import { queryKeys } from '../api/query-keys';
 
 export const geographyQueries = {

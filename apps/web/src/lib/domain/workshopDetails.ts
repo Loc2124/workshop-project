@@ -1,4 +1,4 @@
-import type { Workshop, WorkshopSession } from '../../types/workshop';
+import type { Workshop, WorkshopSession } from '@/types/workshop';
 
 export function upcomingSessions(
   sessions: WorkshopSession[],

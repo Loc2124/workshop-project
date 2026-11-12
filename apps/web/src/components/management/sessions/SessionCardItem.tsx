@@ -1,7 +1,7 @@
 import { Clock3, Pencil, UsersRound } from 'lucide-react';
-import { formatPrice, formatSessionDate } from '../../../lib/format';
+import { formatPrice, formatSessionDate } from '@/lib/format';
 import { StudioBadge, StudioButton, StudioCard } from '../StudioPrimitives';
-import type { StudioSession } from '../../../types/management';
+import type { StudioSession } from '@/types/management';
 
 export function getRelativeDateTag(
   startsAtStr: string,

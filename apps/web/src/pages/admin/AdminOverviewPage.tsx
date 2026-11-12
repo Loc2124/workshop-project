@@ -1,5 +1,5 @@
-﻿import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+﻿import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import { lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -16,21 +16,21 @@ import {
   Ticket,
   Users,
 } from 'lucide-react';
-import { getAdminOverview } from '../../services/adminOverviewService';
+import { getAdminOverview } from '@/services/adminOverviewService';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardContent,
   CardDescription,
-} from '../../components/ui/card';
-import { Skeleton } from '../../components/ui/skeleton';
-import { LoadingState } from '../../components/ui/LoadingState';
-import { Button } from '../../components/ui/button';
-import { formatReviewDate } from '../../lib/studio-review';
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { Button } from '@/components/ui/button';
+import { formatReviewDate } from '@/lib/studio-review';
 
 const BookingsChart = lazy(
-  () => import('../../components/admin/AdminBookingsChart'),
+  () => import('@/components/admin/AdminBookingsChart'),
 );
 
 const metricLinks = [

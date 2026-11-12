@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { CatalogFilters } from '../../types/catalog';
+import type { CatalogFilters } from '@/types/catalog';
 import { PriceRangeSlider } from '../ui/price-range-slider';
 
 type Props = {

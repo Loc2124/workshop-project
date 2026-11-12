@@ -1,36 +1,29 @@
 ﻿import type { QueryClient } from '@tanstack/react-query';
-import { prefetchDefaultTable } from '../../lib/prefetch-table';
-import { queryKeys } from '../../lib/query-keys';
-import { invalidateResources } from '../../lib/query-invalidation';
+import { prefetchDefaultTable } from '@/lib/prefetch-table';
+import { queryKeys } from '@/lib/query-keys';
+import { invalidateResources } from '@/lib/query-invalidation';
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 import { MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  DataTable,
-  type DataTableFetcher,
-} from '../../components/admin/DataTable';
-import { ConfirmReasonDialog } from '../../components/admin/ConfirmReasonDialog';
-import { StatusBadge } from '../../components/ui/status-badge';
-import {
-  Avatar,
-  AvatarImage,
-  AvatarFallback,
-} from '../../components/ui/avatar';
+import { DataTable, type DataTableFetcher } from '@/components/admin/DataTable';
+import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from '../../components/ui/dropdown-menu';
-import { Button } from '../../components/ui/button';
-import { useAuth } from '../../hooks/useAuth';
-import { apiFetch } from '../../lib/api-client';
-import { createAdminTableFetcher } from '../../services/adminTableService';
-import { formatReviewDate } from '../../lib/studio-review';
+} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { apiFetch } from '@/lib/api-client';
+import { createAdminTableFetcher } from '@/services/adminTableService';
+import { formatReviewDate } from '@/lib/studio-review';
 const roleSchema = z.enum(['customer', 'studio_owner', 'admin']);
 type Role = z.infer<typeof roleSchema>;
 const userSchema = z.object({

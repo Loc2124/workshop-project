@@ -2,13 +2,13 @@
 import { Link } from 'react-router-dom';
 import { Check, Copy } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
-import { formatPrice } from '../../lib/format';
-import { customerBookingService } from '../../services/customerBookingService';
-import { useSessionClock } from '../../hooks/useSessionClock';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { LoadingState } from '../../components/ui/LoadingState';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
+import { formatPrice } from '@/lib/format';
+import { customerBookingService } from '@/services/customerBookingService';
+import { useSessionClock } from '@/hooks/useSessionClock';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { LoadingState } from '@/components/ui/LoadingState';
 
 function dateLabel(value: string) {
   return new Intl.DateTimeFormat('vi-VN', {

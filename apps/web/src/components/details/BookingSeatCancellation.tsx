@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { customerBookingService } from '../../services/customerBookingService';
-import { useAuth } from '../../hooks/useAuth';
-import { formatPrice } from '../../lib/format';
+import { customerBookingService } from '@/services/customerBookingService';
+import { useAuth } from '@/hooks/useAuth';
+import { formatPrice } from '@/lib/format';
 import {
   Dialog,
   DialogContent,

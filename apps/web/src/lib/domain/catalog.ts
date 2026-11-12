@@ -1,4 +1,4 @@
-import type { Workshop } from '../../types/workshop';
+import type { Workshop } from '@/types/workshop';
 
 export function provinceSlug(name: string) {
   return name

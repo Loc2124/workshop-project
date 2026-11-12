@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import { StudioCard } from './StudioPrimitives';
 import { TicketAttendanceEditor } from './TicketAttendanceEditor';
 type Row = {

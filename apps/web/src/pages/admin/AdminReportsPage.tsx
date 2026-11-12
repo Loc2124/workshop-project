@@ -1,12 +1,12 @@
 ﻿import type { QueryClient } from '@tanstack/react-query';
-import { prefetchDefaultTable } from '../../lib/prefetch-table';
-import { Img } from '../../components/ui/Img';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { prefetchDefaultTable } from '@/lib/prefetch-table';
+import { Img } from '@/components/ui/Img';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import {
   invalidateResources,
   invalidatePublicCatalog,
-} from '../../lib/query-invalidation';
+} from '@/lib/query-invalidation';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -18,24 +18,21 @@ import {
   reportStatusSchema,
   reportTargetSchema,
 } from '@workshop/shared';
-import {
-  DataTable,
-  type DataTableFetcher,
-} from '../../components/admin/DataTable';
-import { ConfirmReasonDialog } from '../../components/admin/ConfirmReasonDialog';
-import { ImageGalleryDialog } from '../../components/admin/ImageGalleryDialog';
-import { StatusBadge } from '../../components/ui/status-badge';
+import { DataTable, type DataTableFetcher } from '@/components/admin/DataTable';
+import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { ImageGalleryDialog } from '@/components/admin/ImageGalleryDialog';
+import { StatusBadge } from '@/components/ui/status-badge';
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetDescription,
-} from '../../components/ui/sheet';
-import { Button } from '../../components/ui/button';
-import { Skeleton } from '../../components/ui/skeleton';
-import { apiFetch } from '../../lib/api-client';
-import { createAdminTableFetcher } from '../../services/adminTableService';
-import { formatReviewDate } from '../../lib/studio-review';
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { apiFetch } from '@/lib/api-client';
+import { createAdminTableFetcher } from '@/services/adminTableService';
+import { formatReviewDate } from '@/lib/studio-review';
 const labels = {
   new: 'Mới',
   in_progress: 'Đang xử lý',

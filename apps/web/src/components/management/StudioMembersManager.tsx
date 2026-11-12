@@ -10,11 +10,11 @@ import {
   ShieldCheck,
   AlertCircle,
 } from 'lucide-react';
-import { apiFetch } from '../../lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { StudioCard, StudioBadge } from './StudioPrimitives';
-import type { MemberStudio } from '../../types/management';
+import type { MemberStudio } from '@/types/management';
 
 interface StudioMember {
   id: string;

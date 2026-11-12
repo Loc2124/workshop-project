@@ -3,7 +3,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LayoutDashboard, CalendarDays } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
-vi.mock('../../hooks/useAuth', () => ({
+vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ logout: vi.fn(), isLoggingOut: false }),
 }));
 import {

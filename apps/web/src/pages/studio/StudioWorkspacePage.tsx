@@ -1,52 +1,48 @@
 ﻿import { lazy } from 'react';
-import { LoadingState } from '../../components/ui/LoadingState';
-import { StudioNotifications } from '../../components/management/StudioNotifications';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { StudioNotifications } from '@/components/management/StudioNotifications';
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   useMyStudios,
   useStudioWorkshops,
   useStudioSessions,
-} from '../../hooks/useManagement';
-import { Button } from '../../components/ui/button';
+} from '@/hooks/useManagement';
+import { Button } from '@/components/ui/button';
 import {
   readActiveStudioId,
   selectDefaultStudio,
-} from '../../lib/studio-dashboard';
-import { useAuth } from '../../hooks/useAuth';
+} from '@/lib/studio-dashboard';
+import { useAuth } from '@/hooks/useAuth';
 
 const StudioWorkshopManager = lazy(() =>
-  import('../../components/management/StudioWorkshopManager').then(
-    (module) => ({
-      default: module.StudioWorkshopManager,
-    }),
-  ),
+  import('@/components/management/StudioWorkshopManager').then((module) => ({
+    default: module.StudioWorkshopManager,
+  })),
 );
 const StudioSessionManager = lazy(() =>
-  import('../../components/management/StudioSessionManager').then((module) => ({
+  import('@/components/management/StudioSessionManager').then((module) => ({
     default: module.StudioSessionManager,
   })),
 );
 const StudioBookingManager = lazy(() =>
-  import('../../components/management/StudioBookingManager').then((module) => ({
+  import('@/components/management/StudioBookingManager').then((module) => ({
     default: module.StudioBookingManager,
   })),
 );
 const StudioProfileManager = lazy(() =>
-  import('../../components/management/StudioProfileManager').then((module) => ({
+  import('@/components/management/StudioProfileManager').then((module) => ({
     default: module.StudioProfileManager,
   })),
 );
 const StudioMembersManager = lazy(() =>
-  import('../../components/management/StudioMembersManager').then((module) => ({
+  import('@/components/management/StudioMembersManager').then((module) => ({
     default: module.StudioMembersManager,
   })),
 );
 const StudioFinancesManager = lazy(() =>
-  import('../../components/management/StudioFinancesManager').then(
-    (module) => ({
-      default: module.StudioFinancesManager,
-    }),
-  ),
+  import('@/components/management/StudioFinancesManager').then((module) => ({
+    default: module.StudioFinancesManager,
+  })),
 );
 
 type Section =

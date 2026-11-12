@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { AuthUser } from '../../services/authService';
+import type { AuthUser } from '@/services/authService';
 
 const internalRedirectSchema = z
   .string()

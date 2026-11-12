@@ -1,5 +1,5 @@
-import type { Workshop } from '../../types/workshop';
-import { getCategoryMeta } from '../../constants/categories';
+import type { Workshop } from '@/types/workshop';
+import { getCategoryMeta } from '@/constants/categories';
 
 export function normalizeSearchText(value: string) {
   return value

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { Img } from '../ui/Img';
-import { imageSources } from '../../lib/image-sources';
+import { imageSources } from '@/lib/image-sources';
 const Gallery = lazy(() =>
   import('../admin/ImageGalleryDialog').then((module) => ({
     default: module.ImageGalleryDialog,

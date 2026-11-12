@@ -1,7 +1,7 @@
 import { Store, Ticket } from 'lucide-react';
-import { getCategoryIcon } from '../../../constants/categories';
-import type { SearchSuggestion } from '../../../lib/searchSuggestions';
-import { cn } from '../../../lib/utils';
+import { getCategoryIcon } from '@/constants/categories';
+import type { SearchSuggestion } from '@/lib/searchSuggestions';
+import { cn } from '@/lib/utils';
 import { HighlightMatch } from './HighlightMatch';
 
 export interface SearchSuggestionsDropdownProps {

@@ -1,7 +1,7 @@
 import { useState, type ComponentProps } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Input } from './input';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 export function PasswordInput({
   className,

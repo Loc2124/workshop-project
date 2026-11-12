@@ -8,15 +8,15 @@ import {
 import { Camera, CameraOff, Search } from 'lucide-react';
 import type { IScannerControls } from '@zxing/browser';
 import { z } from 'zod';
-import { useAuth } from '../../hooks/useAuth';
-import { useMyStudios } from '../../hooks/useOwnedStudios';
+import { useAuth } from '@/hooks/useAuth';
+import { useMyStudios } from '@/hooks/useOwnedStudios';
 import {
   readActiveStudioId,
   writeActiveStudioId,
-} from '../../lib/studio-dashboard';
-import { apiFetch } from '../../lib/api-client';
-import { formatDate, formatPrice } from '../../lib/format';
-import { Button } from '../../components/ui/button';
+} from '@/lib/studio-dashboard';
+import { apiFetch } from '@/lib/api-client';
+import { formatDate, formatPrice } from '@/lib/format';
+import { Button } from '@/components/ui/button';
 
 const ticketSchema = z.object({
   ticketId: z.uuid(),

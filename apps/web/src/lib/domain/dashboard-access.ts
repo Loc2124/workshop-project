@@ -1,5 +1,5 @@
-import type { AuthUser } from '../../services/authService';
-import type { MemberStudio } from '../../types/management';
+import type { AuthUser } from '@/services/authService';
+import type { MemberStudio } from '@/types/management';
 export type DashboardRole = 'studio_owner' | 'admin' | 'studio_member';
 export function hasDashboardRole(
   user: Pick<AuthUser, 'role'> | null,

@@ -1,5 +1,5 @@
 import type { QueryClient, Query } from '@tanstack/react-query';
-import type { AuthUser } from '../../services/authService';
+import type { AuthUser } from '@/services/authService';
 import {
   advanceSessionEpoch,
   onSessionEvent,
@@ -73,7 +73,7 @@ export function installSessionLifecycle(client: QueryClient) {
     if (event.type === 'expired')
       await synchronizeSession(client, null, true, event.epoch);
     else {
-      const { authUserSchema } = await import('../../services/authSchemas');
+      const { authUserSchema } = await import('@/services/authSchemas');
       const parsed = authUserSchema.safeParse(event.user);
       if (!parsed.success) throw new Error('Invalid refresh response');
       await synchronizeSession(client, parsed.data, false, event.epoch);

@@ -1,8 +1,8 @@
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 import { TicketCard } from '../tickets';
-import type { Workshop } from '../../types/workshop';
-import type { StudioListing } from '../../types/studio';
+import type { Workshop } from '@/types/workshop';
+import type { StudioListing } from '@/types/studio';
 import type { CatalogView } from './ViewToggle';
 import { StudioCard } from './StudioCard';
 import { WorkshopCard } from './WorkshopCard';

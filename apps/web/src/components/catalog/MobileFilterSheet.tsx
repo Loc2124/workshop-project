@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
-import type { CatalogFilters } from '../../types/catalog';
+import type { CatalogFilters } from '@/types/catalog';
 import {
   Dialog,
   DialogClose,

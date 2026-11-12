@@ -1,10 +1,10 @@
 import { Check, Copy, Phone, CalendarClock, UsersRound } from 'lucide-react';
-import { formatPrice } from '../../../lib/format';
+import { formatPrice } from '@/lib/format';
 import {
   dateLabel,
   paymentLabel,
   reservationLabel,
-} from '../../../pages/customer/CustomerBookingsPage';
+} from '@/pages/customer/CustomerBookingsPage';
 import { StudioBadge, StudioButton } from '../StudioPrimitives';
 import {
   paymentTone,

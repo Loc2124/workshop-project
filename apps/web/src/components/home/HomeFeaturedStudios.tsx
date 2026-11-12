@@ -1,4 +1,4 @@
-import type { FeaturedStudio } from '../../services/featuredService';
+import type { FeaturedStudio } from '@/services/featuredService';
 import { PageContainer } from '../layout/PageContainer';
 import { SectionHeading } from '../layout/SectionHeading';
 import { StudioCard } from '../catalog/StudioCard';

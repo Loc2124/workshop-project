@@ -5,7 +5,7 @@ import {
   MapPin,
   SlidersHorizontal,
 } from 'lucide-react';
-import type { CatalogFilters } from '../../types/catalog';
+import type { CatalogFilters } from '@/types/catalog';
 import { AreaMultiSelect, type AreaOption } from './AreaMultiSelect';
 import { Button } from '../ui/button';
 import { DateRangePicker } from '../ui/date-range-picker';

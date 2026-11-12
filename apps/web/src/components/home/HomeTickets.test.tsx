@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import { HomeFeaturedStudios } from './HomeFeaturedStudios';
 import { HomeWorkshopSection } from './HomeWorkshopSection';
-import type { FeaturedStudio } from '../../services/featuredService';
+import type { FeaturedStudio } from '@/services/featuredService';
 import { mockWorkshops } from '../../test-fixtures/mockWorkshops';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 

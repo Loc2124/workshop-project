@@ -1,10 +1,10 @@
 import { type RefObject } from 'react';
 import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { formatPrice } from '../../lib/format';
-import { downloadQrPng } from '../../lib/download-qr';
-import type { CustomerBooking } from '../../services/customerBookingService';
-import type { bookingDetailState } from '../../lib/booking-detail';
+import { formatPrice } from '@/lib/format';
+import { downloadQrPng } from '@/lib/download-qr';
+import type { CustomerBooking } from '@/services/customerBookingService';
+import type { bookingDetailState } from '@/lib/booking-detail';
 
 const primary =
   'inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60';

@@ -2,9 +2,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, expect, it, vi } from 'vitest';
 import { StudioBookingManager } from './StudioBookingManager';
-import { queryKeys } from '../../lib/query-keys';
+import { queryKeys } from '@/lib/query-keys';
 
-vi.mock('../../hooks/useAuth', () => ({
+vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'owner' } }),
 }));
 

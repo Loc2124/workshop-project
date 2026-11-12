@@ -1,6 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
-import { formatDate } from '../../lib/format';
-import type { CustomerTicket } from '../../services/customerBookingService';
+import { formatDate } from '@/lib/format';
+import type { CustomerTicket } from '@/services/customerBookingService';
 
 export interface BookingTicketsSectionProps {
   tickets: CustomerTicket[];

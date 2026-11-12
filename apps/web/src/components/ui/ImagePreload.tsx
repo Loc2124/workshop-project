@@ -1,4 +1,4 @@
-import { imageSources } from '../../lib/image-sources';
+import { imageSources } from '@/lib/image-sources';
 export function ImagePreload({ src }: { src: string }) {
   const image = imageSources(src, 'medium');
   return (

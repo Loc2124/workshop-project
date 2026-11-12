@@ -1,9 +1,9 @@
-import type { Workshop } from '../../types/workshop';
+import type { Workshop } from '@/types/workshop';
 import {
   displaySession,
   sessionStatus,
   sessionStatusLabel,
-} from '../../lib/sessionStatus';
+} from '@/lib/sessionStatus';
 
 export type TicketData = {
   workshop: {

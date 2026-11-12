@@ -9,14 +9,14 @@ import {
 } from 'react';
 import { Search, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useCategoryCatalog } from '../../hooks/useCategoryCatalog';
-import { categories } from '../../constants/categories';
+import { useCategoryCatalog } from '@/hooks/useCategoryCatalog';
+import { categories } from '@/constants/categories';
 import {
   getSearchSuggestions,
   type SearchSuggestion,
-} from '../../lib/searchSuggestions';
-import { cn } from '../../lib/utils';
-import { searchQuerySchema } from '../../lib/form-validation';
+} from '@/lib/searchSuggestions';
+import { cn } from '@/lib/utils';
+import { searchQuerySchema } from '@/lib/form-validation';
 import {
   Dialog,
   DialogContent,

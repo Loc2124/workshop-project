@@ -1,8 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { Flag } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { authHref } from '../../lib/auth-navigation';
+import { useAuth } from '@/hooks/useAuth';
+import { authHref } from '@/lib/auth-navigation';
 import { Button } from '../ui/button';
 const ReportDialog = lazy(() =>
   import('./ReportDialog').then((module) => ({ default: module.ReportButton })),

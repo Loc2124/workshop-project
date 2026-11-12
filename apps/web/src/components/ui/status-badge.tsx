@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 const tones = {
   gray: 'bg-[#E8E4D8] text-[#4A453C]',

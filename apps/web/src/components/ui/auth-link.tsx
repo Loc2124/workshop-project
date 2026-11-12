@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { authHref, authRedirectFromSearch } from '../../lib/auth-navigation';
+import { authHref, authRedirectFromSearch } from '@/lib/auth-navigation';
 
 const authPaths = new Set([
   '/dang-nhap',

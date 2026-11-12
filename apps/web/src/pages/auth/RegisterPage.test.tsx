@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const useAuth = vi.hoisted(() => vi.fn());
 
-vi.mock('../../hooks/useAuth', () => ({ useAuth }));
-vi.mock('../../components/layout/SiteHeader', () => ({
+vi.mock('@/hooks/useAuth', () => ({ useAuth }));
+vi.mock('@/components/layout/SiteHeader', () => ({
   SiteHeader: () => null,
 }));
 

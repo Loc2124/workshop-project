@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { ArrowUpRight, MapPin, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 import { MediaImage } from '../ui/MediaImage';
 import { LoadingState } from '../ui/LoadingState';
 

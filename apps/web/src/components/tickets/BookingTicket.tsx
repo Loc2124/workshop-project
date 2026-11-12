@@ -1,8 +1,8 @@
 import { createPortal } from 'react-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { Download, Printer } from 'lucide-react';
-import { cn } from '../../lib/utils';
-import { useBookingTicketActions } from '../../hooks/useBookingTicketActions';
+import { cn } from '@/lib/utils';
+import { useBookingTicketActions } from '@/hooks/useBookingTicketActions';
 import { TicketShell } from './TicketShell';
 import { TicketInfo, TicketPrice } from './TicketContent';
 import { TicketHeading } from './TicketPrimitives';

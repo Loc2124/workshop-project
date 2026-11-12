@@ -1,10 +1,10 @@
 ﻿import type { QueryClient } from '@tanstack/react-query';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import {
   invalidatePublicCatalog,
   invalidateResources,
-} from '../../lib/query-invalidation';
+} from '@/lib/query-invalidation';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
@@ -35,17 +35,17 @@ import {
   TableRow,
   TableHead,
   TableCell,
-} from '../../components/ui/table';
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from '../../components/ui/dialog';
-import { Button } from '../../components/ui/button';
-import { StatusBadge } from '../../components/ui/status-badge';
-import { LoadingState } from '../../components/ui/LoadingState';
-import { apiFetch } from '../../lib/api-client';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { apiFetch } from '@/lib/api-client';
 const categorySchema = z.object({
   id: z.string(),
   name: z.string(),

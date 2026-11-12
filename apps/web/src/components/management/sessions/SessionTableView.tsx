@@ -1,8 +1,8 @@
 import { Clock3 } from 'lucide-react';
-import { formatPrice, formatSessionDate } from '../../../lib/format';
+import { formatPrice, formatSessionDate } from '@/lib/format';
 import { StudioBadge } from '../StudioPrimitives';
 import { getRelativeDateTag } from './SessionCardItem';
-import type { StudioSession } from '../../../types/management';
+import type { StudioSession } from '@/types/management';
 
 export interface SessionTableViewProps {
   sessions: StudioSession[];

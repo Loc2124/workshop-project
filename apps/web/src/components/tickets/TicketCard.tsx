@@ -4,8 +4,8 @@ import {
   formatCategoryLabel,
   formatSessionDate,
   formatSlot,
-} from '../../lib/format';
-import { cn } from '../../lib/utils';
+} from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { TicketPrice, TicketRating } from './TicketContent';
 import { TicketStub } from './TicketStub';
 import { TicketAction, TicketLink } from './TicketPrimitives';

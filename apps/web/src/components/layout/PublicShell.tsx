@@ -5,7 +5,7 @@ import { SiteFooter } from './SiteFooter';
 import { PageContainer } from './PageContainer';
 import { LoadingState } from '../ui/LoadingState';
 import { getPublicShellClasses, isMarketingPage } from './publicShellUtils';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 export function PublicPageSkeleton() {
   return (

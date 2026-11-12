@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react';
-import { formatSessionDate } from '../../lib/format';
-import { useCancelStudioSession } from '../../hooks/useManagement';
+import { formatSessionDate } from '@/lib/format';
+import { useCancelStudioSession } from '@/hooks/useManagement';
 import type {
   MemberStudio,
   StudioSession,
   StudioWorkshop,
-} from '../../types/management';
+} from '@/types/management';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Plus, Search } from 'lucide-react';
 import {

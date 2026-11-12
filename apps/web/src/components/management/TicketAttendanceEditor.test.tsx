@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { expect, it, vi } from 'vitest';
 import { TicketAttendanceEditor } from './TicketAttendanceEditor';
-vi.mock('../../hooks/useAuth', () => ({
+vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => ({ user: { id: 'reviewer' } }),
 }));
 const tickets = [1, 2, 3].map((seq) => ({

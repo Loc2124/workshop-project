@@ -14,9 +14,9 @@ import {
   UserCheck,
   LogIn,
 } from 'lucide-react';
-import { apiFetch } from '../../lib/api-client';
-import { useAuth } from '../../hooks/useAuth';
-import { Button } from '../../components/ui/button';
+import { apiFetch } from '@/lib/api-client';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 interface InvitationInfo {
   id: string;

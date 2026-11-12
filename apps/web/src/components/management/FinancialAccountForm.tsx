@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '../../lib/api-client';
+import { apiFetch } from '@/lib/api-client';
 import { Link } from 'react-router-dom';
 import {
   VIETNAM_BANKS,

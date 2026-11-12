@@ -2,8 +2,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import type { AuthUser } from '../../services/authService';
-import type { MemberStudio } from '../../types/management';
+import type { AuthUser } from '@/services/authService';
+import type { MemberStudio } from '@/types/management';
 import { StudioOverview } from './StudioOverview';
 
 const user: AuthUser = {

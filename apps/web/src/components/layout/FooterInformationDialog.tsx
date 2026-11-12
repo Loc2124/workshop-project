@@ -12,7 +12,7 @@ import {
 import { Button } from '../ui/button';
 import { Link } from 'react-router-dom';
 import { Headphones, Mail, Phone } from 'lucide-react';
-import { useSiteInformation } from '../../hooks/useSiteInformation';
+import { useSiteInformation } from '@/hooks/useSiteInformation';
 
 export function FooterInformationDialog({
   selected,

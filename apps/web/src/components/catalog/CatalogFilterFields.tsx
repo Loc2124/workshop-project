@@ -1,7 +1,7 @@
 import * as Popover from '@radix-ui/react-popover';
 import { useState, type ReactNode } from 'react';
 import { Banknote, ChevronDown, LocateFixed, MapPin } from 'lucide-react';
-import type { CatalogFilters } from '../../types/catalog';
+import type { CatalogFilters } from '@/types/catalog';
 import { DateRangePicker } from '../ui/date-range-picker';
 import { ProvinceCombobox, type ProvinceOption } from './ProvinceCombobox';
 import { PriceFilter } from './PriceFilter';

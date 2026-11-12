@@ -1,4 +1,4 @@
-import type { CustomerBooking } from '../../services/customerBookingService';
+import type { CustomerBooking } from '@/services/customerBookingService';
 
 export function bookingDetailState(booking: CustomerBooking, now: number) {
   const deposit =

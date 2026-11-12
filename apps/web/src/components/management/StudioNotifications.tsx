@@ -1,11 +1,11 @@
-import { useDeferredStartup } from '../../hooks/useDeferredStartup';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { useDeferredStartup } from '@/hooks/useDeferredStartup';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
-import { apiFetch } from '../../lib/api-client';
-import { formatReviewDate } from '../../lib/studio-review';
+import { apiFetch } from '@/lib/api-client';
+import { formatReviewDate } from '@/lib/studio-review';
 import { Button } from '../ui/button';
 import { toast } from 'sonner';
 const schema = z.object({

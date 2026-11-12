@@ -1,25 +1,25 @@
 ﻿import { useParams } from 'react-router-dom';
-import { DetailState } from '../../components/details/DetailPrimitives';
-import { WorkshopDetails } from '../../components/details/WorkshopDetails';
-import type { WorkshopBookingHandler } from '../../components/details/WorkshopSchedule';
+import { DetailState } from '@/components/details/DetailPrimitives';
+import { WorkshopDetails } from '@/components/details/WorkshopDetails';
+import type { WorkshopBookingHandler } from '@/components/details/WorkshopSchedule';
 import {
   workshopSuggestions,
   workshopText,
-} from '../../components/details/workshopPresentation';
-import { PageBreadcrumb } from '../../components/layout/PageBreadcrumb';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { ReportButton } from '../../components/reports/ReportButton';
+} from '@/components/details/workshopPresentation';
+import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { ReportButton } from '@/components/reports/ReportButton';
 import {
   useCatalog,
   useWorkshop,
   useWorkshopReviews,
-} from '../../hooks/useCatalog';
-import { ApiError } from '../../lib/api-client';
-import { useAuth } from '../../hooks/useAuth';
+} from '@/hooks/useCatalog';
+import { ApiError } from '@/lib/api-client';
+import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { customerBookingService } from '../../services/customerBookingService';
-import { queryKeys } from '../../lib/query-keys';
+import { customerBookingService } from '@/services/customerBookingService';
+import { queryKeys } from '@/lib/query-keys';
 export function WorkshopPage({
   onBook,
 }: {

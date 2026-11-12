@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
-import type { Workshop } from '../../types/workshop';
+import type { Workshop } from '@/types/workshop';
 import { WorkshopDetails } from './WorkshopDetails';
 
 describe('WorkshopDetails policies', () => {

@@ -1,6 +1,6 @@
 import { useEffect, useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { geographyQueries } from '../../lib/geography-queries';
+import { geographyQueries } from '@/lib/geography-queries';
 type Props = {
   provinceId?: string;
   selectedIds: string[];

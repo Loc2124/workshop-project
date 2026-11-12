@@ -6,25 +6,25 @@ import {
   createStudioRegistrationSchema,
   defaultSiteSettings,
 } from '@workshop/shared';
-import { LoadingState } from '../../components/ui/LoadingState';
-import { Button } from '../../components/ui/button';
-import { AuthLink } from '../../components/ui/auth-link';
-import { PageBreadcrumb } from '../../components/layout/PageBreadcrumb';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { useAuth } from '../../hooks/useAuth';
-import { useCategoriesQuery } from '../../hooks/useCategories';
-import { useCreateStudio, useMyStudios } from '../../hooks/useManagement';
-import { useSiteSettings } from '../../hooks/useSiteSettings';
-import { useStudioRegistrationDraft } from '../../hooks/useStudioRegistrationDraft';
-import { authHref } from '../../lib/auth-navigation';
-import { authFieldErrors } from '../../lib/auth-validation';
-import { studioMissingFields } from '../../lib/studio-missing-fields';
-import type { CreatedStudio } from '../../services/managementService';
-import { RegistrationProgress } from '../../components/registration/RegistrationProgress';
-import { RegistrationReceipt } from '../../components/registration/RegistrationReceipt';
-import { RegistrationBasicFields } from '../../components/registration/RegistrationBasicFields';
-import { RegistrationReviewSummary } from '../../components/registration/RegistrationReviewSummary';
-import { RegistrationSidebar } from '../../components/registration/RegistrationSidebar';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { Button } from '@/components/ui/button';
+import { AuthLink } from '@/components/ui/auth-link';
+import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { useAuth } from '@/hooks/useAuth';
+import { useCategoriesQuery } from '@/hooks/useCategories';
+import { useCreateStudio, useMyStudios } from '@/hooks/useManagement';
+import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useStudioRegistrationDraft } from '@/hooks/useStudioRegistrationDraft';
+import { authHref } from '@/lib/auth-navigation';
+import { authFieldErrors } from '@/lib/auth-validation';
+import { studioMissingFields } from '@/lib/studio-missing-fields';
+import type { CreatedStudio } from '@/services/managementService';
+import { RegistrationProgress } from '@/components/registration/RegistrationProgress';
+import { RegistrationReceipt } from '@/components/registration/RegistrationReceipt';
+import { RegistrationBasicFields } from '@/components/registration/RegistrationBasicFields';
+import { RegistrationReviewSummary } from '@/components/registration/RegistrationReviewSummary';
+import { RegistrationSidebar } from '@/components/registration/RegistrationSidebar';
 
 function StudioRegistrationForm() {
   const settingsQuery = useSiteSettings();

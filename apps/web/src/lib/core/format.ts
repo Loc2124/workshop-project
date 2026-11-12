@@ -1,4 +1,4 @@
-import { getCategoryMeta } from '../../constants/categories';
+import { getCategoryMeta } from '@/constants/categories';
 
 export function formatPrice(value: number) {
   return new Intl.NumberFormat('vi-VN').format(value);

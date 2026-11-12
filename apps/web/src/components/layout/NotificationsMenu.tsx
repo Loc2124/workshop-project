@@ -12,9 +12,9 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { apiFetch } from '../../lib/api-client';
-import { queryKeys } from '../../lib/query-keys';
-import { useDeferredStartup } from '../../hooks/useDeferredStartup';
+import { apiFetch } from '@/lib/api-client';
+import { queryKeys } from '@/lib/query-keys';
+import { useDeferredStartup } from '@/hooks/useDeferredStartup';
 import { Button } from '../ui/button';
 
 const schema = z.object({

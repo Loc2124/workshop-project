@@ -2,20 +2,20 @@ import { LoadingState } from '../ui/LoadingState';
 import { StudioTrustBadge } from '../ui/StudioTrustBadge';
 import { StudioEvidenceEditor } from './StudioEvidenceEditor';
 import { AuthLink } from '../ui/auth-link';
-import { studioApplicationStatus } from '../../lib/studio-application-status';
-import { useSiteInformation } from '../../hooks/useSiteInformation';
+import { studioApplicationStatus } from '@/lib/studio-application-status';
+import { useSiteInformation } from '@/hooks/useSiteInformation';
 import { Link } from 'react-router-dom';
-import type { AuthUser } from '../../services/authService';
+import type { AuthUser } from '@/services/authService';
 import type {
   MemberStudio,
   StudioSession,
   StudioWorkshop,
-} from '../../types/management';
+} from '@/types/management';
 import { StudioSessionManager } from './StudioSessionManager';
 import { StudioWorkshopManager } from './StudioWorkshopManager';
 import { Button } from '../ui/button';
-import { useCategories } from '../../hooks/useCategories';
-import { categories as localCategories } from '../../constants/categories';
+import { useCategories } from '@/hooks/useCategories';
+import { categories as localCategories } from '@/constants/categories';
 
 type Props = {
   user: AuthUser | null;

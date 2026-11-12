@@ -1,11 +1,11 @@
 ﻿import type { QueryClient } from '@tanstack/react-query';
-import { prefetchDefaultTable } from '../../lib/prefetch-table';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { prefetchDefaultTable } from '@/lib/prefetch-table';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import {
   invalidateResources,
   invalidatePublicCatalog,
-} from '../../lib/query-invalidation';
+} from '@/lib/query-invalidation';
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -15,22 +15,22 @@ import {
   DataTable,
   type DataTableFetcher,
   type DataTableFilter,
-} from '../../components/admin/DataTable';
-import { ConfirmReasonDialog } from '../../components/admin/ConfirmReasonDialog';
-import { StatusBadge } from '../../components/ui/status-badge';
+} from '@/components/admin/DataTable';
+import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { StatusBadge } from '@/components/ui/status-badge';
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetDescription,
-} from '../../components/ui/sheet';
-import { Button } from '../../components/ui/button';
-import { Skeleton } from '../../components/ui/skeleton';
-import { apiFetch } from '../../lib/api-client';
-import { createAdminTableFetcher } from '../../services/adminTableService';
-import { formatReviewDate } from '../../lib/studio-review';
-import { formatPrice } from '../../lib/format';
-import { TicketAttendanceEditor } from '../../components/management/TicketAttendanceEditor';
+} from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { apiFetch } from '@/lib/api-client';
+import { createAdminTableFetcher } from '@/services/adminTableService';
+import { formatReviewDate } from '@/lib/studio-review';
+import { formatPrice } from '@/lib/format';
+import { TicketAttendanceEditor } from '@/components/management/TicketAttendanceEditor';
 
 const status = z.enum(['pending', 'confirmed', 'cancelled', 'completed']);
 type Status = z.infer<typeof status>;

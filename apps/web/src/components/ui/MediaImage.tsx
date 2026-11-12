@@ -1,6 +1,6 @@
 import { Img, type ImgProps } from './Img';
 import { useState } from 'react';
-import { cn } from '../../lib/utils';
+import { cn } from '@/lib/utils';
 
 type Props = Omit<ImgProps, 'src' | 'alt' | 'className'> & {
   src?: string | null;

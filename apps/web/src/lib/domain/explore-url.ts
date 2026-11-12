@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import { categoryValue, getCategoryMeta } from '../../constants/categories';
+import { categoryValue, getCategoryMeta } from '@/constants/categories';
 import { provinceSlug } from './catalog';
 import { parseCalendarDate } from '../core/calendar-date';
 import { searchQuerySchema } from '../core/form-validation';
-import type { CatalogFilters, SortOption } from '../../types/catalog';
-import type { ProvinceOption } from '../../components/catalog/ProvinceCombobox';
+import type { CatalogFilters, SortOption } from '@/types/catalog';
+import type { ProvinceOption } from '@/components/catalog/ProvinceCombobox';
 
 const postgresIntegerMax = 2_147_483_647;
 const uuidSchema = z

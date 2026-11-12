@@ -1,6 +1,6 @@
 import { StatusBadge } from '../ui/status-badge';
-import { formatReviewDate } from '../../lib/studio-review';
-import { studioStates } from '../../lib/studio-dashboard';
+import { formatReviewDate } from '@/lib/studio-review';
+import { studioStates } from '@/lib/studio-dashboard';
 type Entry = {
   id: string;
   fromStatus: string | null;

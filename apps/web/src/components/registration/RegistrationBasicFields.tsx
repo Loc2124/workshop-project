@@ -1,12 +1,12 @@
 import { Check } from 'lucide-react';
 import { studioProvinces } from '@workshop/shared';
-import { getCategoryIcon } from '../../constants/categories';
+import { getCategoryIcon } from '@/constants/categories';
 import { AuthField } from '../ui/auth-field';
 import { Button } from '../ui/button';
 import { LoadingState } from '../ui/LoadingState';
 import { StudioEvidenceFields } from '../management/StudioEvidenceFields';
-import { imageService } from '../../services/imageService';
-import type { useStudioRegistrationDraft } from '../../hooks/useStudioRegistrationDraft';
+import { imageService } from '@/services/imageService';
+import type { useStudioRegistrationDraft } from '@/hooks/useStudioRegistrationDraft';
 
 const selectClass =
   'min-h-12 w-full rounded-lg border border-line bg-surface px-3 text-base text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:border-[#DDD6C4] disabled:bg-[#E6E1D3] disabled:text-[#8A8375] disabled:opacity-100 aria-invalid:border-brick';

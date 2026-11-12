@@ -1,7 +1,7 @@
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import React from 'react';
 import { Link } from 'react-router-dom';
-import type { CreatedStudio } from '../../services/managementService';
+import type { CreatedStudio } from '@/services/managementService';
 import { Button } from '../ui/button';
 
 export interface RegistrationReceiptProps {

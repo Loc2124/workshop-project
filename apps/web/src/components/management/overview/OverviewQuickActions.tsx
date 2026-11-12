@@ -5,7 +5,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { studioPage } from '../../../lib/studio-dashboard';
+import { studioPage } from '@/lib/studio-dashboard';
 
 export interface OverviewQuickActionsProps {
   studioId: string;

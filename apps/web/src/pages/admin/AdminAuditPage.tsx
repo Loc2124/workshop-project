@@ -1,7 +1,7 @@
 ﻿import type { QueryClient } from '@tanstack/react-query';
-import { prefetchDefaultTable } from '../../lib/prefetch-table';
-import { useAuth } from '../../hooks/useAuth';
-import { queryKeys } from '../../lib/query-keys';
+import { prefetchDefaultTable } from '@/lib/prefetch-table';
+import { useAuth } from '@/hooks/useAuth';
+import { queryKeys } from '@/lib/query-keys';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -11,19 +11,19 @@ import {
   DataTable,
   type DataTableFetcher,
   type DataTableFilter,
-} from '../../components/admin/DataTable';
+} from '@/components/admin/DataTable';
 import {
   Sheet,
   SheetContent,
   SheetTitle,
   SheetDescription,
-} from '../../components/ui/sheet';
-import { Skeleton } from '../../components/ui/skeleton';
-import { Button } from '../../components/ui/button';
-import { apiFetch } from '../../lib/api-client';
-import { createAdminTableFetcher } from '../../services/adminTableService';
-import { formatReviewDate } from '../../lib/studio-review';
-import { auditActionLabel } from '../../lib/audit-actions';
+} from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { apiFetch } from '@/lib/api-client';
+import { createAdminTableFetcher } from '@/services/adminTableService';
+import { formatReviewDate } from '@/lib/studio-review';
+import { auditActionLabel } from '@/lib/audit-actions';
 
 const rowSchema = z.object({
   id: z.string().uuid(),

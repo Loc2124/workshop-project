@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { lazy, Suspense, useRef, type ReactNode } from 'react';
 
-import { useSiteInformation } from '../../hooks/useSiteInformation';
+import { useSiteInformation } from '@/hooks/useSiteInformation';
 
 const loadInformationDialog = () =>
   import('./FooterInformationDialog').then((module) => ({

@@ -18,11 +18,11 @@ import {
   Sparkles,
   Star,
 } from 'lucide-react';
-import type { MemberStudio } from '../../types/management';
+import type { MemberStudio } from '@/types/management';
 import { Img } from '../ui/Img';
 import { StudioBadge, StudioButton, StudioCard } from './StudioPrimitives';
 import { StudioTrustBadge } from '../ui/StudioTrustBadge';
-import { studioApplicationStatus } from '../../lib/studio-application-status';
+import { studioApplicationStatus } from '@/lib/studio-application-status';
 import { StudioPaymentSettings } from './StudioPaymentSettings';
 import { StudioEvidenceEditor } from './StudioEvidenceEditor';
 

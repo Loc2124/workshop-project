@@ -2,10 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { calculateDeposit, depositSettingsSchema } from '@workshop/shared';
 import type { z } from 'zod';
-import { apiFetch } from '../../lib/api-client';
-import { formatPrice } from '../../lib/format';
+import { apiFetch } from '@/lib/api-client';
+import { formatPrice } from '@/lib/format';
 import { StudioButton, StudioCard, StudioField } from './StudioPrimitives';
-import { bookingScheduleLabel } from '../../lib/booking-detail';
+import { bookingScheduleLabel } from '@/lib/booking-detail';
 
 type Settings = z.infer<typeof depositSettingsSchema>;
 type Response = {

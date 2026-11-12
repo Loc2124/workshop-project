@@ -12,21 +12,21 @@ const mocks = vi.hoisted(() => ({
   useSetStudioVerification: vi.fn(),
 }));
 
-vi.mock('../../hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
-vi.mock('../../hooks/useManagement', () => ({
+vi.mock('@/hooks/useAuth', () => ({ useAuth: mocks.useAuth }));
+vi.mock('@/hooks/useManagement', () => ({
   useAdminStudios: mocks.useAdminStudios,
   useAdminWorkshops: mocks.useAdminWorkshops,
   useSetStudioStatus: mocks.useSetStudioStatus,
   useDecideWorkshop: mocks.useDecideWorkshop,
   useSetStudioVerification: mocks.useSetStudioVerification,
 }));
-vi.mock('../../components/layout/SiteHeader', () => ({
+vi.mock('@/components/layout/SiteHeader', () => ({
   SiteHeader: () => null,
 }));
 
 import { AdminApprovalPage } from './AdminApprovalPage';
-import { StudioVerificationPanel } from '../../components/management/StudioVerificationPanel';
-import { StudioTrustBadge } from '../../components/ui/StudioTrustBadge';
+import { StudioVerificationPanel } from '@/components/management/StudioVerificationPanel';
+import { StudioTrustBadge } from '@/components/ui/StudioTrustBadge';
 
 const admin = {
   id: '00000000-0000-4000-8000-000000000001',

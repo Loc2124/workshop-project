@@ -1,6 +1,6 @@
-﻿import { StudioOverview } from '../../components/management/StudioOverview';
-import { useAuth } from '../../hooks/useAuth';
-import { useMyStudios } from '../../hooks/useManagement';
+﻿import { StudioOverview } from '@/components/management/StudioOverview';
+import { useAuth } from '@/hooks/useAuth';
+import { useMyStudios } from '@/hooks/useManagement';
 
 export function StudioManagementPage() {
   const { user, isLoading: authLoading, authError, retryAuth } = useAuth();

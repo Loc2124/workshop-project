@@ -4,8 +4,8 @@ import {
   DEFAULT_CATEGORY,
   getCategoryIcon,
   getCategoryMeta,
-} from '../../constants/categories';
-import { cn } from '../../lib/utils';
+} from '@/constants/categories';
+import { cn } from '@/lib/utils';
 
 export function TicketStub({
   imageUrl,

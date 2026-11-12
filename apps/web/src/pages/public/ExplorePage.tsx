@@ -3,32 +3,25 @@ import { CalendarDays, ChevronDown } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
-import type { AreaOption } from '../../components/catalog/AreaMultiSelect';
-import { ExploreFilters } from '../../components/catalog/ExploreFilters';
-import { Pagination } from '../../components/catalog/Pagination';
-import type { ProvinceOption } from '../../components/catalog/ProvinceCombobox';
-import {
-  ViewToggle,
-  type CatalogView,
-} from '../../components/catalog/ViewToggle';
-import { WorkshopGrid } from '../../components/catalog/WorkshopGrid';
-import { ActiveFilterChips } from '../../components/catalog/ActiveFilterChips';
-import { countActiveFilters } from '../../components/catalog/MobileFilterSheet';
-import { PageBreadcrumb } from '../../components/layout/PageBreadcrumb';
-import { PageContainer } from '../../components/layout/PageContainer';
-import { categories, getCategoryMeta } from '../../constants/categories';
-import {
-  catalogKeys,
-  useCatalog,
-  useCatalogStudios,
-} from '../../hooks/useCatalog';
-import { useCategoriesQuery } from '../../hooks/useCategories';
-import { useProvinces } from '../../hooks/useProvinces';
-import { provinceSlug } from '../../lib/catalog';
-import { parseExploreUrl } from '../../lib/explore-url';
-import { catalogService } from '../../services/catalogService';
-import { detectProvinceId } from '../../services/locationService';
-import type { CatalogFilters, SortOption } from '../../types/catalog';
+import type { AreaOption } from '@/components/catalog/AreaMultiSelect';
+import { ExploreFilters } from '@/components/catalog/ExploreFilters';
+import { Pagination } from '@/components/catalog/Pagination';
+import type { ProvinceOption } from '@/components/catalog/ProvinceCombobox';
+import { ViewToggle, type CatalogView } from '@/components/catalog/ViewToggle';
+import { WorkshopGrid } from '@/components/catalog/WorkshopGrid';
+import { ActiveFilterChips } from '@/components/catalog/ActiveFilterChips';
+import { countActiveFilters } from '@/components/catalog/MobileFilterSheet';
+import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { categories, getCategoryMeta } from '@/constants/categories';
+import { catalogKeys, useCatalog, useCatalogStudios } from '@/hooks/useCatalog';
+import { useCategoriesQuery } from '@/hooks/useCategories';
+import { useProvinces } from '@/hooks/useProvinces';
+import { provinceSlug } from '@/lib/catalog';
+import { parseExploreUrl } from '@/lib/explore-url';
+import { catalogService } from '@/services/catalogService';
+import { detectProvinceId } from '@/services/locationService';
+import type { CatalogFilters, SortOption } from '@/types/catalog';
 const pageSize = 12;
 const provincePreferenceKey = 'open-slot.province';
 const locationAttemptKey = 'open-slot.location-attempted';

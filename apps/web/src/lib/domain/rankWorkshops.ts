@@ -1,4 +1,4 @@
-import type { Workshop } from '../../types/workshop';
+import type { Workshop } from '@/types/workshop';
 import { workshopSearchScore } from './search';
 
 export function rankWorkshops(list: Workshop[], query = ''): Workshop[] {

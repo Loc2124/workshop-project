@@ -1,4 +1,4 @@
-import { normalizeSearchText } from '../../../lib/search';
+import { normalizeSearchText } from '@/lib/search';
 
 export interface HighlightMatchProps {
   text: string;

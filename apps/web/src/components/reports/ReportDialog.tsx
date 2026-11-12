@@ -11,11 +11,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Flag, X } from 'lucide-react';
 import { z } from 'zod';
 import { reportReasons, createReportSchema } from '@workshop/shared';
-import { useAuth } from '../../hooks/useAuth';
-import { apiFetch } from '../../lib/api-client';
-import { authHref } from '../../lib/auth-navigation';
-import { compressStudioImage } from '../../lib/compress-studio-image';
-import { uploadToSignedUrl } from '../../services/imageService';
+import { useAuth } from '@/hooks/useAuth';
+import { apiFetch } from '@/lib/api-client';
+import { authHref } from '@/lib/auth-navigation';
+import { compressStudioImage } from '@/lib/compress-studio-image';
+import { uploadToSignedUrl } from '@/services/imageService';
 import {
   Dialog,
   DialogContent,

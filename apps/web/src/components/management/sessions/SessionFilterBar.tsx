@@ -1,6 +1,6 @@
 import { Search, X, ArrowUpDown, LayoutGrid, List, Plus } from 'lucide-react';
 import { StudioButton } from '../StudioPrimitives';
-import type { StudioWorkshop } from '../../../types/management';
+import type { StudioWorkshop } from '@/types/management';
 import type { SessionStats } from './SessionStatsCards';
 
 export type StatusTab = 'upcoming' | 'past' | 'cancelled' | 'all';
