@@ -6,10 +6,10 @@ import { DashboardSkeleton } from './DashboardSkeleton';
 import { Fragment, Suspense, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
-  ArrowUpRight,
   ChevronDown,
   LogOut,
   LockKeyhole,
+  Store,
   type LucideIcon,
 } from 'lucide-react';
 import type { AuthUser } from '../../services/authService';
@@ -305,15 +305,6 @@ export function DashboardLayout({
           </div>
           <div className="flex shrink-0 items-center gap-1 md:gap-3">
             <NotificationsMenu userId={user.id} />
-            <Link
-              to="/"
-              aria-label="Về trang khách"
-              title="Về trang khách"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-sm px-2 text-sm text-muted hover:bg-soft hover:text-ink"
-            >
-              <ArrowUpRight size={16} />
-              <span className="hidden md:inline">Về trang khách</span>
-            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="inline-flex min-h-11 items-center gap-2 rounded-sm px-1.5 outline-none hover:bg-soft focus-visible:ring-2 focus-visible:ring-primary"
@@ -336,6 +327,16 @@ export function DashboardLayout({
                   <p className="max-w-60 truncate pt-1">{user.email}</p>
                   <p className="pt-1">{roleLabel}</p>
                 </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/"
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <Store className="size-4" />
+                    <span>Xem trang khách hàng</span>
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   disabled={isLoggingOut}

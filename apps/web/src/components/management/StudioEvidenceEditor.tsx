@@ -3,7 +3,7 @@ import {
   invalidateResources,
   invalidatePublicCatalog,
 } from '../../lib/query-invalidation';
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   createStudioEvidenceSchema,
@@ -27,12 +27,27 @@ import {
 import { imageService } from '../../services/imageService';
 import { toast } from 'sonner';
 
-export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
+export function StudioEvidenceEditor({
+  studio,
+  isOpen,
+  onOpenChange,
+}: {
+  studio: MemberStudio;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const userId = useAuth().user?.id;
   const settings = useSiteSettings();
   const policy = (settings.data ?? defaultSiteSettings).studio;
   const [search, setSearch] = useSearchParams();
-  const [open, setOpen] = useState(() => search.get('edit') === '1');
+  const [internalOpen, setInternalOpen] = useState(
+    () => search.get('edit') === '1',
+  );
+  const open = isOpen !== undefined ? isOpen : internalOpen;
+  const setOpen = (val: boolean) => {
+    if (onOpenChange) onOpenChange(val);
+    setInternalOpen(val);
+  };
   const [values, setValues] = useState<EvidenceValues>({
     contactPhone: studio.contactPhone ?? '',
     contactEmail: studio.contactEmail ?? '',
@@ -47,6 +62,23 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
   const [saving, setSaving] = useState(false);
   const [photosBusy, setPhotosBusy] = useState(false);
   const client = useQueryClient();
+
+  // Reset form fields when opening edit mode
+  useEffect(() => {
+    if (open) {
+      setName(studio.name);
+      setAddress(studio.address);
+      setValues({
+        contactPhone: studio.contactPhone ?? '',
+        contactEmail: studio.contactEmail ?? '',
+        photoIds: studio.photoIds ?? [],
+        facebookUrl: studio.facebookUrl ?? '',
+        instagramUrl: studio.instagramUrl ?? '',
+        googleMapsUrl: studio.googleMapsUrl ?? '',
+      });
+      setErrors({});
+    }
+  }, [open, studio]);
   const hasChanges =
     name !== studio.name ||
     address !== studio.address ||
@@ -104,7 +136,8 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
       setSaving(false);
     }
   }
-  if (!open)
+  if (!open) {
+    if (isOpen !== undefined) return null;
     return (
       <StudioCard className="space-y-4">
         <div>
@@ -142,6 +175,7 @@ export function StudioEvidenceEditor({ studio }: { studio: MemberStudio }) {
         </StudioButton>
       </StudioCard>
     );
+  }
   return (
     <form
       onSubmit={(event) => void submit(event)}

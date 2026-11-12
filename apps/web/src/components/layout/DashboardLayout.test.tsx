@@ -49,7 +49,7 @@ describe('shared dashboard layout', () => {
     );
     expect(html).toContain('Lịch của studio');
     expect(html).toContain('Menu tài khoản');
-    expect(html).toContain('Về trang khách');
+    expect(html).not.toContain('Về trang khách');
     expect(html).toContain('max-w-5xl');
     expect(html.match(/data-active="true"/g)).toHaveLength(1);
     expect(html).toContain('aria-current="page"');

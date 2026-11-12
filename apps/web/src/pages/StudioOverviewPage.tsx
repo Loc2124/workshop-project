@@ -215,11 +215,6 @@ export function StudioOverviewPage() {
                   Tạo workshop
                 </Link>
               </Button>
-              <Button asChild variant="secondary" size="sm">
-                <Link to={`/studios/${studio.slug}`}>
-                  Trang công khai <ArrowUpRight size={15} aria-hidden="true" />
-                </Link>
-              </Button>
             </>
           )}
         </div>
