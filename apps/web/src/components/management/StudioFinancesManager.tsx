@@ -23,7 +23,7 @@ import {
 } from './StudioPrimitives';
 import { FinancialAccountForm } from './FinancialAccountForm';
 import type { MemberStudio } from '../../types/management';
-import { dateLabel } from '../../pages/CustomerBookingsPage';
+import { dateLabel } from '../../pages/customer/CustomerBookingsPage';
 
 type Transfer = {
   id: string;

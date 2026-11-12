@@ -16,7 +16,7 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
     if (url.searchParams.has('featuredPreview')) return;
     const { prefetchPublicHome } = await import('./prefetch-public-home');
     await Promise.all([
-      import('../pages/HomePage'),
+      import('../pages/public/HomePage'),
       prefetchPublicHome(client),
       client.prefetchQuery(geographyQueries.provinces()),
     ]);
@@ -25,7 +25,7 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
   if (path[0] === 'workshop' || path[0] === 'workshops') {
     if (!id) return;
     await Promise.all([
-      import('../pages/WorkshopPage'),
+      import('../pages/public/WorkshopPage'),
       client.prefetchQuery({
         queryKey: catalogKeys.detail(id),
         queryFn: ({ signal }) => catalogService.getById(id, signal),
@@ -42,7 +42,7 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
   if (path[0] === 'studios') {
     if (!id) return;
     await Promise.all([
-      import('../pages/StudioPage'),
+      import('../pages/studio/StudioPage'),
       client.prefetchQuery({
         queryKey: catalogKeys.studioDetail(id),
         queryFn: ({ signal }) => catalogService.getStudioById(id, signal),
@@ -53,7 +53,7 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
   }
   if (path[0] === 'kham-pha' || path[0] === 'explore') {
     const [, provinces] = await Promise.all([
-      import('../pages/ExplorePage'),
+      import('../pages/public/ExplorePage'),
       client.fetchQuery(geographyQueries.provinces()),
     ]);
     if (!client.getQueryData(queryKeys.public.categories)) return;
@@ -116,24 +116,24 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
           staleTime: 30_000,
         });
     } else if (id === 'ho-so-studio' || id === 'studios') {
-      const module = await import('../pages/AdminStudioProfilesPage');
+      const module = await import('../pages/admin/AdminStudioProfilesPage');
       if (current())
         await module.prefetchData(client, user.id, id === 'studios');
     } else {
       const loaders = {
-        'nguoi-dung': () => import('../pages/AdminUsersPage'),
-        users: () => import('../pages/AdminUsersPage'),
-        'dat-cho': () => import('../pages/AdminBookingsPage'),
-        bookings: () => import('../pages/AdminBookingsPage'),
-        workshop: () => import('../pages/AdminWorkshopPage'),
-        workshops: () => import('../pages/AdminWorkshopPage'),
-        'bao-cao': () => import('../pages/AdminReportsPage'),
-        reports: () => import('../pages/AdminReportsPage'),
-        'nhat-ky': () => import('../pages/AdminAuditPage'),
-        'cai-dat': () => import('../pages/AdminSettingsPage'),
-        'noi-dung': () => import('../pages/AdminContentPage'),
-        'danh-muc': () => import('../pages/AdminCategoriesPage'),
-        'mau-thong-bao': () => import('../pages/AdminMessageTemplatesPage'),
+        'nguoi-dung': () => import('../pages/admin/AdminUsersPage'),
+        users: () => import('../pages/admin/AdminUsersPage'),
+        'dat-cho': () => import('../pages/admin/AdminBookingsPage'),
+        bookings: () => import('../pages/admin/AdminBookingsPage'),
+        workshop: () => import('../pages/admin/AdminWorkshopPage'),
+        workshops: () => import('../pages/admin/AdminWorkshopPage'),
+        'bao-cao': () => import('../pages/admin/AdminReportsPage'),
+        reports: () => import('../pages/admin/AdminReportsPage'),
+        'nhat-ky': () => import('../pages/admin/AdminAuditPage'),
+        'cai-dat': () => import('../pages/admin/AdminSettingsPage'),
+        'noi-dung': () => import('../pages/admin/AdminContentPage'),
+        'danh-muc': () => import('../pages/admin/AdminCategoriesPage'),
+        'mau-thong-bao': () => import('../pages/admin/AdminMessageTemplatesPage'),
       };
       const loader = loaders[id as keyof typeof loaders];
       if (loader) {

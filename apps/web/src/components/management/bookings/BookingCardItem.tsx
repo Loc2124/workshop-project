@@ -1,6 +1,6 @@
 import { Check, Copy, Phone } from 'lucide-react';
 import { formatPrice } from '../../../lib/format';
-import { dateLabel, paymentLabel, reservationLabel } from '../../../pages/CustomerBookingsPage';
+import { dateLabel, paymentLabel, reservationLabel } from '../../../pages/customer/CustomerBookingsPage';
 import { StudioBadge, StudioButton, StudioCard } from '../StudioPrimitives';
 
 export interface BookingItemData {

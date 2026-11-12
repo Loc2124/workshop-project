@@ -40,106 +40,106 @@ import { PublicShell } from './components/layout/PublicShell';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { Skeleton } from './components/ui/skeleton';
 const HomePage = lazy(() =>
-  import('./pages/HomePage').then((module) => ({ default: module.HomePage })),
+  import('./pages/public/HomePage').then((module) => ({ default: module.HomePage })),
 );
 const ExplorePage = lazy(() =>
-  import('./pages/ExplorePage').then((module) => ({
+  import('./pages/public/ExplorePage').then((module) => ({
     default: module.ExplorePage,
   })),
 );
 const ArtisanPage = lazy(() =>
-  import('./pages/ArtisanPage').then((module) => ({
+  import('./pages/public/ArtisanPage').then((module) => ({
     default: module.ArtisanPage,
   })),
 );
 const AboutPage = lazy(() =>
-  import('./pages/AboutPage').then((module) => ({ default: module.AboutPage })),
+  import('./pages/public/AboutPage').then((module) => ({ default: module.AboutPage })),
 );
 const StudioPage = lazy(() =>
-  import('./pages/StudioPage').then((module) => ({
+  import('./pages/studio/StudioPage').then((module) => ({
     default: module.StudioPage,
   })),
 );
 const WorkshopPage = lazy(() =>
-  import('./pages/WorkshopPage').then((module) => ({
+  import('./pages/public/WorkshopPage').then((module) => ({
     default: module.WorkshopPage,
   })),
 );
 const LoginPage = lazy(() =>
-  import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })),
+  import('./pages/auth/LoginPage').then((module) => ({ default: module.LoginPage })),
 );
 const RegisterPage = lazy(() =>
-  import('./pages/RegisterPage').then((module) => ({
+  import('./pages/auth/RegisterPage').then((module) => ({
     default: module.RegisterPage,
   })),
 );
 const ForgotPasswordPage = lazy(() =>
-  import('./pages/ForgotPasswordPage').then((module) => ({
+  import('./pages/auth/ForgotPasswordPage').then((module) => ({
     default: module.ForgotPasswordPage,
   })),
 );
 const ResetPasswordPage = lazy(() =>
-  import('./pages/ResetPasswordPage').then((module) => ({
+  import('./pages/auth/ResetPasswordPage').then((module) => ({
     default: module.ResetPasswordPage,
   })),
 );
 const CustomerBookingsPage = lazy(() =>
-  import('./pages/CustomerBookingsPage').then((module) => ({
+  import('./pages/customer/CustomerBookingsPage').then((module) => ({
     default: module.CustomerBookingsPage,
   })),
 );
 const CustomerBookingDetailPage = lazy(() =>
-  import('./pages/CustomerBookingDetailPage').then((module) => ({
+  import('./pages/customer/CustomerBookingDetailPage').then((module) => ({
     default: module.CustomerBookingDetailPage,
   })),
 );
 const SavedRefundAccountsPage = lazy(() =>
-  import('./pages/SavedRefundAccountsPage').then((module) => ({
+  import('./pages/customer/SavedRefundAccountsPage').then((module) => ({
     default: module.SavedRefundAccountsPage,
   })),
 );
 const MockPaymentPage = lazy(() =>
-  import('./pages/MockPaymentPage').then((module) => ({
+  import('./pages/public/MockPaymentPage').then((module) => ({
     default: module.MockPaymentPage,
   })),
 );
 const PaymentReturnPage = lazy(() =>
-  import('./pages/PaymentReturnPage').then((module) => ({
+  import('./pages/public/PaymentReturnPage').then((module) => ({
     default: module.PaymentReturnPage,
   })),
 );
 const PaymentCancelPage = lazy(() =>
-  import('./pages/PaymentReturnPage').then((module) => ({
+  import('./pages/public/PaymentReturnPage').then((module) => ({
     default: () => <module.PaymentReturnPage cancelled />,
   })),
 );
 const StudioRegistrationPage = lazy(() =>
-  import('./pages/StudioRegistrationPage').then((module) => ({
+  import('./pages/studio/StudioRegistrationPage').then((module) => ({
     default: module.StudioRegistrationPage,
   })),
 );
 const NotFoundPage = lazy(() =>
-  import('./pages/NotFoundPage').then((module) => ({
+  import('./pages/public/NotFoundPage').then((module) => ({
     default: module.NotFoundPage,
   })),
 );
 const ForbiddenPage = lazy(() =>
-  import('./pages/ForbiddenPage').then((module) => ({
+  import('./pages/public/ForbiddenPage').then((module) => ({
     default: module.ForbiddenPage,
   })),
 );
 const FaqPage = lazy(() =>
-  import('./pages/FaqPage').then((module) => ({
+  import('./pages/public/FaqPage').then((module) => ({
     default: module.FaqPage,
   })),
 );
 const ContactPage = lazy(() =>
-  import('./pages/ContactPage').then((module) => ({
+  import('./pages/public/ContactPage').then((module) => ({
     default: module.ContactPage,
   })),
 );
 const AcceptInvitationPage = lazy(() =>
-  import('./pages/AcceptInvitationPage').then((module) => ({
+  import('./pages/auth/AcceptInvitationPage').then((module) => ({
     default: module.AcceptInvitationPage,
   })),
 );
