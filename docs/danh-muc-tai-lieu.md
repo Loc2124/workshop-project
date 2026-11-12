@@ -70,6 +70,7 @@ Kết quả lần đồng bộ: 61 file Markdown, toàn bộ liên kết nội b
 | [engineering/labeling-guideline.md](engineering/labeling-guideline.md)                               | Hiện hành; xem nhãn trong file     | data/labeling-guideline.md                |
 | [engineering/performance.md](engineering/performance.md)                                             | Hiện hành; xem nhãn trong file     | Giữ nguyên hoặc tài liệu chỉ mục mới      |
 | [engineering/ticket-components.md](engineering/ticket-components.md)                                 | Hiện hành; xem nhãn trong file     | apps/web/src/components/tickets/README.md |
+| [engineering/system-architecture-thesis.md](engineering/system-architecture-thesis.md)               | Hiện hành; xem nhãn trong file     | Báo cáo kiến trúc đồ án tốt nghiệp        |
 | [features/admin-audit.md](features/admin-audit.md)                                                   | Hiện hành; xem nhãn trong file     | docs/admin-audit.md                       |
 | [features/admin-bookings.md](features/admin-bookings.md)                                             | Hiện hành; xem nhãn trong file     | docs/admin-bookings.md                    |
 | [features/admin-categories.md](features/admin-categories.md)                                         | Hiện hành; xem nhãn trong file     | docs/admin-categories.md                  |
