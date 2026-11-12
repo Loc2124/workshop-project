@@ -7,7 +7,10 @@ import type { AreaOption } from '../../components/catalog/AreaMultiSelect';
 import { ExploreFilters } from '../../components/catalog/ExploreFilters';
 import { Pagination } from '../../components/catalog/Pagination';
 import type { ProvinceOption } from '../../components/catalog/ProvinceCombobox';
-import { ViewToggle, type CatalogView } from '../../components/catalog/ViewToggle';
+import {
+  ViewToggle,
+  type CatalogView,
+} from '../../components/catalog/ViewToggle';
 import { WorkshopGrid } from '../../components/catalog/WorkshopGrid';
 import { ActiveFilterChips } from '../../components/catalog/ActiveFilterChips';
 import { countActiveFilters } from '../../components/catalog/MobileFilterSheet';

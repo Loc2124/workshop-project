@@ -55,7 +55,10 @@ export function StudioWorkshopManager({
           )}
         </div>
         {canManage && (
-          <StudioButton onClick={() => setCreating(true)} className="shrink-0 min-h-11">
+          <StudioButton
+            onClick={() => setCreating(true)}
+            className="shrink-0 min-h-11"
+          >
             <Plus aria-hidden="true" className="size-4" /> Tạo workshop
           </StudioButton>
         )}
@@ -76,7 +79,11 @@ export function StudioWorkshopManager({
           <p className="text-studio-danger">
             Không thể tải workshop: {error.message}
           </p>
-          <StudioButton onClick={onRetry} variant="secondary" className="min-h-11">
+          <StudioButton
+            onClick={onRetry}
+            variant="secondary"
+            className="min-h-11"
+          >
             Tải lại workshop
           </StudioButton>
         </StudioCard>
@@ -99,7 +106,10 @@ export function StudioWorkshopManager({
           description="Workshop đã tạo sẽ xuất hiện tại đây để bạn quản lý và cập nhật nội dung."
           action={
             canManage ? (
-              <StudioButton onClick={() => setCreating(true)} className="min-h-11">
+              <StudioButton
+                onClick={() => setCreating(true)}
+                className="min-h-11"
+              >
                 <Plus aria-hidden="true" className="size-4" /> Tạo workshop đầu
                 tiên
               </StudioButton>

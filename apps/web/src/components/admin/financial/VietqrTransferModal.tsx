@@ -29,7 +29,10 @@ export function VietqrTransferModal({
   const handleCopy = (field: string, text: string) => {
     navigator.clipboard?.writeText(text);
     setCopiedField(field);
-    setTimeout(() => setCopiedField((curr) => (curr === field ? null : curr)), 1500);
+    setTimeout(
+      () => setCopiedField((curr) => (curr === field ? null : curr)),
+      1500,
+    );
   };
 
   return (
@@ -49,7 +52,8 @@ export function VietqrTransferModal({
               Chuyển khoản VietQR 247
             </h3>
             <p className="text-xs text-muted">
-              Quét mã bằng app ngân hàng để điền sẵn người nhận, số tiền và nội dung đối soát.
+              Quét mã bằng app ngân hàng để điền sẵn người nhận, số tiền và nội
+              dung đối soát.
             </p>
           </div>
           <button
@@ -75,14 +79,17 @@ export function VietqrTransferModal({
           </div>
         ) : (
           <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-            Chưa tạo được ảnh mã QR tự động. Vui lòng chuyển khoản thủ công theo thông tin bên dưới.
+            Chưa tạo được ảnh mã QR tự động. Vui lòng chuyển khoản thủ công theo
+            thông tin bên dưới.
           </p>
         )}
 
         <div className="space-y-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs">
           <div className="flex items-center justify-between gap-2">
             <span className="text-stone-600">Ngân hàng:</span>
-            <strong className="text-right">{modal.bankDisplay || modal.bankName}</strong>
+            <strong className="text-right">
+              {modal.bankDisplay || modal.bankName}
+            </strong>
           </div>
           <div className="flex items-center justify-between gap-2">
             <span className="text-stone-600">Chủ tài khoản:</span>

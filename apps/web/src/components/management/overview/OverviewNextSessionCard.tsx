@@ -22,7 +22,10 @@ export function OverviewNextSessionCard({
 }: OverviewNextSessionCardProps) {
   if (!nextSession) {
     return (
-      <StudioCard aria-labelledby="next-session-title" className="p-6 text-center">
+      <StudioCard
+        aria-labelledby="next-session-title"
+        className="p-6 text-center"
+      >
         <div className="mx-auto flex size-10 items-center justify-center rounded-full bg-studio-subtle text-studio-muted">
           <CalendarDays size={20} aria-hidden="true" />
         </div>
@@ -150,7 +153,12 @@ export function OverviewNextSessionCard({
             Khách & Điểm danh
           </Link>
         </StudioButton>
-        <StudioButton asChild variant="secondary" size="sm" className="min-h-11">
+        <StudioButton
+          asChild
+          variant="secondary"
+          size="sm"
+          className="min-h-11"
+        >
           <Link to={studioPage(studioId, 'sessions')}>
             Chi tiết lịch
             <ArrowRight size={14} aria-hidden="true" />

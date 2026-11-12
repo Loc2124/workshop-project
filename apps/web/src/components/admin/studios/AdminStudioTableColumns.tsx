@@ -3,8 +3,14 @@ import { Store } from 'lucide-react';
 import { studioProvinces, type SiteSettings } from '@workshop/shared';
 import { Img } from '../../ui/Img';
 import { StatusBadge } from '../../ui/status-badge';
-import { formatReviewDate, studioReviewMissing } from '../../../lib/studio-review';
-import { type AdminStudio, type StudioApprovalStatus } from '../../../types/management';
+import {
+  formatReviewDate,
+  studioReviewMissing,
+} from '../../../lib/studio-review';
+import {
+  type AdminStudio,
+  type StudioApprovalStatus,
+} from '../../../types/management';
 
 export const studioFilters = [
   {

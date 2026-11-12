@@ -162,7 +162,12 @@ export function StudioOverviewPage() {
                   Lên lịch buổi
                 </Link>
               </Button>
-              <Button asChild variant="secondary" size="sm" className="min-h-11">
+              <Button
+                asChild
+                variant="secondary"
+                size="sm"
+                className="min-h-11"
+              >
                 <Link to={studioPage(studio.id, 'workshops')}>
                   <PlusCircle size={15} aria-hidden="true" />
                   Tạo workshop
@@ -201,7 +206,11 @@ export function StudioOverviewPage() {
               </p>
             </div>
             {state === 'draft' ? (
-              <Button asChild size="sm" className="shrink-0 self-start min-h-11">
+              <Button
+                asChild
+                size="sm"
+                className="shrink-0 self-start min-h-11"
+              >
                 <Link to={`/dang-ky-studio?draftStudioId=${studio.id}`}>
                   Tiếp tục hoàn thiện hồ sơ
                 </Link>
@@ -229,7 +238,9 @@ export function StudioOverviewPage() {
             sessions.isPending || sessions.error ? null : stats.upcomingSessions
           }
           totalUpcomingBookedSeats={
-            sessions.isPending || sessions.error ? null : totalUpcomingBookedSeats
+            sessions.isPending || sessions.error
+              ? null
+              : totalUpcomingBookedSeats
           }
           availableSeats={
             sessions.isPending || sessions.error ? null : stats.availableSeats

@@ -172,7 +172,9 @@ function StudioRegistrationForm() {
     ['Instagram', values.instagramUrl || 'Chưa thêm'],
     ['Google Maps', values.googleMapsUrl || 'Chưa thêm'],
     ...(values.categoryIds.includes('other')
-      ? ([['Loại đề xuất (chờ duyệt)', values.proposedCategoryName]] as Array<[string, string]>)
+      ? ([['Loại đề xuất (chờ duyệt)', values.proposedCategoryName]] as Array<
+          [string, string]
+        >)
       : []),
     ['Giới thiệu', values.description || 'Chưa thêm giới thiệu'],
     ['Tỉnh / thành phố', provinceName ?? values.provinceId],
@@ -226,11 +228,7 @@ function StudioRegistrationForm() {
               ) : null}
 
               {authLoading || !draft.ready ? (
-                <p
-                  role="status"
-                  aria-busy="true"
-                  className="py-10 text-muted"
-                >
+                <p role="status" aria-busy="true" className="py-10 text-muted">
                   Đang chuẩn bị hồ sơ…
                 </p>
               ) : (
@@ -312,11 +310,12 @@ function StudioRegistrationForm() {
                               Đăng nhập và tiếp tục
                             </AuthLink>
                           </Button>
-                          <Button asChild variant="outline" className="min-h-11">
-                            <AuthLink
-                              to="/dang-ky"
-                              onClick={draft.prepareAuth}
-                            >
+                          <Button
+                            asChild
+                            variant="outline"
+                            className="min-h-11"
+                          >
+                            <AuthLink to="/dang-ky" onClick={draft.prepareAuth}>
                               Tạo tài khoản
                             </AuthLink>
                           </Button>

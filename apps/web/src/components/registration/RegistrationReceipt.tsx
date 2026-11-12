@@ -18,11 +18,7 @@ export function RegistrationReceipt({
       className="max-w-2xl rounded-2xl bg-soft p-6 md:p-10"
       aria-labelledby="studio-application-title"
     >
-      <CheckCircle2
-        size={32}
-        className="text-primary"
-        aria-hidden="true"
-      />
+      <CheckCircle2 size={32} className="text-primary" aria-hidden="true" />
       <h1
         id="studio-application-title"
         ref={headingRef}
@@ -35,8 +31,8 @@ export function RegistrationReceipt({
         <strong>{receipt.name}</strong> đang chờ Open Slot xét duyệt.
       </p>
       <p className="mt-3 leading-7 text-muted">
-        Bạn đã được ghi nhận là chủ studio. Theo dõi trạng thái hồ sơ trong
-        mục Quản lý studio; studio sẽ xuất hiện công khai sau khi được duyệt.
+        Bạn đã được ghi nhận là chủ studio. Theo dõi trạng thái hồ sơ trong mục
+        Quản lý studio; studio sẽ xuất hiện công khai sau khi được duyệt.
       </p>
       <div className="mt-7 flex flex-wrap gap-3">
         <Button asChild className="min-h-11">

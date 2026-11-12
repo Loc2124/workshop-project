@@ -14,7 +14,11 @@ import {
 } from '../../components/admin/DataTable';
 import { ConfirmReasonDialog } from '../../components/admin/ConfirmReasonDialog';
 import { StatusBadge } from '../../components/ui/status-badge';
-import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from '../../components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuTrigger,

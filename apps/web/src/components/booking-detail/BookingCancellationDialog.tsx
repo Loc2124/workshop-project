@@ -92,10 +92,7 @@ export function BookingCancellationDialog({
           <button
             type="button"
             disabled={
-              isPending ||
-              isFetchingQuote ||
-              !quoteHasData ||
-              quoteHasError
+              isPending || isFetchingQuote || !quoteHasData || quoteHasError
             }
             aria-busy={isPending || isFetchingQuote}
             className="min-h-11 flex-1 rounded-lg bg-brick px-4 text-sm font-semibold text-white hover:bg-brick/90 disabled:cursor-wait disabled:opacity-60"

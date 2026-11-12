@@ -14,7 +14,12 @@ import {
   studioSessionUpdateInputSchema,
 } from '../../../types/management';
 import { workshopSelectionSchema } from '../../../lib/form-validation';
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from '../../ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '../../ui/sheet';
 import { SingleDatePicker } from '../../ui/single-date-picker';
 import {
   StudioButton,
@@ -155,12 +160,15 @@ export function SessionEditorSheet({
       >
         <div className="flex min-h-0 flex-1 flex-col">
           <header className="border-b border-studio-border px-5 py-5 pr-16 sm:px-7 sm:py-6">
-            <p className="text-sm font-medium text-studio-muted">Lịch workshop</p>
+            <p className="text-sm font-medium text-studio-muted">
+              Lịch workshop
+            </p>
             <SheetTitle className="mt-1 font-heading text-2xl font-semibold text-studio-ink">
               {session ? 'Sửa lịch buổi' : 'Tạo buổi workshop'}
             </SheetTitle>
             <SheetDescription className="mt-2 text-sm leading-6 text-studio-muted">
-              Thời gian nhập theo giờ Việt Nam (UTC+7), sử dụng định dạng 24 giờ.
+              Thời gian nhập theo giờ Việt Nam (UTC+7), sử dụng định dạng 24
+              giờ.
             </SheetDescription>
           </header>
           <form
@@ -180,7 +188,9 @@ export function SessionEditorSheet({
                   <select
                     id="studio-session-workshop"
                     className="min-h-studio-control w-full rounded-studio-control border border-studio-input-border bg-studio-surface px-3 text-base text-studio-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-studio-primary focus-visible:ring-offset-2"
-                    onChange={(event) => update('workshopId', event.target.value)}
+                    onChange={(event) =>
+                      update('workshopId', event.target.value)
+                    }
                     required
                     value={values.workshopId}
                   >
@@ -215,7 +225,9 @@ export function SessionEditorSheet({
                   <StudioField
                     label="Giờ bắt đầu"
                     lang="vi-VN"
-                    onChange={(event) => updateTime('startsAt', event.target.value)}
+                    onChange={(event) =>
+                      updateTime('startsAt', event.target.value)
+                    }
                     required
                     step={60}
                     type="time"
@@ -234,7 +246,9 @@ export function SessionEditorSheet({
                   <StudioField
                     label="Giờ kết thúc"
                     lang="vi-VN"
-                    onChange={(event) => updateTime('endsAt', event.target.value)}
+                    onChange={(event) =>
+                      updateTime('endsAt', event.target.value)
+                    }
                     required
                     step={60}
                     type="time"

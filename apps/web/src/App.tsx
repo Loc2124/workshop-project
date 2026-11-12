@@ -40,7 +40,9 @@ import { PublicShell } from './components/layout/PublicShell';
 import { AuthLayout } from './components/layout/AuthLayout';
 import { Skeleton } from './components/ui/skeleton';
 const HomePage = lazy(() =>
-  import('./pages/public/HomePage').then((module) => ({ default: module.HomePage })),
+  import('./pages/public/HomePage').then((module) => ({
+    default: module.HomePage,
+  })),
 );
 const ExplorePage = lazy(() =>
   import('./pages/public/ExplorePage').then((module) => ({
@@ -53,7 +55,9 @@ const ArtisanPage = lazy(() =>
   })),
 );
 const AboutPage = lazy(() =>
-  import('./pages/public/AboutPage').then((module) => ({ default: module.AboutPage })),
+  import('./pages/public/AboutPage').then((module) => ({
+    default: module.AboutPage,
+  })),
 );
 const StudioPage = lazy(() =>
   import('./pages/studio/StudioPage').then((module) => ({
@@ -66,7 +70,9 @@ const WorkshopPage = lazy(() =>
   })),
 );
 const LoginPage = lazy(() =>
-  import('./pages/auth/LoginPage').then((module) => ({ default: module.LoginPage })),
+  import('./pages/auth/LoginPage').then((module) => ({
+    default: module.LoginPage,
+  })),
 );
 const RegisterPage = lazy(() =>
   import('./pages/auth/RegisterPage').then((module) => ({

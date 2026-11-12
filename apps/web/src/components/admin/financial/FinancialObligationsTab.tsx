@@ -27,7 +27,11 @@ export interface FinancialObligationsTabProps {
   activeVietqrId?: string;
   onCreateTransfer: (
     o: Obligation,
-    purpose: 'customer_refund' | 'platform_advance' | 'studio_payout' | 'studio_repayment',
+    purpose:
+      | 'customer_refund'
+      | 'platform_advance'
+      | 'studio_payout'
+      | 'studio_repayment',
   ) => void;
   isCreateTransferPending: boolean;
 }
@@ -65,7 +69,9 @@ export function FinancialObligationsTab({
         obligations.map((o) => {
           const remaining = Math.max(
             0,
-            Number(o.amount) - Number(o.settledAmount) - Number(o.reservedAmount),
+            Number(o.amount) -
+              Number(o.settledAmount) -
+              Number(o.reservedAmount),
           );
 
           return (
@@ -165,15 +171,12 @@ export function FinancialObligationsTab({
                           <label className="block text-xs font-medium">
                             Loại chi
                             <select
-                              value={
-                                selectedPurpose[o.id] ?? 'customer_refund'
-                              }
+                              value={selectedPurpose[o.id] ?? 'customer_refund'}
                               onChange={(e) =>
                                 onPurposeChange(
                                   o.id,
                                   e.target.value as
-                                    | 'customer_refund'
-                                    | 'platform_advance',
+                                    'customer_refund' | 'platform_advance',
                                 )
                               }
                               className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
@@ -204,7 +207,9 @@ export function FinancialObligationsTab({
                           Lý do
                           <textarea
                             value={reason[o.id] ?? ''}
-                            onChange={(e) => onReasonChange(o.id, e.target.value)}
+                            onChange={(e) =>
+                              onReasonChange(o.id, e.target.value)
+                            }
                             className="mt-1 min-h-16 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
                             placeholder="Ghi căn cứ lập giao dịch (tối thiểu 10 ký tự nếu nhập)"
                           />

@@ -41,7 +41,9 @@ export function BookingTicketsSection({
                 />
               )}
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm sm:text-base">Vé số {ticket.seq}</h3>
+                <h3 className="font-semibold text-sm sm:text-base">
+                  Vé số {ticket.seq}
+                </h3>
                 <p className="mt-1 text-sm">
                   {ticket.attendanceStatus === 'attended'
                     ? ticket.attendanceMethod === 'manual_confirmation'

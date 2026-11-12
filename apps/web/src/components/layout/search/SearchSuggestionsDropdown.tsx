@@ -194,47 +194,44 @@ export function SearchSuggestionsDropdown({
         </p>
       )}
 
-      {hasQuery &&
-        debouncedQuery &&
-        !isLoading &&
-        suggestions.length === 0 && (
-          <div
-            role="group"
-            aria-label="Không có kết quả phù hợp"
-            className="py-2"
-          >
-            <p role="status" className="mb-3 text-sm font-medium">
-              Không tìm thấy “{debouncedQuery}”
-            </p>
-            {popularSuggestions.length > 0 && (
-              <div
-                className="flex flex-wrap gap-2"
-                role="group"
-                aria-label="Bộ môn phổ biến"
-              >
-                {popularSuggestions.slice(0, 3).map((suggestion, index) => (
-                  <button
-                    key={suggestion.id}
-                    id={`${listId}-${index}`}
-                    type="button"
-                    role="option"
-                    aria-selected={active === index}
-                    tabIndex={-1}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onMouseEnter={() => onHoverIndex(index)}
-                    onClick={() => onSelectSuggestion(suggestion)}
-                    className={cn(
-                      'min-h-9 rounded-full border border-line px-3 text-xs font-semibold text-primary hover:bg-soft',
-                      active === index && 'bg-soft ring-1 ring-primary',
-                    )}
-                  >
-                    {suggestion.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+      {hasQuery && debouncedQuery && !isLoading && suggestions.length === 0 && (
+        <div
+          role="group"
+          aria-label="Không có kết quả phù hợp"
+          className="py-2"
+        >
+          <p role="status" className="mb-3 text-sm font-medium">
+            Không tìm thấy “{debouncedQuery}”
+          </p>
+          {popularSuggestions.length > 0 && (
+            <div
+              className="flex flex-wrap gap-2"
+              role="group"
+              aria-label="Bộ môn phổ biến"
+            >
+              {popularSuggestions.slice(0, 3).map((suggestion, index) => (
+                <button
+                  key={suggestion.id}
+                  id={`${listId}-${index}`}
+                  type="button"
+                  role="option"
+                  aria-selected={active === index}
+                  tabIndex={-1}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onMouseEnter={() => onHoverIndex(index)}
+                  onClick={() => onSelectSuggestion(suggestion)}
+                  className={cn(
+                    'min-h-9 rounded-full border border-line px-3 text-xs font-semibold text-primary hover:bg-soft',
+                    active === index && 'bg-soft ring-1 ring-primary',
+                  )}
+                >
+                  {suggestion.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {hasQuery && debouncedQuery && (
         <button

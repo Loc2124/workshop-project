@@ -1,5 +1,8 @@
 import { Clock3, Pencil, UsersRound } from 'lucide-react';
-import { DEFAULT_CATEGORY, getCategoryMeta } from '../../../constants/categories';
+import {
+  DEFAULT_CATEGORY,
+  getCategoryMeta,
+} from '../../../constants/categories';
 import { formatPrice } from '../../../lib/format';
 import type { StudioWorkshop } from '../../../types/management';
 import { StudioBadge, StudioButton, StudioCard } from '../StudioPrimitives';
@@ -36,11 +39,9 @@ export function WorkshopCardItem({
       ? Math.round((workshop.basePrice * depositPercent) / 100)
       : 0;
   const tone =
-    workshop.publicationStatus === 'hidden' ||
-    workshop.status === 'rejected'
+    workshop.publicationStatus === 'hidden' || workshop.status === 'rejected'
       ? 'danger'
-      : workshop.publicationStatus === 'draft' ||
-          workshop.status === 'pending'
+      : workshop.publicationStatus === 'draft' || workshop.status === 'pending'
         ? 'warning'
         : 'success';
 
@@ -78,7 +79,8 @@ export function WorkshopCardItem({
             </h3>
             {workshop.proposedCategoryName && (
               <p className="mt-2 text-sm text-studio-muted">
-                Danh mục đề xuất: {workshop.proposedCategoryName} · Chưa được duyệt
+                Danh mục đề xuất: {workshop.proposedCategoryName} · Chưa được
+                duyệt
               </p>
             )}
           </div>
@@ -104,9 +106,10 @@ export function WorkshopCardItem({
                   Đặt cọc ({depositPercent}%)
                 </p>
                 <p className="mt-1 text-studio-muted">
-                  Theo giá cơ sở, mỗi khách cọc {formatPrice(depositPerPerson)} đ,
-                  còn lại {formatPrice(workshop.basePrice - depositPerPerson)} đ trả
-                  tại studio.
+                  Theo giá cơ sở, mỗi khách cọc {formatPrice(depositPerPerson)}{' '}
+                  đ, còn lại{' '}
+                  {formatPrice(workshop.basePrice - depositPerPerson)} đ trả tại
+                  studio.
                 </p>
                 <p className="mt-1 text-xs text-studio-muted">
                   Số chính xác tính theo giá buổi và số người trong đặt chỗ.

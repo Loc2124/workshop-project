@@ -11,8 +11,12 @@ const useMyStudios = vi.hoisted(() => vi.fn());
 const useAuth = vi.hoisted(() => vi.fn());
 vi.mock('../../hooks/useAuth', () => ({ useAuth }));
 vi.mock('../../hooks/useOwnedStudios', () => ({ useMyStudios }));
-vi.mock('../../components/layout/SiteHeader', () => ({ SiteHeader: () => null }));
-vi.mock('../../components/layout/SiteFooter', () => ({ SiteFooter: () => null }));
+vi.mock('../../components/layout/SiteHeader', () => ({
+  SiteHeader: () => null,
+}));
+vi.mock('../../components/layout/SiteFooter', () => ({
+  SiteFooter: () => null,
+}));
 import { ArtisanPage } from './ArtisanPage';
 
 describe('artisan onboarding entry', () => {

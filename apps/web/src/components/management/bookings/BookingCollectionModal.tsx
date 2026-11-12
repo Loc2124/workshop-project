@@ -1,4 +1,9 @@
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../../ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '../../ui/dialog';
 import { StudioButton } from '../StudioPrimitives';
 import { formatPrice } from '../../../lib/format';
 

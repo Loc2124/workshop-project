@@ -256,8 +256,8 @@ export function BookingPaymentSummary({
 
       {retainedAfterCancel > 0 && (
         <p role="status" className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">
-          Khoản cọc {money(retainedAfterCancel)} không được hoàn vì bạn hủy trong
-          vòng 24 giờ trước buổi học.
+          Khoản cọc {money(retainedAfterCancel)} không được hoàn vì bạn hủy
+          trong vòng 24 giờ trước buổi học.
         </p>
       )}
 
@@ -354,8 +354,8 @@ export function BookingPaymentSummary({
         !state.deposit?.checkoutUrl && (
           <div className="mt-3 text-sm">
             <p>
-              Đã cập nhật số chỗ. Bạn cần lấy mã cọc mới trước khi thanh toán; hạn
-              giữ chỗ không đổi.
+              Đã cập nhật số chỗ. Bạn cần lấy mã cọc mới trước khi thanh toán;
+              hạn giữ chỗ không đổi.
             </p>
             <button
               type="button"

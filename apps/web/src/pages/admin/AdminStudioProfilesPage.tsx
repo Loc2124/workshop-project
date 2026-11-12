@@ -2,7 +2,10 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { defaultSiteSettings, type StudioReviewDecision } from '@workshop/shared';
+import {
+  defaultSiteSettings,
+  type StudioReviewDecision,
+} from '@workshop/shared';
 import { apiFetch } from '../../lib/api-client';
 import { prefetchDefaultTable } from '../../lib/prefetch-table';
 import { queryKeys } from '../../lib/query-keys';

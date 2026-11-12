@@ -25,7 +25,8 @@ export function BookingRescheduleNotice({
   onRequestCancel,
 }: BookingRescheduleNoticeProps) {
   const isDeadlinePassed =
-    !!booking.rescheduleDeadline && now >= Date.parse(booking.rescheduleDeadline);
+    !!booking.rescheduleDeadline &&
+    now >= Date.parse(booking.rescheduleDeadline);
 
   return (
     <section
@@ -58,9 +59,7 @@ export function BookingRescheduleNotice({
         type="button"
         className={primary + ' mt-4'}
         disabled={
-          isAcceptPending ||
-          !booking.scheduleVersion ||
-          isDeadlinePassed
+          isAcceptPending || !booking.scheduleVersion || isDeadlinePassed
         }
         aria-busy={isAcceptPending}
         onClick={onAcceptSchedule}

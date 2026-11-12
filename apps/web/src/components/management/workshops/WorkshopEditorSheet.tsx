@@ -219,8 +219,8 @@ export function WorkshopEditorSheet({
           {workshop ? 'Sửa workshop' : 'Tạo workshop'}
         </SheetTitle>
         <SheetDescription className="mt-2 max-w-xl text-sm leading-6 text-studio-muted">
-          Studio đã duyệt được đăng workshop ngay, không cần admin duyệt từng bài.
-          Chọn bản nháp nếu chưa muốn công khai.
+          Studio đã duyệt được đăng workshop ngay, không cần admin duyệt từng
+          bài. Chọn bản nháp nếu chưa muốn công khai.
         </SheetDescription>
       </header>
       <form
@@ -287,8 +287,8 @@ export function WorkshopEditorSheet({
                 </select>
                 <p className="text-sm leading-5 text-studio-muted">
                   Mỗi workshop có thể thuộc một danh mục khác nhau. Nếu chưa có
-                  danh mục phù hợp, chọn “Khác” và ghi rõ tên, nội dung workshop ở
-                  trên.
+                  danh mục phù hợp, chọn “Khác” và ghi rõ tên, nội dung workshop
+                  ở trên.
                 </p>
               </div>
               <div className="space-y-studio-field">

@@ -104,7 +104,8 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
     client.getQueryData<AuthUser | null>(authQueryKey)?.id === user.id;
   if (path[0] === 'admin') {
     if (user.role !== 'admin' || url.search) return;
-    const { prefetchDashboardRoute } = await import('../domain/dashboard-routes');
+    const { prefetchDashboardRoute } =
+      await import('../domain/dashboard-routes');
     prefetchDashboardRoute(url.pathname);
     if (!id) {
       const { getAdminOverview } =
@@ -133,7 +134,8 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
         'cai-dat': () => import('../../pages/admin/AdminSettingsPage'),
         'noi-dung': () => import('../../pages/admin/AdminContentPage'),
         'danh-muc': () => import('../../pages/admin/AdminCategoriesPage'),
-        'mau-thong-bao': () => import('../../pages/admin/AdminMessageTemplatesPage'),
+        'mau-thong-bao': () =>
+          import('../../pages/admin/AdminMessageTemplatesPage'),
       };
       const loader = loaders[id as keyof typeof loaders];
       if (loader) {
@@ -144,7 +146,8 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
     return;
   }
   if (path[0] === 'studio') {
-    const { managementService } = await import('../../services/managementService');
+    const { managementService } =
+      await import('../../services/managementService');
     if (!current()) return;
     const studios = await client.fetchQuery({
       queryKey: queryKeys.studios.mine(user.id),
@@ -186,7 +189,8 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
       studio.status !== 'approved'
     )
       return;
-    const { prefetchDashboardRoute } = await import('../domain/dashboard-routes');
+    const { prefetchDashboardRoute } =
+      await import('../domain/dashboard-routes');
     prefetchDashboardRoute(url.pathname);
     const tasks: Promise<unknown>[] = [];
     if (section === 'workshops')

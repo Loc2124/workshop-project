@@ -484,7 +484,11 @@ export function CustomerBookingDetailPage() {
               booking={booking}
               now={now}
               isAcceptPending={acceptSchedule.isPending}
-              acceptErrorMessage={acceptSchedule.isError ? acceptSchedule.error.message : undefined}
+              acceptErrorMessage={
+                acceptSchedule.isError
+                  ? acceptSchedule.error.message
+                  : undefined
+              }
               onAcceptSchedule={() => {
                 if (acceptScheduleInFlight.current) return;
                 acceptScheduleInFlight.current = true;
@@ -620,7 +624,9 @@ export function CustomerBookingDetailPage() {
             isFetchingQuote={cancelQuote.isFetching}
             quoteHasError={cancelQuote.isError}
             quoteHasData={Boolean(cancelQuote.data)}
-            cancelErrorMessage={cancel.isError ? cancel.error.message : undefined}
+            cancelErrorMessage={
+              cancel.isError ? cancel.error.message : undefined
+            }
             cancellationDescription={cancellationDescription}
             cancelOpenerRef={cancelOpener}
             cancelTriggerRef={cancelTrigger}

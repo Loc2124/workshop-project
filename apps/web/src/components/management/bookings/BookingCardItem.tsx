@@ -1,6 +1,10 @@
 import { Check, Copy, Phone } from 'lucide-react';
 import { formatPrice } from '../../../lib/format';
-import { dateLabel, paymentLabel, reservationLabel } from '../../../pages/customer/CustomerBookingsPage';
+import {
+  dateLabel,
+  paymentLabel,
+  reservationLabel,
+} from '../../../pages/customer/CustomerBookingsPage';
 import { StudioBadge, StudioButton, StudioCard } from '../StudioPrimitives';
 
 export interface BookingItemData {
@@ -104,7 +108,9 @@ export function BookingCardItem({
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div>
             <span className="text-studio-muted">Khách hàng:</span>
-            <p className="font-semibold text-studio-ink">{booking.contactName}</p>
+            <p className="font-semibold text-studio-ink">
+              {booking.contactName}
+            </p>
             {booking.contactPhone && (
               <a
                 href={`tel:${booking.contactPhone}`}

@@ -15,9 +15,11 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 
 const StudioWorkshopManager = lazy(() =>
-  import('../../components/management/StudioWorkshopManager').then((module) => ({
-    default: module.StudioWorkshopManager,
-  })),
+  import('../../components/management/StudioWorkshopManager').then(
+    (module) => ({
+      default: module.StudioWorkshopManager,
+    }),
+  ),
 );
 const StudioSessionManager = lazy(() =>
   import('../../components/management/StudioSessionManager').then((module) => ({
@@ -40,9 +42,11 @@ const StudioMembersManager = lazy(() =>
   })),
 );
 const StudioFinancesManager = lazy(() =>
-  import('../../components/management/StudioFinancesManager').then((module) => ({
-    default: module.StudioFinancesManager,
-  })),
+  import('../../components/management/StudioFinancesManager').then(
+    (module) => ({
+      default: module.StudioFinancesManager,
+    }),
+  ),
 );
 
 type Section =

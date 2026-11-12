@@ -100,10 +100,7 @@ export function OverviewChecklistCard({
       {hasError && (
         <p role="alert" className="mt-3 text-xs text-studio-danger">
           Chưa tải được tiến độ.{' '}
-          <button
-            className="underline font-semibold"
-            onClick={onRetry}
-          >
+          <button className="underline font-semibold" onClick={onRetry}>
             Thử lại
           </button>
         </p>

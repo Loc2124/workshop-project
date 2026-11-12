@@ -1,9 +1,4 @@
-import {
-  CalendarDays,
-  PanelsTopLeft,
-  Ticket,
-  UsersRound,
-} from 'lucide-react';
+import { CalendarDays, PanelsTopLeft, Ticket, UsersRound } from 'lucide-react';
 
 export interface OverviewMetricsCardsProps {
   upcomingSessions: number | null;
@@ -77,9 +72,7 @@ export function OverviewMetricsCards({
               item.value
             )}
           </div>
-          <p className="mt-1 text-xs text-studio-muted truncate">
-            {item.note}
-          </p>
+          <p className="mt-1 text-xs text-studio-muted truncate">{item.note}</p>
         </div>
       ))}
     </section>

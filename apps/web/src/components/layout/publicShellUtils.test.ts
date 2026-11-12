@@ -7,9 +7,13 @@ describe('publicShellUtils', () => {
   });
 
   it('áp dụng class explore-page cho trang khám phá', () => {
-    expect(getPublicShellClasses('/kham-pha')).toBe('explore-page min-h-screen');
+    expect(getPublicShellClasses('/kham-pha')).toBe(
+      'explore-page min-h-screen',
+    );
     expect(getPublicShellClasses('/explore')).toBe('explore-page min-h-screen');
-    expect(getPublicShellClasses('/kham-pha?category=gom')).toBe('explore-page min-h-screen');
+    expect(getPublicShellClasses('/kham-pha?category=gom')).toBe(
+      'explore-page min-h-screen',
+    );
   });
 
   it('bảo đảm có đệm đáy an toàn trên mobile cho trang studio (pb-28 md:pb-0)', () => {

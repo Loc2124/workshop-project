@@ -31,8 +31,8 @@ export function FinancialFeesTab({
     <section className="space-y-4" aria-label="Đối soát phí thu tiền cọc">
       <p className="max-w-3xl text-sm leading-6 text-stone-700">
         Nhập phí thật theo báo cáo từng giao dịch đã xác nhận. Phí được khấu trừ
-        vào khoản chi của cùng buổi học. Nếu khoản chi đã hoàn tất, phần phí phát
-        sinh được theo dõi riêng cho studio và buổi đó.
+        vào khoản chi của cùng buổi học. Nếu khoản chi đã hoàn tất, phần phí
+        phát sinh được theo dõi riêng cho studio và buổi đó.
       </p>
 
       {isLoading ? (

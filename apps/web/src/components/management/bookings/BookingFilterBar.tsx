@@ -3,11 +3,7 @@ import { StudioButton } from '../StudioPrimitives';
 import type { BookingStats } from './BookingStatsCards';
 
 export type FilterTab =
-  | 'all'
-  | 'needs_collection'
-  | 'paid'
-  | 'reschedule'
-  | 'cancelled';
+  'all' | 'needs_collection' | 'paid' | 'reschedule' | 'cancelled';
 
 export interface BookingFilterBarProps {
   stats: BookingStats;

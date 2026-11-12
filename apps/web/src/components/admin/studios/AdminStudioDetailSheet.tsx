@@ -237,30 +237,35 @@ export function AdminStudioDetailSheet({
               )}
 
               {!detailLoading && !detailError && (
-                <StudioStatusTimeline
-                  entries={selected.statusHistory ?? []}
-                />
+                <StudioStatusTimeline entries={selected.statusHistory ?? []} />
               )}
             </div>
 
             <footer className="shrink-0 border-t border-line p-5">
               <div className="flex flex-wrap gap-2">
-                {(selected.status === 'pending' || selected.status === 'suspended') &&
+                {(selected.status === 'pending' ||
+                  selected.status === 'suspended') &&
                   (missing.length ? (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span tabIndex={0}>
                             <Button
-                              disabled={pending || !canAct || missing.length > 0}
+                              disabled={
+                                pending || !canAct || missing.length > 0
+                              }
                               onClick={onApprove}
                               className="min-h-11"
                             >
-                              {selected.status === 'suspended' ? 'Khôi phục' : 'Duyệt'}
+                              {selected.status === 'suspended'
+                                ? 'Khôi phục'
+                                : 'Duyệt'}
                             </Button>
                           </span>
                         </TooltipTrigger>
-                        <TooltipContent>Thiếu: {missing.join(', ')}</TooltipContent>
+                        <TooltipContent>
+                          Thiếu: {missing.join(', ')}
+                        </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   ) : (
@@ -303,7 +308,9 @@ export function AdminStudioDetailSheet({
                   </Button>
                 )}
                 {['needs_changes', 'rejected'].includes(selected.status) && (
-                  <p className="text-sm text-muted">Hồ sơ đang ở chế độ chỉ xem.</p>
+                  <p className="text-sm text-muted">
+                    Hồ sơ đang ở chế độ chỉ xem.
+                  </p>
                 )}
               </div>
             </footer>

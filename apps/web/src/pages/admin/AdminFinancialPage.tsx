@@ -176,7 +176,11 @@ export function AdminFinancialPage() {
       purpose,
     }: {
       o: Obligation;
-      purpose: 'customer_refund' | 'platform_advance' | 'studio_payout' | 'studio_repayment';
+      purpose:
+        | 'customer_refund'
+        | 'platform_advance'
+        | 'studio_payout'
+        | 'studio_repayment';
     }) => {
       const remaining = Math.max(
         0,
@@ -484,9 +488,10 @@ export function AdminFinancialPage() {
           isError={fees.isError}
           error={fees.error}
           collectionFees={collectionFees}
-          onCollectionFeeChange={(id: string, val: { provider: string; reference: string; fee: string }) =>
-            setCollectionFees((x) => ({ ...x, [id]: val }))
-          }
+          onCollectionFeeChange={(
+            id: string,
+            val: { provider: string; reference: string; fee: string },
+          ) => setCollectionFees((x) => ({ ...x, [id]: val }))}
           onRecordFee={(fee) => recordCollectionFee.mutate({ fee })}
           isRecordFeePending={recordCollectionFee.isPending}
         />

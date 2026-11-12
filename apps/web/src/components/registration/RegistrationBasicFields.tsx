@@ -14,7 +14,9 @@ const selectClass =
 export interface RegistrationBasicFieldsProps {
   values: ReturnType<typeof useStudioRegistrationDraft>['values'];
   errors: Record<string, string>;
-  onUpdate: <K extends keyof ReturnType<typeof useStudioRegistrationDraft>['values']>(
+  onUpdate: <
+    K extends keyof ReturnType<typeof useStudioRegistrationDraft>['values'],
+  >(
     field: K,
     value: ReturnType<typeof useStudioRegistrationDraft>['values'][K],
   ) => void;
@@ -107,11 +109,7 @@ export function RegistrationBasicFields({
                   {(() => {
                     const Icon = getCategoryIcon(category.id);
                     return (
-                      <Icon
-                        size={20}
-                        aria-hidden="true"
-                        className="shrink-0"
-                      />
+                      <Icon size={20} aria-hidden="true" className="shrink-0" />
                     );
                   })()}
                   <span className="flex-1 font-semibold">{category.name}</span>
@@ -155,7 +153,8 @@ export function RegistrationBasicFields({
             </div>
           )}
           <p className="mt-2 text-sm text-muted">
-            Chọn một hoặc nhiều loại workshop. Chọn “Khác” nếu chưa có loại phù hợp.
+            Chọn một hoặc nhiều loại workshop. Chọn “Khác” nếu chưa có loại phù
+            hợp.
           </p>
           {isCategoryPending && (
             <LoadingState
@@ -244,8 +243,7 @@ export function RegistrationBasicFields({
         onChange={(field, value) => {
           if (field === 'photoIds')
             onUpdate(field, Array.isArray(value) ? value : []);
-          else
-            onUpdate(field, typeof value === 'string' ? value : '');
+          else onUpdate(field, typeof value === 'string' ? value : '');
         }}
         studioId={values.draftStudioId || undefined}
         ensureStudio={async () => {

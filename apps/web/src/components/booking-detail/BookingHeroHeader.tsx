@@ -63,7 +63,9 @@ export function BookingHeroHeader({
         </div>
         <div>
           <dt className="text-stone-600">Địa điểm</dt>
-          <dd className="mt-1 break-words">{booking.address ?? booking.studioName}</dd>
+          <dd className="mt-1 break-words">
+            {booking.address ?? booking.studioName}
+          </dd>
         </div>
       </dl>
       {(booking.seatRevision ?? 0) > 0 && (
@@ -99,10 +101,7 @@ export function BookingHeroHeader({
           Sao chép mã đặt chỗ
         </button>
         {booking.studioContactPhone && (
-          <a
-            className={secondary}
-            href={'tel:' + booking.studioContactPhone}
-          >
+          <a className={secondary} href={'tel:' + booking.studioContactPhone}>
             Liên hệ studio
           </a>
         )}

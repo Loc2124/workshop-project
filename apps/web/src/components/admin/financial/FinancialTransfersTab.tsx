@@ -9,7 +9,8 @@ import {
 import { StatusBadge } from './StatusBadge';
 import { FinancialTransferHistory } from './FinancialTransferHistory';
 
-export type QueueFilter = 'all' | 'uncertain' | 'overdue' | 'due_soon' | 'failed';
+export type QueueFilter =
+  'all' | 'uncertain' | 'overdue' | 'due_soon' | 'failed';
 
 export interface FinancialTransfersTabProps {
   isQueue: boolean;
@@ -308,16 +309,12 @@ export function FinancialTransfersTab({
                 <label className="text-xs font-medium">
                   Nhà cung cấp
                   <input
-                    value={
-                      transferDetails[t.id]?.provider ?? t.provider ?? ''
-                    }
+                    value={transferDetails[t.id]?.provider ?? t.provider ?? ''}
                     onChange={(e) =>
                       onTransferDetailsChange(t.id, {
                         provider: e.target.value,
                         reference:
-                          transferDetails[t.id]?.reference ??
-                          t.reference ??
-                          '',
+                          transferDetails[t.id]?.reference ?? t.reference ?? '',
                         fee: transferDetails[t.id]?.fee ?? '',
                       })
                     }
@@ -352,9 +349,7 @@ export function FinancialTransfersTab({
                         provider:
                           transferDetails[t.id]?.provider ?? t.provider ?? '',
                         reference:
-                          transferDetails[t.id]?.reference ??
-                          t.reference ??
-                          '',
+                          transferDetails[t.id]?.reference ?? t.reference ?? '',
                         fee: e.target.value,
                       })
                     }

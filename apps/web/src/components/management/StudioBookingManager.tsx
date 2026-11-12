@@ -11,9 +11,7 @@ import { z } from 'zod';
 import { apiFetch } from '../../lib/api-client';
 import { useAuth } from '../../hooks/useAuth';
 import { queryKeys } from '../../lib/query-keys';
-import {
-  ClipboardList,
-} from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import {
   StudioButton,
   StudioCard,
@@ -23,7 +21,10 @@ import {
 
 import { BookingStatsCards } from './bookings/BookingStatsCards';
 import { BookingFilterBar, type FilterTab } from './bookings/BookingFilterBar';
-import { BookingCardItem, type BookingItemData } from './bookings/BookingCardItem';
+import {
+  BookingCardItem,
+  type BookingItemData,
+} from './bookings/BookingCardItem';
 import { BookingTableView } from './bookings/BookingTableView';
 import { BookingCollectionModal } from './bookings/BookingCollectionModal';
 
