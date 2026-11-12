@@ -7,16 +7,15 @@ import {
   useState,
   type KeyboardEvent,
 } from 'react';
-import { Search, Store, Ticket, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCategoryCatalog } from '../../hooks/useCategoryCatalog';
-import { categories, getCategoryIcon } from '../../constants/categories';
+import { categories } from '../../constants/categories';
 import {
   getSearchSuggestions,
   type SearchSuggestion,
 } from '../../lib/searchSuggestions';
 import { cn } from '../../lib/utils';
-import { normalizeSearchText } from '../../lib/search';
 import { searchQuerySchema } from '../../lib/form-validation';
 import {
   Dialog,
@@ -24,34 +23,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '../ui/dialog';
-
-function HighlightMatch({ text, query }: { text: string; query: string }) {
-  const needle = normalizeSearchText(query);
-  if (!needle) return text;
-  const positions: Array<{ start: number; end: number }> = [];
-  let normalized = '';
-  let offset = 0;
-  for (const character of text) {
-    const start = offset;
-    offset += character.length;
-    const normalizedCharacter = normalizeSearchText(character);
-    normalized += normalizedCharacter;
-    for (let index = 0; index < normalizedCharacter.length; index++)
-      positions.push({ start, end: offset });
-  }
-  const found = normalized.indexOf(needle);
-  if (found < 0 || !positions[found] || !positions[found + needle.length - 1])
-    return text;
-  const start = positions[found].start;
-  const end = positions[found + needle.length - 1].end;
-  return (
-    <>
-      {text.slice(0, start)}
-      <strong className="font-bold text-ink">{text.slice(start, end)}</strong>
-      {text.slice(end)}
-    </>
-  );
-}
+import { SearchSuggestionsDropdown } from './search/SearchSuggestionsDropdown';
 
 export function HeaderSearch({
   open,
@@ -88,11 +60,12 @@ export function HeaderSearch({
       return [];
     }
   });
+
   const catalog = useCategoryCatalog();
   const workshops = catalog.items;
   const suggestions = useMemo(
     () => getSearchSuggestions(workshops, debouncedQuery),
-    [workshops, debouncedQuery, categories],
+    [workshops, debouncedQuery],
   );
   const popularSuggestions: SearchSuggestion[] = useMemo(() => {
     const fromCatalog = getSearchSuggestions(workshops, '');
@@ -110,11 +83,13 @@ export function HeaderSearch({
         label: category.name,
         href: `/kham-pha?type=${encodeURIComponent(category.slug)}&view=workshop`,
       }));
-  }, [workshops, categories]);
+  }, [workshops]);
+
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [query]);
+
   const hasQuery = Boolean(query.trim());
   const showSuggestions = hasQuery
     ? Boolean(debouncedQuery) && debouncedQuery === query.trim()
@@ -133,6 +108,7 @@ export function HeaderSearch({
     },
     [onOpenChange],
   );
+
   const show = useCallback(() => {
     setEmptyPanelRequested(false);
     onOpenChange(true);
@@ -151,6 +127,7 @@ export function HeaderSearch({
     const frame = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(frame);
   }, [open, mobile]);
+
   useEffect(() => {
     if (previousLocation.current !== location.key) {
       previousLocation.current = location.key;
@@ -160,6 +137,7 @@ export function HeaderSearch({
       if (open) close();
     }
   }, [location.key, location.search, open, close]);
+
   useEffect(() => {
     const handleKey = (event: globalThis.KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing) return;
@@ -203,6 +181,7 @@ export function HeaderSearch({
       document.removeEventListener('pointerdown', outside);
     };
   }, [open, mobile, show, close, query, panelVisible]);
+
   useEffect(() => {
     if (active >= 0)
       document
@@ -215,7 +194,27 @@ export function HeaderSearch({
     navigate(href);
     requestAnimationFrame(() => window.scrollTo(0, 0));
   };
+
   const choose = (suggestion: SearchSuggestion) => go(suggestion.href);
+
+  const saveRecent = (value: string) => {
+    const nextRecent = [
+      value,
+      ...recentSearches.filter(
+        (item) => item.toLocaleLowerCase() !== value.toLocaleLowerCase(),
+      ),
+    ].slice(0, 4);
+    setRecentSearches(nextRecent);
+    try {
+      localStorage.setItem(
+        'open-slot.recent-searches',
+        JSON.stringify(nextRecent),
+      );
+    } catch {
+      // Recent searches are optional.
+    }
+  };
+
   const submit = () => {
     const parsed = searchQuerySchema.safeParse(
       inputRef.current?.value ?? query,
@@ -229,12 +228,13 @@ export function HeaderSearch({
     if (value) saveRecent(value);
     go(value ? `/kham-pha?${new URLSearchParams({ q: value })}` : '/kham-pha');
   };
+
   const activeItems = hasQuery
     ? suggestions.length > 0 || !debouncedQuery
       ? suggestions
       : popularSuggestions.slice(0, 3)
     : popularSuggestions;
-  const groups = ['Workshop', 'Studio', 'Bộ môn'] as const;
+
   const keyboard = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.nativeEvent.isComposing) return;
     if (event.key === 'Escape') {
@@ -272,6 +272,7 @@ export function HeaderSearch({
       } else submit();
     }
   };
+
   const searchForm = () => (
     <form
       noValidate
@@ -362,241 +363,6 @@ export function HeaderSearch({
       )}
     </form>
   );
-  const saveRecent = (value: string) => {
-    const nextRecent = [
-      value,
-      ...recentSearches.filter(
-        (item) => item.toLocaleLowerCase() !== value.toLocaleLowerCase(),
-      ),
-    ].slice(0, 4);
-    setRecentSearches(nextRecent);
-    try {
-      localStorage.setItem(
-        'open-slot.recent-searches',
-        JSON.stringify(nextRecent),
-      );
-    } catch {
-      // Recent searches are optional.
-    }
-  };
-  const options = (
-    <div id={listId} role="listbox" aria-label="Gợi ý tìm kiếm" className="p-3">
-      {searchError && (
-        <p
-          id={`${listId}-error`}
-          role="alert"
-          className="mb-3 text-sm text-brick"
-        >
-          {searchError}
-        </p>
-      )}
-      {!hasQuery && popularSuggestions.length > 0 && (
-        <section aria-label="Bộ môn phổ biến" className="mb-3">
-          <h2 className="mb-2 text-[13px] font-semibold text-stone-700">
-            Bộ môn phổ biến
-          </h2>
-          <div
-            className="flex flex-wrap gap-2"
-            role="group"
-            aria-label="Bộ môn phổ biến"
-          >
-            {popularSuggestions.map((suggestion, index) => {
-              const Icon = getCategoryIcon(suggestion.categoryId);
-              return (
-                <button
-                  key={suggestion.id}
-                  id={`${listId}-${index}`}
-                  type="button"
-                  role="option"
-                  aria-selected={active === index}
-                  tabIndex={-1}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onMouseEnter={() => setActive(index)}
-                  onClick={() => choose(suggestion)}
-                  className={cn(
-                    'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 text-xs font-semibold text-ink hover:bg-soft',
-                    active === index && 'bg-soft ring-1 ring-primary',
-                  )}
-                >
-                  <Icon size={14} aria-hidden="true" />
-                  {suggestion.label}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
-      {!hasQuery && recentSearches.length > 0 && (
-        <section aria-label="Tìm gần đây" className="mb-3">
-          <h2 className="mb-2 text-[13px] font-semibold text-stone-700">
-            Tìm gần đây
-          </h2>
-          <div
-            className="flex flex-wrap gap-2"
-            role="group"
-            aria-label="Tìm gần đây"
-          >
-            {recentSearches.map((item, index) => (
-              <button
-                key={item}
-                id={`${listId}-${popularSuggestions.length + index}`}
-                type="button"
-                role="option"
-                aria-selected={active === popularSuggestions.length + index}
-                tabIndex={-1}
-                onMouseDown={(event) => event.preventDefault()}
-                onMouseEnter={() =>
-                  setActive(popularSuggestions.length + index)
-                }
-                onClick={() => {
-                  setQuery(item);
-                  setActive(-1);
-                  inputRef.current?.focus();
-                }}
-                className={cn(
-                  'min-h-9 rounded-full border border-line px-3 text-xs font-semibold text-stone-700 hover:bg-soft',
-                  active === popularSuggestions.length + index &&
-                    'bg-soft ring-1 ring-primary',
-                )}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
-      {hasQuery && debouncedQuery && suggestions.length > 0 && (
-        <div className="space-y-2">
-          {groups.map((group) => {
-            const entries = suggestions
-              .filter((suggestion) => suggestion.group === group)
-              .slice(0, 3);
-            if (!entries.length) return null;
-            return (
-              <section key={group} role="group" aria-label={group}>
-                <h2 className="px-2 pb-1 text-xs font-semibold text-stone-600">
-                  {group}
-                </h2>
-                {entries.map((suggestion) => {
-                  const index = suggestions.indexOf(suggestion);
-                  const Icon =
-                    group === 'Bộ môn'
-                      ? getCategoryIcon(suggestion.categoryId)
-                      : group === 'Studio'
-                        ? Store
-                        : Ticket;
-                  return (
-                    <button
-                      key={suggestion.id}
-                      id={`${listId}-${index}`}
-                      type="button"
-                      role="option"
-                      aria-selected={index === active}
-                      tabIndex={-1}
-                      title={[suggestion.label, suggestion.detail]
-                        .filter(Boolean)
-                        .join(' · ')}
-                      onMouseDown={(event) => event.preventDefault()}
-                      onMouseEnter={() => setActive(index)}
-                      onClick={() => {
-                        if (hasQuery) saveRecent(query.trim());
-                        choose(suggestion);
-                      }}
-                      className={cn(
-                        'flex min-h-10 w-full items-center gap-2 rounded-lg px-2 text-left text-sm text-ink hover:bg-soft',
-                        index === active && 'bg-soft ring-1 ring-primary',
-                      )}
-                    >
-                      <Icon
-                        size={16}
-                        aria-hidden="true"
-                        className="shrink-0 text-stone-600"
-                      />
-                      <span className="min-w-0 flex-1 truncate font-medium">
-                        <HighlightMatch
-                          text={suggestion.label}
-                          query={debouncedQuery}
-                        />
-                      </span>
-                      {suggestion.detail && (
-                        <span className="max-w-40 truncate text-xs text-muted">
-                          {suggestion.detail}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </section>
-            );
-          })}
-        </div>
-      )}
-      {hasQuery && debouncedQuery && catalog.isLoading && (
-        <p role="status" className="py-3 text-sm text-muted">
-          Đang tìm gợi ý…
-        </p>
-      )}
-      {hasQuery &&
-        debouncedQuery &&
-        !catalog.isLoading &&
-        suggestions.length === 0 && (
-          <div
-            role="group"
-            aria-label="Không có kết quả phù hợp"
-            className="py-2"
-          >
-            <p role="status" className="mb-3 text-sm font-medium">
-              Không tìm thấy “{debouncedQuery}”
-            </p>
-            {popularSuggestions.length > 0 && (
-              <div
-                className="flex flex-wrap gap-2"
-                role="group"
-                aria-label="Bộ môn phổ biến"
-              >
-                {popularSuggestions.slice(0, 3).map((suggestion, index) => (
-                  <button
-                    key={suggestion.id}
-                    id={`${listId}-${index}`}
-                    type="button"
-                    role="option"
-                    aria-selected={active === index}
-                    tabIndex={-1}
-                    onMouseDown={(event) => event.preventDefault()}
-                    onMouseEnter={() => setActive(index)}
-                    onClick={() => choose(suggestion)}
-                    className={cn(
-                      'min-h-9 rounded-full border border-line px-3 text-xs font-semibold text-primary hover:bg-soft',
-                      active === index && 'bg-soft ring-1 ring-primary',
-                    )}
-                  >
-                    {suggestion.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      {hasQuery && debouncedQuery && (
-        <button
-          id={`${listId}-${activeItems.length}`}
-          type="button"
-          role="option"
-          aria-selected={active === activeItems.length}
-          tabIndex={-1}
-          onMouseDown={(event) => event.preventDefault()}
-          onMouseEnter={() => setActive(activeItems.length)}
-          onClick={() => submit()}
-          className={cn(
-            'mt-2 flex min-h-11 w-full items-center rounded-lg border-t border-line px-2 text-left text-sm font-semibold text-primary hover:bg-soft',
-            active === activeItems.length && 'bg-soft ring-1 ring-primary',
-          )}
-        >
-          Xem tất cả kết quả cho ‘{debouncedQuery}’
-        </button>
-      )}
-    </div>
-  );
 
   return mobile ? (
     <div className="relative flex w-11 shrink-0 justify-end">
@@ -652,7 +418,29 @@ export function HeaderSearch({
           </div>
           {panelVisible && (
             <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-xl border border-line bg-paper">
-              {options}
+              <SearchSuggestionsDropdown
+                listId={listId}
+                hasQuery={hasQuery}
+                debouncedQuery={debouncedQuery}
+                searchError={searchError}
+                popularSuggestions={popularSuggestions}
+                recentSearches={recentSearches}
+                suggestions={suggestions}
+                activeItems={activeItems}
+                active={active}
+                isLoading={catalog.isLoading}
+                onSelectSuggestion={(suggestion) => {
+                  if (hasQuery) saveRecent(query.trim());
+                  choose(suggestion);
+                }}
+                onSelectRecent={(item) => {
+                  setQuery(item);
+                  setActive(-1);
+                  inputRef.current?.focus();
+                }}
+                onSubmit={submit}
+                onHoverIndex={setActive}
+              />
             </div>
           )}
         </DialogContent>
@@ -672,7 +460,29 @@ export function HeaderSearch({
           id={`${listId}-panel`}
           className="absolute right-0 top-[calc(100%+8px)] z-50 max-h-[min(28rem,calc(100dvh-6rem))] w-[max(100%,360px)] min-w-full max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-line bg-paper shadow-overlay"
         >
-          {options}
+          <SearchSuggestionsDropdown
+            listId={listId}
+            hasQuery={hasQuery}
+            debouncedQuery={debouncedQuery}
+            searchError={searchError}
+            popularSuggestions={popularSuggestions}
+            recentSearches={recentSearches}
+            suggestions={suggestions}
+            activeItems={activeItems}
+            active={active}
+            isLoading={catalog.isLoading}
+            onSelectSuggestion={(suggestion) => {
+              if (hasQuery) saveRecent(query.trim());
+              choose(suggestion);
+            }}
+            onSelectRecent={(item) => {
+              setQuery(item);
+              setActive(-1);
+              inputRef.current?.focus();
+            }}
+            onSubmit={submit}
+            onHoverIndex={setActive}
+          />
         </div>
       )}
     </div>
