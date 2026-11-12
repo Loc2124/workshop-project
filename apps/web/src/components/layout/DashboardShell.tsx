@@ -18,6 +18,7 @@ import {
   Mail,
   Sparkles,
   FolderTree,
+  Star,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout, type DashboardMenuItem } from './DashboardLayout';
@@ -42,6 +43,7 @@ const STUDIO_SECTIONS = [
     ownerOnly: true,
   },
   { label: 'Check-in vé', section: 'check-in', icon: QrCode },
+  { label: 'Đánh giá học viên', section: 'reviews', icon: Star },
   { label: 'Thành viên', section: 'members', icon: Users, ownerOnly: true },
   { label: 'Hồ sơ studio', section: 'profile', icon: Store, ownerOnly: true },
 ];
@@ -76,6 +78,7 @@ export function StudioDashboard() {
             'bookings',
             'finances',
             'check-in',
+            'reviews',
             'members',
             'profile',
           ].includes(section)
@@ -99,9 +102,14 @@ export function StudioDashboard() {
       to: studioPage(studio.id, section),
       locked: Boolean(
         locked &&
-        ['sessions', 'bookings', 'finances', 'check-in', 'members'].includes(
-          section,
-        ),
+        [
+          'sessions',
+          'bookings',
+          'finances',
+          'check-in',
+          'reviews',
+          'members',
+        ].includes(section),
       ),
       attention:
         section === 'profile' &&

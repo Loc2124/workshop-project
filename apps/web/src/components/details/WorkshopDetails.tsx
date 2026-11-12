@@ -269,6 +269,16 @@ export function WorkshopDetails({
                     <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-stone-700">
                       {review.comment}
                     </p>
+                    {review.replyComment && (
+                      <div className="mt-3 rounded-lg border-l-2 border-emerald-600 bg-white/70 p-3 pl-4">
+                        <p className="text-xs font-semibold text-emerald-800">
+                          Phản hồi từ studio:
+                        </p>
+                        <p className="mt-1 whitespace-pre-line text-sm text-stone-700">
+                          {review.replyComment}
+                        </p>
+                      </div>
+                    )}
                   </article>
                 ))}
               </div>

@@ -101,6 +101,8 @@ export const publicWorkshopDtoSchema = z
     thumbnailUrl: z.string().optional(),
     mediumUrl: z.string().optional(),
     nextStartsAt: isoDateTimeSchema.optional(),
+    rating: z.number().optional(),
+    reviewCount: z.number().optional(),
     sessions: z.array(workshopSessionDtoSchema),
   })
   .strict();
@@ -131,6 +133,8 @@ export const publicStudioResponseSchema = z
         categoryId: z.string().min(1),
         trustLevel: studioTrustLevelSchema.optional(),
         canCollectDeposit: z.boolean().optional(),
+        rating: z.number().optional(),
+        reviewCount: z.number().optional(),
         contactPhone: z.string().nullable().optional(),
         contactEmail: z.string().nullable().optional(),
         facebookUrl: z.string().nullable().optional(),
@@ -181,3 +185,4 @@ export * from './message-templates.js';
 export * from './settings.js';
 export { createStudioRegistrationSchema } from './studio-registration.js';
 export * from './vietnam-banks.js';
+export * from './reviews.js';

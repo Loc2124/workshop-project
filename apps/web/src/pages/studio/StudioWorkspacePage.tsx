@@ -44,14 +44,26 @@ const StudioFinancesManager = lazy(() =>
     default: module.StudioFinancesManager,
   })),
 );
+const StudioReviewsManager = lazy(() =>
+  import('@/components/management/StudioReviewsManager').then((module) => ({
+    default: module.StudioReviewsManager,
+  })),
+);
 
 type Section =
-  'workshops' | 'sessions' | 'bookings' | 'finances' | 'profile' | 'members';
+  | 'workshops'
+  | 'sessions'
+  | 'bookings'
+  | 'finances'
+  | 'reviews'
+  | 'profile'
+  | 'members';
 const titles: Record<Section, string> = {
   workshops: 'Workshop',
   sessions: 'Lịch buổi học',
   bookings: 'Đặt chỗ',
   finances: 'Doanh thu & Quyết toán',
+  reviews: 'Đánh giá học viên',
   profile: 'Hồ sơ studio',
   members: 'Quản lý thành viên',
 };
@@ -98,7 +110,7 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
   if (
     studio &&
     studio.status !== 'approved' &&
-    ['sessions', 'bookings', 'finances', 'members'].includes(section)
+    ['sessions', 'bookings', 'finances', 'reviews', 'members'].includes(section)
   )
     return <Navigate to={`/studio/${studio.id}`} replace />;
   if (
@@ -178,6 +190,9 @@ export function StudioWorkspacePage({ section }: { section: Section }) {
             <StudioBookingManager studioId={studio.id} />
           )}
           {section === 'finances' && <StudioFinancesManager studio={studio} />}
+          {section === 'reviews' && (
+            <StudioReviewsManager studioId={studio.id} />
+          )}
           {section === 'members' && <StudioMembersManager studio={studio} />}
           {section === 'profile' && <StudioProfileManager studio={studio} />}
         </>

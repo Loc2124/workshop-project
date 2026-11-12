@@ -16,6 +16,8 @@ export type WorkshopReview = {
   rating: number;
   comment: string;
   createdAt?: string;
+  replyComment?: string | null;
+  repliedAt?: string | null;
 };
 
 type WorkshopPolicies = Pick<

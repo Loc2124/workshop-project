@@ -15,6 +15,7 @@ import meRoutes from './modules/auth/me.routes.js';
 import catalogRoutes from './modules/catalog/catalog.routes.js';
 import imageRoutes from './modules/images/images.routes.js';
 import reportRoutes from './modules/reports/reports.routes.js';
+import { reviewsRouter } from './modules/reviews/reviews.routes.js';
 import { loadConfig } from './config.js';
 import { corsForWeb } from './middleware/cors.js';
 import bookingRoutes from './modules/bookings/bookings.routes.js';
@@ -87,6 +88,7 @@ export function createApp() {
   );
   app.use('/me', meRoutes);
   app.use('/', bookingRoutes);
+  app.use('/', reviewsRouter);
   app.use('/payments', paymentRoutes);
   app.use('/', catalogRoutes);
   app.use('/studios', studioRoutes);

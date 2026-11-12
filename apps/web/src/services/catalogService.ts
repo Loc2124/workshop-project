@@ -49,6 +49,8 @@ export const catalogService = {
             rating: z.number(),
             comment: z.string(),
             createdAt: z.string(),
+            replyComment: z.string().nullable().optional(),
+            repliedAt: z.string().nullable().optional(),
           }),
         ),
       })

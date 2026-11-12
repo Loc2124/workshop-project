@@ -347,6 +347,10 @@ function App() {
             />
             <Route path="check-in" element={<StudioCheckInPage />} />
             <Route
+              path="reviews"
+              element={<StudioWorkspacePage section="reviews" />}
+            />
+            <Route
               path="members"
               element={<StudioWorkspacePage section="members" />}
             />

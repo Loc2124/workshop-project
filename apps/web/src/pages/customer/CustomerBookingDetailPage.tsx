@@ -17,6 +17,7 @@ import { LoadingState } from '@/components/ui/LoadingState';
 import { sessionLifecycleLabel } from './CustomerBookingsPage';
 import { BookingSeatCancellation } from '@/components/details/BookingSeatCancellation';
 import { CustomerRefundAccounts } from '@/components/management/CustomerRefundAccounts';
+import { BookingReviewSection } from '@/components/reviews/BookingReviewSection';
 
 import { BookingHeroHeader } from '@/components/booking-detail/BookingHeroHeader';
 import { BookingTicketsSection } from '@/components/booking-detail/BookingTicketsSection';
@@ -552,6 +553,8 @@ export function CustomerBookingDetailPage() {
           {(refundNeeded || booking.refundStatus === 'pending') && (
             <CustomerRefundAccounts bookingId={id} />
           )}
+
+          <BookingReviewSection bookingId={id} />
 
           <BookingPaymentSummary
             booking={booking}
