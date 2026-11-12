@@ -42,6 +42,11 @@ const userSchema = z.object({
   createdAt: z.string(),
 });
 type User = z.infer<typeof userSchema>;
+const roleTones: Record<Role, 'gray' | 'yellow' | 'green'> = {
+  customer: 'gray',
+  studio_owner: 'yellow',
+  admin: 'green',
+};
 const labels: Record<Role, string> = {
   customer: 'Khách',
   studio_owner: 'Chủ studio',
@@ -132,7 +137,11 @@ export function AdminUsersPage() {
         header: 'Vai trò',
         cell: ({ row }) => (
           <div className="space-y-1">
-            <StatusBadge status="draft" label={labels[row.original.role]} />
+            <StatusBadge
+              status={row.original.role}
+              label={labels[row.original.role]}
+              tone={roleTones[row.original.role]}
+            />
             {row.original.staffStudioCount > 0 && (
               <p className="whitespace-nowrap text-xs text-muted">
                 Nhân viên tại {row.original.staffStudioCount} studio
@@ -226,7 +235,13 @@ export function AdminUsersPage() {
   return (
     <div className="space-y-5">
       <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-semibold">Người dùng</h1>
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Quản lý Người dùng
+        </h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
+          Danh sách tài khoản khách hàng, chủ studio và quản trị viên trong hệ
+          thống.
+        </p>
       </header>
       <DataTable
         columns={columns}

@@ -259,9 +259,12 @@ export function AdminBookingsPage() {
   return (
     <div className="space-y-5">
       <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-semibold">Đặt chỗ</h1>
-        <p className="mt-1 text-xs text-muted">
-          Lọc khoảng ngày theo giờ bắt đầu slot · Giờ Việt Nam
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Quản lý Đặt chỗ
+        </h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
+          Tra cứu, quản lý trạng thái giữ chỗ, thanh toán và đối soát vé toàn
+          sàn.
         </p>
       </header>
       <DataTable

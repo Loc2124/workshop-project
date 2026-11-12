@@ -165,9 +165,12 @@ export function AdminMessageTemplatesPage() {
   return (
     <div className="space-y-5">
       <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-semibold">Mẫu thông báo</h1>
-        <p className="mt-1 text-xs text-muted">
-          Nội dung được dùng cho các thông báo mới. Thông báo đã gửi giữ nguyên.
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Mẫu thông báo hệ thống
+        </h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
+          Tùy chỉnh nội dung email và thông báo tự động gửi cho khách hàng và
+          chủ xưởng.
         </p>
       </header>
       {templates.isPending ? (

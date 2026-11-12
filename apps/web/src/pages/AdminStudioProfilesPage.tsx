@@ -240,9 +240,14 @@ export function AdminStudioProfilesPage({
   return (
     <div className="space-y-5">
       <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-semibold">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
           {showAllTab ? 'Tất cả studio' : 'Hồ sơ studio'}
         </h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
+          {showAllTab
+            ? 'Danh sách toàn bộ các studio đã đăng ký trên sàn Open Slot.'
+            : 'Xem xét và phê duyệt hồ sơ đăng ký mở xưởng từ các nghệ nhân.'}
+        </p>
       </header>
       <div ref={listRef}>
         <DataTable

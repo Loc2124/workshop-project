@@ -149,10 +149,13 @@ export function AdminAuditPage() {
   const log = detail.data ?? selected;
   return (
     <div className="space-y-5">
-      <header className="space-y-2">
-        <h1 className="font-heading text-2xl font-semibold">Nhật ký</h1>
-        <p className="text-sm text-muted">
-          Tra cứu ai đã thay đổi dữ liệu, khi nào và vì sao. Nhật ký chỉ đọc.
+      <header className="border-b border-line pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Nhật ký hoạt động
+        </h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
+          Tra cứu ai đã thay đổi dữ liệu, khi nào và vì sao. Dữ liệu nhật ký chỉ
+          đọc và bất biến.
         </p>
       </header>
       {options.isError && (

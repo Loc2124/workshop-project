@@ -14,6 +14,10 @@ import {
   ScrollText,
   Settings,
   WalletCards,
+  LayoutTemplate,
+  Mail,
+  Sparkles,
+  FolderTree,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { DashboardLayout, type DashboardMenuItem } from './DashboardLayout';
@@ -123,10 +127,10 @@ export function AdminDashboard() {
     { label: 'Tổng quan', to: '/admin', icon: LayoutDashboard },
     { label: 'Hồ sơ studio', to: '/admin/ho-so-studio', icon: ClipboardCheck },
     { label: 'Tất cả studio', to: '/admin/studios', icon: Building2 },
-    { label: 'Nội dung', to: '/admin/noi-dung', icon: PanelsTopLeft },
-    { label: 'Mẫu thông báo', to: '/admin/mau-thong-bao', icon: PanelsTopLeft },
-    { label: 'Workshop', to: '/admin/workshop', icon: PanelsTopLeft },
-    { label: 'Danh mục', to: '/admin/danh-muc', icon: PanelsTopLeft },
+    { label: 'Nội dung', to: '/admin/noi-dung', icon: LayoutTemplate },
+    { label: 'Mẫu thông báo', to: '/admin/mau-thong-bao', icon: Mail },
+    { label: 'Workshop', to: '/admin/workshop', icon: Sparkles },
+    { label: 'Danh mục', to: '/admin/danh-muc', icon: FolderTree },
     { label: 'Người dùng', to: '/admin/nguoi-dung', icon: Users },
     { label: 'Đặt chỗ', to: '/admin/dat-cho', icon: Ticket },
     { label: 'Tài chính', to: '/admin/tai-chinh', icon: WalletCards },

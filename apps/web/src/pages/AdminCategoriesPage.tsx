@@ -193,11 +193,12 @@ export function AdminCategoriesPage() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">
-            Danh mục workshop
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            Danh mục Workshop
           </h1>
-          <p className="mt-1 text-xs text-muted">
-            Kéo tay nắm để sắp xếp. Khác luôn nằm cuối.
+          <p className="mt-1 text-xs text-muted sm:text-sm">
+            Kéo thả để sắp xếp thứ tự hiển thị ngoài trang khám phá. Loại "Khác"
+            luôn nằm cuối.
           </p>
         </div>
         <Button

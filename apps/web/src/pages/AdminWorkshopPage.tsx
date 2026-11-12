@@ -252,10 +252,13 @@ export function AdminWorkshopPage() {
   );
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-semibold">Workshop</h1>
-        <p className="text-sm text-muted">
-          Studio đã duyệt tự đăng workshop. Admin hậu kiểm và xử lý báo cáo.
+      <header className="border-b border-line pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Quản lý Workshop
+        </h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
+          Studio đã duyệt tự đăng workshop. Admin thực hiện hậu kiểm chất lượng
+          và xử lý khi có vi phạm.
         </p>
       </header>
       {categories.error && (

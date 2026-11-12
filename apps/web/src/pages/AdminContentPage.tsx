@@ -254,17 +254,38 @@ export function AdminContentPage() {
               );
             })}
           </Tabs>
-          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-            <p className="text-xs text-muted" aria-live="polite">
-              {dirty ? 'Có thay đổi chưa lưu.' : 'Nội dung đã được lưu.'}
-            </p>
-            <Button
-              variant="outline"
-              disabled={!dirty || mutation.isPending}
-              onClick={() => setReset(true)}
+          <div
+            className={`flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 transition-all ${
+              dirty
+                ? 'sticky bottom-0 z-20 -mx-3 rounded-t-lg border-line/80 bg-surface/95 p-4 shadow-lg backdrop-blur-xs md:-mx-5'
+                : ''
+            }`}
+          >
+            <p
+              className={`text-xs ${
+                dirty ? 'font-semibold text-amber-700' : 'text-muted'
+              }`}
+              aria-live="polite"
             >
-              Bỏ thay đổi và tải lại
-            </Button>
+              {dirty
+                ? 'Có thay đổi chưa lưu trên trang chủ.'
+                : 'Nội dung đã được lưu.'}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                disabled={!dirty || mutation.isPending}
+                onClick={() => setReset(true)}
+              >
+                Bỏ thay đổi
+              </Button>
+              <Button
+                disabled={!ready || !dirty || mutation.isPending}
+                onClick={() => mutation.mutate()}
+              >
+                {mutation.isPending ? 'Đang lưu…' : 'Lưu thay đổi'}
+              </Button>
+            </div>
           </div>
         </>
       )}

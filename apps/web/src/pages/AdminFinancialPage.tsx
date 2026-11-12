@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatBankDisplay } from '@workshop/shared';
+import { RefreshCw } from 'lucide-react';
+import { Button } from '../components/ui/button';
 import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../lib/api-client';
 import { formatPrice } from '../lib/format';
@@ -518,41 +520,72 @@ export function AdminFinancialPage() {
 
   return (
     <div className="space-y-5">
-      <header className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[.14em] text-primary">
-          Vận hành
-        </p>
-        <h1 className="font-heading text-2xl font-semibold text-ink">
-          Tài chính & quyết toán
-        </h1>
-        <p className="max-w-3xl text-sm leading-6 text-muted">
-          Theo dõi hạn hoàn, khoản studio cần chuyển về Open Slot và từng lần
-          chuyển. Mọi khoản chuyển cần duyệt; ghi nhận thành công phải có mã đối
-          chiếu, nhà cung cấp và phí thực tế.
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-[.14em] text-primary">
+            Vận hành
+          </span>
+          <h1 className="mt-1 font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            Tài chính &amp; quyết toán
+          </h1>
+          <p className="mt-1 max-w-3xl text-xs text-muted sm:text-sm">
+            Theo dõi hạn hoàn, khoản studio cần chuyển về Open Slot và từng lần
+            chuyển. Mọi khoản chuyển cần duyệt; ghi nhận thành công phải có mã
+            đối chiếu, nhà cung cấp và phí thực tế.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void refresh()}
+          className="gap-2 text-xs"
+        >
+          <RefreshCw
+            size={14}
+            className={
+              obligations.isFetching || transfers.isFetching || queue.isFetching
+                ? 'animate-spin'
+                : ''
+            }
+          />
+          Làm mới số liệu
+        </Button>
       </header>
       <nav
         aria-label="Các mục tài chính"
-        className="flex gap-2 overflow-x-auto border-b border-line"
+        className="flex gap-1 overflow-x-auto border-b border-line pb-px"
       >
         {(
           [
-            ['queue', 'Cần đối soát'],
-            ['obligations', 'Nghĩa vụ'],
-            ['transfers', 'Giao dịch'],
-            ['settlements', 'Đối soát chi'],
-            ['accounts', 'Tài khoản nhận'],
-            ['fees', 'Phí thu'],
-            ['calendar', 'Lịch nhà nước'],
+            ['queue', 'Cần đối soát', queue.data?.length ?? 0],
+            ['obligations', 'Nghĩa vụ', obligations.data?.length ?? 0],
+            ['transfers', 'Giao dịch', 0],
+            ['settlements', 'Đối soát chi', 0],
+            ['accounts', 'Tài khoản nhận', 0],
+            ['fees', 'Phí thu', 0],
+            ['calendar', 'Lịch nhà nước', 0],
           ] as const
-        ).map(([key, label]) => (
+        ).map(([key, label, count]) => (
           <button
             key={key}
             type="button"
             onClick={() => setTab(key)}
-            className={`min-h-11 shrink-0 border-b-2 px-4 text-sm font-semibold ${tab === key ? 'border-primary text-primary' : 'border-transparent text-muted hover:text-ink'}`}
+            className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 px-3.5 text-sm font-semibold transition-colors ${
+              tab === key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted hover:text-ink'
+            }`}
           >
             {label}
+            {count > 0 && (
+              <span
+                className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                  tab === key ? 'bg-primary text-white' : 'bg-soft text-muted'
+                }`}
+              >
+                {count}
+              </span>
+            )}
           </button>
         ))}
       </nav>

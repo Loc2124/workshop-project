@@ -214,9 +214,13 @@ export function AdminReportsPage() {
   return (
     <div className="space-y-5">
       <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-semibold">
-          Báo cáo nội dung
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          Báo cáo vi phạm &amp; khiếu nại
         </h1>
+        <p className="mt-1 text-xs text-muted sm:text-sm">
+          Tiếp nhận và xử lý các báo cáo vi phạm nội dung, workshop hoặc studio
+          từ cộng đồng.
+        </p>
       </header>
       <DataTable
         columns={columns}

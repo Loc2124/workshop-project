@@ -12,6 +12,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { siteSettingsSchema, type SiteSettings } from '@workshop/shared';
 import { toast } from 'sonner';
+import {
+  AlertCircle,
+  CalendarCheck,
+  Headphones,
+  RotateCcw,
+  Store,
+  type LucideIcon,
+} from 'lucide-react';
 import { apiFetch } from '../lib/api-client';
 import {
   Form,
@@ -43,6 +51,7 @@ type Field = FieldPathByValue<SiteSettings, string | number>;
 const groups: {
   title: string;
   description: string;
+  icon: LucideIcon;
   fields: {
     name: Field;
     label: string;
@@ -55,6 +64,7 @@ const groups: {
   {
     title: 'Hồ sơ studio',
     description: 'Áp dụng khi đăng ký, bổ sung hồ sơ và xét duyệt studio.',
+    icon: Store,
     fields: [
       {
         name: 'studio.minPhotos',
@@ -83,6 +93,7 @@ const groups: {
   {
     title: 'Hỗ trợ',
     description: 'Hiển thị tại footer và các khu vực liên hệ hỗ trợ.',
+    icon: Headphones,
     fields: [
       { name: 'support.hotline', label: 'Hotline', type: 'text' },
       {
@@ -98,6 +109,7 @@ const groups: {
     title: 'Chính sách đặt chỗ',
     description:
       'Giới hạn áp dụng cho khách. Admin vẫn có thể xử lý hủy theo nghiệp vụ.',
+    icon: CalendarCheck,
     fields: [
       {
         name: 'booking.cancellationHours',
@@ -185,58 +197,79 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
         noValidate
       >
         <fieldset disabled={busy} className="space-y-5">
-          {groups.map((group) => (
-            <Card key={group.title}>
-              <CardHeader>
-                <CardTitle>{group.title}</CardTitle>
-                <CardDescription>{group.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-5 sm:grid-cols-2">
-                {group.fields.map((input) => (
-                  <FormField
-                    key={input.name}
-                    control={form.control}
-                    name={input.name}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{input.label}</FormLabel>
-                        <FormControl>
-                          <input
-                            {...field}
-                            type={input.type}
-                            min={input.min}
-                            max={input.max}
-                            step={input.type === 'number' ? 1 : undefined}
-                            value={
-                              typeof field.value === 'number' &&
-                              Number.isNaN(field.value)
-                                ? ''
-                                : field.value
-                            }
-                            onChange={(e) =>
-                              field.onChange(
-                                input.type === 'number'
-                                  ? e.target.valueAsNumber
-                                  : e.target.value,
-                              )
-                            }
-                            className="min-h-11 w-full rounded-sm border border-line bg-surface px-3 text-sm"
-                          />
-                        </FormControl>
-                        {input.hint && (
-                          <FormDescription>{input.hint}</FormDescription>
-                        )}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
-              </CardContent>
-            </Card>
-          ))}
+          {groups.map((group) => {
+            const GroupIcon = group.icon;
+            return (
+              <Card key={group.title} className="shadow-sm">
+                <CardHeader className="border-b border-line/60 pb-3.5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-soft text-primary">
+                      <GroupIcon size={18} />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base font-bold text-ink">
+                        {group.title}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {group.description}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="grid gap-5 pt-5 sm:grid-cols-2">
+                  {group.fields.map((input) => (
+                    <FormField
+                      key={input.name}
+                      control={form.control}
+                      name={input.name}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-semibold text-ink">
+                            {input.label}
+                          </FormLabel>
+                          <FormControl>
+                            <input
+                              {...field}
+                              type={input.type}
+                              min={input.min}
+                              max={input.max}
+                              step={input.type === 'number' ? 1 : undefined}
+                              value={
+                                typeof field.value === 'number' &&
+                                Number.isNaN(field.value)
+                                  ? ''
+                                  : field.value
+                              }
+                              onChange={(e) =>
+                                field.onChange(
+                                  input.type === 'number'
+                                    ? e.target.valueAsNumber
+                                    : e.target.value,
+                                )
+                              }
+                              className="min-h-11 w-full rounded-md border border-line bg-surface px-3 text-sm text-ink transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                          </FormControl>
+                          {input.hint && (
+                            <FormDescription className="text-xs">
+                              {input.hint}
+                            </FormDescription>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </fieldset>
         {error && (
-          <div role="alert" className="space-y-3 text-sm text-brick">
+          <div
+            role="alert"
+            className="space-y-3 rounded-md bg-rose-50 p-4 text-sm text-rose-800 border border-rose-200"
+          >
             <p>{error}</p>
             <Button
               type="button"
@@ -244,23 +277,51 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
               disabled={busy}
               onClick={() => reload.mutate()}
             >
+              <RotateCcw size={14} className="mr-1.5" />
               Bỏ bản sửa và tải lại
             </Button>
           </div>
         )}
-        <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-          <p className="text-xs text-muted">
-            Cập nhật: {formatReviewDate(snapshot.updatedAt)} · Mỗi lần lưu được
-            ghi nhật ký.
-          </p>
-          <Button
-            type="submit"
-            disabled={
-              busy || !form.formState.isDirty || !form.formState.isValid
-            }
-          >
-            {mutation.isPending ? 'Đang lưu…' : 'Lưu thay đổi'}
-          </Button>
+        <footer
+          className={`flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 transition-all ${
+            form.formState.isDirty
+              ? 'sticky bottom-0 z-20 -mx-3 rounded-t-lg border-line/80 bg-surface/95 p-4 shadow-lg backdrop-blur-xs md:-mx-5'
+              : ''
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {form.formState.isDirty ? (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+                <AlertCircle size={15} /> Bạn có thay đổi chưa lưu.
+              </span>
+            ) : (
+              <p className="text-xs text-muted">
+                Cập nhật lần cuối: {formatReviewDate(snapshot.updatedAt)} · Mọi
+                thay đổi đều được ghi nhật ký hệ thống.
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {form.formState.isDirty && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => form.reset(snapshot.settings)}
+                disabled={busy}
+              >
+                Hủy thay đổi
+              </Button>
+            )}
+            <Button
+              type="submit"
+              disabled={
+                busy || !form.formState.isDirty || !form.formState.isValid
+              }
+            >
+              {mutation.isPending ? 'Đang lưu…' : 'Lưu thay đổi'}
+            </Button>
+          </div>
         </footer>
       </form>
     </Form>
