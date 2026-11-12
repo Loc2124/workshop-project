@@ -1,8 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
 import { expect, it, vi } from 'vitest';
-import type { DataTableFetcher } from './data-table';
+import type { DataTableFetcher } from '../core/data-table';
 import { prefetchDefaultTable } from './prefetch-table';
-import { queryKeys } from './query-keys';
+import { queryKeys } from '../api/query-keys';
 
 it('warms exactly the list and count keys consumed by a table, without a second fetch on navigation', async () => {
   const client = new QueryClient({

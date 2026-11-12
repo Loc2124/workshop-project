@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readDataTableQuery } from './data-table';
-import { adminTableSearch } from '../services/adminTableService';
+import { adminTableSearch } from '../../services/adminTableService';
 const options = {
   defaultTab: 'pending',
   tabs: ['pending', 'approved', 'all'],

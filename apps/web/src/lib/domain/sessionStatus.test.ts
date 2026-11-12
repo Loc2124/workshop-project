@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { displaySession, sessionStatus } from './sessionStatus';
-import type { WorkshopSession } from '../types/workshop';
+import type { WorkshopSession } from '../../types/workshop';
 
 const at = (day: string, time: string) => `${day}T${time}:00+07:00`;
 function session(

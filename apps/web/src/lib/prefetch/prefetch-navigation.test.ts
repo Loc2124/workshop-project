@@ -1,9 +1,9 @@
 import { QueryClient } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
 import { prefetchNavigation } from './prefetch-navigation';
-import { authQueryKey } from './session-cache';
-import { queryKeys } from './query-keys';
-import { catalogService } from '../services/catalogService';
+import { authQueryKey } from '../api/session-cache';
+import { queryKeys } from '../api/query-keys';
+import { catalogService } from '../../services/catalogService';
 
 afterEach(() => vi.restoreAllMocks());
 

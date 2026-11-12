@@ -7,7 +7,7 @@ import {
 } from './session-cache';
 import { apiFetch, ApiAbortError } from './api-client';
 import { queryKeys } from './query-keys';
-import { studioDraftKey } from './studio-registration-draft';
+import { studioDraftKey } from '../domain/studio-registration-draft';
 
 const a = {
   id: '00000000-0000-4000-8000-000000000001',

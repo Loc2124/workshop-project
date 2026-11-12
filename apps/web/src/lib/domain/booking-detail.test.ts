@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { CustomerBooking } from '../services/customerBookingService';
+import type { CustomerBooking } from '../../services/customerBookingService';
 import { bookingDetailState, bookingScheduleLabel } from './booking-detail';
 
 const booking = {

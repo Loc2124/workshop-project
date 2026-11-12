@@ -9,7 +9,7 @@ import type {
   MemberStudio,
   StudioSession,
   StudioWorkshop,
-} from '../types/management';
+} from '../../types/management';
 
 describe('studio dashboard', () => {
   it('preserves the section when switching studios', () => {

@@ -1,8 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
 import { afterEach, expect, it, vi } from 'vitest';
 import { geographyQueries } from './geography-queries';
-import { catalogService } from '../services/catalogService';
-import { invalidatePublicCatalog } from './query-invalidation';
+import { catalogService } from '../../services/catalogService';
+import { invalidatePublicCatalog } from '../api/query-invalidation';
 
 afterEach(() => vi.restoreAllMocks());
 
