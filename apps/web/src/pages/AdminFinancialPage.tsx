@@ -1,221 +1,27 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { formatBankDisplay } from '@workshop/shared';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../hooks/useAuth';
 import { apiFetch } from '../lib/api-client';
-import { formatPrice } from '../lib/format';
 import { AdminSettlementPanel } from '../components/management/AdminSettlementPanel';
 import { AdminAccountVerificationPanel } from '../components/management/AdminAccountVerificationPanel';
-
-type Obligation = {
-  id: string;
-  bookingId: string;
-  orderCode: string;
-  studioId: string;
-  studioName: string;
-  ticketId: string | null;
-  kind: 'customer_refund' | 'studio_payout' | 'studio_recovery';
-  sourceKey: string;
-  amount: number | string;
-  settledAmount: number | string;
-  reservedAmount: number | string;
-  dueAt: string | null;
-  status: string;
-  reason: string;
-  createdAt: string;
-  dueState: 'overdue' | 'due_soon' | null;
-  destinationBankBin?: string | null;
-  destinationBankName?: string | null;
-  destinationHolder?: string | null;
-  destinationLast4?: string | null;
-  destinationStatus?: 'pending' | 'verified' | null;
-};
-type VietqrPreview = {
-  obligationId: string;
-  kind: 'customer_refund' | 'studio_payout';
-  bookingId: string;
-  orderCode: string;
-  studioName: string;
-  amount: number;
-  accountId: string;
-  accountStatus: string;
-  bankBin: string | null;
-  bankName: string | null;
-  bankDisplay: string;
-  accountHolder: string;
-  accountNumber: string;
-  last4: string;
-  transferContent: string;
-  vietqrUrl: string | null;
-};
-type Transfer = {
-  id: string;
-  obligationId: string;
-  kind: string;
-  bookingId: string;
-  orderCode: string;
-  direction: 'inbound' | 'outbound';
-  purpose: string;
-  amount: number | string;
-  providerFee: number | string | null;
-  provider: string | null;
-  reference: string | null;
-  status: string;
-  approvedAt: string | null;
-  destinationBank: string | null;
-  destinationName: string | null;
-  destinationLast4: string | null;
-  destinationValid: boolean | null;
-  settledAt: string | null;
-  failureReason: string | null;
-  createdAt: string;
-  dueAt: string | null;
-  dueState: 'overdue' | 'due_soon' | null;
-};
-type TransferEvent = {
-  id: number;
-  event: string;
-  details: Record<string, unknown>;
-  createdAt: string;
-  actorName: string | null;
-};
-type CalendarDay = {
-  date: string;
-  type: 'working' | 'non_working';
-  label: string;
-  officialReference: string;
-  active: boolean;
-  updatedAt: string;
-};
-type PaymentFee = {
-  paymentId: string;
-  bookingId: string;
-  orderCode: string;
-  studioId: string;
-  studioName: string;
-  workshopTitle: string;
-  amount: number | string;
-  provider: string;
-  providerReference: string | null;
-  paidAt: string | null;
-};
-const money = (value: number | string) =>
-  `${formatPrice(Number(value) || 0)} đ`;
-const dateTime = (value: string | null) =>
-  value
-    ? new Intl.DateTimeFormat('vi-VN', {
-        timeZone: 'Asia/Ho_Chi_Minh',
-        dateStyle: 'short',
-        timeStyle: 'short',
-      }).format(new Date(value))
-    : 'Chưa đặt hạn';
-const obligationName = (kind: string) =>
-  kind === 'customer_refund'
-    ? 'Hoàn cho khách'
-    : kind === 'studio_recovery'
-      ? 'Studio hoàn về Open Slot'
-      : 'Chi studio';
-const statusName = (value: string) =>
-  ({
-    awaiting_funds: 'Chờ tiền về',
-    awaiting_approval: 'Chờ duyệt',
-    approved: 'Đã duyệt',
-    processing: 'Đang xử lý',
-    partially_paid: 'Đã xử lý một phần',
-    paid: 'Đã xử lý',
-    failed: 'Thất bại',
-    manual_review: 'Cần đối soát',
-    cancelled: 'Đã dừng',
-    pending_approval: 'Chờ duyệt',
-    created: 'Đã lập giao dịch',
-    submitted: 'Đã gửi giao dịch',
-    recorded: 'Đã ghi nhận',
-    succeeded: 'Thành công',
-  })[value] ?? value;
-const stateColor = (value: string) =>
-  value === 'paid' || value === 'succeeded' || value === 'approved'
-    ? 'bg-[#DCEFC8] text-[#2A4710]'
-    : value === 'manual_review' || value === 'failed'
-      ? 'bg-[#FCE0DB] text-[#9B2C1A]'
-      : value === 'cancelled'
-        ? 'bg-[#E8E4D8] text-[#4A453C]'
-        : 'bg-[#FBE8B5] text-[#7A4B00]';
-function Badge({ value }: { value: string }) {
-  return (
-    <span
-      className={`inline-flex rounded-sm px-2.5 py-1 text-xs font-medium ${stateColor(value)}`}
-    >
-      {statusName(value)}
-    </span>
-  );
-}
-function errorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : 'Có lỗi xảy ra. Vui lòng thử lại.';
-}
-
-function TransferHistory({ id, userId }: { id: string; userId?: string }) {
-  const [open, setOpen] = useState(false);
-  const history = useQuery({
-    queryKey: ['private', userId, 'financial-transfer-history', id],
-    queryFn: () =>
-      apiFetch<{ items: TransferEvent[] }>(
-        `/admin/tai-chinh/chuyen-tien/${id}/lich-su`,
-      ).then((r) => r.items),
-    enabled: open,
-  });
-  return (
-    <details
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-      className="border-t border-line pt-3 text-sm"
-    >
-      <summary className="min-h-9 cursor-pointer font-semibold text-primary">
-        Lịch sử xử lý và mã đối chiếu
-      </summary>
-      {open &&
-        (history.isPending ? (
-          <p className="mt-2 text-stone-600">Đang tải lịch sử…</p>
-        ) : history.isError ? (
-          <p role="alert" className="mt-2 text-rose-800">
-            Chưa tải được lịch sử. Vui lòng thử lại.
-          </p>
-        ) : (
-          <ol className="mt-3 space-y-3 border-l-2 border-stone-200 pl-4">
-            {history.data.map((item) => (
-              <li key={item.id} className="space-y-1">
-                <p className="font-semibold text-ink">
-                  {statusName(item.event)} · {dateTime(item.createdAt)}
-                </p>
-                <p className="text-stone-700">
-                  {item.actorName ?? 'Hệ thống'}
-                  {typeof item.details.reason === 'string'
-                    ? ` · ${item.details.reason}`
-                    : ''}
-                </p>
-                {typeof item.details.reference === 'string' &&
-                  item.details.reference && (
-                    <p className="text-stone-700">
-                      Mã đối chiếu: {item.details.reference}
-                      {typeof item.details.provider === 'string'
-                        ? ` · ${item.details.provider}`
-                        : ''}
-                    </p>
-                  )}
-                {typeof item.details.providerFee === 'number' && (
-                  <p className="text-stone-700">
-                    Phí thực tế: {money(item.details.providerFee)}
-                  </p>
-                )}
-              </li>
-            ))}
-          </ol>
-        ))}
-    </details>
-  );
-}
+import {
+  type CalendarDay,
+  errorMessage,
+  type Obligation,
+  type PaymentFee,
+  type Transfer,
+  type VietqrPreview,
+} from '../components/admin/financial/financialTypes';
+import { FinancialObligationsTab } from '../components/admin/financial/FinancialObligationsTab';
+import {
+  FinancialTransfersTab,
+  type QueueFilter,
+} from '../components/admin/financial/FinancialTransfersTab';
+import { FinancialFeesTab } from '../components/admin/financial/FinancialFeesTab';
+import { FinancialCalendarTab } from '../components/admin/financial/FinancialCalendarTab';
+import { VietqrTransferModal } from '../components/admin/financial/VietqrTransferModal';
 
 export function AdminFinancialPage() {
   const userId = useAuth().user?.id;
@@ -229,6 +35,7 @@ export function AdminFinancialPage() {
     | 'fees'
     | 'calendar'
   >('queue');
+
   const [selectedPurpose, setSelectedPurpose] = useState<
     Record<string, 'customer_refund' | 'platform_advance'>
   >({});
@@ -252,55 +59,57 @@ export function AdminFinancialPage() {
     Record<string, { provider: string; reference: string; fee: string }>
   >({});
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [queueFilter, setQueueFilter] = useState<
-    'all' | 'uncertain' | 'overdue' | 'due_soon' | 'failed'
-  >('all');
+  const [queueFilter, setQueueFilter] = useState<QueueFilter>('all');
   const [vietqrModal, setVietqrModal] = useState<VietqrPreview | null>(null);
   const [vietqrReference, setVietqrReference] = useState('');
   const [vietqrFee, setVietqrFee] = useState('0');
-  const [vietqrReason, setVietqrReason] = useState(
-    'Quản trị quét mã VietQR chuyển khoản và xác nhận hoàn tất.',
-  );
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   const obligations = useQuery({
     queryKey: ['private', userId, 'financial-obligations'],
     queryFn: () =>
-      apiFetch<{ items: Obligation[] }>('/admin/tai-chinh/nghia-vu').then(
-        (r) => r.items,
+      apiFetch<Obligation[]>('/admin/tai-chinh/nghia-vu').then((items) =>
+        items.sort(
+          (a, b) =>
+            new Date(a.dueAt ?? a.createdAt).getTime() -
+            new Date(b.dueAt ?? b.createdAt).getTime(),
+        ),
       ),
-    refetchInterval: 60_000,
   });
+
   const transfers = useQuery({
     queryKey: ['private', userId, 'financial-transfers'],
     queryFn: () =>
-      apiFetch<{ items: Transfer[] }>('/admin/tai-chinh/chuyen-tien').then(
-        (r) => r.items,
+      apiFetch<Transfer[]>('/admin/tai-chinh/chuyen-tien').then((items) =>
+        items.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        ),
       ),
-    refetchInterval: 60_000,
   });
+
   const queue = useQuery({
-    queryKey: ['private', userId, 'financial-transfer-queue'],
+    queryKey: ['private', userId, 'financial-queue'],
     queryFn: () =>
-      apiFetch<{ items: Transfer[] }>(
-        '/admin/tai-chinh/chuyen-tien?view=queue',
-      ).then((r) => r.items),
-    refetchInterval: 60_000,
+      apiFetch<Transfer[]>('/admin/tai-chinh/hang-cho-doi-soat').then((items) =>
+        items.sort(
+          (a, b) =>
+            new Date(a.dueAt ?? a.createdAt).getTime() -
+            new Date(b.dueAt ?? b.createdAt).getTime(),
+        ),
+      ),
   });
+
   const days = useQuery({
     queryKey: ['private', userId, 'financial-calendar'],
-    queryFn: () =>
-      apiFetch<{ items: CalendarDay[] }>('/admin/tai-chinh/lich-nghi').then(
-        (r) => r.items,
-      ),
+    queryFn: () => apiFetch<CalendarDay[]>('/admin/tai-chinh/lich-nghi'),
   });
+
   const fees = useQuery({
-    queryKey: ['private', userId, 'financial-collection-fees'],
+    queryKey: ['private', userId, 'financial-payment-fees'],
     queryFn: () =>
-      apiFetch<{ items: PaymentFee[] }>('/admin/tai-chinh/phi-thu').then(
-        (r) => r.items,
-      ),
-    refetchInterval: 60_000,
+      apiFetch<PaymentFee[]>('/admin/tai-chinh/phi-thu-can-ghi-nhan'),
   });
+
   const refresh = async () => {
     await Promise.all([
       client.invalidateQueries({
@@ -310,19 +119,17 @@ export function AdminFinancialPage() {
         queryKey: ['private', userId, 'financial-transfers'],
       }),
       client.invalidateQueries({
-        queryKey: ['private', userId, 'financial-transfer-queue'],
+        queryKey: ['private', userId, 'financial-queue'],
       }),
       client.invalidateQueries({
         queryKey: ['private', userId, 'financial-calendar'],
       }),
       client.invalidateQueries({
-        queryKey: ['private', userId, 'studio-bank-accounts'],
-      }),
-      client.invalidateQueries({
-        queryKey: ['private', userId, 'refund-bank-accounts'],
+        queryKey: ['private', userId, 'financial-payment-fees'],
       }),
     ]);
   };
+
   const openVietqr = useMutation({
     mutationFn: (obligationId: string) =>
       apiFetch<VietqrPreview>(
@@ -330,71 +137,69 @@ export function AdminFinancialPage() {
       ),
     onSuccess: (data) => {
       setVietqrModal(data);
-      setVietqrReference(
-        `FT${data.orderCode}${Date.now().toString().slice(-4)}`,
-      );
+      setVietqrReference(data.transferContent);
       setVietqrFee('0');
-      setVietqrReason(
-        'Quản trị quét mã VietQR chuyển khoản và xác nhận hoàn tất.',
-      );
-      setCopiedField(null);
+      setFeedback(null);
     },
     onError: (e) => setFeedback(errorMessage(e)),
   });
+
   const confirmVietqr = useMutation({
-    mutationFn: (preview: VietqrPreview) =>
-      apiFetch(
-        `/admin/tai-chinh/nghia-vu/${preview.obligationId}/chuyen-nhanh-vietqr`,
+    mutationFn: () => {
+      if (!vietqrModal) {
+        throw new Error('Chưa chọn lệnh chuyển VietQR');
+      }
+      return apiFetch(
+        `/admin/tai-chinh/nghia-vu/${vietqrModal.obligationId}/vietqr-xac-nhan`,
         {
           method: 'POST',
           body: JSON.stringify({
-            amount: preview.amount,
             reference: vietqrReference.trim(),
-            provider: 'VietQR Napas 247',
-            providerFee: Number(vietqrFee) || 0,
-            idempotencyKey: crypto.randomUUID(),
-            reason:
-              vietqrReason.trim() ||
-              'Quản trị quét mã VietQR chuyển khoản và xác nhận hoàn tất.',
+            providerFee: Math.max(0, Number(vietqrFee) || 0),
           }),
         },
-      ),
-    onSuccess: async () => {
-      setVietqrModal(null);
-      setFeedback(
-        'Đã xác nhận chuyển khoản VietQR thành công và gửi thông báo cho người nhận.',
       );
+    },
+    onSuccess: async () => {
+      setFeedback(
+        'Đã ghi nhận lệnh chuyển VietQR 247 và tự động đối chiếu thành công.',
+      );
+      setVietqrModal(null);
       await refresh();
     },
     onError: (e) => setFeedback(errorMessage(e)),
   });
+
   const createTransfer = useMutation({
-    mutationFn: ({ o, purpose }: { o: Obligation; purpose: string }) =>
-      apiFetch(`/admin/tai-chinh/nghia-vu/${o.id}/chuyen-tien`, {
+    mutationFn: ({
+      o,
+      purpose,
+    }: {
+      o: Obligation;
+      purpose: 'customer_refund' | 'platform_advance' | 'studio_payout' | 'studio_repayment';
+    }) => {
+      const remaining = Math.max(
+        0,
+        Number(o.amount) - Number(o.settledAmount) - Number(o.reservedAmount),
+      );
+      const parsedAmount = Number(transferAmounts[o.id] ?? remaining);
+      const trimmedReason = reason[o.id]?.trim();
+      return apiFetch(`/admin/tai-chinh/nghia-vu/${o.id}/chuyen-tien`, {
         method: 'POST',
         body: JSON.stringify({
-          amount: Number(
-            transferAmounts[o.id] ||
-              Math.max(
-                0,
-                Number(o.amount) -
-                  Number(o.settledAmount) -
-                  Number(o.reservedAmount),
-              ),
-          ),
           purpose,
-          idempotencyKey: crypto.randomUUID(),
-          reason:
-            reason[o.id]?.trim() ||
-            'Quản trị lập giao dịch theo nghĩa vụ đã ghi nhận.',
+          amount: Number.isFinite(parsedAmount) ? parsedAmount : remaining,
+          ...(trimmedReason ? { reason: trimmedReason } : {}),
         }),
-      }),
+      });
+    },
     onSuccess: async () => {
-      setFeedback('Đã lập giao dịch và chuyển vào hàng chờ duyệt.');
+      setFeedback('Đã lập giao dịch chuyển tiền ở trạng thái chờ duyệt.');
       await refresh();
     },
     onError: (e) => setFeedback(errorMessage(e)),
   });
+
   const approve = useMutation({
     mutationFn: (t: Transfer) =>
       apiFetch(`/admin/tai-chinh/chuyen-tien/${t.id}/duyet`, {
@@ -409,6 +214,7 @@ export function AdminFinancialPage() {
     },
     onError: (e) => setFeedback(errorMessage(e)),
   });
+
   const result = useMutation({
     mutationFn: ({
       t,
@@ -450,6 +256,7 @@ export function AdminFinancialPage() {
     },
     onError: (e) => setFeedback(errorMessage(e)),
   });
+
   const saveDay = useMutation({
     mutationFn: () =>
       apiFetch('/admin/tai-chinh/lich-nghi', {
@@ -468,6 +275,7 @@ export function AdminFinancialPage() {
     },
     onError: (e) => setFeedback(errorMessage(e)),
   });
+
   const disableDay = useMutation({
     mutationFn: (date: string) =>
       apiFetch(`/admin/tai-chinh/lich-nghi/${date}`, { method: 'DELETE' }),
@@ -477,46 +285,29 @@ export function AdminFinancialPage() {
     },
     onError: (e) => setFeedback(errorMessage(e)),
   });
+
   const recordCollectionFee = useMutation({
-    mutationFn: (p: PaymentFee) => {
-      const v = collectionFees[p.paymentId] ?? {
-        provider: p.provider,
-        reference: p.providerReference ?? '',
+    mutationFn: ({ fee }: { fee: PaymentFee }) => {
+      const draft = collectionFees[fee.paymentId] ?? {
+        provider: fee.provider,
+        reference: fee.providerReference ?? '',
         fee: '',
       };
-      return apiFetch(`/admin/tai-chinh/payments/${p.paymentId}/phi-thu`, {
+      return apiFetch(`/admin/tai-chinh/phi-thu/${fee.paymentId}`, {
         method: 'POST',
         body: JSON.stringify({
-          providerFee: Number(v.fee),
-          provider: v.provider,
-          providerReference: v.reference,
-          reason:
-            'Đối chiếu phí thực tế với báo cáo giao dịch của nhà cung cấp.',
+          provider: draft.provider,
+          reference: draft.reference,
+          fee: Number(draft.fee),
         }),
       });
     },
     onSuccess: async () => {
-      setFeedback(
-        'Đã ghi nhận phí thật. Phí được tính vào khoản chi của đúng buổi học; nếu khoản chi đã hoàn tất, studio cần chuyển bù riêng cho buổi đó.',
-      );
+      setFeedback('Đã ghi nhận phí thu thực tế cho khoản thanh toán.');
       await refresh();
-      await client.invalidateQueries({
-        queryKey: ['private', userId, 'financial-collection-fees'],
-      });
     },
     onError: (e) => setFeedback(errorMessage(e)),
   });
-
-  const activeTransfers = tab === 'queue' ? queue : transfers;
-  const displayedTransfers = activeTransfers.data?.filter(
-    (t) =>
-      tab !== 'queue' ||
-      queueFilter === 'all' ||
-      (queueFilter === 'uncertain' && t.status === 'manual_review') ||
-      (queueFilter === 'failed' && t.status === 'failed') ||
-      (queueFilter === 'overdue' && t.dueState === 'overdue') ||
-      (queueFilter === 'due_soon' && t.dueState === 'due_soon'),
-  );
 
   return (
     <div className="space-y-5">
@@ -551,6 +342,7 @@ export function AdminFinancialPage() {
           Làm mới số liệu
         </Button>
       </header>
+
       <nav
         aria-label="Các mục tài chính"
         className="flex gap-1 overflow-x-auto border-b border-line pb-px"
@@ -589,6 +381,7 @@ export function AdminFinancialPage() {
           </button>
         ))}
       </nav>
+
       {feedback && (
         <p
           role="status"
@@ -597,936 +390,133 @@ export function AdminFinancialPage() {
           {feedback}
         </p>
       )}
+
       {tab === 'settlements' && <AdminSettlementPanel userId={userId} />}
       {tab === 'accounts' && <AdminAccountVerificationPanel userId={userId} />}
+
       {tab === 'obligations' && (
-        <section className="space-y-4" aria-label="Nghĩa vụ tài chính">
-          {obligations.isLoading ? (
-            <p>Đang tải nghĩa vụ…</p>
-          ) : obligations.isError ? (
-            <p role="alert" className="text-brick">
-              {errorMessage(obligations.error)}
-            </p>
-          ) : !obligations.data?.length ? (
-            <div className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center text-stone-600">
-              Chưa có khoản nào cần xử lý.
-            </div>
-          ) : (
-            obligations.data.map((o) => {
-              const remaining = Math.max(
-                0,
-                Number(o.amount) -
-                  Number(o.settledAmount) -
-                  Number(o.reservedAmount),
-              );
-              return (
-                <article
-                  key={o.id}
-                  className="grid gap-4 rounded-xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_auto] md:p-5"
-                >
-                  <div className="space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-heading text-lg font-semibold text-ink">
-                        {obligationName(o.kind)}
-                      </h2>
-                      <Badge value={o.status} />
-                      {o.dueState && (
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-semibold ${o.dueState === 'overdue' ? 'bg-rose-100 text-rose-900' : 'bg-amber-100 text-amber-950'}`}
-                        >
-                          {o.dueState === 'overdue' ? 'Quá hạn' : 'Sắp đến hạn'}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-stone-700">
-                      #{o.orderCode} · {o.studioName}
-                      {o.ticketId ? ' · Một vé' : ''}
-                    </p>
-                    <p className="text-sm text-stone-600">{o.reason}</p>
-                    <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-                      <span>
-                        Tổng nghĩa vụ: <strong>{money(o.amount)}</strong>
-                      </span>
-                      <span>
-                        Đã xử lý: <strong>{money(o.settledAmount)}</strong>
-                      </span>
-                      <span>
-                        Còn lại: <strong>{money(remaining)}</strong>
-                      </span>
-                    </div>
-                    <p className="text-xs font-medium text-stone-600">
-                      Hạn: {dateTime(o.dueAt)}
-                    </p>
-                    {['customer_refund', 'studio_payout'].includes(o.kind) && (
-                      <p className="text-sm text-stone-700">
-                        {o.destinationLast4 ? (
-                          <>
-                            Tài khoản nhận:{' '}
-                            <strong>
-                              {formatBankDisplay(
-                                o.destinationBankBin,
-                                o.destinationBankName,
-                              )}
-                            </strong>{' '}
-                            · {o.destinationHolder} · ****{o.destinationLast4}{' '}
-                            <span className="text-xs text-stone-500">
-                              (
-                              {o.destinationStatus === 'verified'
-                                ? 'Đã đối chiếu'
-                                : 'Có thể quét VietQR ngay'}
-                              )
-                            </span>
-                          </>
-                        ) : (
-                          <span className="text-amber-900">
-                            Chờ người nhận bổ sung tài khoản ngân hàng.
-                          </span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-                  {remaining > 0 &&
-                    o.status !== 'manual_review' &&
-                    o.status !== 'cancelled' &&
-                    o.status !== 'paid' && (
-                      <div className="w-full space-y-2 md:max-w-xs">
-                        {['customer_refund', 'studio_payout'].includes(
-                          o.kind,
-                        ) &&
-                          o.destinationLast4 && (
-                            <button
-                              type="button"
-                              onClick={() => openVietqr.mutate(o.id)}
-                              disabled={openVietqr.isPending}
-                              className="min-h-11 w-full rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover disabled:opacity-50"
-                            >
-                              {openVietqr.isPending &&
-                              openVietqr.variables === o.id
-                                ? 'Đang tạo mã VietQR…'
-                                : 'Quét VietQR & Xác nhận chuyển (1 bước)'}
-                            </button>
-                          )}
-                        <details className="rounded-lg border border-stone-200 bg-soft/60 p-3">
-                          <summary className="cursor-pointer text-xs font-semibold text-stone-700">
-                            Lập giao dịch thủ công (nhiều bước)
-                          </summary>
-                          <div className="mt-3 space-y-2">
-                            {o.kind === 'customer_refund' && (
-                              <label className="block text-xs font-medium">
-                                Loại chi
-                                <select
-                                  value={
-                                    selectedPurpose[o.id] ?? 'customer_refund'
-                                  }
-                                  onChange={(e) =>
-                                    setSelectedPurpose((x) => ({
-                                      ...x,
-                                      [o.id]: e.target.value as
-                                        'customer_refund' | 'platform_advance',
-                                    }))
-                                  }
-                                  className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                                >
-                                  <option value="customer_refund">
-                                    Hoàn từ tiền cọc đang giữ / Studio đã gửi
-                                  </option>
-                                  <option value="platform_advance">
-                                    Open Slot tạm ứng
-                                  </option>
-                                </select>
-                              </label>
-                            )}
-                            <label className="block text-xs font-medium">
-                              Số tiền
-                              <input
-                                type="number"
-                                min="1"
-                                max={remaining}
-                                value={transferAmounts[o.id] ?? remaining}
-                                onChange={(e) =>
-                                  setTransferAmounts((x) => ({
-                                    ...x,
-                                    [o.id]: e.target.value,
-                                  }))
-                                }
-                                className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                              />
-                            </label>
-                            <label className="block text-xs font-medium">
-                              Lý do
-                              <textarea
-                                value={reason[o.id] ?? ''}
-                                onChange={(e) =>
-                                  setReason((x) => ({
-                                    ...x,
-                                    [o.id]: e.target.value,
-                                  }))
-                                }
-                                className="mt-1 min-h-16 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-                                placeholder="Ghi căn cứ lập giao dịch (tối thiểu 10 ký tự nếu nhập)"
-                              />
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                createTransfer.mutate({
-                                  o,
-                                  purpose:
-                                    o.kind === 'customer_refund'
-                                      ? (selectedPurpose[o.id] ??
-                                        'customer_refund')
-                                      : o.kind === 'studio_recovery'
-                                        ? 'studio_repayment'
-                                        : 'studio_payout',
-                                })
-                              }
-                              disabled={
-                                createTransfer.isPending ||
-                                remaining <= 0 ||
-                                (Boolean(reason[o.id]?.trim()) &&
-                                  (reason[o.id]?.trim().length ?? 0) < 10)
-                              }
-                              className="min-h-10 w-full rounded-lg border border-primary bg-white px-4 text-sm font-semibold text-primary hover:bg-paper disabled:opacity-50"
-                            >
-                              Lập giao dịch chờ duyệt
-                            </button>
-                          </div>
-                        </details>
-                      </div>
-                    )}
-                </article>
-              );
-            })
-          )}
-        </section>
-      )}
-      {(tab === 'queue' || tab === 'transfers') && (
-        <section
-          className="space-y-4"
-          aria-label={
-            tab === 'queue' ? 'Hàng chờ đối soát' : 'Lịch sử giao dịch'
+        <FinancialObligationsTab
+          obligations={obligations.data}
+          isLoading={obligations.isLoading}
+          isError={obligations.isError}
+          error={obligations.error}
+          selectedPurpose={selectedPurpose}
+          onPurposeChange={(id, val) =>
+            setSelectedPurpose((x) => ({ ...x, [id]: val }))
           }
-        >
-          {tab === 'queue' && (
-            <div className="rounded-xl border border-line bg-soft p-4">
-              <h2 className="font-heading text-lg font-semibold text-ink">
-                Khoản cần xử lý
-              </h2>
-              <p className="mt-1 text-sm text-stone-700">
-                Ưu tiên khoản quá hạn, chưa rõ kết quả và sắp đến hạn. Giao dịch
-                chưa rõ kết quả vẫn giữ tiền để tránh chi trùng.
-              </p>
-              {Boolean(
-                obligations.data?.some(
-                  (o) => o.dueState && o.status !== 'manual_review',
-                ),
-              ) && (
-                <button
-                  type="button"
-                  onClick={() => setTab('obligations')}
-                  className="mt-2 min-h-10 rounded-lg border border-primary bg-surface px-3 text-sm font-semibold text-primary hover:bg-paper"
-                >
-                  Xem nghĩa vụ sắp hoặc đã quá hạn
-                </button>
-              )}
-              {Boolean(obligations.data?.some((o) => o.dueState)) && (
-                <ul className="mt-3 space-y-2">
-                  {obligations.data
-                    ?.filter((o) => o.dueState)
-                    .slice(0, 5)
-                    .map((o) => (
-                      <li
-                        key={o.id}
-                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 text-sm"
-                      >
-                        <span>
-                          <strong>#{o.orderCode}</strong> ·{' '}
-                          {obligationName(o.kind)} ·{' '}
-                          {money(
-                            Math.max(
-                              0,
-                              Number(o.amount) -
-                                Number(o.settledAmount) -
-                                Number(o.reservedAmount),
-                            ),
-                          )}
-                        </span>
-                        <span
-                          className={
-                            o.dueState === 'overdue'
-                              ? 'font-semibold text-rose-800'
-                              : 'font-semibold text-amber-900'
-                          }
-                        >
-                          {o.dueState === 'overdue' ? 'Quá hạn' : 'Sắp đến hạn'}{' '}
-                          · {dateTime(o.dueAt)}
-                        </span>
-                      </li>
-                    ))}
-                </ul>
-              )}
-              <div
-                className="mt-3 flex flex-wrap gap-2"
-                role="group"
-                aria-label="Lọc hàng chờ"
-              >
-                {(
-                  [
-                    ['all', 'Tất cả'],
-                    ['uncertain', 'Chưa rõ kết quả'],
-                    ['overdue', 'Quá hạn'],
-                    ['due_soon', 'Sắp đến hạn'],
-                    ['failed', 'Chuyển thất bại'],
-                  ] as const
-                ).map(([key, label]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    aria-pressed={queueFilter === key}
-                    onClick={() => setQueueFilter(key)}
-                    className={`min-h-10 rounded-full border px-3 text-sm font-medium ${queueFilter === key ? 'border-primary bg-primary text-white' : 'border-stone-300 bg-white text-ink hover:bg-paper'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {activeTransfers.isLoading ? (
-            <p>Đang tải giao dịch…</p>
-          ) : activeTransfers.isError ? (
-            <p role="alert" className="text-brick">
-              {errorMessage(activeTransfers.error)}
-            </p>
-          ) : !displayedTransfers?.length ? (
-            <div className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center text-stone-600">
-              {tab === 'queue'
-                ? 'Không có giao dịch cần xử lý theo bộ lọc này.'
-                : 'Chưa có giao dịch nào.'}
-            </div>
-          ) : (
-            displayedTransfers.map((t) => (
-              <article
-                key={t.id}
-                className="space-y-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="font-heading text-lg font-semibold">
-                      {obligationName(t.kind)} ·{' '}
-                      {t.direction === 'inbound' ? 'Tiền về' : 'Tiền đi'}
-                    </h2>
-                    <p className="text-sm text-stone-600">
-                      #{t.orderCode} · {money(t.amount)}
-                      {t.providerFee !== null
-                        ? ` · Phí thực tế ${money(t.providerFee)}`
-                        : ''}
-                    </p>
-                  </div>
-                  <Badge value={t.status} />
-                </div>
-                {t.reference && (
-                  <p className="text-sm text-stone-700">
-                    {t.provider} · Mã đối chiếu {t.reference}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span className="text-stone-700">
-                    Hạn xử lý: {dateTime(t.dueAt)}
-                  </span>
-                  {t.dueState && t.status !== 'succeeded' && (
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs font-semibold ${t.dueState === 'overdue' ? 'bg-rose-100 text-rose-900' : 'bg-amber-100 text-amber-950'}`}
-                    >
-                      {t.dueState === 'overdue' ? 'Quá hạn' : 'Sắp đến hạn'}
-                    </span>
-                  )}
-                </div>
-                {t.destinationLast4 && (
-                  <p
-                    className={`text-sm ${t.destinationValid === false && t.status !== 'succeeded' ? 'font-semibold text-rose-800' : 'text-stone-700'}`}
-                  >
-                    Tài khoản nhận:{' '}
-                    {t.destinationBank ? (
-                      <>
-                        {t.destinationBank} · {t.destinationName} ·{' '}
-                      </>
-                    ) : (
-                      <>Chi tiết đã xóa · </>
-                    )}
-                    ****{t.destinationLast4}
-                    {t.destinationValid === false && t.status !== 'succeeded'
-                      ? ' · Tài khoản đã đổi hoặc chưa còn hợp lệ'
-                      : ''}
-                  </p>
-                )}
-                {t.failureReason && (
-                  <p className="text-sm text-rose-800">{t.failureReason}</p>
-                )}
-                {t.status === 'manual_review' && (
-                  <p className="rounded-lg bg-amber-50 p-3 text-sm font-medium text-amber-950">
-                    Chưa rõ tiền đã chuyển hay chưa. Đối chiếu với ngân hàng
-                    trước khi ghi nhận kết quả; không lập giao dịch khác cho
-                    khoản này.
-                  </p>
-                )}
-                {t.status === 'failed' && (
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-stone-700">
-                    <p>
-                      Đã xác nhận chuyển thất bại. Có thể lập giao dịch mới từ
-                      khoản còn phải xử lý.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setTab('obligations')}
-                      className="min-h-9 font-semibold text-primary underline"
-                    >
-                      Xem khoản cần xử lý
-                    </button>
-                  </div>
-                )}
-                {t.status === 'pending_approval' && (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => approve.mutate(t)}
-                      disabled={approve.isPending}
-                      className="min-h-10 rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-soft disabled:opacity-50"
-                    >
-                      Duyệt giao dịch
-                    </button>
-                    {t.direction === 'outbound' && (
-                      <button
-                        type="button"
-                        onClick={() => openVietqr.mutate(t.obligationId)}
-                        disabled={openVietqr.isPending}
-                        className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
-                      >
-                        Quét VietQR & Xác nhận chuyển (1 bước)
-                      </button>
-                    )}
-                  </div>
-                )}
-                {t.status === 'approved' && t.direction === 'outbound' && (
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openVietqr.mutate(t.obligationId)}
-                      disabled={openVietqr.isPending}
-                      className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
-                    >
-                      Mở mã VietQR chuyển khoản
-                    </button>
-                  </div>
-                )}
-                {['approved', 'manual_review'].includes(t.status) && (
-                  <div className="grid gap-2 rounded-lg bg-soft p-3 sm:grid-cols-[1fr_1fr_9rem_auto] sm:items-end">
-                    <label className="text-xs font-medium">
-                      Nhà cung cấp
-                      <input
-                        value={
-                          transferDetails[t.id]?.provider ?? t.provider ?? ''
-                        }
-                        onChange={(e) =>
-                          setTransferDetails((x) => ({
-                            ...x,
-                            [t.id]: {
-                              provider: e.target.value,
-                              reference:
-                                x[t.id]?.reference ?? t.reference ?? '',
-                              fee: x[t.id]?.fee ?? '',
-                            },
-                          }))
-                        }
-                        className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                      />
-                    </label>
-                    <label className="text-xs font-medium">
-                      Mã đối chiếu
-                      <input
-                        value={
-                          transferDetails[t.id]?.reference ?? t.reference ?? ''
-                        }
-                        onChange={(e) =>
-                          setTransferDetails((x) => ({
-                            ...x,
-                            [t.id]: {
-                              provider: x[t.id]?.provider ?? t.provider ?? '',
-                              reference: e.target.value,
-                              fee: x[t.id]?.fee ?? '',
-                            },
-                          }))
-                        }
-                        className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                      />
-                    </label>
-                    <label className="text-xs font-medium">
-                      Phí thực tế
-                      <input
-                        type="number"
-                        min="0"
-                        value={transferDetails[t.id]?.fee ?? ''}
-                        onChange={(e) =>
-                          setTransferDetails((x) => ({
-                            ...x,
-                            [t.id]: {
-                              provider: x[t.id]?.provider ?? t.provider ?? '',
-                              reference:
-                                x[t.id]?.reference ?? t.reference ?? '',
-                              fee: e.target.value,
-                            },
-                          }))
-                        }
-                        className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => result.mutate({ t, outcome: 'succeeded' })}
-                      disabled={
-                        result.isPending ||
-                        !(
-                          transferDetails[t.id]?.provider ??
-                          t.provider ??
-                          ''
-                        ).trim() ||
-                        !(
-                          transferDetails[t.id]?.reference ??
-                          t.reference ??
-                          ''
-                        ).trim() ||
-                        transferDetails[t.id]?.fee === undefined ||
-                        transferDetails[t.id]?.fee === '' ||
-                        Number(transferDetails[t.id]?.fee) < 0
-                      }
-                      className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
-                    >
-                      Đã chuyển xong
-                    </button>
-                    <label className="text-xs font-medium sm:col-span-4">
-                      Ghi chú đối chiếu khi thất bại hoặc chưa rõ kết quả
-                      <textarea
-                        value={transferReason[t.id] ?? ''}
-                        onChange={(e) =>
-                          setTransferReason((x) => ({
-                            ...x,
-                            [t.id]: e.target.value,
-                          }))
-                        }
-                        minLength={10}
-                        maxLength={500}
-                        className="mt-1 min-h-16 w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-                        placeholder="Ghi căn cứ đối chiếu với ngân hàng"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => result.mutate({ t, outcome: 'failed' })}
-                      disabled={
-                        result.isPending ||
-                        (transferReason[t.id]?.trim().length ?? 0) < 10
-                      }
-                      className="min-h-10 rounded-lg border border-stone-400 px-4 text-sm font-semibold disabled:opacity-50"
-                    >
-                      Chuyển thất bại
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        result.mutate({ t, outcome: 'manual_review' })
-                      }
-                      disabled={
-                        result.isPending ||
-                        (transferReason[t.id]?.trim().length ?? 0) < 10
-                      }
-                      className="min-h-10 rounded-lg border border-amber-600 px-4 text-sm font-semibold text-amber-950 disabled:opacity-50"
-                    >
-                      Chưa rõ kết quả
-                    </button>
-                  </div>
-                )}
-                <TransferHistory id={t.id} userId={userId} />
-              </article>
-            ))
-          )}
-        </section>
+          transferAmounts={transferAmounts}
+          onAmountChange={(id, val) =>
+            setTransferAmounts((x) => ({ ...x, [id]: val }))
+          }
+          reason={reason}
+          onReasonChange={(id, val) => setReason((x) => ({ ...x, [id]: val }))}
+          onOpenVietqr={(id) => openVietqr.mutate(id)}
+          isOpenVietqrPending={openVietqr.isPending}
+          onCreateTransfer={(o, purpose) =>
+            createTransfer.mutate({ o, purpose })
+          }
+          isCreateTransferPending={createTransfer.isPending}
+        />
       )}
+
+      {tab === 'queue' && (
+        <FinancialTransfersTab
+          isQueue={true}
+          transfers={queue.data}
+          obligations={obligations.data}
+          isLoading={queue.isLoading}
+          isError={queue.isError}
+          error={queue.error}
+          queueFilter={queueFilter}
+          onQueueFilterChange={setQueueFilter}
+          onNavigateToObligations={() => setTab('obligations')}
+          userId={userId}
+          transferDetails={transferDetails}
+          onTransferDetailsChange={(id, details) =>
+            setTransferDetails((x) => ({ ...x, [id]: details }))
+          }
+          transferReason={transferReason}
+          onTransferReasonChange={(id, r) =>
+            setTransferReason((x) => ({ ...x, [id]: r }))
+          }
+          onApprove={(t) => approve.mutate(t)}
+          isApprovePending={approve.isPending}
+          onOpenVietqr={(id) => openVietqr.mutate(id)}
+          isOpenVietqrPending={openVietqr.isPending}
+          onRecordResult={(t, outcome) => result.mutate({ t, outcome })}
+          isRecordResultPending={result.isPending}
+        />
+      )}
+
+      {tab === 'transfers' && (
+        <FinancialTransfersTab
+          isQueue={false}
+          transfers={transfers.data}
+          obligations={obligations.data}
+          isLoading={transfers.isLoading}
+          isError={transfers.isError}
+          error={transfers.error}
+          queueFilter={queueFilter}
+          onQueueFilterChange={setQueueFilter}
+          onNavigateToObligations={() => setTab('obligations')}
+          userId={userId}
+          transferDetails={transferDetails}
+          onTransferDetailsChange={(id, details) =>
+            setTransferDetails((x) => ({ ...x, [id]: details }))
+          }
+          transferReason={transferReason}
+          onTransferReasonChange={(id, r) =>
+            setTransferReason((x) => ({ ...x, [id]: r }))
+          }
+          onApprove={(t) => approve.mutate(t)}
+          isApprovePending={approve.isPending}
+          onOpenVietqr={(id) => openVietqr.mutate(id)}
+          isOpenVietqrPending={openVietqr.isPending}
+          onRecordResult={(t, outcome) => result.mutate({ t, outcome })}
+          isRecordResultPending={result.isPending}
+        />
+      )}
+
       {tab === 'fees' && (
-        <section className="space-y-4" aria-label="Đối soát phí thu tiền cọc">
-          <p className="max-w-3xl text-sm leading-6 text-stone-700">
-            Nhập phí thật theo báo cáo từng giao dịch đã xác nhận. Phí được khấu
-            trừ vào khoản chi của cùng buổi học. Nếu khoản chi đã hoàn tất, phần
-            phí phát sinh được theo dõi riêng cho studio và buổi đó.
-          </p>
-          {fees.isLoading ? (
-            <p>Đang tải khoản thu…</p>
-          ) : fees.isError ? (
-            <p role="alert" className="text-brick">
-              {errorMessage(fees.error)}
-            </p>
-          ) : !fees.data?.length ? (
-            <div className="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center text-stone-600">
-              Đã đối soát phí cho tất cả khoản cọc đã nhận.
-            </div>
-          ) : (
-            fees.data.map((p) => {
-              const v = collectionFees[p.paymentId] ?? {
-                provider: p.provider,
-                reference: p.providerReference ?? '',
-                fee: '',
-              };
-              return (
-                <article
-                  key={p.paymentId}
-                  className="grid gap-4 rounded-xl border border-stone-200 bg-white p-4 shadow-sm md:grid-cols-[1fr_1fr_9rem_auto] md:items-end"
-                >
-                  <div className="md:col-span-4">
-                    <h2 className="font-heading text-lg font-semibold">
-                      #{p.orderCode} · {p.workshopTitle}
-                    </h2>
-                    <p className="text-sm text-stone-600">
-                      {p.studioName} · Đã thu {money(p.amount)} · Mã giao dịch{' '}
-                      {p.providerReference ?? 'Chưa có'}
-                    </p>
-                  </div>
-                  <label className="text-xs font-medium">
-                    Nhà cung cấp
-                    <input
-                      value={v.provider}
-                      onChange={(e) =>
-                        setCollectionFees((x) => ({
-                          ...x,
-                          [p.paymentId]: { ...v, provider: e.target.value },
-                        }))
-                      }
-                      className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                    />
-                  </label>
-                  <label className="text-xs font-medium">
-                    Mã giao dịch
-                    <input
-                      value={v.reference}
-                      onChange={(e) =>
-                        setCollectionFees((x) => ({
-                          ...x,
-                          [p.paymentId]: { ...v, reference: e.target.value },
-                        }))
-                      }
-                      className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                    />
-                  </label>
-                  <label className="text-xs font-medium">
-                    Phí thực tế
-                    <input
-                      type="number"
-                      min="0"
-                      value={v.fee}
-                      onChange={(e) =>
-                        setCollectionFees((x) => ({
-                          ...x,
-                          [p.paymentId]: { ...v, fee: e.target.value },
-                        }))
-                      }
-                      className="mt-1 min-h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => recordCollectionFee.mutate(p)}
-                    disabled={
-                      recordCollectionFee.isPending ||
-                      !v.fee ||
-                      !v.reference.trim() ||
-                      !v.provider.trim()
-                    }
-                    className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
-                  >
-                    Ghi phí thật
-                  </button>
-                </article>
-              );
-            })
-          )}
-        </section>
+        <FinancialFeesTab
+          fees={fees.data}
+          isLoading={fees.isLoading}
+          isError={fees.isError}
+          error={fees.error}
+          collectionFees={collectionFees}
+          onCollectionFeeChange={(id: string, val: { provider: string; reference: string; fee: string }) =>
+            setCollectionFees((x) => ({ ...x, [id]: val }))
+          }
+          onRecordFee={(fee) => recordCollectionFee.mutate({ fee })}
+          isRecordFeePending={recordCollectionFee.isPending}
+        />
       )}
+
       {tab === 'calendar' && (
-        <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              saveDay.mutate();
-            }}
-            className="space-y-4 rounded-xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5"
-          >
-            <h2 className="font-heading text-xl font-semibold">
-              Thêm lịch theo thông báo nhà nước
-            </h2>
-            <label className="block text-sm font-medium">
-              Ngày
-              <input
-                required
-                type="date"
-                value={calendar.date}
-                onChange={(e) =>
-                  setCalendar((x) => ({ ...x, date: e.target.value }))
-                }
-                className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3"
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Loại ngày
-              <select
-                value={calendar.type}
-                onChange={(e) =>
-                  setCalendar((x) => ({
-                    ...x,
-                    type: e.target.value as CalendarDay['type'],
-                  }))
-                }
-                className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3"
-              >
-                <option value="non_working">Ngày nghỉ/nghỉ bù</option>
-                <option value="working">Ngày đi làm bù</option>
-              </select>
-            </label>
-            <label className="block text-sm font-medium">
-              Tên ngày
-              <input
-                required
-                minLength={2}
-                value={calendar.label}
-                onChange={(e) =>
-                  setCalendar((x) => ({ ...x, label: e.target.value }))
-                }
-                className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3"
-                placeholder="Ví dụ: Nghỉ Tết Âm lịch"
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Căn cứ/văn bản chính thức
-              <input
-                required
-                minLength={4}
-                value={calendar.officialReference}
-                onChange={(e) =>
-                  setCalendar((x) => ({
-                    ...x,
-                    officialReference: e.target.value,
-                  }))
-                }
-                className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3"
-                placeholder="Số thông báo hoặc liên kết nguồn chính thức"
-              />
-            </label>
-            <button
-              disabled={saveDay.isPending}
-              className="min-h-11 rounded-lg bg-primary px-5 font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
-            >
-              {saveDay.isPending ? 'Đang lưu…' : 'Lưu ngày'}
-            </button>
-          </form>
-          <div className="space-y-3">
-            <h2 className="font-heading text-xl font-semibold">
-              Các ngày đã khai báo
-            </h2>
-            {days.isLoading ? (
-              <p>Đang tải lịch…</p>
-            ) : days.isError ? (
-              <p role="alert" className="text-brick">
-                {errorMessage(days.error)}
-              </p>
-            ) : (
-              days.data
-                ?.filter((d) => d.active)
-                .map((d) => (
-                  <article
-                    key={d.date}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white p-4"
-                  >
-                    <div>
-                      <p className="font-semibold">
-                        {d.date.split('-').reverse().join('/')} · {d.label}
-                      </p>
-                      <p className="text-sm text-stone-600">
-                        {d.type === 'working' ? 'Ngày làm bù' : 'Ngày nghỉ'} ·{' '}
-                        {d.officialReference}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => disableDay.mutate(d.date)}
-                      disabled={disableDay.isPending}
-                      className="min-h-10 rounded-lg border border-stone-300 px-3 text-sm font-medium"
-                    >
-                      Ngừng áp dụng
-                    </button>
-                  </article>
-                ))
-            )}
-            {!days.data?.some((d) => d.active) && (
-              <p className="rounded-xl border border-dashed border-stone-300 bg-white p-6 text-sm text-stone-600">
-                Chưa khai báo ngày ngoại lệ cho lịch nhà nước.
-              </p>
-            )}
-          </div>
-        </section>
+        <FinancialCalendarTab
+          calendar={calendar}
+          setCalendar={setCalendar}
+          days={days}
+          onSaveDay={() => saveDay.mutate()}
+          isSaving={saveDay.isPending}
+          onDisableDay={(date) => disableDay.mutate(date)}
+          isDisabling={disableDay.isPending}
+        />
       )}
+
       {vietqrModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="vietqr-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        >
-          <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-stone-200 bg-white p-5 shadow-xl space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  Chuyển khoản nhanh Napas 247
-                </p>
-                <h2
-                  id="vietqr-modal-title"
-                  className="font-heading text-xl font-semibold text-ink"
-                >
-                  {vietqrModal.kind === 'customer_refund'
-                    ? 'Hoàn tiền cho khách hàng'
-                    : 'Chi trả cho Studio'}{' '}
-                  · #{vietqrModal.orderCode}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setVietqrModal(null)}
-                className="min-h-10 rounded-lg border border-stone-300 px-3 text-sm font-medium hover:bg-soft"
-              >
-                Đóng
-              </button>
-            </div>
-
-            {vietqrModal.vietqrUrl ? (
-              <div className="flex flex-col items-center rounded-xl border border-stone-200 bg-soft p-4">
-                <img
-                  src={vietqrModal.vietqrUrl}
-                  alt={`Mã VietQR chuyển khoản cho ${vietqrModal.accountHolder}`}
-                  className="h-64 w-64 rounded-lg bg-white object-contain p-2 shadow-sm"
-                />
-                <p className="mt-2 text-center text-xs text-stone-600">
-                  Mở ứng dụng ngân hàng bất kỳ để quét mã VietQR (đã điền sẵn số
-                  tiền và nội dung chuyển khoản).
-                </p>
-              </div>
-            ) : (
-              <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-950">
-                Tài khoản này chưa có mã BIN 6 chữ số để tạo ảnh QR tự động. Vui
-                lòng chuyển khoản theo số tài khoản bên dưới.
-              </p>
-            )}
-
-            <div className="space-y-2 rounded-xl border border-stone-200 bg-white p-4 text-sm">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-stone-600">Ngân hàng:</span>
-                <strong>{vietqrModal.bankDisplay}</strong>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-stone-600">Chủ tài khoản:</span>
-                <strong>{vietqrModal.accountHolder}</strong>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-stone-600">Số tài khoản:</span>
-                <div className="flex items-center gap-2">
-                  <strong className="tabular-nums">
-                    {vietqrModal.accountNumber}
-                  </strong>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(
-                        vietqrModal.accountNumber,
-                      );
-                      setCopiedField('account');
-                    }}
-                    className="rounded border border-stone-300 px-2 py-0.5 text-xs font-medium hover:bg-soft"
-                  >
-                    {copiedField === 'account' ? 'Đã chép' : 'Sao chép'}
-                  </button>
-                </div>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-stone-600">Số tiền chuyển:</span>
-                <strong className="text-base text-primary">
-                  {money(vietqrModal.amount)}
-                </strong>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-stone-600">Nội dung:</span>
-                <div className="flex items-center gap-2">
-                  <strong className="tabular-nums">
-                    {vietqrModal.transferContent}
-                  </strong>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      void navigator.clipboard?.writeText(
-                        vietqrModal.transferContent,
-                      );
-                      setCopiedField('content');
-                    }}
-                    className="rounded border border-stone-300 px-2 py-0.5 text-xs font-medium hover:bg-soft"
-                  >
-                    {copiedField === 'content' ? 'Đã chép' : 'Sao chép'}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 border-t border-stone-200 pt-3">
-              <div className="grid gap-3 sm:grid-cols-[1fr_9rem]">
-                <label className="block text-xs font-medium">
-                  Mã giao dịch / Mã đối chiếu ngân hàng
-                  <input
-                    value={vietqrReference}
-                    onChange={(e) => setVietqrReference(e.target.value)}
-                    placeholder="Ví dụ: FT26315..."
-                    className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                  />
-                </label>
-                <label className="block text-xs font-medium">
-                  Phí chuyển (đ)
-                  <input
-                    type="number"
-                    min="0"
-                    value={vietqrFee}
-                    onChange={(e) => setVietqrFee(e.target.value)}
-                    className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                  />
-                </label>
-              </div>
-              <label className="block text-xs font-medium">
-                Ghi chú đối chiếu
-                <input
-                  value={vietqrReason}
-                  onChange={(e) => setVietqrReason(e.target.value)}
-                  className="mt-1 min-h-11 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => confirmVietqr.mutate(vietqrModal)}
-                disabled={
-                  confirmVietqr.isPending ||
-                  vietqrReference.trim().length < 3 ||
-                  vietqrReason.trim().length < 10
-                }
-                className="min-h-11 w-full rounded-lg bg-primary px-5 text-sm font-semibold text-white hover:bg-primary-hover disabled:opacity-50"
-              >
-                {confirmVietqr.isPending
-                  ? 'Đang xác nhận…'
-                  : 'Xác nhận đã chuyển khoản hoàn tất'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <VietqrTransferModal
+          modal={vietqrModal}
+          reference={vietqrReference}
+          onReferenceChange={setVietqrReference}
+          fee={vietqrFee}
+          onFeeChange={setVietqrFee}
+          onConfirm={() => confirmVietqr.mutate()}
+          isConfirming={confirmVietqr.isPending}
+          onClose={() => setVietqrModal(null)}
+        />
       )}
     </div>
   );
 }
+export default AdminFinancialPage;

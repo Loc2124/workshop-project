@@ -5,35 +5,27 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import { QRCodeSVG } from 'qrcode.react';
 import { apiFetch, ApiError } from '../lib/api-client';
-import { downloadQrPng } from '../lib/download-qr';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { queryKeys } from '../lib/query-keys';
-import { formatDate, formatPrice } from '../lib/format';
-import { bookingDisplayText } from '../lib/display-text';
-import {
-  bookingDetailState,
-  bookingScheduleLabel,
-} from '../lib/booking-detail';
+import { formatPrice } from '../lib/format';
+import { bookingDetailState } from '../lib/booking-detail';
 import { customerBookingService } from '../services/customerBookingService';
 import { PageContainer } from '../components/layout/PageContainer';
 import { LoadingState } from '../components/ui/LoadingState';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogTitle,
-} from '../components/ui/dialog';
 import { sessionLifecycleLabel } from './CustomerBookingsPage';
 import { BookingSeatCancellation } from '../components/details/BookingSeatCancellation';
 import { CustomerRefundAccounts } from '../components/management/CustomerRefundAccounts';
 
+import { BookingHeroHeader } from '../components/booking-detail/BookingHeroHeader';
+import { BookingTicketsSection } from '../components/booking-detail/BookingTicketsSection';
+import { BookingRescheduleNotice } from '../components/booking-detail/BookingRescheduleNotice';
+import { BookingCancellationDialog } from '../components/booking-detail/BookingCancellationDialog';
+import { BookingPaymentSummary } from '../components/booking-detail/BookingPaymentSummary';
+
 const primary =
   'inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60';
-const secondary =
-  'inline-flex min-h-11 items-center justify-center rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-soft disabled:opacity-60';
 const money = (amount: number) => `${formatPrice(amount)} đ`;
 
 export function CustomerBookingDetailPage() {
@@ -63,6 +55,7 @@ export function CustomerBookingDetailPage() {
   const clockOffset = useRef(0);
   const detailKey = queryKeys.bookings.detail(user?.id, id);
   const listKey = queryKeys.bookings.list(user?.id, { view: 'customer' });
+
   const query = useQuery({
     queryKey: detailKey,
     queryFn: async ({ signal }) => {
@@ -94,6 +87,7 @@ export function CustomerBookingDetailPage() {
                 ? 30000
                 : false,
   });
+
   const refetch = query.refetch;
   const cancelQuote = useQuery({
     queryKey: [...detailKey, 'cancellation-quote'],
@@ -106,6 +100,7 @@ export function CustomerBookingDetailPage() {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
   useEffect(() => {
     const tick = () => setNow(Date.now() + clockOffset.current);
     const sync = () => {
@@ -121,7 +116,9 @@ export function CustomerBookingDetailPage() {
       document.removeEventListener('visibilitychange', sync);
     };
   }, [refetch]);
+
   const source = query.data?.booking;
+
   useEffect(() => {
     if (
       !source?.attendanceConfirmationDeadline ||
@@ -133,6 +130,7 @@ export function CustomerBookingDetailPage() {
     attendanceDeadlineChecked.current = key;
     void refetch();
   }, [source, id, now, refetch]);
+
   const acceptScheduleInFlight = useRef(false);
   const acceptSchedule = useMutation({
     mutationFn: () => {
@@ -160,6 +158,7 @@ export function CustomerBookingDetailPage() {
       acceptScheduleInFlight.current = false;
     },
   });
+
   useEffect(() => {
     if (
       !source?.reschedulePending ||
@@ -172,6 +171,7 @@ export function CustomerBookingDetailPage() {
     scheduleDeadlineChecked.current = key;
     void refetch();
   }, [source, id, now, refetch]);
+
   useEffect(() => {
     if (
       !source ||
@@ -185,6 +185,7 @@ export function CustomerBookingDetailPage() {
     expiryChecked.current = key;
     void refetch();
   }, [source, id, now, refetch]);
+
   const cancel = useMutation({
     mutationFn: () => {
       if (!cancelQuote.data || cancelQuote.isFetching)
@@ -215,6 +216,7 @@ export function CustomerBookingDetailPage() {
       cancelInFlight.current = false;
     },
   });
+
   const retry = useMutation({
     mutationFn: async () => {
       if (!source) throw new Error('Không tìm thấy đặt chỗ.');
@@ -240,6 +242,7 @@ export function CustomerBookingDetailPage() {
       retryInFlight.current = false;
     },
   });
+
   const resetCancel = cancel.reset;
   const resetRetry = retry.reset;
   useEffect(() => {
@@ -257,6 +260,7 @@ export function CustomerBookingDetailPage() {
         <LoadingState label="Đang tải chi tiết đặt chỗ…" />
       </PageContainer>
     );
+
   if (!query.data)
     return (
       <PageContainer as="main" className="py-8">
@@ -303,6 +307,7 @@ export function CustomerBookingDetailPage() {
     !state.confirmed &&
     !state.cancelled &&
     !refundNeeded;
+
   const refundDue = cancelQuote.data?.refundDueAmount ?? 0;
   const retainedOnCancel = cancelQuote.data?.retainedAmount ?? 0;
   const retainedAfterCancel =
@@ -314,6 +319,7 @@ export function CustomerBookingDetailPage() {
             (booking.refundDueAmount ?? 0),
         )
       : 0;
+
   const cancellationDescription =
     cancelQuote.isFetching || !cancelQuote.data
       ? 'Đang kiểm tra thông tin hủy…'
@@ -330,6 +336,7 @@ export function CustomerBookingDetailPage() {
             .filter(Boolean)
             .join(' ') ||
           'Không phát sinh khoản hoàn mới. Các khoản đã hoàn được giữ trong lịch sử.';
+
   async function refreshCheckout() {
     if (checkoutInFlight.current) return;
     checkoutInFlight.current = true;
@@ -357,6 +364,7 @@ export function CustomerBookingDetailPage() {
       setCheckoutBusy(false);
     }
   }
+
   async function checkPayment() {
     const latest = await refetch();
     if (latest.isError) {
@@ -376,6 +384,7 @@ export function CustomerBookingDetailPage() {
               : 'Chưa nhận được tiền cọc, thử lại sau ít phút',
     );
   }
+
   async function bookingAction(path: string) {
     if (attendanceInFlight.current) return;
     attendanceInFlight.current = true;
@@ -397,6 +406,7 @@ export function CustomerBookingDetailPage() {
       setAttendanceBusy(false);
     }
   }
+
   function saveCalendar() {
     const stamp = (value: string) =>
       new Date(value)
@@ -449,271 +459,52 @@ export function CustomerBookingDetailPage() {
       )}
       <div className="mt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)] lg:gap-8">
         <section className="order-last min-w-0 lg:order-first">
-          <h1 className="font-heading text-3xl font-semibold">
-            {bookingDisplayText(booking.workshopTitle, 'Buổi học')}
-          </h1>
-          <Link
-            className="mt-2 inline-block min-h-11 text-primary underline"
-            to={'/studios/' + (booking.studioSlug ?? booking.workshopId)}
-          >
-            Studio: {bookingDisplayText(booking.studioName, 'Studio')}
-          </Link>
-          <p className="mt-2 font-semibold tabular-nums">
-            {bookingScheduleLabel(
-              state.cancelled && booking.bookedStartsAt
-                ? booking.bookedStartsAt
-                : booking.startsAt,
-              state.cancelled && booking.bookedEndsAt
-                ? booking.bookedEndsAt
-                : booking.endsAt,
-            )}
-          </p>
-          <dl className="mt-5 grid gap-4 rounded-xl bg-surface p-5 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-stone-600">Mã đơn đặt chỗ</dt>
-              <dd className="mt-1 font-semibold">{booking.orderCode}</dd>
-            </div>
-            <div>
-              <dt className="text-stone-600">Số người</dt>
-              <dd className="mt-1 font-semibold">{booking.quantity}</dd>
-            </div>
-            <div>
-              <dt className="text-stone-600">Người liên hệ</dt>
-              <dd className="mt-1">
-                {bookingDisplayText(booking.contactName, 'Khách tham gia')}
-                <br />
-                {booking.contactPhone}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-stone-600">Địa điểm</dt>
-              <dd className="mt-1">{booking.address ?? booking.studioName}</dd>
-            </div>
-          </dl>
-          {(booking.seatRevision ?? 0) > 0 && (
-            <p className="mt-3 text-sm text-stone-700">
-              Ban đầu bạn đặt {booking.originalQuantity} chỗ, tổng{' '}
-              {money(booking.originalTotalAmount ?? booking.totalAmount)}. Hiện
-              còn {booking.remainingQuantity ?? booking.quantity} chỗ có hiệu
-              lực.
-            </p>
-          )}
-          {actionNotice && (
-            <p role="status" className="mt-2 text-sm">
-              {actionNotice}
-            </p>
-          )}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button className={secondary} onClick={saveCalendar}>
-              Thêm vào lịch
-            </button>
-            <button
-              className={secondary}
-              onClick={() =>
-                void navigator.clipboard
-                  .writeText(String(booking.orderCode))
-                  .then(() => setActionNotice('Đã sao chép mã đặt chỗ.'))
-                  .catch(() =>
-                    setActionNotice(
-                      'Chưa sao chép được. Bạn có thể chọn mã đặt chỗ để sao chép.',
-                    ),
-                  )
-              }
-            >
-              Sao chép mã đặt chỗ
-            </button>
-            {booking.studioContactPhone && (
-              <a
-                className={secondary}
-                href={'tel:' + booking.studioContactPhone}
-              >
-                Liên hệ studio
-              </a>
-            )}
-          </div>
-          {booking.address && (
-            <iframe
-              title="Bản đồ studio"
-              className="mt-4 h-56 w-full rounded-xl border-0"
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              src={
-                'https://maps.google.com/maps?q=' +
-                encodeURIComponent(booking.address) +
-                '&output=embed'
-              }
-            />
-          )}
-          <p className="mt-4 text-sm leading-6 text-stone-700">
-            Hủy miễn phí trước giờ học 24h. Nếu bạn chưa đặt cọc, bạn có thể hủy
-            bất cứ lúc nào.
-          </p>
-          <section className="mt-7" aria-labelledby="booking-tickets-title">
-            <h2
-              id="booking-tickets-title"
-              className="font-heading text-xl font-semibold"
-            >
-              Vé tham gia
-            </h2>
-            {state.confirmed && tickets.length ? (
-              <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                {tickets.map((ticket) => (
-                  <li
-                    key={ticket.id}
-                    className="flex min-w-0 flex-wrap items-center gap-3 rounded-xl bg-surface p-4"
-                  >
-                    {!sessionEnded && ticket.status === 'valid' && (
-                      <QRCodeSVG
-                        value={`OS-TICKET:${ticket.code}`}
-                        size={112}
-                        title={`Mã QR vé tham gia ${ticket.seq}`}
-                        className="shrink-0"
-                      />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold">Vé số {ticket.seq}</h3>
-                      <p className="mt-1 text-sm">
-                        {ticket.attendanceStatus === 'attended'
-                          ? ticket.attendanceMethod === 'manual_confirmation'
-                            ? 'Đã tham dự · Xác nhận thủ công'
-                            : 'Đã tham dự'
-                          : sessionEnded &&
-                              ticket.attendanceStatus === 'unmarked'
-                            ? 'Đã qua buổi · Chưa check-in'
-                            : ticket.attendanceStatus === 'absent'
-                              ? 'Vắng mặt'
-                              : ticket.status === 'valid'
-                                ? 'Còn hiệu lực'
-                                : ticket.status === 'used'
-                                  ? 'Đã sử dụng'
-                                  : 'Đã vô hiệu'}
-                      </p>
-                      {!sessionEnded && ticket.status === 'valid' && (
-                        <p className="mt-1 text-xs text-stone-600">
-                          Xuất trình QR tại studio trước giờ kết thúc buổi học.
-                        </p>
-                      )}
-                      {sessionEnded && ticket.status === 'valid' && (
-                        <p className="mt-1 text-xs text-stone-600">
-                          QR đã hết hiệu lực sau giờ kết thúc buổi học.
-                        </p>
-                      )}
-                      {ticket.manualCode &&
-                        ticket.status === 'valid' &&
-                        ticket.attendanceStatus === 'unmarked' && (
-                          <p className="mt-1 font-mono text-sm font-semibold tracking-widest text-stone-700">
-                            Mã nhập tay: {ticket.manualCode}
-                          </p>
-                        )}
-                      {ticket.attendanceStatus === 'attended' && (
-                        <p className="mt-1 text-xs text-stone-600">
-                          {ticket.attendanceMarkedAt
-                            ? `Ghi nhận lúc ${formatDate(ticket.attendanceMarkedAt)}`
-                            : 'Đã ghi nhận tham dự'}
-                          {ticket.attendanceMarkedBy
-                            ? ` bởi ${ticket.attendanceMarkedBy}`
-                            : ''}
-                          .
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="mt-2 text-sm text-stone-600">
-                {state.cancelled || state.expired
-                  ? 'Đặt chỗ này không có vé tham gia còn hiệu lực.'
-                  : 'Vé sẽ hiện ở đây sau khi chỗ của bạn được xác nhận.'}
-              </p>
-            )}
-          </section>
+          <BookingHeroHeader
+            booking={booking}
+            isCancelled={state.cancelled}
+            actionNotice={actionNotice}
+            onSetActionNotice={setActionNotice}
+            onSaveCalendar={saveCalendar}
+          />
+          <BookingTicketsSection
+            tickets={tickets}
+            isConfirmed={state.confirmed}
+            isCancelled={state.cancelled}
+            isExpired={state.expired}
+            sessionEnded={sessionEnded}
+          />
         </section>
+
         <aside
           className="order-first min-w-0 rounded-xl bg-surface p-5 lg:order-last"
           aria-label="Trạng thái và thanh toán"
         >
           {booking.reschedulePending && state.confirmed && (
-            <section
-              aria-label="Thay đổi giờ học"
-              className="mb-5 rounded-lg border border-primary/25 bg-soft p-4 text-sm leading-6"
-            >
-              <h2 className="font-heading text-xl font-semibold">
-                Studio đã đổi giờ học
-              </h2>
-              {booking.bookedStartsAt && booking.bookedEndsAt && (
-                <p className="mt-3 text-stone-600">
-                  Giờ cũ:{' '}
-                  {bookingScheduleLabel(
-                    booking.bookedStartsAt,
-                    booking.bookedEndsAt,
-                  )}
-                </p>
-              )}
-              <p className="mt-1 font-semibold">
-                Giờ mới:{' '}
-                {bookingScheduleLabel(booking.startsAt, booking.endsAt)}
-              </p>
-              {booking.rescheduleDeadline && (
-                <p className="mt-3">
-                  Vui lòng phản hồi trước{' '}
-                  <strong>{formatDate(booking.rescheduleDeadline)}</strong>.
-                </p>
-              )}
-              <p className="mt-2">
-                Bạn có thể giữ chỗ theo giờ mới hoặc hủy để được hoàn toàn bộ số
-                tiền đã trả. Nếu không phản hồi đúng hạn, đặt chỗ sẽ tự hủy.
-              </p>
-              <button
-                type="button"
-                className={primary + ' mt-4'}
-                disabled={
-                  acceptSchedule.isPending ||
-                  !booking.scheduleVersion ||
-                  (!!booking.rescheduleDeadline &&
-                    now >= Date.parse(booking.rescheduleDeadline))
-                }
-                aria-busy={acceptSchedule.isPending}
-                onClick={() => {
-                  if (acceptScheduleInFlight.current) return;
-                  acceptScheduleInFlight.current = true;
-                  acceptSchedule.mutate();
-                }}
-              >
-                {acceptSchedule.isPending
-                  ? 'Đang xác nhận…'
-                  : 'Giữ chỗ theo giờ mới'}
-              </button>
-              <button
-                type="button"
-                className={secondary + ' mt-2 w-full'}
-                onClick={(event) => {
-                  cancelOpener.current = event.currentTarget;
-                  cancel.reset();
-                  setConfirmingCancel(true);
-                }}
-              >
-                Hủy đặt chỗ
-              </button>
-              {acceptSchedule.isError && (
-                <p role="alert" className="mt-3 text-brick">
-                  {acceptSchedule.error.message}
-                </p>
-              )}
-              {booking.rescheduleDeadline &&
-                now >= Date.parse(booking.rescheduleDeadline) && (
-                  <p role="status" className="mt-3">
-                    Đã hết hạn phản hồi. Đang cập nhật đặt chỗ…
-                  </p>
-                )}
-            </section>
+            <BookingRescheduleNotice
+              booking={booking}
+              now={now}
+              isAcceptPending={acceptSchedule.isPending}
+              acceptErrorMessage={acceptSchedule.isError ? acceptSchedule.error.message : undefined}
+              onAcceptSchedule={() => {
+                if (acceptScheduleInFlight.current) return;
+                acceptScheduleInFlight.current = true;
+                acceptSchedule.mutate();
+              }}
+              onRequestCancel={(event) => {
+                cancelOpener.current = event.currentTarget;
+                cancel.reset();
+                setConfirmingCancel(true);
+              }}
+            />
           )}
+
           <p
             role="status"
             className="mb-4 inline-flex rounded-full bg-primary/10 px-4 py-2 font-semibold text-primary"
           >
             {bookingLabel}
           </p>
+
           {state.confirmed &&
             !booking.reschedulePending &&
             booking.paymentMode !== 'payos_deposit' &&
@@ -727,7 +518,7 @@ export function CustomerBookingDetailPage() {
                 {booking.paidAmount === 0 && (
                   <p className="text-sm leading-6">
                     {booking.attendanceConfirmationDeadline
-                      ? `Vui lòng xác nhận bạn sẽ đến trước ${formatDate(booking.attendanceConfirmationDeadline)}. Nếu chưa xác nhận đúng hạn, chỗ của bạn sẽ được nhả.`
+                      ? `Vui lòng xác nhận bạn sẽ đến trước ${booking.attendanceConfirmationDeadline}. Nếu chưa xác nhận đúng hạn, chỗ của bạn sẽ được nhả.`
                       : 'Bạn có thể xác nhận sẽ đến ngay. Chỗ chỉ được nhả trước giờ học khi bạn chưa xác nhận và email yêu cầu xác nhận đã gửi thành công ít nhất 2 giờ.'}
                   </p>
                 )}
@@ -741,329 +532,48 @@ export function CustomerBookingDetailPage() {
                 </button>
               </section>
             )}
+
           {booking.attendanceConfirmedAt && state.confirmed && (
             <p role="status" className="mb-4 font-semibold text-primary">
               Bạn đã xác nhận sẽ đến.
             </p>
           )}
+
           {attendanceNotice && (
             <p role="status" className="mb-4 text-sm">
               {attendanceNotice}
             </p>
           )}
-          {state.canPay && (
-            <div
-              className={
-                'mb-4 rounded-xl border p-4 text-center ' +
-                (state.remainingSeconds < 120
-                  ? 'border-amber-400 bg-amber-50 text-amber-950'
-                  : 'border-primary/20 bg-soft')
-              }
-            >
-              <p className="text-sm font-semibold">
-                Chỗ của bạn được giữ trong
-              </p>
-              <p
-                className="mt-1 font-heading text-2xl font-bold tabular-nums sm:text-3xl xl:text-4xl"
-                aria-label={`Còn ${Math.floor(state.remainingSeconds / 60)} phút ${state.remainingSeconds % 60} giây`}
-              >
-                {Math.floor(state.remainingSeconds / 60)} phút{' '}
-                {state.remainingSeconds % 60} giây
-              </p>
-              <p className="mt-2 text-sm text-stone-700">
-                Hết hạn lúc{' '}
-                {new Intl.DateTimeFormat('vi-VN', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hourCycle: 'h23',
-                  timeZone: 'Asia/Ho_Chi_Minh',
-                }).format(new Date(booking.holdExpiresAt))}
-                ,{' '}
-                {new Intl.DateTimeFormat('vi-VN', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  timeZone: 'Asia/Ho_Chi_Minh',
-                }).format(new Date(booking.holdExpiresAt))}
-              </p>
-            </div>
-          )}
-          {booking.paymentMode === 'in_studio' && !state.cancelled && (
-            <p className="mt-4 rounded-lg bg-soft p-3 text-sm">
-              {state.actualBalance > 0
-                ? `Bạn sẽ thanh toán ${money(state.actualBalance)} tại studio.`
-                : 'Bạn đã thanh toán đủ.'}
-            </p>
-          )}
+
           {(refundNeeded || booking.refundStatus === 'pending') && (
             <CustomerRefundAccounts bookingId={id} />
           )}
-          {state.expired && (
-            <p
-              role="status"
-              className="mb-4 rounded-lg bg-stone-100 p-3 font-semibold"
-            >
-              Hết thời gian giữ chỗ
-            </p>
-          )}
-          {checkingExpiry && (
-            <p role="status" className="mb-4 rounded-lg bg-soft p-3 text-sm">
-              Đang kiểm tra thời gian giữ chỗ…
-            </p>
-          )}
-          {!state.upcoming &&
-            !state.confirmed &&
-            !state.cancelled &&
-            !state.expired && (
-              <p className="mb-4 text-sm text-stone-600">
-                Buổi học đã bắt đầu hoặc đã hủy. Không thể tiếp tục thanh toán
-                cọc.
-              </p>
-            )}
-          {booking.paymentAllowed === false &&
-            booking.reservationStatus === 'pending' &&
-            state.upcoming &&
-            !state.expired &&
-            !checkingExpiry && (
-              <p role="status" className="mb-4 text-sm">
-                Lịch này hiện không nhận thanh toán cọc. Bạn có thể hủy các chỗ
-                chưa thanh toán hoặc liên hệ studio để được hỗ trợ.
-              </p>
-            )}
-          <h2 className="font-heading text-lg font-semibold">Thanh toán</h2>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt>
-                {(booking.seatRevision ?? 0) > 0
-                  ? state.cancelled
-                    ? 'Giá trị trước lần hủy cuối'
-                    : 'Giá trị chỗ còn giữ'
-                  : 'Tổng tiền'}
-              </dt>
-              <dd className="whitespace-nowrap font-semibold">
-                {money(booking.totalAmount)}
-              </dd>
-            </div>
-            {booking.receivedAmount !== undefined &&
-              ((booking.seatRevision ?? 0) > 0 ||
-                state.cancelled ||
-                refundNeeded) && (
-                <div className="flex justify-between gap-4">
-                  <dt>Đã nhận trong cả đặt chỗ</dt>
-                  <dd className="whitespace-nowrap font-semibold">
-                    {money(booking.receivedAmount)}
-                  </dd>
-                </div>
-              )}
-            {booking.paymentMode === 'payos_deposit' && !state.cancelled && (
-              <>
-                <div className="flex justify-between gap-4">
-                  <dt>{state.depositPaid ? 'Tiền cọc đã nhận' : 'Tiền cọc'}</dt>
-                  <dd className="whitespace-nowrap font-semibold">
-                    {money(booking.depositAmount)}
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-4 border-t border-stone-200 pt-2">
-                  <dt>
-                    {state.cancelled
-                      ? 'Phần chưa thanh toán'
-                      : state.depositPaid
-                        ? 'Còn trả tại studio'
-                        : 'Còn lại thanh toán tại studio'}
-                  </dt>
-                  <dd className="whitespace-nowrap font-semibold">
-                    {money(
-                      state.depositPaid
-                        ? state.actualBalance
-                        : state.projectedStudioAmount,
-                    )}
-                  </dd>
-                </div>
-              </>
-            )}
-            {booking.paymentMode !== 'payos_deposit' && !state.cancelled && (
-              <div className="flex justify-between gap-4">
-                <dt>Còn phải trả</dt>
-                <dd className="font-semibold">{money(state.actualBalance)}</dd>
-              </div>
-            )}
-          </dl>
-          {state.canPay && !query.isRefetchError && (
-            <div className="mt-4">
-              <p className="mb-2 text-center text-sm font-semibold">
-                Quét bằng app ngân hàng
-              </p>
-              <p className="mb-3 text-center text-sm">
-                Số tiền: {money(booking.depositAmount)} · Nội dung:{' '}
-                {state.deposit?.transferDescription ??
-                  state.deposit?.orderCode ??
-                  booking.orderCode}
-              </p>
-              {state.deposit?.qrCode && (
-                <QRCodeSVG
-                  value={state.deposit.qrCode}
-                  size={184}
-                  title="Mã QR thanh toán tiền cọc"
-                  ref={paymentQr}
-                  className="mx-auto max-w-full rounded-lg bg-white p-2"
-                />
-              )}
-              {state.deposit?.qrCode && (
-                <button
-                  type="button"
-                  className={secondary + ' mt-2 w-full'}
-                  onClick={() => {
-                    if (paymentQr.current)
-                      void downloadQrPng(
-                        paymentQr.current,
-                        'ma-coc-' + booking.orderCode + '.png',
-                      ).catch(() =>
-                        setCheckResult('Chưa tải được mã, vui lòng thử lại.'),
-                      );
-                  }}
-                >
-                  Tải mã QR
-                </button>
-              )}
-              {state.deposit?.checkoutUrl && (
-                <a
-                  href={state.deposit.checkoutUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={`${primary} mt-3`}
-                >
-                  Mở trang thanh toán · Cọc {money(booking.depositAmount)}
-                </a>
-              )}
-              <button
-                type="button"
-                className={secondary + ' mt-2 w-full'}
-                disabled={query.isFetching}
-                onClick={() => void checkPayment()}
-              >
-                {query.isFetching ? 'Đang kiểm tra…' : 'Kiểm tra thanh toán'}
-              </button>
-              <p className="mt-2 text-center text-sm leading-6 text-stone-700">
-                Chỗ được xác nhận ngay khi chúng tôi nhận được tiền cọc.
-              </p>
-            </div>
-          )}
-          {retainedAfterCancel > 0 && (
-            <p
-              role="status"
-              className="mt-3 rounded-lg bg-amber-50 p-3 text-sm"
-            >
-              Khoản cọc {money(retainedAfterCancel)} không được hoàn vì bạn hủy
-              trong vòng 24 giờ trước buổi học.
-            </p>
-          )}
-          {booking.refundStatus === 'refunded' && (
-            <p role="status" className="mt-3 rounded-lg bg-soft p-3 text-sm">
-              Open Slot đã chuyển khoản hoàn{' '}
-              {money(booking.refundedAmount ?? booking.refundDueAmount ?? 0)}.
-              Bạn vui lòng kiểm tra tài khoản nhận tiền.
-            </p>
-          )}
-          {(refundNeeded || booking.refundStatus === 'pending') && (
-            <p
-              role="status"
-              className="mt-4 rounded-lg bg-amber-50 p-3 text-sm"
-            >
-              Số tiền cần hoàn:{' '}
-              {money(
-                Math.max(
-                  0,
-                  (booking.refundDueAmount ?? booking.paidAmount) -
-                    (booking.refundedAmount ?? 0),
-                ),
-              )}
-              . Open Slot đang đối soát và xử lý trong tối đa 7 ngày làm việc.
-            </p>
-          )}
-          {state.expired && (
-            <div className="mt-4">
-              {booking.canRebook && state.upcoming ? (
-                <button
-                  type="button"
-                  disabled={retry.isPending}
-                  className={primary}
-                  onClick={() => {
-                    if (retryInFlight.current) return;
-                    retryInFlight.current = true;
-                    retry.mutate();
-                  }}
-                >
-                  {retry.isPending ? 'Đang đặt lại…' : 'Đặt lại'}
-                </button>
-              ) : (
-                <Link
-                  className={`${secondary} w-full`}
-                  to={`/workshop/${booking.workshopId}#lich-trai-nghiem`}
-                >
-                  Xem lịch khác
-                </Link>
-              )}
-              {retry.isError && (
-                <p role="alert" className="mt-2 text-sm text-brick">
-                  {retry.error.message}{' '}
-                  <Link
-                    className="underline"
-                    to={`/workshop/${booking.workshopId}#lich-trai-nghiem`}
-                  >
-                    Xem lịch khác
-                  </Link>
-                </p>
-              )}
-            </div>
-          )}
-          {sessionState === 'Đã kết thúc' && (
-            <Link
-              className={`${secondary} mt-4 w-full`}
-              to={`/workshop/${booking.workshopId}#lich-trai-nghiem`}
-            >
-              Xem các buổi sắp tới
-            </Link>
-          )}
-          {checkResult && (
-            <p role="status" className="mt-3 rounded-lg bg-soft p-3 text-sm">
-              {checkResult}
-            </p>
-          )}
-          {query.isRefetchError && (
-            <p role="alert" className="mt-3 text-sm text-brick">
-              Chưa đồng bộ được trạng thái. Vui lòng kiểm tra lại trước khi
-              thanh toán.
-            </p>
-          )}
-          {(!state.canPay || query.isRefetchError) && (
-            <button
-              type="button"
-              className={secondary + ' mt-3 w-full'}
-              disabled={query.isFetching}
-              onClick={() => void checkPayment()}
-            >
-              {query.isFetching ? 'Đang kiểm tra…' : 'Kiểm tra thanh toán'}
-            </button>
-          )}
-          {state.canPay &&
-            (booking.seatRevision ?? 0) > 0 &&
-            !state.deposit?.checkoutUrl && (
-              <div className="mt-3 text-sm">
-                <p>
-                  Đã cập nhật số chỗ. Bạn cần lấy mã cọc mới trước khi thanh
-                  toán; hạn giữ chỗ không đổi.
-                </p>
-                <button
-                  type="button"
-                  className={secondary + ' mt-2 w-full'}
-                  disabled={checkoutBusy}
-                  aria-busy={checkoutBusy}
-                  onClick={() => void refreshCheckout()}
-                >
-                  {checkoutBusy ? 'Đang kiểm tra…' : 'Kiểm tra mã cọc mới'}
-                </button>
-              </div>
-            )}
+
+          <BookingPaymentSummary
+            booking={booking}
+            state={state}
+            checkingExpiry={checkingExpiry}
+            queryIsFetching={query.isFetching}
+            queryIsRefetchError={query.isRefetchError}
+            checkResult={checkResult}
+            retainedAfterCancel={retainedAfterCancel}
+            refundNeeded={refundNeeded}
+            sessionState={sessionState}
+            paymentQrRef={paymentQr}
+            retryIsPending={retry.isPending}
+            retryIsError={retry.isError}
+            retryErrorMessage={retry.error?.message}
+            checkoutBusy={checkoutBusy}
+            onRefreshCheckout={() => void refreshCheckout()}
+            onCheckPayment={() => void checkPayment()}
+            onRetry={() => {
+              if (retryInFlight.current) return;
+              retryInFlight.current = true;
+              retry.mutate();
+            }}
+            onSetCheckResult={setCheckResult}
+          />
+
           <BookingSeatCancellation
             bookingId={id}
             pending={booking.reservationStatus === 'pending'}
@@ -1074,6 +584,7 @@ export function CustomerBookingDetailPage() {
               ]);
             }}
           />
+
           {((state.canCancel && !booking.reschedulePending) ||
             cancel.isPending ||
             cancel.isSuccess ||
@@ -1099,80 +610,28 @@ export function CustomerBookingDetailPage() {
                 : 'Hủy đặt chỗ'}
             </button>
           )}
-          <Dialog
+
+          <BookingCancellationDialog
             open={confirmingCancel}
             onOpenChange={(open) => {
               if (!cancelInFlight.current) setConfirmingCancel(open);
             }}
-          >
-            <DialogContent
-              className="max-h-[calc(100dvh-2rem)] overflow-y-auto bg-surface p-5 sm:p-6"
-              closeDisabled={cancel.isPending}
-              onOpenAutoFocus={(event) => {
-                event.preventDefault();
-                keepBooking.current?.focus();
-              }}
-              onCloseAutoFocus={(event) => {
-                event.preventDefault();
-                const opener = cancelOpener.current;
-                (opener?.isConnected ? opener : cancelTrigger.current)?.focus();
-              }}
-            >
-              <DialogTitle className="pr-10 font-heading text-xl">
-                Hủy đặt chỗ này?
-              </DialogTitle>
-              <DialogDescription className="mt-3 leading-6">
-                {cancellationDescription}
-              </DialogDescription>
-              {cancelQuote.isError && (
-                <p role="alert" className="mt-3 text-sm text-brick">
-                  Chưa kiểm tra được thông tin hủy.{' '}
-                  <button
-                    type="button"
-                    className="underline"
-                    onClick={() => void cancelQuote.refetch()}
-                  >
-                    Thử lại
-                  </button>
-                </p>
-              )}
-              {cancel.isError && (
-                <p role="alert" className="mt-4 text-sm text-brick">
-                  {cancel.error.message} Chưa nhận được xác nhận hủy. Vui lòng
-                  kiểm tra trạng thái trước khi thử lại.
-                </p>
-              )}
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <button
-                  ref={keepBooking}
-                  type="button"
-                  disabled={cancel.isPending}
-                  className={`${secondary} flex-1`}
-                  onClick={() => setConfirmingCancel(false)}
-                >
-                  Giữ đặt chỗ
-                </button>
-                <button
-                  type="button"
-                  disabled={
-                    cancel.isPending ||
-                    cancelQuote.isFetching ||
-                    !cancelQuote.data ||
-                    cancelQuote.isError
-                  }
-                  aria-busy={cancel.isPending || cancelQuote.isFetching}
-                  className="min-h-11 flex-1 rounded-lg bg-brick px-4 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60"
-                  onClick={() => {
-                    if (cancelInFlight.current) return;
-                    cancelInFlight.current = true;
-                    cancel.mutate();
-                  }}
-                >
-                  {cancel.isPending ? 'Đang hủy…' : 'Xác nhận hủy'}
-                </button>
-              </div>
-            </DialogContent>
-          </Dialog>
+            isPending={cancel.isPending}
+            isFetchingQuote={cancelQuote.isFetching}
+            quoteHasError={cancelQuote.isError}
+            quoteHasData={Boolean(cancelQuote.data)}
+            cancelErrorMessage={cancel.isError ? cancel.error.message : undefined}
+            cancellationDescription={cancellationDescription}
+            cancelOpenerRef={cancelOpener}
+            cancelTriggerRef={cancelTrigger}
+            keepBookingRef={keepBooking}
+            onRetryQuote={() => void cancelQuote.refetch()}
+            onConfirmCancel={() => {
+              if (cancelInFlight.current) return;
+              cancelInFlight.current = true;
+              cancel.mutate();
+            }}
+          />
         </aside>
       </div>
     </PageContainer>
