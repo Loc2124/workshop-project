@@ -1,8 +1,46 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { requireAuth } from '../../middleware/auth.js';
 import { validateUuidParam } from '../../middleware/validate-uuid-param.js';
 import { query } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
+
+export const financesPeriodSchema = z
+  .enum(['all', 'this_month', 'last_month'])
+  .default('all');
+
+export type FinancesPeriod = z.infer<typeof financesPeriodSchema>;
+
+export function financesPeriodRange(
+  period: FinancesPeriod,
+  now = new Date(),
+): { start: string; end: string } | null {
+  if (period === 'all') return null;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(now);
+  const year = Number(parts.find((p) => p.type === 'year')?.value);
+  const month = Number(parts.find((p) => p.type === 'month')?.value);
+
+  const isoStartOfMonth = (y: number, m: number) => {
+    const normalizedYear = y + Math.floor((m - 1) / 12);
+    const normalizedMonth = ((((m - 1) % 12) + 12) % 12) + 1;
+    return `${String(normalizedYear).padStart(4, '0')}-${String(normalizedMonth).padStart(2, '0')}-01T00:00:00+07:00`;
+  };
+
+  if (period === 'this_month') {
+    return {
+      start: isoStartOfMonth(year, month),
+      end: isoStartOfMonth(year, month + 1),
+    };
+  }
+  return {
+    start: isoStartOfMonth(year, month - 1),
+    end: isoStartOfMonth(year, month),
+  };
+}
 
 export const studioFinancesRouter = Router();
 const path = '/:studioId/finances';
@@ -21,6 +59,9 @@ studioFinancesRouter.get(path, async (req, res) => {
       'Chỉ chủ studio mới xem được thông tin tài chính và quyết toán.',
     );
   }
+
+  const period = financesPeriodSchema.parse(req.query.period);
+  const range = financesPeriodRange(period);
 
   // 1. Tài khoản nhận tiền hiện tại
   const accountQuery = await query<{
@@ -91,11 +132,15 @@ studioFinancesRouter.get(path, async (req, res) => {
      JOIN workshops w ON w.id = s.workshop_id
      LEFT JOIN financial_transfers t ON t.obligation_id = o.id AND t.direction = 'outbound' AND t.purpose = 'studio_payout'
      LEFT JOIN studio_payout_accounts a ON a.id = t.destination_studio_account_id
-     WHERE o.studio_id = $1 AND o.kind = 'studio_payout' AND o.status <> 'cancelled'
+     WHERE o.studio_id = $1
+       AND o.kind = 'studio_payout'
+       AND o.status <> 'cancelled'
+       AND ($2::timestamptz IS NULL OR COALESCE(s.ends_at, o.created_at) >= $2::timestamptz)
+       AND ($3::timestamptz IS NULL OR COALESCE(s.ends_at, o.created_at) < $3::timestamptz)
      GROUP BY o.id, b.id, w.id, s.id
      ORDER BY o.created_at DESC, o.due_at DESC
      LIMIT 100`,
-    [studioId],
+    [studioId, range?.start ?? null, range?.end ?? null],
   );
 
   // 3. Đơn đã cọc / đã nhận, đang chuẩn bị hoàn thành buổi học để chốt quyết toán
@@ -135,34 +180,75 @@ studioFinancesRouter.get(path, async (req, res) => {
     [studioId],
   );
 
-  // 4. Tính toán tổng hợp
-  let totalPaidOut = 0;
-  let pendingPayout = 0;
-  for (const s of settlementsQuery.rows) {
-    const amt = Number(s.amount);
-    if (s.status === 'paid') {
-      totalPaidOut += amt;
-    } else if (
-      ['awaiting_approval', 'approved', 'processing'].includes(s.status)
-    ) {
-      pendingPayout += amt;
-    }
-  }
+  // 4. Tính toán tổng hợp trực tiếp bằng SQL trên toàn bộ dữ liệu (không giới hạn bởi LIMIT 100)
+  const payoutSummaryQuery = await query<{
+    totalPaidOut: string;
+    pendingPayout: string;
+  }>(
+    `SELECT
+       COALESCE(SUM(o.amount) FILTER (WHERE o.status = 'paid'), 0)::text AS "totalPaidOut",
+       COALESCE(SUM(o.amount) FILTER (WHERE o.status IN ('awaiting_approval', 'approved', 'processing')), 0)::text AS "pendingPayout"
+     FROM financial_obligations o
+     JOIN bookings b ON b.id = o.booking_id
+     JOIN sessions s ON s.id = b.session_id
+     WHERE o.studio_id = $1
+       AND o.kind = 'studio_payout'
+       AND o.status <> 'cancelled'
+       AND ($2::timestamptz IS NULL OR COALESCE(s.ends_at, o.created_at) >= $2::timestamptz)
+       AND ($3::timestamptz IS NULL OR COALESCE(s.ends_at, o.created_at) < $3::timestamptz)`,
+    [studioId, range?.start ?? null, range?.end ?? null],
+  );
 
-  let estimatedUpcoming = 0;
-  let directCollected = 0;
-  for (const b of upcomingQuery.rows) {
-    if (b.paymentMode === 'payos_deposit' && b.paidAmount >= b.depositAmount) {
-      estimatedUpcoming += b.depositAmount;
-    }
-    if (b.isCompleted) {
-      directCollected += Math.max(0, b.balanceAmount);
-    }
-  }
+  const bookingSummaryQuery = await query<{
+    directCollected: string;
+    estimatedUpcoming: string;
+  }>(
+    `SELECT
+       COALESCE(
+         SUM(GREATEST(0, b.total_amount - b.paid_amount))
+         FILTER (
+           WHERE s.ends_at <= clock_timestamp()
+             AND ($2::timestamptz IS NULL OR s.ends_at >= $2::timestamptz)
+             AND ($3::timestamptz IS NULL OR s.ends_at < $3::timestamptz)
+         ),
+         0
+       )::text AS "directCollected",
+       COALESCE(
+         SUM(b.deposit_amount)
+         FILTER (
+           WHERE s.ends_at > clock_timestamp()
+             AND b.payment_mode = 'payos_deposit'
+             AND b.paid_amount >= b.deposit_amount
+             AND NOT EXISTS (
+               SELECT 1 FROM financial_obligations fo
+               WHERE fo.booking_id = b.id AND fo.kind = 'studio_payout' AND fo.status <> 'cancelled'
+             )
+         ),
+         0
+       )::text AS "estimatedUpcoming"
+     FROM bookings b
+     JOIN sessions s ON s.id = b.session_id
+     JOIN workshops w ON w.id = s.workshop_id
+     WHERE w.studio_id = $1
+       AND b.reservation_status IN ('confirmed', 'completed')`,
+    [studioId, range?.start ?? null, range?.end ?? null],
+  );
+
+  const totalPaidOut = Number(payoutSummaryQuery.rows[0]?.totalPaidOut ?? 0);
+  const pendingPayout = Number(payoutSummaryQuery.rows[0]?.pendingPayout ?? 0);
+  const directCollected = Number(
+    bookingSummaryQuery.rows[0]?.directCollected ?? 0,
+  );
+  const estimatedUpcoming = Number(
+    bookingSummaryQuery.rows[0]?.estimatedUpcoming ?? 0,
+  );
+  const totalEarned = totalPaidOut + pendingPayout + directCollected;
 
   res.setHeader('Cache-Control', 'no-store');
   res.json({
+    period,
     summary: {
+      totalEarned,
       totalPaidOut,
       pendingPayout,
       estimatedUpcoming,
