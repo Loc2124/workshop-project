@@ -51,6 +51,43 @@ transfersRouter.get('/chuyen-tien', async (req, res) => {
   res.json({ items: result.rows });
 });
 
+transfersRouter.get('/hang-cho-doi-soat', async (_req, res) => {
+  const result = await withTransaction((client) =>
+    client.query(
+      `SELECT t.id,t.obligation_id AS "obligationId",o.kind,o.booking_id AS "bookingId",
+      b.order_code::text AS "orderCode",t.direction,t.purpose,t.amount,t.provider_fee AS "providerFee",
+      o.due_at AS "dueAt",
+      CASE WHEN o.due_at<clock_timestamp() THEN 'overdue'
+           WHEN o.due_at<=clock_timestamp()+interval '1 day' THEN 'due_soon'
+           ELSE NULL END AS "dueState",
+      t.provider,t.reference,t.status,t.destination_studio_account_id AS "destinationAccountId",
+      COALESCE(da.bank_name,ca.bank_bin) AS "destinationBank",
+      COALESCE(da.account_holder,ca.account_holder) AS "destinationName",
+      COALESCE(da.account_last4,ca.account_last4) AS "destinationLast4",
+      CASE WHEN da.id IS NOT NULL THEN da.is_current AND da.status='verified'
+           WHEN ca.id IS NOT NULL THEN ca.is_current AND ca.status='verified' AND ca.purged_at IS NULL
+           ELSE NULL END AS "destinationValid",
+      t.created_by AS "createdBy",t.approved_by AS "approvedBy",
+      t.approved_at AS "approvedAt",t.settled_at AS "settledAt",t.failure_reason AS "failureReason",
+      t.created_at AS "createdAt"
+     FROM financial_transfers t JOIN financial_obligations o ON o.id=t.obligation_id
+     LEFT JOIN studio_payout_accounts da ON da.id=t.destination_studio_account_id
+     LEFT JOIN customer_refund_accounts ca ON ca.id=t.destination_customer_account_id
+     JOIN bookings b ON b.id=o.booking_id
+     WHERE (t.status IN ('pending_approval','approved','processing','manual_review')
+       OR (t.status='failed' AND o.status NOT IN ('paid','cancelled')
+         AND NOT EXISTS(SELECT 1 FROM financial_transfers newer
+           WHERE newer.obligation_id=t.obligation_id AND newer.status<>'failed'
+             AND (newer.created_at,newer.id)>(t.created_at,t.id))))
+     ORDER BY o.due_at ASC NULLS LAST,
+       CASE WHEN t.status='manual_review' THEN 0 ELSE 1 END,
+       t.created_at DESC LIMIT 500`,
+      [],
+    ),
+  );
+  res.json({ items: result.rows });
+});
+
 transfersRouter.get('/chuyen-tien/:id/lich-su', async (req, res) => {
   const id = z.uuid().parse(req.params.id);
   const result = await withTransaction(async (client) => {

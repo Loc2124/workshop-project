@@ -122,7 +122,7 @@ export function HeaderMobileDrawer({
                   onClick={onClose}
                   className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
                 >
-                  Duyệt nội dung
+                  Quản trị hệ thống
                 </Link>
               )}
               <button

@@ -148,7 +148,7 @@ export function HeaderUserMenu({
                 }}
                 className="flex min-h-11 items-center rounded-lg px-3 text-sm hover:bg-soft"
               >
-                Duyệt nội dung
+                Quản trị hệ thống
               </Link>
             )}
 

@@ -67,8 +67,8 @@ export function AdminFinancialPage() {
   const obligations = useQuery({
     queryKey: ['private', userId, 'financial-obligations'],
     queryFn: () =>
-      apiFetch<Obligation[]>('/admin/tai-chinh/nghia-vu').then((items) =>
-        items.sort(
+      apiFetch<{ items: Obligation[] }>('/admin/tai-chinh/nghia-vu').then((r) =>
+        (r.items ?? []).sort(
           (a, b) =>
             new Date(a.dueAt ?? a.createdAt).getTime() -
             new Date(b.dueAt ?? b.createdAt).getTime(),
@@ -79,8 +79,8 @@ export function AdminFinancialPage() {
   const transfers = useQuery({
     queryKey: ['private', userId, 'financial-transfers'],
     queryFn: () =>
-      apiFetch<Transfer[]>('/admin/tai-chinh/chuyen-tien').then((items) =>
-        items.sort(
+      apiFetch<{ items: Transfer[] }>('/admin/tai-chinh/chuyen-tien').then((r) =>
+        (r.items ?? []).sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         ),
@@ -90,8 +90,10 @@ export function AdminFinancialPage() {
   const queue = useQuery({
     queryKey: ['private', userId, 'financial-queue'],
     queryFn: () =>
-      apiFetch<Transfer[]>('/admin/tai-chinh/hang-cho-doi-soat').then((items) =>
-        items.sort(
+      apiFetch<{ items: Transfer[] }>(
+        '/admin/tai-chinh/chuyen-tien?view=queue',
+      ).then((r) =>
+        (r.items ?? []).sort(
           (a, b) =>
             new Date(a.dueAt ?? a.createdAt).getTime() -
             new Date(b.dueAt ?? b.createdAt).getTime(),
@@ -101,13 +103,18 @@ export function AdminFinancialPage() {
 
   const days = useQuery({
     queryKey: ['private', userId, 'financial-calendar'],
-    queryFn: () => apiFetch<CalendarDay[]>('/admin/tai-chinh/lich-nghi'),
+    queryFn: () =>
+      apiFetch<{ items: CalendarDay[] }>('/admin/tai-chinh/lich-nghi').then(
+        (r) => r.items ?? [],
+      ),
   });
 
   const fees = useQuery({
     queryKey: ['private', userId, 'financial-payment-fees'],
     queryFn: () =>
-      apiFetch<PaymentFee[]>('/admin/tai-chinh/phi-thu-can-ghi-nhan'),
+      apiFetch<{ items: PaymentFee[] }>('/admin/tai-chinh/phi-thu').then(
+        (r) => r.items ?? [],
+      ),
   });
 
   const refresh = async () => {
@@ -297,12 +304,13 @@ export function AdminFinancialPage() {
         reference: fee.providerReference ?? '',
         fee: '',
       };
-      return apiFetch(`/admin/tai-chinh/phi-thu/${fee.paymentId}`, {
+      return apiFetch(`/admin/tai-chinh/payments/${fee.paymentId}/phi-thu`, {
         method: 'POST',
         body: JSON.stringify({
           provider: draft.provider,
-          reference: draft.reference,
-          fee: Number(draft.fee),
+          providerReference: draft.reference,
+          providerFee: Number(draft.fee),
+          reason: 'Đối chiếu phí thực tế với báo cáo giao dịch của nhà cung cấp.',
         }),
       });
     },

@@ -23,8 +23,28 @@ feesRouter.get('/phi-thu', async (_req, res) => {
   res.json({ items: result.rows });
 });
 
-feesRouter.post('/payments/:id/phi-thu', async (req, res) => {
-  const paymentId = z.uuid().parse(req.params.id);
+feesRouter.get('/phi-thu-can-ghi-nhan', async (_req, res) => {
+  const result = await withTransaction((client) =>
+    client.query(
+      `SELECT p.id AS "paymentId",p.booking_id AS "bookingId",b.order_code::text AS "orderCode",
+      st.id AS "studioId",st.name AS "studioName",w.title AS "workshopTitle",p.amount,p.provider,
+      p.provider_ref AS "providerReference",p.paid_at AS "paidAt"
+     FROM payments p JOIN bookings b ON b.id=p.booking_id JOIN sessions s ON s.id=b.session_id
+     JOIN workshops w ON w.id=s.workshop_id JOIN studios st ON st.id=w.studio_id
+     LEFT JOIN payment_fee_reconciliations f ON f.payment_id=p.id
+     WHERE p.status='paid' AND p.kind='deposit' AND f.id IS NULL
+     ORDER BY p.paid_at NULLS FIRST,p.created_at LIMIT 500`,
+    ),
+  );
+  res.json({ items: result.rows });
+});
+
+async function handlePaymentFee(
+  paymentId: string,
+  actorId: string,
+  rawBody: unknown,
+) {
+  const body = (rawBody ?? {}) as Record<string, unknown>;
   const input = z
     .object({
       providerFee: z.number().int().nonnegative(),
@@ -33,7 +53,18 @@ feesRouter.post('/payments/:id/phi-thu', async (req, res) => {
       reason: z.string().trim().min(10).max(500),
     })
     .strict()
-    .parse(req.body);
+    .parse({
+      providerFee:
+        body.providerFee !== undefined
+          ? Number(body.providerFee)
+          : Number(body.fee),
+      provider: body.provider,
+      providerReference: body.providerReference ?? body.reference,
+      reason:
+        body.reason ??
+        'Đối chiếu phí thực tế với báo cáo giao dịch của nhà cung cấp.',
+    });
+
   await withTransaction(async (client) => {
     const row = await client.query<{
       bookingId: string;
@@ -87,7 +118,7 @@ feesRouter.post('/payments/:id/phi-thu', async (req, res) => {
         input.providerFee,
         input.provider,
         input.providerReference,
-        req.user!.sub,
+        actorId,
         input.reason,
       ],
     );
@@ -101,7 +132,7 @@ feesRouter.post('/payments/:id/phi-thu', async (req, res) => {
       true,
     );
     await writeAuditLog(client, {
-      actorId: req.user!.sub,
+      actorId,
       action: 'financial.collection_fee.recorded',
       targetType: 'booking',
       targetId: payment.bookingId,
@@ -115,5 +146,26 @@ feesRouter.post('/payments/:id/phi-thu', async (req, res) => {
       },
     });
   });
-  res.json({ ok: true, providerFee: input.providerFee });
+
+  return input.providerFee;
+}
+
+feesRouter.post('/payments/:id/phi-thu', async (req, res) => {
+  const paymentId = z.uuid().parse(req.params.id);
+  const providerFee = await handlePaymentFee(
+    paymentId,
+    req.user!.sub,
+    req.body,
+  );
+  res.json({ ok: true, providerFee });
+});
+
+feesRouter.post('/phi-thu/:paymentId', async (req, res) => {
+  const paymentId = z.uuid().parse(req.params.paymentId);
+  const providerFee = await handlePaymentFee(
+    paymentId,
+    req.user!.sub,
+    req.body,
+  );
+  res.json({ ok: true, providerFee });
 });
