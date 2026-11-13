@@ -183,41 +183,47 @@ export function BookingTicketsSection({
                           </p>
                         </div>
                       )}
-                      {ticket.manualCode &&
-                        ticket.status === 'valid' &&
-                        ticket.attendanceStatus === 'unmarked' && (
-                          <div className="rounded-lg border border-dashed border-line bg-paper px-3 py-2 text-left">
-                            <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
-                              Mã nhập tay
-                            </p>
-                            <div className="mt-1 flex items-center justify-between gap-2">
-                              <span className="font-mono text-sm font-bold tracking-widest text-ink">
-                                {ticket.manualCode}
-                              </span>
-                              <button
-                                type="button"
-                                aria-label={`Sao chép mã vé ${ticket.seq}`}
-                                onClick={() =>
-                                  void copyManualCode(ticket.manualCode!)
-                                }
-                                className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-line bg-surface px-2.5 text-xs font-semibold text-stone-700 hover:border-primary hover:text-primary"
-                              >
-                                {copiedCode === ticket.manualCode ? (
+                      {ticket.status === 'valid' && (
+                        <div className="rounded-lg border border-dashed border-line bg-paper px-3 py-2 text-left">
+                          <p className="text-[11px] font-medium uppercase tracking-wide text-muted">
+                            Mã vé (Ticket Code)
+                          </p>
+                          <div className="mt-1 flex items-center justify-between gap-2">
+                            <span className="font-mono text-sm font-bold tracking-widest text-ink">
+                              {ticket.manualCode || ticket.code}
+                            </span>
+                            <button
+                              type="button"
+                              aria-label={`Sao chép mã vé ${ticket.seq}`}
+                              onClick={() =>
+                                void copyManualCode(
+                                  ticket.manualCode || ticket.code,
+                                )
+                              }
+                              className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-line bg-surface px-2.5 text-xs font-semibold text-stone-700 hover:border-primary hover:text-primary active:scale-95 transition-all"
+                            >
+                              {copiedCode ===
+                              (ticket.manualCode || ticket.code) ? (
+                                <>
                                   <Check
                                     size={13}
                                     className="text-studio-success"
                                     aria-hidden="true"
                                   />
-                                ) : (
+                                  <span className="text-studio-success">
+                                    Đã chép
+                                  </span>
+                                </>
+                              ) : (
+                                <>
                                   <Copy size={13} aria-hidden="true" />
-                                )}
-                                {copiedCode === ticket.manualCode
-                                  ? 'Đã chép'
-                                  : 'Chép'}
-                              </button>
-                            </div>
+                                  <span>Sao chép</span>
+                                </>
+                              )}
+                            </button>
                           </div>
-                        )}
+                        </div>
+                      )}
 
                       {canCancel &&
                         tickets.length > 1 &&
@@ -275,14 +281,36 @@ export function BookingTicketsSection({
                   title={`Mã QR phóng to vé ${zoomedTicket.seq}`}
                 />
               </div>
-              {zoomedTicket.manualCode && (
-                <div className="w-full rounded-lg border border-dashed border-line bg-paper px-4 py-2.5">
-                  <p className="text-xs text-muted">Mã nhập tay</p>
-                  <p className="mt-0.5 font-mono text-lg font-bold tracking-widest text-ink">
-                    {zoomedTicket.manualCode}
+              <div className="w-full rounded-lg border border-dashed border-line bg-paper px-4 py-2.5 text-left">
+                <p className="text-xs text-muted">Mã vé (Ticket Code)</p>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <p className="font-mono text-base font-bold tracking-widest text-ink">
+                    {zoomedTicket.manualCode || zoomedTicket.code}
                   </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      void copyManualCode(
+                        zoomedTicket.manualCode || zoomedTicket.code,
+                      )
+                    }
+                    className="inline-flex min-h-8 items-center gap-1 rounded-md border border-line bg-surface px-2.5 text-xs font-semibold text-stone-700 hover:border-primary hover:text-primary active:scale-95 transition-all"
+                  >
+                    {copiedCode ===
+                    (zoomedTicket.manualCode || zoomedTicket.code) ? (
+                      <>
+                        <Check size={12} className="text-studio-success" />
+                        <span className="text-studio-success">Đã chép</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={12} />
+                        <span>Sao chép</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </DialogContent>

@@ -90,9 +90,34 @@ export function BookingHeroHeader({
             <Hash size={13} aria-hidden="true" />
             Mã đơn đặt chỗ
           </dt>
-          <dd className="mt-1 font-mono text-base font-semibold text-ink">
-            {booking.orderCode}
-          </dd>
+          <div className="mt-1 flex items-center gap-2">
+            <dd className="font-mono text-base font-semibold text-ink">
+              {booking.orderCode}
+            </dd>
+            <button
+              type="button"
+              onClick={() => {
+                void navigator.clipboard.writeText(String(booking.orderCode));
+                setCopied(true);
+                onSetActionNotice('Đã sao chép mã đơn đặt chỗ.');
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              title="Sao chép mã đơn đặt chỗ"
+              className="inline-flex min-h-8 items-center gap-1 rounded-md border border-line bg-surface px-2 py-0.5 text-xs font-medium text-stone-700 hover:border-primary hover:text-primary active:scale-95 transition-all"
+            >
+              {copied ? (
+                <>
+                  <Check size={12} className="text-studio-success" />
+                  <span className="text-[11px] font-semibold text-studio-success">Đã chép</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={12} />
+                  <span className="text-[11px]">Sao chép</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
         <div>
           <dt className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">

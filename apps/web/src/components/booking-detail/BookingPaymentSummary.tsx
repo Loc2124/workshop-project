@@ -1,9 +1,18 @@
-import { type RefObject } from 'react';
+import { useState, type RefObject } from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Download, ExternalLink, RefreshCw } from 'lucide-react';
+import {
+  Check,
+  Clock,
+  Copy,
+  Download,
+  ExternalLink,
+  RefreshCw,
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { formatPrice } from '@/lib/format';
 import { downloadQrPng } from '@/lib/download-qr';
+import { parseVietQrPayload } from '@/lib/vietqr';
+import { formatBankDisplay } from '@workshop/shared';
 import type { CustomerBooking } from '@/services/customerBookingService';
 import type { bookingDetailState } from '@/lib/booking-detail';
 
@@ -54,6 +63,24 @@ export function BookingPaymentSummary({
   onRetry,
   onSetCheckResult,
 }: BookingPaymentSummaryProps) {
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const copyText = async (field: string, text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch {
+      setCopiedField(null);
+    }
+  };
+
+  const parsedQr = parseVietQrPayload(state.deposit?.qrCode);
+  const transferContent = String(
+    state.deposit?.transferDescription ??
+      state.deposit?.orderCode ??
+      booking.orderCode,
+  );
   return (
     <>
       {state.canPay && (
@@ -208,21 +235,111 @@ export function BookingPaymentSummary({
           <p className="mb-2 text-center text-sm font-semibold text-ink">
             Quét bằng app ngân hàng
           </p>
-          <div className="mb-3 rounded-lg border border-line/70 bg-surface px-3 py-2 text-center text-xs text-stone-700">
-            <p>
-              Số tiền:{' '}
-              <strong className="tabular-nums text-ink">
-                {money(booking.depositAmount)}
-              </strong>
-            </p>
-            <p className="mt-0.5 break-words">
-              Nội dung:{' '}
-              <strong className="font-mono text-ink">
-                {state.deposit?.transferDescription ??
-                  state.deposit?.orderCode ??
-                  booking.orderCode}
-              </strong>
-            </p>
+          <div className="mb-3 rounded-xl border border-line/80 bg-surface p-3 text-xs space-y-2.5">
+            {parsedQr?.bin && (
+              <div className="flex items-center justify-between gap-2 border-b border-line/50 pb-2">
+                <span className="text-muted">Ngân hàng:</span>
+                <span className="font-semibold text-ink text-right">
+                  {formatBankDisplay(parsedQr.bin)}
+                </span>
+              </div>
+            )}
+            {parsedQr?.accountNumber && (
+              <div className="flex items-center justify-between gap-2 border-b border-line/50 pb-2">
+                <div className="text-left">
+                  <span className="text-muted">Số tài khoản:</span>
+                  <p className="font-mono text-sm font-bold text-ink">
+                    {parsedQr.accountNumber}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  title="Sao chép số tài khoản"
+                  onClick={() =>
+                    void copyText('accountNumber', parsedQr.accountNumber!)
+                  }
+                  className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-line bg-paper px-2.5 py-1 text-xs font-semibold text-stone-700 hover:border-primary hover:text-primary active:scale-95 transition-all"
+                >
+                  {copiedField === 'accountNumber' ? (
+                    <>
+                      <Check
+                        size={12}
+                        className="text-studio-success"
+                        aria-hidden="true"
+                      />
+                      <span className="text-studio-success">Đã chép</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy size={12} aria-hidden="true" />
+                      <span>Sao chép</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-2 border-b border-line/50 pb-2">
+              <div className="text-left">
+                <span className="text-muted">Số tiền cọc:</span>
+                <p className="tabular-nums font-bold text-ink text-sm">
+                  {money(booking.depositAmount)}
+                </p>
+              </div>
+              <button
+                type="button"
+                title="Sao chép số tiền"
+                onClick={() =>
+                  void copyText('amount', String(booking.depositAmount))
+                }
+                className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-line bg-paper px-2.5 py-1 text-xs font-semibold text-stone-700 hover:border-primary hover:text-primary active:scale-95 transition-all"
+              >
+                {copiedField === 'amount' ? (
+                  <>
+                    <Check
+                      size={12}
+                      className="text-studio-success"
+                      aria-hidden="true"
+                    />
+                    <span className="text-studio-success">Đã chép</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} aria-hidden="true" />
+                    <span>Sao chép</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="flex items-center justify-between gap-2 pt-0.5">
+              <div className="min-w-0 flex-1 text-left">
+                <span className="text-muted">Nội dung CK:</span>
+                <p className="font-mono text-xs font-bold text-ink truncate">
+                  {transferContent}
+                </p>
+              </div>
+              <button
+                type="button"
+                title="Sao chép nội dung chuyển khoản"
+                onClick={() => void copyText('description', transferContent)}
+                className="inline-flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-line bg-paper px-2.5 py-1 text-xs font-semibold text-stone-700 hover:border-primary hover:text-primary active:scale-95 transition-all"
+              >
+                {copiedField === 'description' ? (
+                  <>
+                    <Check
+                      size={12}
+                      className="text-studio-success"
+                      aria-hidden="true"
+                    />
+                    <span className="text-studio-success">Đã chép</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} aria-hidden="true" />
+                    <span>Sao chép</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
           {state.deposit?.qrCode && (
             <QRCodeSVG

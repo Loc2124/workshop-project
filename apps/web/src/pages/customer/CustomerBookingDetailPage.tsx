@@ -5,6 +5,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
+import { Clock } from 'lucide-react';
 import { apiFetch, ApiError } from '@/lib/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
@@ -504,6 +505,28 @@ export function CustomerBookingDetailPage() {
           Bạn đã hủy thanh toán tại payOS. Đặt chỗ này đã được hủy và chỗ đã
           được hoàn lại cho workshop.
         </p>
+      )}
+      {(refundNeeded || booking.refundStatus === 'pending') && (
+        <div
+          role="status"
+          className="mt-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-xs"
+        >
+          <Clock
+            size={20}
+            className="mt-0.5 shrink-0 text-amber-600"
+            aria-hidden="true"
+          />
+          <div className="space-y-1">
+            <p className="font-semibold text-amber-950">
+              Đơn đã hủy thành công. Ban quản trị đang xử lý chuyển khoản hoàn
+              cọc về tài khoản của bạn (dự kiến 1 - 3 ngày làm việc).
+            </p>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              Bạn có thể theo dõi tiến độ và bổ sung thông tin tài khoản ngân
+              hàng nhận hoàn tiền ở phần quản lý bên cạnh nếu chưa thiết lập.
+            </p>
+          </div>
+        </div>
       )}
       <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)] lg:gap-8">
         <section
