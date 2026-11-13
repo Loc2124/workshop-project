@@ -102,11 +102,29 @@ export function useStudioRegistrationDraft(
     } catch {
       /* Nothing else to clear. */
     }
+    setDraft({ key, values: { ...emptyStudioDraft }, step: 0 });
   }
+  const hasContent = Boolean(
+    draft.values.draftStudioId ||
+    draft.step === 1 ||
+    draft.values.name.trim() ||
+    draft.values.categoryIds.length > 0 ||
+    draft.values.provinceId ||
+    draft.values.address.trim() ||
+    draft.values.contactPhone.trim() ||
+    draft.values.contactEmail.trim() ||
+    draft.values.photoIds.length > 0 ||
+    draft.values.description.trim() ||
+    draft.values.facebookUrl.trim() ||
+    draft.values.instagramUrl.trim() ||
+    draft.values.googleMapsUrl.trim() ||
+    draft.values.proposedCategoryName.trim(),
+  );
   return {
     values: draft.values,
     step: draft.step,
     ready: !authLoading && draft.key === key,
+    hasContent,
     storageAvailable,
     update,
     setStep,

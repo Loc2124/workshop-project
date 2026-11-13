@@ -11,7 +11,11 @@ import { getSiteSettings } from '../settings/settings.repository.js';
 import { submitStudioEvidence } from './studios.service.js';
 import { validateUuidParam } from '../../middleware/validate-uuid-param.js';
 import { requireAuth } from '../../middleware/auth.js';
-import { registerStudio, startStudioDraft } from './studios.service.js';
+import {
+  discardStudioDraft,
+  registerStudio,
+  startStudioDraft,
+} from './studios.service.js';
 
 const router = Router();
 router.use(depositSettingsRouter);
@@ -23,6 +27,20 @@ router.post(
   requireAuth(['customer', 'studio_owner', 'admin']),
   async (request, response) => {
     response.status(201).json(await startStudioDraft(request.user!.sub));
+  },
+);
+
+router.delete(
+  '/drafts/:studioId',
+  requireAuth(['customer', 'studio_owner', 'admin']),
+  validateUuidParam('studioId'),
+  async (request, response) => {
+    response.json(
+      await discardStudioDraft(
+        String(request.params.studioId),
+        request.user!.sub,
+      ),
+    );
   },
 );
 

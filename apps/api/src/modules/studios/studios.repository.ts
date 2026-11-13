@@ -286,6 +286,36 @@ export async function updateStudioEvidence(
   });
 }
 
+export async function deleteStudioDraft(
+  studioId: string,
+  userId: string,
+): Promise<boolean> {
+  return withTransaction(async (client) => {
+    const locked = await client.query<{ id: string }>(
+      `SELECT st.id
+       FROM studios st
+       JOIN studio_members sm
+         ON sm.studio_id = st.id AND sm.user_id = $2 AND sm.role = 'owner'
+       WHERE st.id = $1 AND st.is_draft = true
+       FOR UPDATE OF st`,
+      [studioId, userId],
+    );
+    if (!locked.rowCount) return false;
+    await client.query(`DELETE FROM images WHERE studio_id = $1`, [studioId]);
+    await client.query(`DELETE FROM studio_categories WHERE studio_id = $1`, [
+      studioId,
+    ]);
+    await client.query(`DELETE FROM studio_members WHERE studio_id = $1`, [
+      studioId,
+    ]);
+    await client.query(
+      `DELETE FROM studios WHERE id = $1 AND is_draft = true`,
+      [studioId],
+    );
+    return true;
+  });
+}
+
 async function assertPaymentQr(
   client: import('pg').PoolClient,
   studioId: string,

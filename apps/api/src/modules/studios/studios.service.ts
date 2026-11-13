@@ -1,6 +1,7 @@
 import type { StudioEvidenceInput } from '@workshop/shared';
 import {
   createStudioDraft,
+  deleteStudioDraft,
   updateStudioEvidence,
 } from './studios.repository.js';
 import { getImageUrlsForIds } from '../images/images.repository.js';
@@ -72,6 +73,17 @@ export async function withStudiosImages<
 }
 export async function startStudioDraft(userId: string) {
   return { studio: await createStudioDraft(userId) };
+}
+export async function discardStudioDraft(studioId: string, userId: string) {
+  const deleted = await deleteStudioDraft(studioId, userId);
+  if (!deleted) {
+    throw new AppError(
+      404,
+      'NOT_FOUND',
+      'Không tìm thấy hồ sơ nháp hoặc bạn không có quyền hủy.',
+    );
+  }
+  return { deleted: true, studioId };
 }
 export async function submitStudioEvidence(
   studioId: string,

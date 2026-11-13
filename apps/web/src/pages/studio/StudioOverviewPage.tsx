@@ -1,5 +1,7 @@
-﻿import { Link, useParams } from 'react-router-dom';
+﻿import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -7,8 +9,21 @@ import {
   LifeBuoy,
   PlusCircle,
   Store,
+  Trash2,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api-client';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  readStudioDraft,
+  studioDraftKey,
+  studioDraftReturnKey,
+} from '@/lib/studio-registration-draft';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { StudioNotifications } from '@/components/management/StudioNotifications';
 import {
   StudioBadge,
@@ -17,6 +32,7 @@ import {
   StudioSkeleton,
 } from '@/components/management/StudioPrimitives';
 import {
+  useDeleteStudioDraft,
   useMyStudios,
   useStudioSessions,
   useStudioWorkshops,
@@ -42,7 +58,11 @@ import {
 
 export function StudioOverviewPage() {
   const { studioId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const studiosQuery = useMyStudios();
+  const deleteStudioDraft = useDeleteStudioDraft();
+  const [confirmDiscardDraft, setConfirmDiscardDraft] = useState(false);
   const studio = studiosQuery.data?.find((item) => item.id === studioId);
   const workshops = useStudioWorkshops(
     studio && !studio.isDraft ? studio.id : '',
@@ -154,6 +174,27 @@ export function StudioOverviewPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {studio.isDraft && studio.role === 'owner' && (
+            <>
+              <Button asChild size="sm" className="min-h-11">
+                <Link to={`/dang-ky-studio?draftStudioId=${studio.id}`}>
+                  Tiếp tục đăng ký
+                  <ArrowRight size={15} aria-hidden="true" />
+                </Link>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={deleteStudioDraft.isPending}
+                onClick={() => setConfirmDiscardDraft(true)}
+                className="min-h-11 border-brick/30 text-brick hover:bg-studio-danger-soft/50 hover:text-brick"
+              >
+                <Trash2 size={15} aria-hidden="true" />
+                Hủy hồ sơ nháp
+              </Button>
+            </>
+          )}
           {state === 'approved' && (
             <>
               <Button asChild size="sm" className="min-h-11">
@@ -369,6 +410,60 @@ export function StudioOverviewPage() {
           </StudioCard>
         </aside>
       </div>
+      <Dialog
+        open={confirmDiscardDraft}
+        onOpenChange={(open) => {
+          if (!deleteStudioDraft.isPending) setConfirmDiscardDraft(open);
+        }}
+      >
+        <DialogContent className="max-w-md bg-surface p-6">
+          <DialogTitle className="font-heading text-xl font-semibold text-ink">
+            Hủy hồ sơ đăng ký nháp?
+          </DialogTitle>
+          <DialogDescription className="mt-2 text-sm leading-6 text-stone-700">
+            Hồ sơ nháp và ảnh đã tải lên sẽ bị xóa vĩnh viễn. Bạn có thể đăng ký
+            studio mới bất cứ lúc nào.
+          </DialogDescription>
+          <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={deleteStudioDraft.isPending}
+              onClick={() => setConfirmDiscardDraft(false)}
+              className="min-h-11"
+            >
+              Giữ lại bản nháp
+            </Button>
+            <Button
+              type="button"
+              disabled={deleteStudioDraft.isPending}
+              className="min-h-11 bg-brick text-white hover:bg-brick/90"
+              onClick={async () => {
+                try {
+                  await deleteStudioDraft.mutateAsync(studio.id);
+                  try {
+                    const key = studioDraftKey(user?.id);
+                    const stored = readStudioDraft(sessionStorage, key);
+                    if (stored.values.draftStudioId === studio.id) {
+                      sessionStorage.removeItem(key);
+                      sessionStorage.removeItem(studioDraftReturnKey);
+                    }
+                  } catch {
+                    /* ignore storage errors */
+                  }
+                  setConfirmDiscardDraft(false);
+                  toast.success('Đã hủy hồ sơ nháp.');
+                  navigate('/studio', { replace: true });
+                } catch {
+                  /* toast handled by hook */
+                }
+              }}
+            >
+              {deleteStudioDraft.isPending ? 'Đang hủy…' : 'Xác nhận hủy'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

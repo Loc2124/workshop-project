@@ -1,19 +1,31 @@
 ﻿import { useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   studioProvinces,
   createStudioRegistrationSchema,
   defaultSiteSettings,
 } from '@workshop/shared';
+import { ApiError } from '@/lib/api-client';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { AuthLink } from '@/components/ui/auth-link';
 import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useAuth } from '@/hooks/useAuth';
 import { useCategoriesQuery } from '@/hooks/useCategories';
-import { useCreateStudio, useMyStudios } from '@/hooks/useManagement';
+import {
+  useCreateStudio,
+  useDeleteStudioDraft,
+  useMyStudios,
+} from '@/hooks/useManagement';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import { useStudioRegistrationDraft } from '@/hooks/useStudioRegistrationDraft';
 import { authHref } from '@/lib/auth-navigation';
@@ -38,10 +50,13 @@ function StudioRegistrationForm() {
   );
   const memberStudios = useMyStudios();
   const createStudio = useCreateStudio();
+  const deleteStudioDraft = useDeleteStudioDraft();
   const [photosBusy, setPhotosBusy] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [receipt, setReceipt] = useState<CreatedStudio>();
   const sending = useRef(false);
+  const discarding = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const values = draft.values;
 
@@ -159,6 +174,30 @@ function StudioRegistrationForm() {
       // The mutation reports server errors through the global toast.
     } finally {
       sending.current = false;
+    }
+  }
+
+  async function discardDraft() {
+    if (discarding.current || deleteStudioDraft.isPending) return;
+    discarding.current = true;
+    try {
+      if (values.draftStudioId && user) {
+        try {
+          await deleteStudioDraft.mutateAsync(values.draftStudioId);
+        } catch (error) {
+          if (!(error instanceof ApiError && error.status === 404)) {
+            return;
+          }
+        }
+      }
+      draft.clear();
+      setErrors({});
+      createStudio.reset();
+      setConfirmDiscard(false);
+      toast.success('Đã hủy hồ sơ nháp.');
+      requestAnimationFrame(() => heading.current?.focus());
+    } finally {
+      discarding.current = false;
     }
   }
 
@@ -356,7 +395,62 @@ function StudioRegistrationForm() {
                             : 'Tìm hiểu quy trình'}
                         </Link>
                       </Button>
+                      {draft.hasContent && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={
+                            createStudio.isPending ||
+                            deleteStudioDraft.isPending
+                          }
+                          onClick={() => setConfirmDiscard(true)}
+                          className="min-h-11 border-brick/30 text-brick hover:bg-studio-danger-soft/50 hover:text-brick sm:ml-auto"
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                          Hủy hồ sơ nháp
+                        </Button>
+                      )}
                     </div>
+
+                    <Dialog
+                      open={confirmDiscard}
+                      onOpenChange={(open) => {
+                        if (!deleteStudioDraft.isPending)
+                          setConfirmDiscard(open);
+                      }}
+                    >
+                      <DialogContent className="max-w-md bg-surface p-6">
+                        <DialogTitle className="font-heading text-xl font-semibold text-ink">
+                          Hủy hồ sơ đăng ký nháp?
+                        </DialogTitle>
+                        <DialogDescription className="mt-2 text-sm leading-6 text-stone-700">
+                          Toàn bộ thông tin đã nhập và ảnh đã tải lên cho bản
+                          nháp này sẽ bị xóa. Bạn có thể đăng ký lại bất cứ lúc
+                          nào.
+                        </DialogDescription>
+                        <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={deleteStudioDraft.isPending}
+                            onClick={() => setConfirmDiscard(false)}
+                            className="min-h-11"
+                          >
+                            Giữ lại bản nháp
+                          </Button>
+                          <Button
+                            type="button"
+                            disabled={deleteStudioDraft.isPending}
+                            onClick={() => void discardDraft()}
+                            className="min-h-11 bg-brick text-white hover:bg-brick/90"
+                          >
+                            {deleteStudioDraft.isPending
+                              ? 'Đang hủy…'
+                              : 'Xác nhận hủy'}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
 
                     {(missingFields.length > 0 ||
                       photosBusy ||

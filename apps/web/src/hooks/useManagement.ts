@@ -47,6 +47,22 @@ export function useCreateStudio() {
   });
 }
 
+export function useDeleteStudioDraft() {
+  const userId = useAuth().user?.id;
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (studioId: string) =>
+      managementService.deleteStudioDraft(studioId),
+    onSuccess: () => invalidateResources(queryClient, userId, ['studios']),
+    onError: (error) =>
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : 'Chưa hủy được hồ sơ nháp, vui lòng thử lại.',
+      ),
+  });
+}
+
 export function useStudioWorkshops(studioId: string) {
   const { user, isLoading } = useAuth();
   const userId = user?.id;

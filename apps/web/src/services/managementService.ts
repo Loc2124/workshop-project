@@ -158,6 +158,11 @@ export const managementService = {
     });
     return parseResponse(studioCreationResponseSchema, response).studio;
   },
+  async deleteStudioDraft(studioId: string): Promise<void> {
+    await apiFetch(`/studios/drafts/${encodeURIComponent(studioId)}`, {
+      method: 'DELETE',
+    });
+  },
 
   async listMyStudios(signal?: AbortSignal): Promise<MemberStudio[]> {
     const response = await apiFetch<unknown>('/me/studios', { signal });
