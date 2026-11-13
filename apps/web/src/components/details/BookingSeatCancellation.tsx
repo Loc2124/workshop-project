@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { customerBookingService } from '@/services/customerBookingService';
 import { useAuth } from '@/hooks/useAuth';
@@ -75,15 +76,20 @@ export function BookingSeatCancellation({
     <div
       ref={container}
       tabIndex={-1}
-      className="mt-4 rounded-lg border border-primary/20 p-3 outline-none"
+      className="mt-4 rounded-xl border border-line bg-paper/60 p-3 outline-none"
     >
       <button
         type="button"
-        className="min-h-11 w-full text-left text-sm font-semibold text-primary underline"
+        className="flex min-h-11 w-full items-center justify-between gap-2 text-left text-sm font-semibold text-primary hover:text-primary-hover"
         aria-expanded={expanded}
         onClick={() => setExpanded((value) => !value)}
       >
-        Xem và hủy từng chỗ
+        <span>Xem và hủy từng chỗ</span>
+        <ChevronDown
+          size={16}
+          className={`shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+        />
       </button>
       {expanded && (
         <div className="mt-2 space-y-3 text-sm">

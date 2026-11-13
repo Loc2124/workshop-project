@@ -1,5 +1,6 @@
 import { type RefObject } from 'react';
 import { Link } from 'react-router-dom';
+import { Clock, Download, ExternalLink, RefreshCw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { formatPrice } from '@/lib/format';
 import { downloadQrPng } from '@/lib/download-qr';
@@ -7,9 +8,9 @@ import type { CustomerBooking } from '@/services/customerBookingService';
 import type { bookingDetailState } from '@/lib/booking-detail';
 
 const primary =
-  'inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60';
+  'inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60';
 const secondary =
-  'inline-flex min-h-11 items-center justify-center rounded-lg border border-primary px-4 text-sm font-semibold text-primary hover:bg-soft disabled:opacity-60';
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-primary px-4 py-2.5 text-center text-sm font-semibold text-primary transition-colors hover:bg-soft disabled:opacity-60';
 const money = (amount: number) => `${formatPrice(amount)} đ`;
 
 export interface BookingPaymentSummaryProps {
@@ -64,15 +65,18 @@ export function BookingPaymentSummary({
               : 'border-primary/20 bg-soft')
           }
         >
-          <p className="text-sm font-semibold">Chỗ của bạn được giữ trong</p>
+          <p className="inline-flex items-center gap-1.5 text-sm font-semibold">
+            <Clock size={15} aria-hidden="true" />
+            Chỗ của bạn được giữ trong
+          </p>
           <p
             className="mt-1 font-heading text-2xl font-bold tabular-nums sm:text-3xl xl:text-4xl"
             aria-label={`Còn ${Math.floor(state.remainingSeconds / 60)} phút ${state.remainingSeconds % 60} giây`}
           >
-            {Math.floor(state.remainingSeconds / 60)} phút{' '}
-            {state.remainingSeconds % 60} giây
+            {Math.floor(state.remainingSeconds / 60)} {' : '}
+            {state.remainingSeconds % 60}
           </p>
-          <p className="mt-2 text-sm text-stone-700">
+          <p className="mt-1.5 text-xs text-stone-700 sm:text-sm">
             Hết hạn lúc{' '}
             {new Intl.DateTimeFormat('vi-VN', {
               hour: '2-digit',
@@ -92,7 +96,7 @@ export function BookingPaymentSummary({
       )}
 
       {booking.paymentMode === 'in_studio' && !state.cancelled && (
-        <p className="mt-4 rounded-lg bg-soft p-3 text-sm">
+        <p className="mb-4 rounded-lg border border-line/70 bg-soft/70 p-3 text-sm text-ink">
           {state.actualBalance > 0
             ? `Bạn sẽ thanh toán ${money(state.actualBalance)} tại studio.`
             : 'Bạn đã thanh toán đủ.'}
@@ -134,17 +138,19 @@ export function BookingPaymentSummary({
           </p>
         )}
 
-      <h2 className="font-heading text-lg font-semibold">Thanh toán</h2>
-      <dl className="mt-3 space-y-2 text-sm">
+      <h2 className="font-heading text-lg font-semibold text-ink">
+        Thanh toán
+      </h2>
+      <dl className="mt-3 space-y-2.5 text-sm">
         <div className="flex justify-between gap-4">
-          <dt>
+          <dt className="text-stone-700">
             {(booking.seatRevision ?? 0) > 0
               ? state.cancelled
                 ? 'Giá trị trước lần hủy cuối'
                 : 'Giá trị chỗ còn giữ'
               : 'Tổng tiền'}
           </dt>
-          <dd className="whitespace-nowrap font-semibold">
+          <dd className="whitespace-nowrap font-semibold tabular-nums text-ink">
             {money(booking.totalAmount)}
           </dd>
         </div>
@@ -153,8 +159,8 @@ export function BookingPaymentSummary({
             state.cancelled ||
             refundNeeded) && (
             <div className="flex justify-between gap-4">
-              <dt>Đã nhận trong cả đặt chỗ</dt>
-              <dd className="whitespace-nowrap font-semibold">
+              <dt className="text-stone-700">Đã nhận trong cả đặt chỗ</dt>
+              <dd className="whitespace-nowrap font-semibold tabular-nums text-ink">
                 {money(booking.receivedAmount)}
               </dd>
             </div>
@@ -162,20 +168,22 @@ export function BookingPaymentSummary({
         {booking.paymentMode === 'payos_deposit' && !state.cancelled && (
           <>
             <div className="flex justify-between gap-4">
-              <dt>{state.depositPaid ? 'Tiền cọc đã nhận' : 'Tiền cọc'}</dt>
-              <dd className="whitespace-nowrap font-semibold">
+              <dt className="text-stone-700">
+                {state.depositPaid ? 'Tiền cọc đã nhận' : 'Tiền cọc'}
+              </dt>
+              <dd className="whitespace-nowrap font-semibold tabular-nums text-ink">
                 {money(booking.depositAmount)}
               </dd>
             </div>
-            <div className="flex justify-between gap-4 border-t border-stone-200 pt-2">
-              <dt>
+            <div className="flex justify-between gap-4 border-t border-line pt-2.5">
+              <dt className="font-medium text-ink">
                 {state.cancelled
                   ? 'Phần chưa thanh toán'
                   : state.depositPaid
                     ? 'Còn trả tại studio'
                     : 'Còn lại thanh toán tại studio'}
               </dt>
-              <dd className="whitespace-nowrap font-semibold">
+              <dd className="whitespace-nowrap font-semibold tabular-nums text-ink">
                 {money(
                   state.depositPaid
                     ? state.actualBalance
@@ -186,37 +194,49 @@ export function BookingPaymentSummary({
           </>
         )}
         {booking.paymentMode !== 'payos_deposit' && !state.cancelled && (
-          <div className="flex justify-between gap-4">
-            <dt>Còn phải trả</dt>
-            <dd className="font-semibold">{money(state.actualBalance)}</dd>
+          <div className="flex justify-between gap-4 border-t border-line pt-2.5">
+            <dt className="font-medium text-ink">Còn phải trả</dt>
+            <dd className="whitespace-nowrap font-semibold tabular-nums text-ink">
+              {money(state.actualBalance)}
+            </dd>
           </div>
         )}
       </dl>
 
       {state.canPay && !queryIsRefetchError && (
-        <div className="mt-4">
-          <p className="mb-2 text-center text-sm font-semibold">
+        <div className="mt-4 rounded-xl border border-line bg-paper/70 p-4">
+          <p className="mb-2 text-center text-sm font-semibold text-ink">
             Quét bằng app ngân hàng
           </p>
-          <p className="mb-3 text-center text-sm break-words">
-            Số tiền: {money(booking.depositAmount)} · Nội dung:{' '}
-            {state.deposit?.transferDescription ??
-              state.deposit?.orderCode ??
-              booking.orderCode}
-          </p>
+          <div className="mb-3 rounded-lg border border-line/70 bg-surface px-3 py-2 text-center text-xs text-stone-700">
+            <p>
+              Số tiền:{' '}
+              <strong className="tabular-nums text-ink">
+                {money(booking.depositAmount)}
+              </strong>
+            </p>
+            <p className="mt-0.5 break-words">
+              Nội dung:{' '}
+              <strong className="font-mono text-ink">
+                {state.deposit?.transferDescription ??
+                  state.deposit?.orderCode ??
+                  booking.orderCode}
+              </strong>
+            </p>
+          </div>
           {state.deposit?.qrCode && (
             <QRCodeSVG
               value={state.deposit.qrCode}
               size={184}
               title="Mã QR thanh toán tiền cọc"
               ref={paymentQrRef}
-              className="mx-auto max-w-full rounded-lg bg-white p-2"
+              className="mx-auto max-w-full rounded-xl border border-line bg-white p-2.5"
             />
           )}
           {state.deposit?.qrCode && (
             <button
               type="button"
-              className={secondary + ' mt-2 w-full'}
+              className={secondary + ' mt-3 w-full bg-surface'}
               onClick={() => {
                 if (paymentQrRef.current)
                   void downloadQrPng(
@@ -227,6 +247,7 @@ export function BookingPaymentSummary({
                   );
               }}
             >
+              <Download size={16} aria-hidden="true" />
               Tải mã QR
             </button>
           )}
@@ -235,17 +256,23 @@ export function BookingPaymentSummary({
               href={state.deposit.checkoutUrl}
               target="_blank"
               rel="noreferrer"
-              className={`${primary} mt-3`}
+              className={`${primary} mt-2.5`}
             >
               Mở trang thanh toán · Cọc {money(booking.depositAmount)}
+              <ExternalLink size={15} aria-hidden="true" />
             </a>
           )}
           <button
             type="button"
-            className={secondary + ' mt-2 w-full'}
+            className={secondary + ' mt-2.5 w-full bg-surface'}
             disabled={queryIsFetching}
             onClick={onCheckPayment}
           >
+            <RefreshCw
+              size={15}
+              className={queryIsFetching ? 'animate-spin' : undefined}
+              aria-hidden="true"
+            />
             {queryIsFetching ? 'Đang kiểm tra…' : 'Kiểm tra thanh toán'}
           </button>
           <p className="mt-2 text-center text-sm leading-6 text-stone-700">

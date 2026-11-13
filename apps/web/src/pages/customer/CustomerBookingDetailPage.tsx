@@ -19,7 +19,10 @@ import { BookingSeatCancellation } from '@/components/details/BookingSeatCancell
 import { CustomerRefundAccounts } from '@/components/management/CustomerRefundAccounts';
 import { BookingReviewSection } from '@/components/reviews/BookingReviewSection';
 
-import { BookingHeroHeader } from '@/components/booking-detail/BookingHeroHeader';
+import {
+  BookingHeroHeader,
+  BookingLocationSection,
+} from '@/components/booking-detail/BookingHeroHeader';
 import { BookingTicketsSection } from '@/components/booking-detail/BookingTicketsSection';
 import { BookingRescheduleNotice } from '@/components/booking-detail/BookingRescheduleNotice';
 import { BookingCancellationDialog } from '@/components/booking-detail/BookingCancellationDialog';
@@ -302,6 +305,13 @@ export function CustomerBookingDetailPage() {
           : state.confirmed
             ? 'Đã xác nhận'
             : 'Chờ đặt cọc';
+  const statusToneClass =
+    state.expired || state.cancelled
+      ? 'bg-studio-neutral-soft text-studio-neutral'
+      : booking.reschedulePending || !state.confirmed
+        ? 'bg-studio-warning-soft text-studio-warning'
+        : 'bg-studio-success-soft text-studio-success';
+  const urgentAsideFirst = state.canPay || booking.reschedulePending;
   const checkingExpiry =
     state.deadlinePassed &&
     !state.expired &&
@@ -445,24 +455,31 @@ export function CustomerBookingDetailPage() {
   }
 
   return (
-    <PageContainer as="main" className="py-8 pb-16">
+    <PageContainer as="main" className="py-6 pb-16 sm:py-8">
       <Link
         to="/me/bookings"
-        className="inline-flex min-h-11 items-center font-semibold text-primary hover:underline"
+        className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
       >
-        ← Chỗ đã đặt của tôi
+        ← Lịch đặt của tôi
       </Link>
       {searchParams.get('payment') === 'return' && !state.confirmed && (
-        <p role="status" className="mt-3 rounded-lg bg-soft p-3 text-sm">
+        <p
+          role="status"
+          className="mt-3 rounded-xl border border-line bg-soft p-3.5 text-sm text-ink"
+        >
           Đang đồng bộ kết quả thanh toán. Đặt chỗ chỉ được xác nhận sau khi máy
           chủ xác minh khoản tiền.
         </p>
       )}
-      <div className="mt-5 grid items-start gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(18rem,0.7fr)] lg:gap-8">
-        <section className="order-last min-w-0 lg:order-first">
+      <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)] lg:gap-8">
+        <section
+          className={`min-w-0 ${urgentAsideFirst ? 'order-last lg:order-first' : ''}`}
+        >
           <BookingHeroHeader
             booking={booking}
             isCancelled={state.cancelled}
+            statusLabel={bookingLabel}
+            statusToneClass={statusToneClass}
             actionNotice={actionNotice}
             onSetActionNotice={setActionNotice}
             onSaveCalendar={saveCalendar}
@@ -474,10 +491,11 @@ export function CustomerBookingDetailPage() {
             isExpired={state.expired}
             sessionEnded={sessionEnded}
           />
+          <BookingLocationSection address={booking.address} />
         </section>
 
         <aside
-          className="order-first min-w-0 rounded-xl bg-surface p-5 lg:order-last"
+          className={`min-w-0 rounded-xl border border-line bg-surface p-5 lg:sticky lg:top-24 ${urgentAsideFirst ? 'order-first lg:order-last' : ''}`}
           aria-label="Trạng thái và thanh toán"
         >
           {booking.reschedulePending && state.confirmed && (
@@ -505,7 +523,7 @@ export function CustomerBookingDetailPage() {
 
           <p
             role="status"
-            className="mb-4 inline-flex rounded-full bg-primary/10 px-4 py-2 font-semibold text-primary"
+            className={`mb-4 inline-flex rounded-full px-3.5 py-1.5 text-sm font-semibold ${statusToneClass}`}
           >
             {bookingLabel}
           </p>
@@ -518,10 +536,10 @@ export function CustomerBookingDetailPage() {
             state.upcoming && (
               <section
                 aria-label="Xác nhận sẽ đến"
-                className="mb-4 space-y-3 rounded-lg bg-soft p-3"
+                className="mb-4 space-y-3 rounded-xl border border-line bg-soft/70 p-3.5"
               >
                 {booking.paidAmount === 0 && (
-                  <p className="text-sm leading-6">
+                  <p className="text-sm leading-6 text-ink">
                     {booking.attendanceConfirmationDeadline
                       ? `Vui lòng xác nhận bạn sẽ đến trước ${booking.attendanceConfirmationDeadline}. Nếu chưa xác nhận đúng hạn, chỗ của bạn sẽ được nhả.`
                       : 'Bạn có thể xác nhận sẽ đến ngay. Chỗ chỉ được nhả trước giờ học khi bạn chưa xác nhận và email yêu cầu xác nhận đã gửi thành công ít nhất 2 giờ.'}
@@ -539,22 +557,29 @@ export function CustomerBookingDetailPage() {
             )}
 
           {booking.attendanceConfirmedAt && state.confirmed && (
-            <p role="status" className="mb-4 font-semibold text-primary">
+            <p
+              role="status"
+              className="mb-4 rounded-lg bg-studio-success-soft px-3.5 py-2.5 text-sm font-semibold text-studio-success"
+            >
               Bạn đã xác nhận sẽ đến.
             </p>
           )}
 
           {attendanceNotice && (
-            <p role="status" className="mb-4 text-sm">
+            <p role="status" className="mb-4 text-sm text-ink">
               {attendanceNotice}
             </p>
           )}
 
           {(refundNeeded || booking.refundStatus === 'pending') && (
-            <CustomerRefundAccounts bookingId={id} />
+            <div className="mb-4">
+              <CustomerRefundAccounts bookingId={id} />
+            </div>
           )}
 
-          <BookingReviewSection bookingId={id} />
+          <div className="mb-5">
+            <BookingReviewSection bookingId={id} />
+          </div>
 
           <BookingPaymentSummary
             booking={booking}
@@ -597,25 +622,27 @@ export function CustomerBookingDetailPage() {
             cancel.isSuccess ||
             cancel.isError ||
             confirmingCancel) && (
-            <button
-              ref={cancelTrigger}
-              type="button"
-              aria-disabled={
-                cancel.isPending || cancel.isSuccess || state.cancelled
-              }
-              onClick={() => {
-                if (cancel.isPending || cancel.isSuccess || state.cancelled)
-                  return;
-                cancelOpener.current = cancelTrigger.current;
-                cancel.reset();
-                setConfirmingCancel(true);
-              }}
-              className="mt-3 min-h-11 w-full border-t border-stone-200 pt-3 text-sm font-semibold text-brick underline"
-            >
-              {cancel.isSuccess || state.cancelled
-                ? 'Đã hủy đặt chỗ'
-                : 'Hủy đặt chỗ'}
-            </button>
+            <div className="mt-4 border-t border-line pt-4">
+              <button
+                ref={cancelTrigger}
+                type="button"
+                aria-disabled={
+                  cancel.isPending || cancel.isSuccess || state.cancelled
+                }
+                onClick={() => {
+                  if (cancel.isPending || cancel.isSuccess || state.cancelled)
+                    return;
+                  cancelOpener.current = cancelTrigger.current;
+                  cancel.reset();
+                  setConfirmingCancel(true);
+                }}
+                className="min-h-11 w-full rounded-lg border border-brick/30 px-4 text-sm font-semibold text-brick transition-colors hover:bg-studio-danger-soft/50 disabled:opacity-60"
+              >
+                {cancel.isSuccess || state.cancelled
+                  ? 'Đã hủy đặt chỗ'
+                  : 'Hủy đặt chỗ'}
+              </button>
+            </div>
           )}
 
           <BookingCancellationDialog
