@@ -11,6 +11,7 @@ import {
   financialAccountEncryptionAvailable,
 } from '../payments/financial-account-crypto.js';
 import { writeAuditLog } from '../admin/audit-log.js';
+import { findUserById } from '../auth/auth.repository.js';
 
 export const refundAccountsRouter = Router();
 refundAccountsRouter.use('/me/refund-accounts', requireAuth());
@@ -31,6 +32,95 @@ refundAccountsRouter.get('/me/refund-accounts', async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.json({ items: result.rows });
 });
+
+refundAccountsRouter.post(
+  '/me/refund-accounts',
+  createApiRateLimiter({ limit: 10, windowMs: 15 * 60_000 }),
+  async (req, res) => {
+    const input = z
+      .object({
+        bankBin: z
+          .string()
+          .regex(/^[0-9]{6}$/, 'Mã ngân hàng không hợp lệ (6 số)'),
+        accountHolder: z
+          .string()
+          .trim()
+          .min(2, 'Tên chủ tài khoản từ 2 đến 160 ký tự')
+          .max(160),
+        accountNumber: z
+          .string()
+          .regex(/^[0-9]{4,30}$/, 'Số tài khoản không hợp lệ (4-30 số)'),
+        password: z.string().min(1, 'Vui lòng nhập mật khẩu xác nhận'),
+      })
+      .strict()
+      .parse(req.body);
+
+    const user = await findUserById(req.user!.sub);
+    if (!user || !(await argon2.verify(user.passwordHash, input.password))) {
+      throw new AppError(
+        401,
+        'UNAUTHORIZED',
+        'Mật khẩu chưa đúng. Vui lòng thử lại.',
+      );
+    }
+
+    const saved = await withTransaction(async (client) => {
+      await client.query(`SELECT id FROM users WHERE id=$1 FOR UPDATE`, [
+        req.user!.sub,
+      ]);
+      const count = await client.query<{ total: number }>(
+        `SELECT count(*)::int AS total FROM customer_saved_refund_accounts WHERE user_id=$1 AND deleted_at IS NULL`,
+        [req.user!.sub],
+      );
+      if ((count.rows[0]?.total ?? 0) >= 10) {
+        throw new AppError(
+          409,
+          'CONFLICT',
+          'Bạn đã lưu tối đa 10 tài khoản nhận hoàn tiền. Vui lòng xóa bớt tài khoản cũ trước khi thêm mới.',
+        );
+      }
+      const savedEncryption = encryptFinancialAccount(input.accountNumber);
+      const reusable = await client.query<{
+        id: string;
+        bankBin: string;
+        accountHolder: string;
+        last4: string;
+        createdAt: string;
+      }>(
+        `INSERT INTO customer_saved_refund_accounts(user_id,bank_bin,account_holder,account_last4,
+         encrypted_number,encryption_iv,encryption_tag)
+       VALUES($1,$2,$3,$4,$5,$6,$7)
+       RETURNING id, bank_bin AS "bankBin", account_holder AS "accountHolder", account_last4 AS last4, created_at AS "createdAt"`,
+        [
+          req.user!.sub,
+          input.bankBin,
+          input.accountHolder.toUpperCase(),
+          input.accountNumber.slice(-4),
+          savedEncryption.encrypted,
+          savedEncryption.iv,
+          savedEncryption.tag,
+        ],
+      );
+
+      await writeAuditLog(client, {
+        actorId: req.user!.sub,
+        action: 'refund.saved_account.created',
+        targetType: 'user',
+        targetId: req.user!.sub,
+        targetName: 'Thêm tài khoản nhận hoàn đã lưu',
+        after: {
+          accountId: reusable.rows[0]!.id,
+          bankBin: input.bankBin,
+          last4: input.accountNumber.slice(-4),
+        },
+      });
+
+      return reusable.rows[0]!;
+    });
+
+    res.status(201).json({ item: saved });
+  },
+);
 
 refundAccountsRouter.delete(
   '/me/refund-accounts/:id',
