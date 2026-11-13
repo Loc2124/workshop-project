@@ -159,23 +159,49 @@ export function BookingTableView({
                           )}
                         </p>
                         <p className="tabular-nums">
-                          Thu tại studio:{' '}
-                          <span
-                            className={`font-semibold ${
-                              remainingBalance > 0 &&
-                              booking.paymentStatus === 'pending'
-                                ? 'text-amber-800'
-                                : 'text-studio-ink'
-                            }`}
-                          >
-                            {formatPrice(remainingBalance)} đ
-                          </span>
+                          {booking.paymentStatus === 'paid' ? (
+                            <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+                              <Check className="size-3 text-emerald-600" />
+                              Đã thu tại studio:{' '}
+                              <strong className="font-semibold text-emerald-800">
+                                {formatPrice(
+                                  Math.max(
+                                    0,
+                                    booking.totalAmount - booking.depositAmount,
+                                  ),
+                                )}{' '}
+                                đ
+                              </strong>
+                            </span>
+                          ) : (
+                            <span>
+                              Cần thu tại studio:{' '}
+                              <strong
+                                className={`font-semibold ${
+                                  remainingBalance > 0
+                                    ? 'text-amber-800'
+                                    : 'text-studio-ink'
+                                }`}
+                              >
+                                {formatPrice(remainingBalance)} đ
+                              </strong>
+                            </span>
+                          )}
                         </p>
                       </div>
                     ) : (
-                      <p className="mt-1 text-xs text-studio-muted">
-                        Thu toàn bộ tại studio
-                      </p>
+                      <div className="mt-1 text-xs">
+                        {booking.paymentStatus === 'paid' ? (
+                          <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+                            <Check className="size-3 text-emerald-600" />
+                            Đã thu tại studio: {formatPrice(booking.totalAmount)} đ
+                          </span>
+                        ) : (
+                          <span className="text-studio-muted">
+                            Thu toàn bộ tại studio ({formatPrice(booking.totalAmount)} đ)
+                          </span>
+                        )}
+                      </div>
                     )}
                   </td>
 

@@ -204,10 +204,8 @@ export async function syncRefundObligations() {
       `WITH per_booking AS (
          SELECT b.id AS booking_id,b.session_id,
            COALESCE(
-             NULLIF(sum(p.amount) FILTER(WHERE p.status='paid' AND p.kind='deposit'), 0),
-             NULLIF(sum(p.amount) FILTER(WHERE p.status='paid'), 0),
-             b.paid_amount,
-             0
+             sum(p.amount) FILTER(WHERE p.status='paid' AND p.kind='deposit'),
+             CASE WHEN b.payment_mode = 'payos_deposit' THEN b.deposit_amount ELSE 0 END
            )::bigint AS collected,
            COALESCE((SELECT sum(f.amount) FROM payments paid JOIN payment_fee_reconciliations f ON f.payment_id=paid.id WHERE paid.booking_id=b.id AND paid.status='paid' AND paid.kind='deposit'),0)
              +COALESCE((SELECT sum(t.provider_fee) FROM financial_transfers t JOIN financial_obligations fo ON fo.id=t.obligation_id WHERE fo.booking_id=b.id AND t.direction='outbound' AND t.purpose IN ('customer_refund','platform_advance','studio_payout') AND t.status='succeeded'),0)::bigint AS provider_fees,
@@ -221,7 +219,7 @@ export async function syncRefundObligations() {
              NOT EXISTS(SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id=b.id)
              OR NOT EXISTS(SELECT 1 FROM financial_obligations fo WHERE fo.booking_id=b.id AND fo.kind='studio_payout' AND fo.status<>'cancelled')
            )
-         GROUP BY b.id,b.session_id,w.studio_id,s.ends_at,b.paid_amount
+         GROUP BY b.id,b.session_id,w.studio_id,s.ends_at,b.deposit_amount,b.payment_mode
        )
        SELECT session_id AS "sessionId",studio_id AS "studioId",booking_id AS "bookingId",due_at AS "dueAt",
          (collected-refunds_recorded-provider_fees)::text AS net,
@@ -276,14 +274,14 @@ export async function syncRefundObligations() {
         const formattedNet = Number(net).toLocaleString('vi-VN');
         await client.query(
           `INSERT INTO user_notifications(user_id,booking_id,type,title,body,href)
-           SELECT sm.user_id,$1,'studio_payout_pending',
+           SELECT sm.user_id,$1::uuid,'studio_payout_pending',
              'Khoản tiền quyết toán sẵn sàng',
-             'Buổi học đã hoàn thành. Khoản tiền cọc '||$4||' đ đã được lên lịch quyết toán. Vui lòng kiểm tra mục Quyết toán.',
-             '/studio/'||$3||'/finances'
+             'Buổi học đã hoàn thành. Khoản tiền cọc '||$2||' đ đã được lên lịch quyết toán. Vui lòng kiểm tra mục Quyết toán.',
+             '/studio/'||$3::uuid::text||'/finances'
            FROM studio_members sm
-           WHERE sm.studio_id=$3 AND sm.role='owner'
-             AND NOT EXISTS(SELECT 1 FROM user_notifications n WHERE n.user_id=sm.user_id AND n.booking_id=$1 AND n.type='studio_payout_pending')`,
-          [payout.bookingId, net.toString(), payout.studioId, formattedNet],
+           WHERE sm.studio_id=$3::uuid AND sm.role='owner'
+             AND NOT EXISTS(SELECT 1 FROM user_notifications n WHERE n.user_id=sm.user_id AND n.booking_id=$1::uuid AND n.type='studio_payout_pending')`,
+          [payout.bookingId, formattedNet, payout.studioId],
         );
       }
       const feeExcess = BigInt(payout.fees) - BigInt(payout.available);

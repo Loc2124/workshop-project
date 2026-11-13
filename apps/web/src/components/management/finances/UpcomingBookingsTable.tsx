@@ -85,8 +85,25 @@ export function UpcomingBookingsTable({
                   </p>
                 </td>
                 <td className="px-3 py-4">
-                  <p className="font-semibold tabular-nums text-studio-ink">
+                  <p
+                    className={`font-semibold tabular-nums ${
+                      b.paidAmount >= b.totalAmount
+                        ? 'text-emerald-700'
+                        : 'text-studio-ink'
+                    }`}
+                  >
                     {formatPrice(b.balanceAmount)} đ
+                  </p>
+                  <p
+                    className={`text-xs ${
+                      b.paidAmount >= b.totalAmount
+                        ? 'font-medium text-emerald-600'
+                        : 'text-studio-muted'
+                    }`}
+                  >
+                    {b.paidAmount >= b.totalAmount
+                      ? 'Đã thu tại studio'
+                      : 'Thu khi check-in'}
                   </p>
                 </td>
                 <td className="px-4 py-4">

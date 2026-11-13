@@ -101,6 +101,8 @@ studioFinancesRouter.get(path, async (req, res) => {
     dueAt: Date | null;
     status: string;
     collectedDeposit: string;
+    directAmount: string;
+    isDirectPaid: boolean;
     refundsRecorded: string;
     feesRecorded: string;
     breakdown: unknown;
@@ -119,6 +121,8 @@ studioFinancesRouter.get(path, async (req, res) => {
        w.title AS "workshopTitle", s.starts_at AS "sessionStartsAt", s.ends_at AS "sessionEndsAt",
        o.amount::text AS "amount", o.due_at AS "dueAt", o.status,
        COALESCE((SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'), b.deposit_amount, 0)::text AS "collectedDeposit",
+       GREATEST(0, b.total_amount - b.deposit_amount)::text AS "directAmount",
+       (b.paid_amount >= b.total_amount) AS "isDirectPaid",
        (b.refund_due_amount + b.extra_refund_due_amount)::text AS "refundsRecorded",
        COALESCE((SELECT sum(t.provider_fee) FROM financial_transfers t WHERE t.obligation_id=o.id AND t.direction='outbound' AND t.status='succeeded'),0)::text AS "feesRecorded",
        o.payout_snapshot AS "breakdown",
@@ -152,17 +156,30 @@ studioFinancesRouter.get(path, async (req, res) => {
      SELECT
        b.id AS id, b.id AS "bookingId", b.order_code::text AS "orderCode",
        w.title AS "workshopTitle", s.starts_at AS "sessionStartsAt", s.ends_at AS "sessionEndsAt",
-       GREATEST(0, b.paid_amount - b.refund_due_amount - b.extra_refund_due_amount)::text AS "amount",
+       GREATEST(
+         0,
+         COALESCE(
+           (SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'),
+           b.deposit_amount,
+           0
+         ) - b.refund_due_amount - b.extra_refund_due_amount
+       )::text AS "amount",
        financial_obligation_deadline('studio_payout', s.ends_at) AS "dueAt",
        'awaiting_approval' AS status,
-       b.paid_amount::text AS "collectedDeposit",
+       COALESCE(
+         (SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'),
+         b.deposit_amount,
+         0
+       )::text AS "collectedDeposit",
+       GREATEST(0, b.total_amount - b.deposit_amount)::text AS "directAmount",
+       (b.paid_amount >= b.total_amount) AS "isDirectPaid",
        (b.refund_due_amount + b.extra_refund_due_amount)::text AS "refundsRecorded",
        '0' AS "feesRecorded",
        json_build_object(
          'sessionId', s.id,
-         'collected', b.paid_amount::text,
+         'collected', COALESCE((SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'), b.deposit_amount, 0)::text,
          'refundsRecorded', (b.refund_due_amount + b.extra_refund_due_amount)::text,
-         'payout', GREATEST(0, b.paid_amount - b.refund_due_amount - b.extra_refund_due_amount)::text
+         'payout', GREATEST(0, COALESCE((SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'), b.deposit_amount, 0) - b.refund_due_amount - b.extra_refund_due_amount)::text
        )::jsonb AS "breakdown",
        '[]'::json AS transfers
      FROM bookings b
@@ -230,7 +247,16 @@ studioFinancesRouter.get(path, async (req, res) => {
          COALESCE(SUM(o.amount) FILTER (WHERE o.status IN ('awaiting_approval', 'approved', 'processing')), 0)
          +
          COALESCE((
-           SELECT SUM(GREATEST(0, b2.paid_amount - b2.refund_due_amount - b2.extra_refund_due_amount))
+           SELECT SUM(
+             GREATEST(
+               0,
+               COALESCE(
+                 (SELECT sum(p2.amount) FROM payments p2 WHERE p2.booking_id = b2.id AND p2.kind = 'deposit' AND p2.status = 'paid'),
+                 b2.deposit_amount,
+                 0
+               ) - b2.refund_due_amount - b2.extra_refund_due_amount
+             )
+           )
            FROM bookings b2
            JOIN sessions s2 ON s2.id = b2.session_id
            JOIN workshops w2 ON w2.id = s2.workshop_id
@@ -265,22 +291,19 @@ studioFinancesRouter.get(path, async (req, res) => {
     `SELECT
        COALESCE(
          SUM(
-           CASE
-             WHEN b.reservation_status = 'completed' THEN GREATEST(0, b.total_amount - b.paid_amount)
-             ELSE GREATEST(
-               0,
-               COALESCE(
-                 (
-                   SELECT SUM(t.total_amount - t.paid_amount)
-                   FROM tickets t
-                   WHERE t.booking_id = b.id
-                     AND t.status <> 'void'
-                     AND t.attendance_status <> 'absent'
-                 ),
-                 b.total_amount - b.paid_amount
-               )
-             )
-           END
+           COALESCE(
+             (
+               SELECT SUM(p.amount)
+               FROM payments p
+               WHERE p.booking_id = b.id
+                 AND p.status = 'paid'
+                 AND p.kind IN ('balance', 'in_studio')
+             ),
+             CASE
+               WHEN b.payment_mode = 'in_studio' THEN b.total_amount
+               ELSE GREATEST(0, b.total_amount - b.deposit_amount)
+             END
+           )
          )
          FILTER (
            WHERE s.ends_at <= clock_timestamp()
@@ -336,6 +359,8 @@ studioFinancesRouter.get(path, async (req, res) => {
       sessionEndsAt: s.sessionEndsAt ? s.sessionEndsAt.toISOString() : null,
       amount: Number(s.amount),
       collectedDeposit: Number(s.collectedDeposit),
+      directAmount: Number(s.directAmount),
+      isDirectPaid: Boolean(s.isDirectPaid),
       refundsRecorded: Number(s.refundsRecorded),
       feesRecorded: Number(s.feesRecorded),
       dueAt: s.dueAt ? s.dueAt.toISOString() : null,

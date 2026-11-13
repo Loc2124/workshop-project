@@ -5,7 +5,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
-import { Camera, CameraOff, Search } from 'lucide-react';
+import { Camera, CameraOff, Check, Search } from 'lucide-react';
 import type { IScannerControls } from '@zxing/browser';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,6 +35,10 @@ const ticketSchema = z.object({
   quantity: z.number(),
   checkedInCount: z.number(),
   remainingAmount: z.number(),
+  totalAmount: z.number().optional(),
+  depositAmount: z.number().optional(),
+  paidAmount: z.number().optional(),
+  inStudioAmount: z.number().optional(),
   paymentStatus: z.string(),
   reservationStatus: z.string(),
   sessionStatus: z.string(),
@@ -179,6 +183,7 @@ export function StudioCheckInPage() {
 
   const recordPayment = async () => {
     if (!studio || !ticket || busy || ticket.remainingAmount <= 0) return;
+    const collectedAmount = ticket.remainingAmount;
     setBusy('payment');
     setMessage('');
     try {
@@ -195,7 +200,7 @@ export function StudioCheckInPage() {
       );
       setTicket(z.object({ ticket: ticketSchema }).parse(response).ticket);
       setMessage(
-        'Đã ghi nhận khoản tiền thu tại studio. Trạng thái check-in không thay đổi.',
+        `Đã ghi nhận số tiền ${formatPrice(collectedAmount)} đ thu tại studio thành công. Trạng thái check-in không thay đổi.`,
       );
     } catch (error) {
       setMessage(
@@ -396,15 +401,44 @@ export function StudioCheckInPage() {
               <dd className="font-medium">{ticket.quantity}</dd>
             </div>
             <div>
-              <dt className="text-muted">Còn phải trả tại studio</dt>
-              <dd className="font-semibold tabular-nums">
-                {formatPrice(ticket.remainingAmount)} đ
+              <dt className="text-muted">
+                {ticket.remainingAmount > 0
+                  ? 'Còn phải trả tại studio'
+                  : 'Đã thu tại studio'}
+              </dt>
+              <dd
+                className={`font-semibold tabular-nums ${
+                  ticket.remainingAmount === 0 ? 'text-emerald-700' : ''
+                }`}
+              >
+                {ticket.remainingAmount > 0
+                  ? `${formatPrice(ticket.remainingAmount)} đ`
+                  : `${formatPrice(
+                      ticket.inStudioAmount ??
+                        (ticket.totalAmount
+                          ? ticket.totalAmount - (ticket.depositAmount ?? 0)
+                          : 0),
+                    )} đ`}
               </dd>
             </div>
             <div>
               <dt className="text-muted">Thanh toán</dt>
               <dd className="font-medium">
-                {ticket.remainingAmount > 0 ? 'Chưa thu đủ' : 'Đã ghi nhận đủ'}
+                {ticket.remainingAmount > 0 ? (
+                  <span className="text-amber-700 font-semibold">Chưa thu đủ</span>
+                ) : (
+                  <span className="text-emerald-700 font-semibold inline-flex items-center gap-1">
+                    <Check className="size-3.5 text-emerald-600" />
+                    Đã thu đủ tại studio (
+                    {formatPrice(
+                      ticket.inStudioAmount ??
+                        (ticket.totalAmount
+                          ? ticket.totalAmount - (ticket.depositAmount ?? 0)
+                          : 0),
+                    )}{' '}
+                    đ)
+                  </span>
+                )}
               </dd>
             </div>
           </dl>

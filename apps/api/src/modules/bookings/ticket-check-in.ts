@@ -41,6 +41,10 @@ export async function findTicketForCheckIn(
     quantity: number;
     checkedInCount: number;
     remainingAmount: number;
+    totalAmount: number;
+    depositAmount: number;
+    paidAmount: number;
+    inStudioAmount: number;
     paymentStatus: string;
     reservationStatus: string;
     sessionStatus: string;
@@ -56,6 +60,10 @@ export async function findTicketForCheckIn(
        (SELECT count(*)::integer FROM tickets checked WHERE checked.booking_id=b.id
          AND checked.attendance_status='attended' AND checked.status<>'void') AS "checkedInCount",
        GREATEST(0,b.total_amount-b.paid_amount) AS "remainingAmount",
+       b.total_amount AS "totalAmount",
+       b.deposit_amount AS "depositAmount",
+       b.paid_amount AS "paidAmount",
+       GREATEST(0, b.total_amount - b.deposit_amount) AS "inStudioAmount",
        b.status AS "paymentStatus",b.reservation_status AS "reservationStatus",
        s.status AS "sessionStatus",b.reschedule_pending AS "reschedulePending",
        clock_timestamp() AS "serverNow"

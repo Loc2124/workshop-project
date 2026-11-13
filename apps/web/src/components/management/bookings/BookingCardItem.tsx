@@ -152,11 +152,43 @@ export function BookingCardItem({
             </p>
           </div>
 
-          {booking.paymentMode === 'payos_deposit' && (
-            <div className="col-span-2 rounded-md bg-amber-50/70 p-2 border border-amber-200/60">
-              <span className="text-amber-900">Còn lại thu tại studio:</span>
-              <span className="float-right font-bold tabular-nums text-amber-900">
-                {formatPrice(remainingBalance)} đ
+          {booking.paymentMode === 'payos_deposit' ? (
+            booking.paymentStatus === 'paid' ? (
+              <div className="col-span-2 rounded-md bg-emerald-50/80 p-2.5 border border-emerald-200 flex items-center justify-between text-xs">
+                <span className="text-emerald-900 font-medium inline-flex items-center gap-1">
+                  <Check className="size-3.5 text-emerald-600" />
+                  Đã thu tại studio:
+                </span>
+                <span className="font-bold tabular-nums text-emerald-900 text-sm">
+                  {formatPrice(
+                    Math.max(0, booking.totalAmount - booking.depositAmount),
+                  )}{' '}
+                  đ
+                </span>
+              </div>
+            ) : (
+              <div className="col-span-2 rounded-md bg-amber-50/70 p-2 border border-amber-200/60 flex items-center justify-between text-xs">
+                <span className="text-amber-900 font-medium">Còn lại thu tại studio:</span>
+                <span className="font-bold tabular-nums text-amber-900 text-sm">
+                  {formatPrice(remainingBalance)} đ
+                </span>
+              </div>
+            )
+          ) : (
+            <div
+              className={`col-span-2 rounded-md p-2 border text-xs flex items-center justify-between ${
+                booking.paymentStatus === 'paid'
+                  ? 'bg-emerald-50/80 border-emerald-200 text-emerald-900'
+                  : 'bg-studio-subtle border-studio-border text-studio-muted'
+              }`}
+            >
+              <span>
+                {booking.paymentStatus === 'paid'
+                  ? 'Đã thu tại studio:'
+                  : 'Thu toàn bộ tại studio:'}
+              </span>
+              <span className="font-bold tabular-nums text-sm">
+                {formatPrice(booking.totalAmount)} đ
               </span>
             </div>
           )}

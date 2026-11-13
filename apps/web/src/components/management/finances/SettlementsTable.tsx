@@ -23,6 +23,8 @@ export type Settlement = {
   sessionEndsAt: string | null;
   amount: number;
   collectedDeposit: number;
+  directAmount?: number;
+  isDirectPaid?: boolean;
   refundsRecorded: number;
   feesRecorded: number;
   dueAt: string | null;
@@ -74,21 +76,23 @@ export function SettlementsTable({
   return (
     <div className="overflow-hidden rounded-studio-card border border-studio-border bg-studio-surface shadow-studio-card">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[850px] table-fixed border-collapse text-left">
+        <table className="w-full min-w-[900px] table-fixed border-collapse text-left">
           <colgroup>
-            <col className="w-[20%]" />
             <col className="w-[18%]" />
-            <col className="w-[16%]" />
-            <col className="w-[16%]" />
+            <col className="w-[14%]" />
+            <col className="w-[13%]" />
             <col className="w-[15%]" />
-            <col className="w-[15%]" />
+            <col className="w-[14%]" />
+            <col className="w-[13%]" />
+            <col className="w-[13%]" />
           </colgroup>
           <thead className="bg-studio-subtle text-xs font-semibold uppercase tracking-wide text-studio-muted">
             <tr>
               <th className="px-4 py-3">Mã đơn / Workshop</th>
               <th className="px-3 py-3">Thời gian buổi học</th>
               <th className="px-3 py-3">Tiền cọc sàn thu</th>
-              <th className="px-3 py-3">Thực nhận</th>
+              <th className="px-3 py-3">Thu tại studio</th>
+              <th className="px-3 py-3">Sàn chi trả</th>
               <th className="px-3 py-3">Trạng thái</th>
               <th className="px-4 py-3 text-right">Chi tiết chuyển tiền</th>
             </tr>
@@ -133,8 +137,31 @@ export function SettlementsTable({
                     )}
                   </td>
                   <td className="px-3 py-4">
+                    <p
+                      className={`font-semibold tabular-nums ${
+                        s.isDirectPaid ? 'text-emerald-700' : 'text-studio-ink'
+                      }`}
+                    >
+                      {formatPrice(s.directAmount ?? 0)} đ
+                    </p>
+                    <p
+                      className={`text-xs ${
+                        s.isDirectPaid
+                          ? 'font-medium text-emerald-600'
+                          : 'text-amber-600'
+                      }`}
+                    >
+                      {s.isDirectPaid
+                        ? 'Đã thu tại studio'
+                        : 'Chưa ghi nhận thu'}
+                    </p>
+                  </td>
+                  <td className="px-3 py-4">
                     <p className="font-bold tabular-nums text-studio-primary text-base">
                       {formatPrice(s.amount)} đ
+                    </p>
+                    <p className="text-[11px] text-studio-muted">
+                      Chờ sàn chuyển
                     </p>
                   </td>
                   <td className="px-3 py-4">
