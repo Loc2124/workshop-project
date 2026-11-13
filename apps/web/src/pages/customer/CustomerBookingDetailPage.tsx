@@ -48,6 +48,8 @@ export function CustomerBookingDetailPage() {
   const navigate = useNavigate();
   const [now, setNow] = useState(Date.now);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [seatCancelOpen, setSeatCancelOpen] = useState(false);
+  const [selectedSeatSeq, setSelectedSeatSeq] = useState<number | null>(null);
   const cancelTrigger = useRef<HTMLButtonElement>(null);
   const cancelOpener = useRef<HTMLButtonElement | null>(null);
   const keepBooking = useRef<HTMLButtonElement>(null);
@@ -257,6 +259,29 @@ export function CustomerBookingDetailPage() {
     retryInFlight.current = false;
     expiryChecked.current = '';
   }, [id, resetCancel, resetRetry]);
+
+  useEffect(() => {
+    if (
+      searchParams.get('payment') === 'cancel' &&
+      source?.reservationStatus === 'pending' &&
+      source?.paidAmount === 0
+    ) {
+      if (cancelInFlight.current) return;
+      cancelInFlight.current = true;
+      void customerBookingService
+        .cancel(id)
+        .then(async () => {
+          await queryClient.invalidateQueries({ queryKey: detailKey });
+          await queryClient.invalidateQueries({ queryKey: listKey });
+        })
+        .catch((err) => {
+          console.warn('Auto cancel booking on payOS cancel:', err);
+        })
+        .finally(() => {
+          cancelInFlight.current = false;
+        });
+    }
+  }, [searchParams, source, id, queryClient, detailKey, listKey]);
 
   if (query.isLoading)
     return (
@@ -471,6 +496,15 @@ export function CustomerBookingDetailPage() {
           chủ xác minh khoản tiền.
         </p>
       )}
+      {searchParams.get('payment') === 'cancel' && (
+        <p
+          role="status"
+          className="mt-3 rounded-xl border border-brick/30 bg-brick/10 p-3.5 text-sm font-medium text-brick"
+        >
+          Bạn đã hủy thanh toán tại payOS. Đặt chỗ này đã được hủy và chỗ đã
+          được hoàn lại cho workshop.
+        </p>
+      )}
       <div className="mt-4 grid items-start gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.65fr)] lg:gap-8">
         <section
           className={`min-w-0 ${urgentAsideFirst ? 'order-last lg:order-first' : ''}`}
@@ -490,6 +524,16 @@ export function CustomerBookingDetailPage() {
             isCancelled={state.cancelled}
             isExpired={state.expired}
             sessionEnded={sessionEnded}
+            canCancel={
+              state.canCancel &&
+              !sessionEnded &&
+              !state.cancelled &&
+              !booking.reschedulePending
+            }
+            onCancelTicket={(seq) => {
+              setSelectedSeatSeq(seq);
+              setSeatCancelOpen(true);
+            }}
           />
           <BookingLocationSection address={booking.address} />
         </section>
@@ -609,6 +653,17 @@ export function CustomerBookingDetailPage() {
           <BookingSeatCancellation
             bookingId={id}
             pending={booking.reservationStatus === 'pending'}
+            canCancel={
+              state.canCancel &&
+              !sessionEnded &&
+              !state.cancelled &&
+              !booking.reschedulePending
+            }
+            quantity={booking.quantity}
+            open={seatCancelOpen}
+            onOpenChange={setSeatCancelOpen}
+            initialSequence={selectedSeatSeq}
+            onClearInitialSequence={() => setSelectedSeatSeq(null)}
             onUpdated={async () => {
               await Promise.all([
                 queryClient.invalidateQueries({ queryKey: detailKey }),

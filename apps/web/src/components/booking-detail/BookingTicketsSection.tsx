@@ -7,6 +7,7 @@ import {
   Maximize2,
   QrCode,
   Ticket,
+  Trash2,
 } from 'lucide-react';
 import { formatDate } from '@/lib/format';
 import type { CustomerTicket } from '@/services/customerBookingService';
@@ -23,6 +24,8 @@ export interface BookingTicketsSectionProps {
   isCancelled: boolean;
   isExpired: boolean;
   sessionEnded: boolean;
+  canCancel?: boolean;
+  onCancelTicket?: (seq: number) => void;
 }
 
 function ticketStatusMeta(ticket: CustomerTicket, sessionEnded: boolean) {
@@ -71,6 +74,8 @@ export function BookingTicketsSection({
   isCancelled,
   isExpired,
   sessionEnded,
+  canCancel,
+  onCancelTicket,
 }: BookingTicketsSectionProps) {
   const [zoomedTicket, setZoomedTicket] = useState<CustomerTicket | null>(null);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -211,6 +216,23 @@ export function BookingTicketsSection({
                                   : 'Chép'}
                               </button>
                             </div>
+                          </div>
+                        )}
+
+                      {canCancel &&
+                        tickets.length > 1 &&
+                        onCancelTicket &&
+                        ticket.status === 'valid' &&
+                        ticket.attendanceStatus === 'unmarked' && (
+                          <div className="mt-3 flex justify-end border-t border-line/60 pt-3">
+                            <button
+                              type="button"
+                              onClick={() => onCancelTicket(ticket.seq)}
+                              className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-brick/30 bg-brick/5 px-3 py-1.5 text-xs font-semibold text-brick transition-colors hover:border-brick hover:bg-brick/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brick/20"
+                            >
+                              <Trash2 size={13} aria-hidden="true" />
+                              <span>Hủy vé này</span>
+                            </button>
                           </div>
                         )}
                     </div>

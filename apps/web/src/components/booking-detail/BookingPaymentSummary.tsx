@@ -276,7 +276,7 @@ export function BookingPaymentSummary({
             {queryIsFetching ? 'Đang kiểm tra…' : 'Kiểm tra thanh toán'}
           </button>
           <p className="mt-2 text-center text-sm leading-6 text-stone-700">
-            Chỗ được xác nhận ngay khi chúng tôi nhận được tiền cọc.
+            Đặt chỗ sẽ được xác nhận ngay khi chúng tôi nhận được tiền cọc.
           </p>
         </div>
       )}

@@ -4,6 +4,7 @@ import { requireAuth } from '../../middleware/auth.js';
 import { validateUuidParam } from '../../middleware/validate-uuid-param.js';
 import { query } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
+import { syncRefundObligations } from '../payments/financial-obligation-job.js';
 
 export const financesPeriodSchema = z
   .enum(['all', 'this_month', 'last_month'])
@@ -58,6 +59,13 @@ studioFinancesRouter.get(path, async (req, res) => {
       'FORBIDDEN',
       'Chỉ chủ studio mới xem được thông tin tài chính và quyết toán.',
     );
+  }
+
+  // Trigger đồng bộ các nghĩa vụ và quyết toán cho các buổi học vừa hoàn tất
+  try {
+    await syncRefundObligations();
+  } catch (err) {
+    console.error('Failed to sync obligations on studio finances query:', err);
   }
 
   const period = financesPeriodSchema.parse(req.query.period);
@@ -171,9 +179,18 @@ studioFinancesRouter.get(path, async (req, res) => {
      JOIN workshops w ON w.id = s.workshop_id
      WHERE w.studio_id = $1
        AND b.reservation_status IN ('confirmed', 'completed')
-       AND NOT EXISTS (
-         SELECT 1 FROM financial_obligations fo
-         WHERE fo.booking_id = b.id AND fo.kind = 'studio_payout' AND fo.status <> 'cancelled'
+       AND (
+         s.ends_at > clock_timestamp()
+         OR (
+           NOT EXISTS (
+             SELECT 1 FROM studio_settlement_snapshots snap
+             WHERE snap.booking_id = b.id
+           )
+           AND NOT EXISTS (
+             SELECT 1 FROM financial_obligations fo
+             WHERE fo.booking_id = b.id AND fo.kind = 'studio_payout' AND fo.status <> 'cancelled'
+           )
+         )
        )
      ORDER BY s.starts_at ASC, b.created_at DESC
      LIMIT 100`,
@@ -205,7 +222,24 @@ studioFinancesRouter.get(path, async (req, res) => {
   }>(
     `SELECT
        COALESCE(
-         SUM(GREATEST(0, b.total_amount - b.paid_amount))
+         SUM(
+           CASE
+             WHEN b.reservation_status = 'completed' THEN GREATEST(0, b.total_amount - b.paid_amount)
+             ELSE GREATEST(
+               0,
+               COALESCE(
+                 (
+                   SELECT SUM(t.total_amount - t.paid_amount)
+                   FROM tickets t
+                   WHERE t.booking_id = b.id
+                     AND t.status <> 'void'
+                     AND t.attendance_status <> 'absent'
+                 ),
+                 b.total_amount - b.paid_amount
+               )
+             )
+           END
+         )
          FILTER (
            WHERE s.ends_at <= clock_timestamp()
              AND ($2::timestamptz IS NULL OR s.ends_at >= $2::timestamptz)
@@ -216,7 +250,12 @@ studioFinancesRouter.get(path, async (req, res) => {
        COALESCE(
          SUM(b.deposit_amount)
          FILTER (
-           WHERE s.ends_at > clock_timestamp()
+           WHERE (
+             s.ends_at > clock_timestamp()
+             OR NOT EXISTS (
+               SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id = b.id
+             )
+           )
              AND b.payment_mode = 'payos_deposit'
              AND b.paid_amount >= b.deposit_amount
              AND NOT EXISTS (

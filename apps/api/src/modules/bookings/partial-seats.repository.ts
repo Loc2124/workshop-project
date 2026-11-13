@@ -261,13 +261,14 @@ export async function cancelBookingSeats(
     if (!chosen) return err('Các chỗ đã chọn đã thay đổi hoặc đã được hủy.');
     const b = context.booking;
     if (
-      !quoteToken ||
-      !cancellationQuoteMatches(
-        quoteToken,
-        snapshot(context, chosen),
-        b.now.getTime(),
-        loadConfig().JWT_SECRET,
-      )
+      (quoteToken || b.paidAmount > 0) &&
+      (!quoteToken ||
+        !cancellationQuoteMatches(
+          quoteToken,
+          snapshot(context, chosen),
+          b.now.getTime(),
+          loadConfig().JWT_SECRET,
+        ))
     )
       return {
         error: new AppError(

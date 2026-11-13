@@ -219,8 +219,6 @@ export async function syncRefundObligations() {
          provider_fees::text AS fees,GREATEST(0,collected-refunds_recorded)::text AS available,
          collected::text AS collected,refunds_recorded::text AS refunds
        FROM per_booking p
-       WHERE due_at<=clock_timestamp()
-         AND NOT EXISTS(SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id=p.booking_id)
        ORDER BY due_at,session_id,booking_id`,
     );
     for (const payout of payouts.rows) {

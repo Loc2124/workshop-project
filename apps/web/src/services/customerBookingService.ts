@@ -217,10 +217,10 @@ export const customerBookingService = {
       ).quote;
   },
 
-  cancel(bookingId: string, quoteToken: string) {
+  cancel(bookingId: string, quoteToken?: string) {
     return apiFetch<{ ok: boolean }>(`/bookings/${bookingId}/cancel`, {
       method: 'POST',
-      body: JSON.stringify({ quoteToken }),
+      body: JSON.stringify(quoteToken ? { quoteToken } : {}),
     });
   },
   async seats(bookingId: string, signal?: AbortSignal) {
