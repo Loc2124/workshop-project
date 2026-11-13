@@ -541,7 +541,7 @@ it('does not overwrite a newer QR when an older replacement finishes late', asyn
     });
   const spy = vi
     .spyOn(MockProvider.prototype, 'createPayment')
-    .mockImplementationOnce(async function (input) {
+    .mockImplementationOnce(async function (this: MockProvider, input) {
       started();
       await gate;
       return original.call(this, input);

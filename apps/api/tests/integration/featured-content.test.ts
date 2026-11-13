@@ -245,7 +245,7 @@ it('publishes ordered eligible selections with latest fallback and keeps preview
   ).toBe(false);
   expect(
     filled.body.workshops.some(
-      (w: { id: string }) =>
+      (w: { id: string; studioId?: string }) =>
         w.id === workshops[10] || w.studioId === studios[7],
     ),
   ).toBe(false);

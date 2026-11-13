@@ -1,10 +1,18 @@
 import { config as loadDotenv } from 'dotenv';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-loadDotenv({
-  path: resolve(fileURLToPath(new URL('..', import.meta.url)), '.env'),
-});
+const projectRoot = fileURLToPath(new URL('..', import.meta.url));
+const nodeEnv = process.env.NODE_ENV || 'development';
+for (const envPath of [
+  resolve(projectRoot, '.env.local'),
+  resolve(projectRoot, `.env.${nodeEnv}.local`),
+  resolve(projectRoot, `.env.${nodeEnv}`),
+  resolve(projectRoot, '.env'),
+]) {
+  if (existsSync(envPath)) loadDotenv({ path: envPath });
+}
 
 type DatabaseTarget = {
   hostname: string;

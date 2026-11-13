@@ -60,7 +60,7 @@ describe('auth module', () => {
       loginResponse,
       loadConfig().REFRESH_COOKIE_NAME,
     );
-    const setCookies = loginResponse.headers['set-cookie'] as string[];
+    const setCookies = loginResponse.headers['set-cookie'] as unknown as string[];
     const accessSetCookie = setCookies.find((value) =>
       value.startsWith(`${loadConfig().COOKIE_NAME}=`),
     );

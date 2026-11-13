@@ -1999,7 +1999,7 @@ it('releases a deposit hold when PayOS fails to create the checkout link', async
   globalThis.fetch = vi.fn(async () => ({
     ok: false,
     json: async () => ({ code: 'failed', desc: 'unavailable' }),
-  })) as typeof fetch;
+  })) as unknown as typeof fetch;
   try {
     const response = await placeBooking(customer, sessionId);
     expect(response.status).toBe(503);

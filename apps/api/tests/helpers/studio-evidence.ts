@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import request from 'supertest';
 import { query } from '../../src/db/pool.js';
 
 export async function seedStudioEvidence(studioId: string, userId?: string) {
@@ -30,10 +31,9 @@ export async function seedStudioEvidence(studioId: string, userId?: string) {
 }
 
 export async function draftStudioProfile(
-  app: Parameters<typeof import('supertest').default>[0],
+  app: Parameters<typeof request>[0],
   cookie: string,
 ) {
-  const request = (await import('supertest')).default;
   const response = await request(app)
     .post('/studios/drafts')
     .set('Cookie', cookie);

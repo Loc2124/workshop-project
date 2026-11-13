@@ -1,8 +1,24 @@
 import { config as loadDotenv } from 'dotenv';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-loadDotenv({ path: resolve(process.cwd(), '..', '..', '.env') });
+const projectRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
+const nodeEnv = process.env.NODE_ENV || 'development';
+
+const envFiles = [
+  resolve(projectRoot, '.env.local'),
+  resolve(projectRoot, `.env.${nodeEnv}.local`),
+  resolve(projectRoot, `.env.${nodeEnv}`),
+  resolve(projectRoot, '.env'),
+];
+
+for (const envPath of envFiles) {
+  if (existsSync(envPath)) {
+    loadDotenv({ path: envPath });
+  }
+}
 
 const configSchema = z.object({
   NODE_ENV: z

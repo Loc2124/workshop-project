@@ -57,7 +57,7 @@ it('moderates accounts with session revocation, role refresh, self protection an
     .post('/auth/login')
     .send({ email, password });
   expect(login.status).toBe(200);
-  const cookie = login.headers['set-cookie']
+  const cookie = (login.headers['set-cookie'] as unknown as string[])
     .map((c: string) => c.split(';')[0])
     .join('; ');
   const endpoint = (id: string) => `/admin/nguoi-dung/${id}`;
@@ -154,7 +154,7 @@ it('moderates accounts with session revocation, role refresh, self protection an
     .post('/auth/login')
     .send({ email, password });
   expect(newLogin.status).toBe(200);
-  const newCookie = newLogin.headers['set-cookie']
+  const newCookie = (newLogin.headers['set-cookie'] as unknown as string[])
     .map((c: string) => c.split(';')[0])
     .join('; ');
   expect(
@@ -179,7 +179,7 @@ it('moderates accounts with session revocation, role refresh, self protection an
     .send({ email, password });
   expect(ownerLogin.status).toBe(200);
   expect(ownerLogin.body.user.role).toBe('studio_owner');
-  const ownerCookie = ownerLogin.headers['set-cookie']
+  const ownerCookie = (ownerLogin.headers['set-cookie'] as unknown as string[])
     .map((c: string) => c.split(';')[0])
     .join('; ');
   expect(

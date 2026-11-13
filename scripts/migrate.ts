@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -10,7 +11,15 @@ const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 const migrationsDirectory = resolve(projectRoot, 'db', 'migrations');
 const advisoryLockKeys = [731904, 1];
 
-loadDotenv({ path: resolve(projectRoot, '.env') });
+const nodeEnv = process.env.NODE_ENV || 'development';
+for (const envPath of [
+  resolve(projectRoot, '.env.local'),
+  resolve(projectRoot, `.env.${nodeEnv}.local`),
+  resolve(projectRoot, `.env.${nodeEnv}`),
+  resolve(projectRoot, '.env'),
+]) {
+  if (existsSync(envPath)) loadDotenv({ path: envPath });
+}
 
 type MigrationResult = {
   filename: string;
