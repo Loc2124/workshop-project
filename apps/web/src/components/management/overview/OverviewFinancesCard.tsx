@@ -6,10 +6,11 @@ import { StudioBadge, StudioCard } from '../StudioPrimitives';
 
 export type StudioFinancesData = {
   summary: {
+    totalEarned?: number;
     pendingPayout: number;
     totalPaidOut: number;
     directCollected: number;
-    settledDeposit: number;
+    settledDeposit?: number;
   };
   currentAccount: {
     bankName: string;
@@ -64,6 +65,22 @@ export function OverviewFinancesCard({
             {isLoading
               ? '…'
               : `${formatPrice(financesData?.summary.pendingPayout ?? 0)} đ`}
+          </p>
+        </div>
+
+        <div className="rounded-studio-control border border-studio-border bg-studio-surface p-3">
+          <p className="text-xs font-medium text-studio-muted">
+            Tổng đã kiếm (qua sàn + tại studio)
+          </p>
+          <p className="mt-1 font-heading text-lg font-semibold tabular-nums text-studio-ink">
+            {isLoading
+              ? '…'
+              : `${formatPrice(
+                  financesData?.summary.totalEarned ??
+                    (financesData?.summary.totalPaidOut ?? 0) +
+                      (financesData?.summary.pendingPayout ?? 0) +
+                      (financesData?.summary.directCollected ?? 0),
+                )} đ`}
           </p>
         </div>
 
