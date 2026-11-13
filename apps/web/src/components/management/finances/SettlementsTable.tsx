@@ -78,13 +78,13 @@ export function SettlementsTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px] table-fixed border-collapse text-left">
           <colgroup>
-            <col className="w-[18%]" />
+            <col className="w-[14%]" />
             <col className="w-[14%]" />
             <col className="w-[13%]" />
             <col className="w-[15%]" />
             <col className="w-[14%]" />
-            <col className="w-[13%]" />
-            <col className="w-[13%]" />
+            <col className="w-[15%]" />
+            <col className="w-[15%]" />
           </colgroup>
           <thead className="bg-studio-subtle text-xs font-semibold uppercase tracking-wide text-studio-muted">
             <tr>

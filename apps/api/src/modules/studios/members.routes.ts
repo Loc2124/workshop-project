@@ -9,7 +9,13 @@ import { AppError } from '../../errors/app-error.js';
 const router = Router();
 
 const createInvitationSchema = z.object({
-  email: z.string().trim().email('Địa chỉ email không hợp lệ').max(255),
+  email: z
+    .string()
+    .trim()
+    .email('Địa chỉ email không hợp lệ')
+    .max(255)
+    .optional()
+    .or(z.literal('')),
 });
 
 const acceptInvitationSchema = z.object({
@@ -68,8 +74,10 @@ router.get(
     // Lấy danh sách lời mời pending (chỉ owner hoặc admin mới thấy)
     let pendingInvitations: Array<{
       id: string;
-      email: string;
+      email: string | null;
       role: string;
+      token?: string | null;
+      inviteLink?: string | null;
       expiresAt: string;
       createdAt: string;
     }> = [];
@@ -77,8 +85,9 @@ router.get(
     if (isSystemAdmin || userRole === 'owner') {
       const invitationsResult = await query<{
         id: string;
-        email: string;
+        email: string | null;
         role: string;
+        token: string | null;
         expiresAt: string;
         createdAt: string;
       }>(
@@ -86,6 +95,7 @@ router.get(
           id,
           email,
           role,
+          token,
           expires_at AS "expiresAt",
           created_at AS "createdAt"
         FROM studio_invitations
@@ -93,7 +103,10 @@ router.get(
         ORDER BY created_at DESC`,
         [studioId],
       );
-      pendingInvitations = invitationsResult.rows;
+      pendingInvitations = invitationsResult.rows.map((inv) => ({
+        ...inv,
+        inviteLink: inv.token ? `/tham-gia-studio?token=${inv.token}` : null,
+      }));
     }
 
     response.json({
@@ -130,22 +143,25 @@ router.post(
       }
     }
 
-    const { email } = createInvitationSchema.parse(request.body);
-    const normalizedEmail = email.toLowerCase();
+    const body = createInvitationSchema.parse(request.body ?? {});
+    const normalizedEmail =
+      body.email && body.email.trim() ? body.email.trim().toLowerCase() : null;
 
-    // Kiểm tra xem người này đã là thành viên studio chưa
-    const existingMember = await query(
-      `SELECT 1 FROM studio_members sm
-       JOIN users u ON u.id = sm.user_id
-       WHERE sm.studio_id = $1 AND lower(u.email) = $2`,
-      [studioId, normalizedEmail],
-    );
-    if (existingMember.rows.length > 0) {
-      throw new AppError(
-        409,
-        'CONFLICT',
-        'Tài khoản này đã là thành viên của studio.',
+    if (normalizedEmail) {
+      // Kiểm tra xem người này đã là thành viên studio chưa
+      const existingMember = await query(
+        `SELECT 1 FROM studio_members sm
+         JOIN users u ON u.id = sm.user_id
+         WHERE sm.studio_id = $1 AND lower(u.email) = $2`,
+        [studioId, normalizedEmail],
       );
+      if (existingMember.rows.length > 0) {
+        throw new AppError(
+          409,
+          'CONFLICT',
+          'Tài khoản này đã là thành viên của studio.',
+        );
+      }
     }
 
     // Tạo token ngẫu nhiên và băm hash
@@ -153,33 +169,37 @@ router.post(
     const tokenHash = hashToken(rawToken);
 
     const result = await withTransaction(async (client) => {
-      // Hủy các lời mời cũ còn pending cho cùng email tại studio này
-      await client.query(
-        "UPDATE studio_invitations SET status = 'revoked', updated_at = now() WHERE studio_id = $1 AND lower(email) = $2 AND status = 'pending'",
-        [studioId, normalizedEmail],
-      );
+      if (normalizedEmail) {
+        // Hủy các lời mời cũ còn pending cho cùng email tại studio này
+        await client.query(
+          "UPDATE studio_invitations SET status = 'revoked', updated_at = now() WHERE studio_id = $1 AND lower(email) = $2 AND status = 'pending'",
+          [studioId, normalizedEmail],
+        );
+      }
 
       // Thêm lời mời mới có hạn 7 ngày
       const insertResult = await client.query<{
         id: string;
-        email: string;
+        email: string | null;
         role: string;
         expiresAt: string;
       }>(
-        `INSERT INTO studio_invitations (studio_id, email, role, token_hash, expires_at, created_by)
-         VALUES ($1, $2, 'staff', $3, now() + interval '7 days', $4)
+        `INSERT INTO studio_invitations (studio_id, email, role, token_hash, token, expires_at, created_by)
+         VALUES ($1, $2, 'staff', $3, $4, now() + interval '7 days', $5)
          RETURNING id, email, role, expires_at AS "expiresAt"`,
-        [studioId, normalizedEmail, tokenHash, userId],
+        [studioId, normalizedEmail, tokenHash, rawToken, userId],
       );
       return insertResult.rows[0];
     });
 
+    const inviteLink = `/tham-gia-studio?token=${rawToken}`;
     response.status(201).json({
       invitation: {
         ...result,
         inviteToken: rawToken,
-        inviteLink: `/tham-gia-studio?token=${rawToken}`,
+        inviteLink,
       },
+      invitationLink: inviteLink,
     });
   },
 );
@@ -292,7 +312,7 @@ router.get(
     const tokenHash = hashToken(token);
     const result = await query<{
       id: string;
-      email: string;
+      email: string | null;
       role: string;
       expiresAt: string;
       status: string;
@@ -341,7 +361,7 @@ router.get(
     response.json({
       invitation: {
         id: invitation.id,
-        email: invitation.email,
+        email: invitation.email ?? null,
         role: invitation.role,
         expiresAt: invitation.expiresAt,
         studioId: invitation.studioId,
@@ -367,7 +387,7 @@ router.post(
       const invCheck = await client.query<{
         id: string;
         studioId: string;
-        email: string;
+        email: string | null;
         role: string;
         status: string;
         expiresAt: string;
@@ -405,6 +425,27 @@ router.post(
 
       if (new Date(invitation.expiresAt).getTime() <= Date.now()) {
         throw new AppError(410, 'GONE', 'Lời mời này đã hết hạn sử dụng.');
+      }
+
+      // Kiểm tra xem người dùng hiện tại đã là thành viên studio chưa
+      const existingMember = await client.query<{ role: string }>(
+        'SELECT role FROM studio_members WHERE studio_id = $1 AND user_id = $2',
+        [invitation.studioId, userId],
+      );
+      if (existingMember.rows[0]) {
+        if (existingMember.rows[0].role === 'owner') {
+          throw new AppError(
+            400,
+            'BAD_REQUEST',
+            'Bạn đang là chủ sở hữu của studio này.',
+          );
+        }
+        // Đã là staff rồi
+        await client.query(
+          "UPDATE studio_invitations SET status = 'accepted', accepted_by = $2, accepted_at = now(), updated_at = now() WHERE id = $1",
+          [invitation.id, userId],
+        );
+        return invitation;
       }
 
       // Thêm vào bảng studio_members

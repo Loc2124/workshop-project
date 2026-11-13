@@ -9,10 +9,10 @@ import {
   Clock,
   ShieldCheck,
   AlertCircle,
+  Link as LinkIcon,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api-client';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { StudioCard, StudioBadge } from './StudioPrimitives';
 import type { MemberStudio } from '@/types/management';
 
@@ -28,12 +28,14 @@ interface StudioMember {
 
 interface StudioInvitation {
   id: string;
-  email: string;
+  email: string | null;
   role: 'staff';
   status: 'pending';
   expiresAt: string;
   createdAt: string;
-  invitedByName: string;
+  invitedByName?: string;
+  token?: string | null;
+  inviteLink?: string | null;
 }
 
 interface MembersData {
@@ -47,14 +49,13 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Form state
-  const [email, setEmail] = useState('');
+  // Invite state
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [inviteSuccessLink, setInviteSuccessLink] = useState<string | null>(
     null,
   );
-  const [copied, setCopied] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Action states
   const [revokingId, setRevokingId] = useState<string | null>(null);
@@ -81,45 +82,41 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
     void loadMembers();
   }, [loadMembers]);
 
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const targetEmail = email.trim().toLowerCase();
-    if (!targetEmail) return;
-
+  const handleCreateInviteLink = async () => {
     try {
       setInviting(true);
       setInviteError(null);
       setInviteSuccessLink(null);
 
       const res = await apiFetch<{
-        invitation: StudioInvitation;
-        invitationLink: string;
+        invitation: StudioInvitation & { inviteLink?: string };
+        invitationLink?: string;
       }>(`/studios/${studio.id}/invitations`, {
         method: 'POST',
-        body: JSON.stringify({ email: targetEmail, role: 'staff' }),
+        body: JSON.stringify({ role: 'staff' }),
       });
 
-      const fullLink = `${window.location.origin}${res.invitationLink}`;
+      const path = res.invitationLink || res.invitation?.inviteLink || '';
+      const fullLink = `${window.location.origin}${path}`;
       setInviteSuccessLink(fullLink);
-      setEmail('');
       void loadMembers();
     } catch (err) {
       setInviteError(
         err instanceof Error
           ? err.message
-          : 'Không thể tạo lời mời. Vui lòng thử lại.',
+          : 'Không thể tạo liên kết mời. Vui lòng thử lại.',
       );
     } finally {
       setInviting(false);
     }
   };
 
-  const handleCopyLink = async () => {
-    if (!inviteSuccessLink) return;
+  const handleCopy = async (text: string, id: string) => {
+    if (!text) return;
     try {
-      await navigator.clipboard.writeText(inviteSuccessLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2500);
     } catch {
       // Fallback
     }
@@ -187,85 +184,83 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
         </div>
       </div>
 
-      {/* Invite Form */}
+      {/* Invite Link Card */}
       <StudioCard>
-        <div className="flex items-center gap-2 border-b border-line pb-3">
-          <UserPlus className="size-5 text-primary" />
-          <h2 className="font-heading text-lg font-semibold">
-            Mời nhân viên mới
-          </h2>
-        </div>
-
-        <form onSubmit={handleInvite} className="mt-4 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted" />
-              <Input
-                type="email"
-                placeholder="Nhập địa chỉ email của nhân viên (ví dụ: nhanvien@gmail.com)"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="pl-9"
-                disabled={inviting}
-              />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-line pb-4">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 items-center justify-center rounded-lg bg-studio-subtle text-primary shrink-0">
+              <LinkIcon className="size-5" />
             </div>
-            <Button type="submit" disabled={inviting || !email.trim()}>
-              {inviting ? 'Đang tạo lời mời...' : 'Tạo liên kết mời'}
-            </Button>
-          </div>
-
-          {inviteError && (
-            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
-              <AlertCircle className="size-4 shrink-0" />
-              <span>{inviteError}</span>
-            </div>
-          )}
-
-          {inviteSuccessLink && (
-            <div className="rounded-md border border-emerald-300 bg-emerald-50/70 p-4 space-y-2">
-              <div className="flex items-center gap-2 text-emerald-800 font-medium text-sm">
-                <Check className="size-4" />
-                <span>
-                  Đã tạo liên kết mời thành công! Hãy gửi liên kết này cho nhân
-                  viên của bạn:
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={inviteSuccessLink}
-                  className="flex-1 rounded-md border border-emerald-300 bg-white px-3 py-2 text-xs font-mono text-studio-ink select-all focus:outline-none"
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCopyLink}
-                  className="shrink-0 bg-white hover:bg-emerald-100/50"
-                >
-                  {copied ? (
-                    <>
-                      <Check className="size-3.5 mr-1 text-emerald-600" />
-                      <span>Đã sao chép</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="size-3.5 mr-1" />
-                      <span>Sao chép</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-emerald-700">
-                * Liên kết mời có hiệu lực trong vòng 7 ngày. Nhân viên chỉ cần
-                mở liên kết và đăng nhập bằng tài khoản của họ để tham gia.
+            <div>
+              <h2 className="font-heading text-lg font-semibold text-studio-ink">
+                Liên kết mời nhân viên
+              </h2>
+              <p className="text-xs text-muted mt-0.5">
+                Tạo liên kết chia sẻ để gửi cho nhân viên. Nhân viên mở liên kết này
+                có thể đăng ký tài khoản mới hoặc đăng nhập để tham gia studio ngay lập tức mà không cần chỉ định email trước.
               </p>
             </div>
-          )}
-        </form>
+          </div>
+          <Button
+            type="button"
+            onClick={handleCreateInviteLink}
+            disabled={inviting}
+            className="shrink-0"
+          >
+            <UserPlus className="size-4 mr-2" />
+            {inviting ? 'Đang tạo liên kết...' : 'Tạo liên kết mời mới'}
+          </Button>
+        </div>
+
+        {inviteError && (
+          <div className="mt-4 flex items-center gap-2 text-sm text-red-600 bg-red-50 p-3 rounded-md border border-red-200">
+            <AlertCircle className="size-4 shrink-0" />
+            <span>{inviteError}</span>
+          </div>
+        )}
+
+        {inviteSuccessLink && (
+          <div className="mt-4 rounded-lg border border-emerald-300 bg-emerald-50/70 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-emerald-800 font-medium text-sm">
+              <Check className="size-4 text-emerald-600" />
+              <span>
+                Đã tạo liên kết mời thành công! Hãy sao chép và gửi cho nhân viên:
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={inviteSuccessLink}
+                className="flex-1 rounded-md border border-emerald-300 bg-white px-3 py-2 text-xs font-mono text-studio-ink select-all focus:outline-none"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleCopy(inviteSuccessLink, 'new')}
+                className="shrink-0 bg-white hover:bg-emerald-100/50"
+              >
+                {copiedId === 'new' ? (
+                  <>
+                    <Check className="size-3.5 mr-1 text-emerald-600" />
+                    <span>Đã sao chép</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-3.5 mr-1" />
+                    <span>Sao chép</span>
+                  </>
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-emerald-700">
+              * Liên kết có hiệu lực trong 7 ngày. Nhân viên chỉ cần mở liên kết,
+              đăng ký tài khoản (nếu chưa có) hoặc đăng nhập để vào làm việc tại studio.
+            </p>
+          </div>
+        )}
       </StudioCard>
 
       {/* Pending Invitations */}
@@ -282,7 +277,7 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
             <table className="w-full text-left text-sm">
               <thead className="border-b border-line text-xs uppercase text-muted bg-studio-subtle/30">
                 <tr>
-                  <th className="py-2.5 px-3">Email nhận lời mời</th>
+                  <th className="py-2.5 px-3">Loại lời mời</th>
                   <th className="py-2.5 px-3">Vai trò</th>
                   <th className="py-2.5 px-3">Ngày tạo</th>
                   <th className="py-2.5 px-3">Hạn chót</th>
@@ -290,33 +285,71 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line/60">
-                {invitations.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-studio-subtle/20">
-                    <td className="py-3 px-3 font-medium">{inv.email}</td>
-                    <td className="py-3 px-3">
-                      <StudioBadge tone="neutral">Nhân viên</StudioBadge>
-                    </td>
-                    <td className="py-3 px-3 text-muted text-xs">
-                      {new Date(inv.createdAt).toLocaleDateString('vi-VN')}
-                    </td>
-                    <td className="py-3 px-3 text-muted text-xs">
-                      {new Date(inv.expiresAt).toLocaleDateString('vi-VN')}
-                    </td>
-                    <td className="py-3 px-3 text-right">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={revokingId === inv.id}
-                        onClick={() => handleRevokeInvitation(inv.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs h-8 px-2.5"
-                      >
-                        <Trash2 className="size-3.5 mr-1" />
-                        {revokingId === inv.id ? 'Đang hủy...' : 'Thu hồi'}
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+                {invitations.map((inv) => {
+                  const fullInvLink = inv.inviteLink
+                    ? `${window.location.origin}${inv.inviteLink}`
+                    : null;
+                  return (
+                    <tr key={inv.id} className="hover:bg-studio-subtle/20">
+                      <td className="py-3 px-3 font-medium">
+                        {inv.email ? (
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="size-3.5 text-muted" />
+                            <span>{inv.email}</span>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-studio-ink bg-studio-subtle px-2 py-0.5 rounded">
+                            <LinkIcon className="size-3 text-primary" />
+                            Liên kết chia sẻ
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-3">
+                        <StudioBadge tone="neutral">Nhân viên</StudioBadge>
+                      </td>
+                      <td className="py-3 px-3 text-muted text-xs">
+                        {new Date(inv.createdAt).toLocaleDateString('vi-VN')}
+                      </td>
+                      <td className="py-3 px-3 text-muted text-xs">
+                        {new Date(inv.expiresAt).toLocaleDateString('vi-VN')}
+                      </td>
+                      <td className="py-3 px-3 text-right space-x-2">
+                        {fullInvLink && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCopy(fullInvLink, inv.id)}
+                            className="text-xs h-8 px-2.5"
+                          >
+                            {copiedId === inv.id ? (
+                              <>
+                                <Check className="size-3.5 mr-1 text-emerald-600" />
+                                <span>Đã sao chép</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="size-3.5 mr-1" />
+                                <span>Sao chép link</span>
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={revokingId === inv.id}
+                          onClick={() => handleRevokeInvitation(inv.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs h-8 px-2.5"
+                        >
+                          <Trash2 className="size-3.5 mr-1" />
+                          {revokingId === inv.id ? 'Đang hủy...' : 'Thu hồi'}
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

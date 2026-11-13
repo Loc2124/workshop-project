@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ShieldCheck,
   UserCheck,
+  UserPlus,
   LogIn,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api-client';
@@ -20,10 +21,10 @@ import { Button } from '@/components/ui/button';
 
 interface InvitationInfo {
   id: string;
-  email: string;
+  email: string | null;
   role: 'staff';
   studioName: string;
-  studioSlug: string;
+  studioSlug?: string;
   invitedByName: string;
   expiresAt: string;
 }
@@ -188,10 +189,12 @@ export function AcceptInvitationPage() {
                   Nhân viên studio (Staff)
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-muted">Email nhận lời mời:</span>
-                <span className="font-mono text-xs">{invitation.email}</span>
-              </div>
+              {invitation.email && (
+                <div className="flex justify-between items-center">
+                  <span className="text-muted">Email nhận lời mời:</span>
+                  <span className="font-mono text-xs">{invitation.email}</span>
+                </div>
+              )}
             </div>
 
             {error && (
@@ -205,27 +208,28 @@ export function AcceptInvitationPage() {
               <div className="space-y-4">
                 <div className="rounded-md border border-amber-200 bg-amber-50 p-3.5 text-xs text-amber-800">
                   <p>
-                    Vui lòng đăng nhập bằng tài khoản Open Slot của bạn để chấp
-                    nhận lời mời và bắt đầu làm việc cùng studio.
+                    Để gia nhập làm nhân viên của studio, vui lòng đăng ký tài
+                    khoản mới hoặc đăng nhập nếu bạn đã có tài khoản.
                   </p>
                 </div>
-                <Button asChild className="w-full">
-                  <Link to={loginRedirectUrl}>
-                    <LogIn className="size-4 mr-2" />
-                    Đăng nhập để nhận lời mời
-                  </Link>
-                </Button>
-                <p className="text-center text-xs text-muted">
-                  Chưa có tài khoản?{' '}
-                  <Link
-                    to={`/dang-ky?redirect=${encodeURIComponent(
-                      location.pathname + location.search,
-                    )}`}
-                    className="font-medium text-primary underline"
-                  >
-                    Đăng ký ngay
-                  </Link>
-                </p>
+                <div className="flex flex-col gap-2.5">
+                  <Button asChild className="w-full">
+                    <Link
+                      to={`/dang-ky?redirect=${encodeURIComponent(
+                        location.pathname + location.search,
+                      )}`}
+                    >
+                      <UserPlus className="size-4 mr-2" />
+                      Đăng ký tài khoản nhân viên
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to={loginRedirectUrl}>
+                      <LogIn className="size-4 mr-2" />
+                      Đã có tài khoản? Đăng nhập
+                    </Link>
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -236,15 +240,16 @@ export function AcceptInvitationPage() {
                   </span>
                 </div>
 
-                {user.email.toLowerCase() !==
-                  invitation.email.toLowerCase() && (
-                  <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded border border-amber-200">
-                    * Lưu ý: Lời mời này ban đầu gửi đến{' '}
-                    <strong>{invitation.email}</strong>. Bạn đang đăng nhập bằng{' '}
-                    <strong>{user.email}</strong>, bạn vẫn có thể nhấn tham gia
-                    bằng tài khoản hiện tại.
-                  </p>
-                )}
+                {invitation.email &&
+                  user.email.toLowerCase() !==
+                    invitation.email.toLowerCase() && (
+                    <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded border border-amber-200">
+                      * Lưu ý: Lời mời này ban đầu gửi đến{' '}
+                      <strong>{invitation.email}</strong>. Bạn đang đăng nhập bằng{' '}
+                      <strong>{user.email}</strong>, bạn vẫn có thể nhấn tham gia
+                      bằng tài khoản hiện tại.
+                    </p>
+                  )}
 
                 <Button
                   onClick={handleAccept}
@@ -253,7 +258,7 @@ export function AcceptInvitationPage() {
                 >
                   {accepting
                     ? 'Đang kích hoạt...'
-                    : 'Chấp nhận lời mời & Tham gia'}
+                    : 'Chấp nhận lời mời & Gia nhập studio'}
                   {!accepting && <ArrowRight className="size-4 ml-1.5" />}
                 </Button>
               </div>
