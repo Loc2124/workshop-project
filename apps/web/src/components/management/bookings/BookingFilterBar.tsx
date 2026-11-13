@@ -125,7 +125,7 @@ export function BookingFilterBar({
               : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
           }`}
         >
-          Cần thu tiền tại xưởng
+          Cần thu tiền tại studio
           {stats.needsCollectionCount > 0 && (
             <span
               className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${

@@ -203,7 +203,12 @@ export async function syncRefundObligations() {
     }>(
       `WITH per_booking AS (
          SELECT b.id AS booking_id,b.session_id,
-           COALESCE(sum(p.amount) FILTER(WHERE p.status='paid' AND p.kind='deposit'),0)::bigint AS collected,
+           COALESCE(
+             NULLIF(sum(p.amount) FILTER(WHERE p.status='paid' AND p.kind='deposit'), 0),
+             NULLIF(sum(p.amount) FILTER(WHERE p.status='paid'), 0),
+             b.paid_amount,
+             0
+           )::bigint AS collected,
            COALESCE((SELECT sum(f.amount) FROM payments paid JOIN payment_fee_reconciliations f ON f.payment_id=paid.id WHERE paid.booking_id=b.id AND paid.status='paid' AND paid.kind='deposit'),0)
              +COALESCE((SELECT sum(t.provider_fee) FROM financial_transfers t JOIN financial_obligations fo ON fo.id=t.obligation_id WHERE fo.booking_id=b.id AND t.direction='outbound' AND t.purpose IN ('customer_refund','platform_advance','studio_payout') AND t.status='succeeded'),0)::bigint AS provider_fees,
            b.refund_due_amount+b.extra_refund_due_amount AS refunds_recorded,
@@ -211,8 +216,12 @@ export async function syncRefundObligations() {
          FROM bookings b JOIN sessions s ON s.id=b.session_id
          JOIN workshops w ON w.id=s.workshop_id LEFT JOIN payments p ON p.booking_id=b.id
          WHERE s.ends_at<=clock_timestamp()
-           AND NOT EXISTS(SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id=b.id)
-         GROUP BY b.id,b.session_id,w.studio_id,s.ends_at
+           AND b.reservation_status IN ('confirmed', 'completed')
+           AND (
+             NOT EXISTS(SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id=b.id)
+             OR NOT EXISTS(SELECT 1 FROM financial_obligations fo WHERE fo.booking_id=b.id AND fo.kind='studio_payout' AND fo.status<>'cancelled')
+           )
+         GROUP BY b.id,b.session_id,w.studio_id,s.ends_at,b.paid_amount
        )
        SELECT session_id AS "sessionId",studio_id AS "studioId",booking_id AS "bookingId",due_at AS "dueAt",
          (collected-refunds_recorded-provider_fees)::text AS net,
@@ -232,7 +241,11 @@ export async function syncRefundObligations() {
       });
       await client.query(
         `INSERT INTO studio_settlement_snapshots(booking_id,session_id,due_at,net_amount,breakdown)
-         VALUES($1,$2,$3,$4,$5::jsonb) ON CONFLICT(booking_id) DO NOTHING`,
+         VALUES($1,$2,$3,$4,$5::jsonb)
+         ON CONFLICT(booking_id) DO UPDATE SET
+           due_at=EXCLUDED.due_at,
+           net_amount=EXCLUDED.net_amount,
+           breakdown=EXCLUDED.breakdown`,
         [
           payout.bookingId,
           payout.sessionId,
@@ -245,7 +258,12 @@ export async function syncRefundObligations() {
         await client.query(
           `INSERT INTO financial_obligations(booking_id,studio_id,kind,source_key,amount,due_at,status,reason,payout_snapshot_at,payout_snapshot)
            VALUES($1,$2,'studio_payout',$3,$4,$5,'awaiting_approval','Khoản chi studio sau khi trừ khoản hoàn đã ghi nhận và phí thực tế của chính buổi học tại thời điểm chốt.',clock_timestamp(),$6::jsonb)
-           ON CONFLICT(kind,source_key) DO NOTHING`,
+           ON CONFLICT(kind,source_key) DO UPDATE SET
+             amount=EXCLUDED.amount,
+             due_at=EXCLUDED.due_at,
+             payout_snapshot=EXCLUDED.payout_snapshot,
+             payout_snapshot_at=clock_timestamp()
+           WHERE financial_obligations.status IN ('awaiting_approval','awaiting_funds')`,
           [
             payout.bookingId,
             payout.studioId,
@@ -255,16 +273,17 @@ export async function syncRefundObligations() {
             breakdown,
           ],
         );
+        const formattedNet = Number(net).toLocaleString('vi-VN');
         await client.query(
           `INSERT INTO user_notifications(user_id,booking_id,type,title,body,href)
            SELECT sm.user_id,$1,'studio_payout_pending',
              'Khoản tiền quyết toán sẵn sàng',
-             'Buổi học đã hoàn thành. Khoản tiền cọc '||trim(to_char($2::bigint, '999G999G999G999'))||' đ đã được lên lịch quyết toán. Vui lòng kiểm tra mục Quyết toán.',
+             'Buổi học đã hoàn thành. Khoản tiền cọc '||$4||' đ đã được lên lịch quyết toán. Vui lòng kiểm tra mục Quyết toán.',
              '/studio/'||$3||'/finances'
            FROM studio_members sm
            WHERE sm.studio_id=$3 AND sm.role='owner'
              AND NOT EXISTS(SELECT 1 FROM user_notifications n WHERE n.user_id=sm.user_id AND n.booking_id=$1 AND n.type='studio_payout_pending')`,
-          [payout.bookingId, net.toString(), payout.studioId],
+          [payout.bookingId, net.toString(), payout.studioId, formattedNet],
         );
       }
       const feeExcess = BigInt(payout.fees) - BigInt(payout.available);

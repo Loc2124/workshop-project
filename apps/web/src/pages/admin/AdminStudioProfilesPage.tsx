@@ -125,7 +125,7 @@ export function AdminStudioProfilesPage({
         <p className="mt-1 text-xs text-muted sm:text-sm">
           {showAllTab
             ? 'Danh sách toàn bộ các studio đã đăng ký trên sàn Open Slot.'
-            : 'Xem xét và phê duyệt hồ sơ đăng ký mở xưởng từ các nghệ nhân.'}
+            : 'Xem xét và phê duyệt hồ sơ đăng ký mở studio từ các nghệ nhân.'}
         </p>
       </header>
 

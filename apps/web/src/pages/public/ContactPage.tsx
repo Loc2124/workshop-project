@@ -88,7 +88,7 @@ export function ContactPage() {
           </h1>
           <p className="mt-3 text-base sm:text-lg text-muted max-w-xl mx-auto">
             Dù bạn cần tư vấn chọn workshop, hỗ trợ vé đặt hay muốn kết nối hợp
-            tác mở xưởng thủ công, đừng ngần ngại nhắn tin cho chúng tôi.
+            tác mở studio thủ công, đừng ngần ngại nhắn tin cho chúng tôi.
           </p>
         </div>
 

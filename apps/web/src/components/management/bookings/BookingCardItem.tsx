@@ -148,13 +148,13 @@ export function BookingCardItem({
             <p className="font-medium tabular-nums text-studio-ink">
               {booking.paymentMode === 'payos_deposit'
                 ? `${formatPrice(booking.depositAmount)} đ (${booking.paidAmount >= booking.depositAmount ? 'Đã nhận' : 'Chờ'})`
-                : 'Tại xưởng'}
+                : 'Tại studio'}
             </p>
           </div>
 
           {booking.paymentMode === 'payos_deposit' && (
             <div className="col-span-2 rounded-md bg-amber-50/70 p-2 border border-amber-200/60">
-              <span className="text-amber-900">Còn lại thu tại xưởng:</span>
+              <span className="text-amber-900">Còn lại thu tại studio:</span>
               <span className="float-right font-bold tabular-nums text-amber-900">
                 {formatPrice(remainingBalance)} đ
               </span>

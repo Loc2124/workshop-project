@@ -143,7 +143,7 @@ export function PolicyTermsDialog({
                 <p className="text-stone-700">
                   Đối với các bộ môn cần xử lý sau buổi học (như gốm cần phơi,
                   tráng men và nung 2 lần từ 7 - 14 ngày), studio sẽ thông báo
-                  lịch nhận cụ thể và hỗ trợ nhận tại xưởng hoặc gửi ship tận
+                  lịch nhận cụ thể và hỗ trợ nhận tại studio hoặc gửi ship tận
                   nơi (chi phí vận chuyển do học viên tự thanh toán nếu có).
                 </p>
               </section>
@@ -187,7 +187,7 @@ export function PolicyTermsDialog({
                 <p className="text-stone-700">
                   Chỗ tham dự của bạn chỉ được bảo lưu chính thức sau khi hệ
                   thống ghi nhận thanh toán thành công (hoặc duyệt đơn từ studio
-                  đối với hình thức thanh toán tại xưởng). Mã QR check-in và
+                  đối với hình thức thanh toán tại studio). Mã QR check-in và
                   thông tin vé sẽ được hiển thị trong mục{' '}
                   <strong>Lịch đặt của tôi</strong> và gửi qua email.
                 </p>

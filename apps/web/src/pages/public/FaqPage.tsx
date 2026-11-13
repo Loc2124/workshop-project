@@ -72,7 +72,7 @@ const faqs: FaqItem[] = [
     category: 'thanh-toan',
     question: 'Open Slot hỗ trợ những phương thức thanh toán nào?',
     answer:
-      'Hệ thống hỗ trợ thanh toán trực tuyến qua quét mã VietQR ngân hàng, thẻ ATM nội địa, thẻ quốc tế (Visa / Mastercard), cũng như thanh toán tại xưởng đối với một số studio có hỗ trợ đặt cọc linh hoạt.',
+      'Hệ thống hỗ trợ thanh toán trực tuyến qua quét mã VietQR ngân hàng, thẻ ATM nội địa, thẻ quốc tế (Visa / Mastercard), cũng như thanh toán tại studio đối với một số studio có hỗ trợ đặt cọc linh hoạt.',
   },
 
   // 3. Studio & Nghệ nhân
@@ -81,7 +81,7 @@ const faqs: FaqItem[] = [
     category: 'studio',
     question: 'Làm thế nào để tôi có thể mở bán workshop trên Open Slot?',
     answer:
-      'Rất đơn giản! Bạn chỉ cần vào trang "Mở studio trên Open Slot" và bấm "Đăng ký mở Studio". Điền các thông tin về tên xưởng, địa chỉ, hình ảnh không gian và các minh chứng chuyên môn/giấy phép kinh doanh nếu có. Đội ngũ kiểm duyệt của Open Slot sẽ liên hệ xác minh và kích hoạt tài khoản quản lý studio trong vòng 24 - 48 giờ làm việc.',
+      'Rất đơn giản! Bạn chỉ cần vào trang "Mở studio trên Open Slot" và bấm "Đăng ký mở Studio". Điền các thông tin về tên studio, địa chỉ, hình ảnh không gian và các minh chứng chuyên môn/giấy phép kinh doanh nếu có. Đội ngũ kiểm duyệt của Open Slot sẽ liên hệ xác minh và kích hoạt tài khoản quản lý studio trong vòng 24 - 48 giờ làm việc.',
   },
   {
     id: 'st-2',

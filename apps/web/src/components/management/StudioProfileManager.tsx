@@ -258,7 +258,7 @@ export function StudioProfileManager({ studio }: StudioProfileManagerProps) {
                 <div className="space-y-1">
                   <span className="flex items-center gap-1.5 text-xs font-medium text-studio-muted">
                     <MapPin className="size-3.5 text-studio-muted" />
-                    Địa chỉ xưởng
+                    Địa chỉ studio
                   </span>
                   <p className="text-sm font-medium text-studio-ink">
                     {studio.address}
@@ -357,7 +357,7 @@ export function StudioProfileManager({ studio }: StudioProfileManagerProps) {
                     !studio.googleMapsUrl && (
                       <p className="text-xs text-studio-muted">
                         Chưa có liên kết mạng xã hội hay Google Maps. Hãy bổ
-                        sung để khách dễ tìm đến xưởng.
+                        sung để khách dễ tìm đến studio.
                       </p>
                     )}
                 </div>
@@ -420,8 +420,8 @@ export function StudioProfileManager({ studio }: StudioProfileManagerProps) {
                     Chưa có ảnh không gian
                   </p>
                   <p className="text-xs">
-                    Tải ảnh thật về bàn làm việc, dụng cụ và không gian xưởng để
-                    thu hút học viên.
+                    Tải ảnh thật về bàn làm việc, dụng cụ và không gian studio
+                    để thu hút học viên.
                   </p>
                   <StudioButton
                     type="button"

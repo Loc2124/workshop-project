@@ -118,7 +118,7 @@ studioFinancesRouter.get(path, async (req, res) => {
     `SELECT o.id, o.booking_id AS "bookingId", b.order_code::text AS "orderCode",
        w.title AS "workshopTitle", s.starts_at AS "sessionStartsAt", s.ends_at AS "sessionEndsAt",
        o.amount::text AS "amount", o.due_at AS "dueAt", o.status,
-       COALESCE((SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'),0)::text AS "collectedDeposit",
+       COALESCE((SELECT sum(p.amount) FROM payments p WHERE p.booking_id=b.id AND p.kind='deposit' AND p.status='paid'), b.deposit_amount, 0)::text AS "collectedDeposit",
        (b.refund_due_amount + b.extra_refund_due_amount)::text AS "refundsRecorded",
        COALESCE((SELECT sum(t.provider_fee) FROM financial_transfers t WHERE t.obligation_id=o.id AND t.direction='outbound' AND t.status='succeeded'),0)::text AS "feesRecorded",
        o.payout_snapshot AS "breakdown",
@@ -146,7 +146,41 @@ studioFinancesRouter.get(path, async (req, res) => {
        AND ($2::timestamptz IS NULL OR COALESCE(s.ends_at, o.created_at) >= $2::timestamptz)
        AND ($3::timestamptz IS NULL OR COALESCE(s.ends_at, o.created_at) < $3::timestamptz)
      GROUP BY o.id, b.id, w.id, s.id
-     ORDER BY o.created_at DESC, o.due_at DESC
+
+     UNION ALL
+
+     SELECT
+       b.id AS id, b.id AS "bookingId", b.order_code::text AS "orderCode",
+       w.title AS "workshopTitle", s.starts_at AS "sessionStartsAt", s.ends_at AS "sessionEndsAt",
+       GREATEST(0, b.paid_amount - b.refund_due_amount - b.extra_refund_due_amount)::text AS "amount",
+       financial_obligation_deadline('studio_payout', s.ends_at) AS "dueAt",
+       'awaiting_approval' AS status,
+       b.paid_amount::text AS "collectedDeposit",
+       (b.refund_due_amount + b.extra_refund_due_amount)::text AS "refundsRecorded",
+       '0' AS "feesRecorded",
+       json_build_object(
+         'sessionId', s.id,
+         'collected', b.paid_amount::text,
+         'refundsRecorded', (b.refund_due_amount + b.extra_refund_due_amount)::text,
+         'payout', GREATEST(0, b.paid_amount - b.refund_due_amount - b.extra_refund_due_amount)::text
+       )::jsonb AS "breakdown",
+       '[]'::json AS transfers
+     FROM bookings b
+     JOIN sessions s ON s.id = b.session_id
+     JOIN workshops w ON w.id = s.workshop_id
+     WHERE w.studio_id = $1
+       AND b.reservation_status IN ('confirmed', 'completed')
+       AND s.ends_at <= clock_timestamp()
+       AND b.payment_mode = 'payos_deposit'
+       AND b.paid_amount >= b.deposit_amount
+       AND NOT EXISTS (
+         SELECT 1 FROM financial_obligations fo
+         WHERE fo.booking_id = b.id AND fo.kind = 'studio_payout' AND fo.status <> 'cancelled'
+       )
+       AND ($2::timestamptz IS NULL OR s.ends_at >= $2::timestamptz)
+       AND ($3::timestamptz IS NULL OR s.ends_at < $3::timestamptz)
+
+     ORDER BY "dueAt" DESC NULLS LAST, "sessionStartsAt" DESC
      LIMIT 100`,
     [studioId, range?.start ?? null, range?.end ?? null],
   );
@@ -179,19 +213,7 @@ studioFinancesRouter.get(path, async (req, res) => {
      JOIN workshops w ON w.id = s.workshop_id
      WHERE w.studio_id = $1
        AND b.reservation_status IN ('confirmed', 'completed')
-       AND (
-         s.ends_at > clock_timestamp()
-         OR (
-           NOT EXISTS (
-             SELECT 1 FROM studio_settlement_snapshots snap
-             WHERE snap.booking_id = b.id
-           )
-           AND NOT EXISTS (
-             SELECT 1 FROM financial_obligations fo
-             WHERE fo.booking_id = b.id AND fo.kind = 'studio_payout' AND fo.status <> 'cancelled'
-           )
-         )
-       )
+       AND s.ends_at > clock_timestamp()
      ORDER BY s.starts_at ASC, b.created_at DESC
      LIMIT 100`,
     [studioId],
@@ -204,7 +226,27 @@ studioFinancesRouter.get(path, async (req, res) => {
   }>(
     `SELECT
        COALESCE(SUM(o.amount) FILTER (WHERE o.status = 'paid'), 0)::text AS "totalPaidOut",
-       COALESCE(SUM(o.amount) FILTER (WHERE o.status IN ('awaiting_approval', 'approved', 'processing')), 0)::text AS "pendingPayout"
+       (
+         COALESCE(SUM(o.amount) FILTER (WHERE o.status IN ('awaiting_approval', 'approved', 'processing')), 0)
+         +
+         COALESCE((
+           SELECT SUM(GREATEST(0, b2.paid_amount - b2.refund_due_amount - b2.extra_refund_due_amount))
+           FROM bookings b2
+           JOIN sessions s2 ON s2.id = b2.session_id
+           JOIN workshops w2 ON w2.id = s2.workshop_id
+           WHERE w2.studio_id = $1
+             AND b2.reservation_status IN ('confirmed', 'completed')
+             AND s2.ends_at <= clock_timestamp()
+             AND b2.payment_mode = 'payos_deposit'
+             AND b2.paid_amount >= b2.deposit_amount
+             AND NOT EXISTS (
+               SELECT 1 FROM financial_obligations fo
+               WHERE fo.booking_id = b2.id AND fo.kind = 'studio_payout' AND fo.status <> 'cancelled'
+             )
+             AND ($2::timestamptz IS NULL OR s2.ends_at >= $2::timestamptz)
+             AND ($3::timestamptz IS NULL OR s2.ends_at < $3::timestamptz)
+         ), 0)
+       )::text AS "pendingPayout"
      FROM financial_obligations o
      JOIN bookings b ON b.id = o.booking_id
      JOIN sessions s ON s.id = b.session_id
@@ -250,18 +292,9 @@ studioFinancesRouter.get(path, async (req, res) => {
        COALESCE(
          SUM(b.deposit_amount)
          FILTER (
-           WHERE (
-             s.ends_at > clock_timestamp()
-             OR NOT EXISTS (
-               SELECT 1 FROM studio_settlement_snapshots snap WHERE snap.booking_id = b.id
-             )
-           )
+           WHERE s.ends_at > clock_timestamp()
              AND b.payment_mode = 'payos_deposit'
              AND b.paid_amount >= b.deposit_amount
-             AND NOT EXISTS (
-               SELECT 1 FROM financial_obligations fo
-               WHERE fo.booking_id = b.id AND fo.kind = 'studio_payout' AND fo.status <> 'cancelled'
-             )
          ),
          0
        )::text AS "estimatedUpcoming"

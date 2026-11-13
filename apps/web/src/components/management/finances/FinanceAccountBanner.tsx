@@ -83,7 +83,7 @@ export function FinanceAccountBanner({
 
       {/* Hướng dẫn cơ chế thanh toán sàn */}
       <details className="group rounded-studio-card border border-studio-border bg-studio-surface p-4 text-xs transition-colors hover:border-studio-primary/40 open:bg-studio-selected/30">
-        <summary className="flex cursor-pointer items-center justify-between gap-2 font-semibold text-studio-primary outline-none">
+        <summary className="mx-auto flex cursor-pointer items-center justify-between gap-2 font-semibold text-studio-primary outline-none">
           <span className="flex items-center gap-1.5">
             <Info className="size-3.5" />
             Cơ chế thanh toán sàn

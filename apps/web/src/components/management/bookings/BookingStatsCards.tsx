@@ -31,7 +31,7 @@ export function BookingStatsCards({ stats }: { stats: BookingStats }) {
       <div className="rounded-studio-card border border-amber-200/80 bg-amber-50/50 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium uppercase tracking-wide text-amber-900">
-            Cần thu tại xưởng
+            Cần thu tại studio
           </span>
           <div className="flex size-8 items-center justify-center rounded-full bg-amber-100 text-amber-700">
             <Coins className="size-4" />

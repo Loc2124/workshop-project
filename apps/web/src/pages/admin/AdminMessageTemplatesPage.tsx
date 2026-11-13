@@ -170,7 +170,7 @@ export function AdminMessageTemplatesPage() {
         </h1>
         <p className="mt-1 text-xs text-muted sm:text-sm">
           Tùy chỉnh nội dung email và thông báo tự động gửi cho khách hàng và
-          chủ xưởng.
+          chủ studio.
         </p>
       </header>
       {templates.isPending ? (

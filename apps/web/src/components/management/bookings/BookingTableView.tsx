@@ -159,7 +159,7 @@ export function BookingTableView({
                           )}
                         </p>
                         <p className="tabular-nums">
-                          Thu tại xưởng:{' '}
+                          Thu tại studio:{' '}
                           <span
                             className={`font-semibold ${
                               remainingBalance > 0 &&
@@ -174,7 +174,7 @@ export function BookingTableView({
                       </div>
                     ) : (
                       <p className="mt-1 text-xs text-studio-muted">
-                        Thu toàn bộ tại xưởng
+                        Thu toàn bộ tại studio
                       </p>
                     )}
                   </td>
