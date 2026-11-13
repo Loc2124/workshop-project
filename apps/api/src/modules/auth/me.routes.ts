@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import * as argon2 from 'argon2';
+import { newPasswordSchema } from '@workshop/shared';
 import { adminBookingDecision } from '../admin/admin-bookings.js';
 import { cancelBookingForCustomer } from '../bookings/bookings.service.js';
 import { validateBody } from '../../middleware/validate-body.js';
@@ -8,7 +10,8 @@ import { validateUuidParam } from '../../middleware/validate-uuid-param.js';
 import { AppError } from '../../errors/app-error.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { listStudiosForUser } from '../studios/studios.service.js';
-import { getCurrentUser } from './auth.service.js';
+import { getCurrentUser, hashPassword } from './auth.service.js';
+import { findUserById } from './auth.repository.js';
 
 const router = Router();
 
@@ -108,6 +111,82 @@ router.get('/', async (request, response) => {
   }
   response.json({ user });
 });
+
+const updateProfileSchema = z.object({
+  fullName: z.string().trim().min(2, 'Họ và tên tối thiểu 2 ký tự').max(100),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^(0|\+84)[0-9]{9,10}$/, 'Số điện thoại không hợp lệ (ví dụ: 0912345678)')
+    .optional()
+    .or(z.literal(''))
+    .nullable(),
+});
+
+router.patch(
+  '/profile',
+  validateBody(updateProfileSchema),
+  async (request, response) => {
+    const { fullName, phone } = request.body;
+    const normalizedPhone =
+      phone && String(phone).trim() ? String(phone).trim() : null;
+
+    const result = await query<{
+      id: string;
+      email: string;
+      fullName: string;
+      phone: string | null;
+      role: 'customer' | 'studio_owner' | 'admin';
+      createdAt: string;
+    }>(
+      `UPDATE users
+       SET full_name = $1, phone = $2
+       WHERE id = $3
+       RETURNING id, email, full_name AS "fullName", phone, role, created_at AS "createdAt"`,
+      [fullName, normalizedPhone, request.user!.sub],
+    );
+
+    response.json({ user: result.rows[0] });
+  },
+);
+
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Vui lòng nhập mật khẩu hiện tại'),
+  newPassword: z.string().min(8, 'Mật khẩu mới tối thiểu 8 ký tự'),
+});
+
+router.patch(
+  '/password',
+  validateBody(changePasswordSchema),
+  async (request, response) => {
+    const { currentPassword, newPassword } = request.body;
+    const user = await findUserById(request.user!.sub);
+    if (!user || !(await argon2.verify(user.passwordHash, currentPassword))) {
+      throw new AppError(
+        400,
+        'BAD_REQUEST',
+        'Mật khẩu hiện tại không chính xác.',
+      );
+    }
+
+    const parsed = newPasswordSchema.safeParse(newPassword);
+    if (!parsed.success) {
+      throw new AppError(
+        422,
+        'UNPROCESSABLE_ENTITY',
+        parsed.error.issues[0]?.message ?? 'Mật khẩu mới chưa đạt yêu cầu.',
+      );
+    }
+
+    const newHash = await hashPassword(newPassword);
+    await query('UPDATE users SET password_hash = $1 WHERE id = $2', [
+      newHash,
+      request.user!.sub,
+    ]);
+
+    response.json({ ok: true, message: 'Đổi mật khẩu thành công.' });
+  },
+);
 
 router.get('/studios', async (request, response) => {
   response.setHeader('Cache-Control', 'no-store');

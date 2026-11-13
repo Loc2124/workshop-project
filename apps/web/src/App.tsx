@@ -104,6 +104,11 @@ const SavedRefundAccountsPage = lazy(() =>
     default: module.SavedRefundAccountsPage,
   })),
 );
+const UserAccountPage = lazy(() =>
+  import('./pages/customer/UserAccountPage').then((module) => ({
+    default: module.UserAccountPage,
+  })),
+);
 const MockPaymentPage = lazy(() =>
   import('./pages/public/MockPaymentPage').then((module) => ({
     default: module.MockPaymentPage,
@@ -200,6 +205,15 @@ function App() {
           <Route path="/lien-he" element={<ContactPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/tham-gia-studio" element={<AcceptInvitationPage />} />
+          <Route path="/tai-khoan" element={<UserAccountPage />} />
+          <Route
+            path="/me/account"
+            element={<Navigate to="/tai-khoan" replace />}
+          />
+          <Route
+            path="/me/profile"
+            element={<Navigate to="/tai-khoan" replace />}
+          />
           <Route path="/khong-co-quyen" element={<ForbiddenPage />} />
           <Route path="/403" element={<ForbiddenPage />} />
           <Route path="/404" element={<NotFoundPage />} />

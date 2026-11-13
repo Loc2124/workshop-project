@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import { AuthLink } from '../ui/auth-link';
-import { toast } from 'sonner';
 import type { AuthUser } from '@/services/authService';
 import type { MemberStudio } from '@/types';
 
@@ -99,15 +98,13 @@ export function HeaderMobileDrawer({
                 </Link>
               ) : null}
 
-              <button
-                type="button"
-                onClick={() =>
-                  toast.info('Trang tài khoản sẽ được bổ sung sau.')
-                }
+              <Link
+                to="/tai-khoan"
+                onClick={onClose}
                 className="flex min-h-12 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
               >
                 Tài khoản
-              </button>
+              </Link>
               {studiosQuery.data?.some(
                 (studio) => studio.status === 'approved' && !studio.isDraft,
               ) && (

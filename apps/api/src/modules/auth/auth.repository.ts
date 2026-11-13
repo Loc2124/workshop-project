@@ -6,6 +6,7 @@ export type UserRow = {
   id: string;
   email: string;
   fullName: string;
+  phone?: string | null;
   role: 'customer' | 'studio_owner' | 'admin';
   passwordHash: string;
   isBlocked: boolean;
@@ -26,6 +27,7 @@ export async function findUserByEmail(email: string): Promise<UserRow | null> {
       id,
       email,
       full_name AS "fullName",
+      phone,
       password_hash AS "passwordHash", is_blocked AS "isBlocked",
       role,
       created_at AS "createdAt"
@@ -43,6 +45,7 @@ export async function findUserById(userId: string): Promise<UserRow | null> {
       id,
       email,
       full_name AS "fullName",
+      phone,
       password_hash AS "passwordHash", is_blocked AS "isBlocked",
       role,
       created_at AS "createdAt"

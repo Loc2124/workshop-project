@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { LogOut, UserRound } from 'lucide-react';
 import { LoadingState } from '../ui/LoadingState';
-import { toast } from 'sonner';
 import type { AuthUser } from '@/services/authService';
 import type { MemberStudio } from '@/types';
 
@@ -153,15 +152,16 @@ export function HeaderUserMenu({
               </Link>
             )}
 
-            <button
-              type="button"
-              onClick={() =>
-                toast.info('Trang tài khoản sẽ được bổ sung sau.')
-              }
+            <Link
+              to="/tai-khoan"
+              onClick={() => {
+                setOpen(false);
+                onCloseAll();
+              }}
               className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
             >
               Tài khoản
-            </button>
+            </Link>
 
             <button
               type="button"

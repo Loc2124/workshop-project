@@ -32,7 +32,9 @@ export type AuthUserPublic = {
   id: string;
   email: string;
   fullName: string;
+  phone?: string | null;
   role: 'customer' | 'studio_owner' | 'admin';
+  createdAt?: string;
 };
 
 export async function registerCustomer(
@@ -241,13 +243,17 @@ function serializePublicUser(user: {
   id: string;
   email: string;
   fullName: string;
+  phone?: string | null;
   role: 'customer' | 'studio_owner' | 'admin';
+  createdAt?: string;
 }): AuthUserPublic {
   return {
     id: user.id,
     email: user.email,
     fullName: user.fullName,
+    phone: user.phone ?? null,
     role: user.role,
+    createdAt: user.createdAt,
   };
 }
 

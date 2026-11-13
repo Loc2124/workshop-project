@@ -5,7 +5,9 @@ export const authUserSchema = z
     id: z.string().uuid(),
     email: z.string().email(),
     fullName: z.string(),
+    phone: z.string().nullable().optional(),
     role: z.enum(['customer', 'studio_owner', 'admin']),
+    createdAt: z.string().optional(),
   })
   .strict();
 
