@@ -71,40 +71,43 @@ export function HeaderMobileDrawer({
               </p>
             </div>
             <div className="flex flex-col">
-              {user.role === 'customer' ? (
-                <>
-                  <Link
-                    to="/me/bookings"
-                    onClick={onClose}
-                    className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
-                  >
-                    Lịch đặt của tôi
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toast.info('Trang tài khoản sẽ được bổ sung sau.')
-                    }
-                    className="flex min-h-12 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
-                  >
-                    Tài khoản
-                  </button>
-                </>
-              ) : (
+              <Link
+                to="/me/bookings"
+                onClick={onClose}
+                className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
+              >
+                Lịch đặt của tôi
+              </Link>
+
+              {studiosQuery.data?.some(
+                (studio) => studio.role === 'owner' || studio.role === 'staff',
+              ) ? (
                 <Link
-                  to={
-                    studiosQuery.data?.some((studio) => studio.role === 'owner')
-                      ? '/studio'
-                      : '/dang-ky-studio'
-                  }
+                  to="/studio"
+                  onClick={onClose}
+                  className="flex min-h-12 items-center rounded-lg px-3 text-sm font-medium text-primary hover:bg-soft"
+                >
+                  Quản lý studio
+                </Link>
+              ) : user.role !== 'admin' ? (
+                <Link
+                  to="/dang-ky-studio"
                   onClick={onClose}
                   className="flex min-h-12 items-center rounded-lg px-3 text-sm hover:bg-soft"
                 >
-                  {studiosQuery.data?.some((studio) => studio.role === 'owner')
-                    ? 'Quản lý studio'
-                    : 'Mở studio trên Open Slot'}
+                  Mở studio trên Open Slot
                 </Link>
-              )}
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() =>
+                  toast.info('Trang tài khoản sẽ được bổ sung sau.')
+                }
+                className="flex min-h-12 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
+              >
+                Tài khoản
+              </button>
               {studiosQuery.data?.some(
                 (studio) => studio.status === 'approved' && !studio.isDraft,
               ) && (

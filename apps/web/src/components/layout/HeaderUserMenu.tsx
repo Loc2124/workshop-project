@@ -63,7 +63,12 @@ export function HeaderUserMenu({
         aria-expanded={open}
         aria-controls="account-menu"
         className="inline-grid size-11 place-items-center rounded-lg text-sm hover:bg-soft"
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!open) {
+            void studiosQuery.refetch();
+          }
+          setOpen(!open);
+        }}
       >
         <UserRound size={18} aria-hidden="true" />
       </button>
@@ -77,60 +82,49 @@ export function HeaderUserMenu({
             <p className="truncate font-semibold">{user.fullName}</p>
             <p className="mt-0.5 break-all text-sm text-muted">{user.email}</p>
           </div>
-          <div className="mt-2">
-            {user.role === 'customer' ? (
+          <div className="mt-2 space-y-0.5">
+            <Link
+              to="/me/bookings"
+              onClick={() => {
+                setOpen(false);
+                onCloseAll();
+              }}
+              className="flex min-h-11 w-full items-center rounded-lg px-3 text-sm hover:bg-soft"
+            >
+              Lịch đặt của tôi
+            </Link>
+
+            {studiosQuery.isPending && !studiosQuery.data ? (
+              <LoadingState
+                label="Đang kiểm tra studio…"
+                className="px-3 py-2 text-sm text-muted"
+              />
+            ) : studiosQuery.data?.some(
+                (studio) => studio.role === 'owner' || studio.role === 'staff',
+              ) ? (
               <Link
-                to="/me/bookings"
+                to="/studio"
                 onClick={() => {
                   setOpen(false);
                   onCloseAll();
                 }}
-                className="flex min-h-11 w-full items-center rounded-lg px-3 text-sm hover:bg-soft"
+                className="flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-primary hover:bg-soft"
               >
-                Lịch đặt của tôi
+                Quản lý studio
               </Link>
-            ) : studiosQuery.isPending ? (
-              <LoadingState
-                label="Đang kiểm tra studio…"
-                className="px-3 py-3 text-sm text-muted"
-              />
-            ) : studiosQuery.error ? (
-              <button
-                type="button"
-                onClick={() => void studiosQuery.refetch()}
-                className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm text-brick hover:bg-soft"
-              >
-                Thử tải lại thông tin studio
-              </button>
-            ) : (
+            ) : user.role !== 'admin' ? (
               <Link
-                to={
-                  studiosQuery.data?.some((studio) => studio.role === 'owner')
-                    ? '/studio'
-                    : '/dang-ky-studio'
-                }
+                to="/dang-ky-studio"
                 onClick={() => {
                   setOpen(false);
                   onCloseAll();
                 }}
                 className="flex min-h-11 items-center rounded-lg px-3 text-sm hover:bg-soft"
               >
-                {studiosQuery.data?.some((studio) => studio.role === 'owner')
-                  ? 'Quản lý studio'
-                  : 'Mở studio trên Open Slot'}
+                Mở studio trên Open Slot
               </Link>
-            )}
-            {user.role === 'customer' && (
-              <button
-                type="button"
-                onClick={() =>
-                  toast.info('Trang tài khoản sẽ được bổ sung sau.')
-                }
-                className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
-              >
-                Tài khoản
-              </button>
-            )}
+            ) : null}
+
             {studiosQuery.data?.some(
               (studio) => studio.status === 'approved' && !studio.isDraft,
             ) && (
@@ -145,6 +139,7 @@ export function HeaderUserMenu({
                 Check-in vé
               </Link>
             )}
+
             {user.role === 'admin' && (
               <Link
                 to="/admin"
@@ -157,6 +152,17 @@ export function HeaderUserMenu({
                 Duyệt nội dung
               </Link>
             )}
+
+            <button
+              type="button"
+              onClick={() =>
+                toast.info('Trang tài khoản sẽ được bổ sung sau.')
+              }
+              className="flex min-h-11 w-full items-center rounded-lg px-3 text-left text-sm hover:bg-soft"
+            >
+              Tài khoản
+            </button>
+
             <button
               type="button"
               disabled={isLoggingOut}

@@ -330,7 +330,7 @@ router.get(
       st.id AS "studioId",
       st.name AS "studioName",
       st.address AS "studioAddress",
-      u.full_name AS "inviterName"
+      COALESCE(NULLIF(trim(u.full_name), ''), u.email, 'Chủ studio') AS "inviterName"
     FROM studio_invitations i
     JOIN studios st ON st.id = i.studio_id
     JOIN users u ON u.id = i.created_by
@@ -368,6 +368,7 @@ router.get(
         studioName: invitation.studioName,
         studioAddress: invitation.studioAddress,
         inviterName: invitation.inviterName,
+        invitedByName: invitation.inviterName,
       },
     });
   },

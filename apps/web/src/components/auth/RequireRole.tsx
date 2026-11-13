@@ -15,7 +15,7 @@ function StudioMembershipGate({
 }) {
   const { user } = useAuth();
   const studios = useMyStudios();
-  if (studios.isPending)
+  if (studios.isPending || (studios.isFetching && !studios.data?.length))
     return (
       <LoadingState
         label="Đang kiểm tra quyền quản lý studio…"

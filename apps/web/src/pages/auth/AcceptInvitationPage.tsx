@@ -15,9 +15,12 @@ import {
   UserPlus,
   LogIn,
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/lib/api-client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { queryKeys } from '@/lib/query-keys';
+import { writeActiveStudioId } from '@/lib/studio-dashboard';
 
 interface InvitationInfo {
   id: string;
@@ -25,7 +28,8 @@ interface InvitationInfo {
   role: 'staff';
   studioName: string;
   studioSlug?: string;
-  invitedByName: string;
+  invitedByName?: string;
+  inviterName?: string;
   expiresAt: string;
 }
 
@@ -35,6 +39,7 @@ export function AcceptInvitationPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   const [invitation, setInvitation] = useState<InvitationInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +91,7 @@ export function AcceptInvitationPage() {
     try {
       setAccepting(true);
       setError(null);
-      const res = await apiFetch<{ success: boolean; studioId: string }>(
+      const res = await apiFetch<{ ok?: boolean; studioId: string }>(
         '/studios/invitations/accept',
         {
           method: 'POST',
@@ -94,10 +99,23 @@ export function AcceptInvitationPage() {
         },
       );
       setAcceptedStudioId(res.studioId);
-      // Chuyển hướng sau 2 giây hoặc ngay lập tức
+
+      if (user?.id) {
+        writeActiveStudioId(user.id, res.studioId);
+      }
+
+      // Invalidate and refetch studios query immediately
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.studios.all(user?.id),
+      });
+      await queryClient.refetchQueries({
+        queryKey: queryKeys.studios.mine(user?.id),
+      });
+
+      // Chuyển hướng sau 1 giây
       setTimeout(() => {
         navigate(`/studio/${res.studioId}`);
-      }, 1500);
+      }, 1000);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Không thể chấp nhận lời mời.',
@@ -179,7 +197,9 @@ export function AcceptInvitationPage() {
               <div className="flex justify-between items-center pb-2 border-b border-line/60">
                 <span className="text-muted">Người mời:</span>
                 <span className="font-medium text-studio-ink">
-                  {invitation.invitedByName}
+                  {invitation.invitedByName ||
+                    invitation.inviterName ||
+                    'Chủ studio'}
                 </span>
               </div>
               <div className="flex justify-between items-center pb-2 border-b border-line/60">
