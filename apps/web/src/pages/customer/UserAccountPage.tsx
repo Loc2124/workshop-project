@@ -377,7 +377,9 @@ export function UserAccountPage() {
                   Tài khoản nhận hoàn tiền
                 </h3>
                 <p className="text-xs text-muted leading-relaxed">
-                  Thiết lập số tài khoản ngân hàng để tự động nhận tiền hoàn lại khi có sự cố hủy buổi học từ studio.
+                  Thiết lập số tài khoản ngân hàng để ban quản trị chuyển hoàn
+                  tiền trực tiếp khi có sự cố hủy buổi học từ studio hoặc hủy vé
+                  hợp lệ.
                 </p>
                 <Button asChild variant="outline" size="sm" className="w-full">
                   <Link to="/me/refund-accounts">

@@ -215,9 +215,9 @@ export function SavedRefundAccountsPage() {
             </h1>
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
-            Lưu trước thông tin tài khoản ngân hàng để nhận tiền hoàn tự động,
-            nhanh chóng khi bạn hoặc studio hủy lịch theo chính sách của Open
-            Slot.
+            Lưu trước thông tin tài khoản ngân hàng để ban quản trị Open Slot
+            trực tiếp đối soát và chuyển khoản hoàn tiền khi bạn hoặc studio hủy
+            lịch theo chính sách.
           </p>
         </div>
 
@@ -246,9 +246,10 @@ export function SavedRefundAccountsPage() {
         <div className="space-y-1">
           <p className="font-semibold">Bảo mật thông tin tài chính cá nhân</p>
           <p className="text-xs sm:text-sm leading-relaxed text-sky-800">
-            Số tài khoản của bạn được mã hóa an toàn theo tiêu chuẩn mã hóa quân
-            sự (AES-256-GCM). Open Slot chỉ lưu và hiển thị 4 số cuối để đối
-            soát với ngân hàng khi thực hiện lệnh chuyển khoản hoàn tiền.
+            Số tài khoản của bạn được mã hóa an toàn theo tiêu chuẩn AES-256-GCM.
+            Ban quản trị Open Slot chỉ sử dụng thông tin này để kiểm tra đối soát
+            và thực hiện chuyển khoản hoàn tiền trực tiếp cho bạn khi có lịch hủy
+            hợp lệ. Hệ thống chỉ hiển thị 4 số cuối để bảo vệ quyền riêng tư.
           </p>
         </div>
       </div>
@@ -479,8 +480,9 @@ export function SavedRefundAccountsPage() {
               Bạn chưa lưu tài khoản nhận hoàn nào
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-              Lưu sẵn tài khoản ngân hàng giúp quá trình hoàn tiền được xử lý tự
-              động và nhanh nhất mỗi khi phát sinh hoàn tiền đơn đặt chỗ.
+              Lưu sẵn tài khoản ngân hàng giúp ban quản trị nhanh chóng đối
+              chiếu và trực tiếp chuyển khoản hoàn tiền đến bạn khi có phát sinh
+              hoàn hủy đơn đặt chỗ.
             </p>
             {!showAddForm && (
               <Button

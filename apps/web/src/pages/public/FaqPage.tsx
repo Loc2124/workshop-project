@@ -65,7 +65,7 @@ const faqs: FaqItem[] = [
     category: 'thanh-toan',
     question: 'Sau khi yêu cầu hủy vé thì bao lâu tôi nhận được tiền hoàn?',
     answer:
-      'Sau khi yêu cầu hoàn vé được chấp thuận, hệ thống sẽ thực hiện lệnh hoàn tiền tự động về tài khoản ngân hàng của bạn trong vòng từ 3 - 5 ngày làm việc (không tính Thứ 7, Chủ Nhật và ngày lễ). Bạn có thể thêm số tài khoản nhận tiền hoàn trong trang "Tài khoản nhận tiền hoàn" của mình.',
+      'Sau khi yêu cầu hoàn vé được chấp thuận, ban quản trị Open Slot sẽ trực tiếp kiểm tra và chuyển khoản hoàn tiền về tài khoản ngân hàng của bạn trong vòng từ 1 - 3 ngày làm việc (không tính Thứ 7, Chủ Nhật và ngày lễ). Bạn có thể thêm số tài khoản nhận tiền hoàn trong trang "Tài khoản nhận hoàn tiền" của mình.',
   },
   {
     id: 'tt-3',

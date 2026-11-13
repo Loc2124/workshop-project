@@ -265,11 +265,11 @@ export function PolicyTermsDialog({
                   4. Quy trình và thời gian nhận tiền hoàn
                 </h3>
                 <p className="text-stone-700">
-                  Yêu cầu hủy chỗ hợp lệ sẽ được hệ thống xử lý tự động. Tiền
-                  hoàn sẽ được chuyển về tài khoản ngân hàng của bạn trong vòng{' '}
-                  <strong>3 - 5 ngày làm việc</strong> (tuỳ thuộc vào ngân hàng
-                  thụ hưởng). Bạn có thể kiểm tra danh sách tài khoản nhận tiền
-                  hoàn trong phần tài khoản cá nhân.
+                  Yêu cầu hủy chỗ hợp lệ sẽ được ban quản trị Open Slot tiếp nhận
+                  và trực tiếp chuyển khoản hoàn tiền về tài khoản ngân hàng của
+                  bạn trong vòng <strong>1 - 3 ngày làm việc</strong> (tuỳ thuộc
+                  vào ngân hàng thụ hưởng). Bạn có thể kiểm tra danh sách tài
+                  khoản nhận tiền hoàn trong phần tài khoản cá nhân.
                 </p>
               </section>
             </TabsContent>
