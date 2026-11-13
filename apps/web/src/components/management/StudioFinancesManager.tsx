@@ -16,8 +16,12 @@ import {
 } from './finances/UpcomingBookingsTable';
 import type { MemberStudio } from '@/types';
 
+type FinancesPeriod = 'all' | 'this_month' | 'last_month';
+
 type StudioFinancesData = {
+  period?: FinancesPeriod;
   summary: {
+    totalEarned?: number;
     totalPaidOut: number;
     pendingPayout: number;
     estimatedUpcoming: number;
@@ -28,14 +32,21 @@ type StudioFinancesData = {
   upcomingBookings: UpcomingBooking[];
 };
 
+const PERIOD_OPTIONS: Array<{ value: FinancesPeriod; label: string }> = [
+  { value: 'all', label: 'Toàn thời gian' },
+  { value: 'this_month', label: 'Tháng này' },
+  { value: 'last_month', label: 'Tháng trước' },
+];
+
 export function StudioFinancesManager({ studio }: { studio: MemberStudio }) {
+  const [period, setPeriod] = useState<FinancesPeriod>('all');
   const [tab, setTab] = useState<'settlements' | 'upcoming' | 'account'>(
     'settlements',
   );
 
   const query = useQuery<StudioFinancesData>({
-    queryKey: ['studio-finances', studio.id],
-    queryFn: () => apiFetch(`/studios/${studio.id}/finances`),
+    queryKey: ['studio-finances', studio.id, period],
+    queryFn: () => apiFetch(`/studios/${studio.id}/finances?period=${period}`),
     refetchInterval: 30_000,
   });
 
@@ -74,7 +85,37 @@ export function StudioFinancesManager({ studio }: { studio: MemberStudio }) {
 
   return (
     <div className="space-y-5">
-      {/* 4 Thẻ chỉ số tổng quan tài chính */}
+      {/* Bộ lọc kỳ thống kê doanh thu */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-2"
+        aria-label="Kỳ thống kê doanh thu"
+      >
+        <p className="text-sm font-medium text-studio-muted">
+          Thống kê doanh thu &amp; đối soát
+        </p>
+        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-studio-border bg-studio-surface p-1">
+          {PERIOD_OPTIONS.map((option) => {
+            const active = period === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setPeriod(option.value)}
+                className={`min-h-9 rounded-md px-3 text-xs font-semibold transition-colors sm:text-sm ${
+                  active
+                    ? 'bg-studio-primary text-white shadow-xs'
+                    : 'text-studio-muted hover:bg-studio-subtle hover:text-studio-ink'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Thẻ chỉ số tổng quan tài chính */}
       <FinanceMetricsSummary summary={data.summary} />
 
       {/* Thông tin tài khoản nhận tiền tóm tắt & Hướng dẫn cơ chế */}
