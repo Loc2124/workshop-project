@@ -1,7 +1,87 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import argon2 from 'argon2';
 import { query, closePool, withTransaction } from '../apps/api/src/db/pool.js';
 import { encryptFinancialAccount } from '../apps/api/src/modules/payments/financial-account-crypto.js';
+
+async function uploadToStorage(storageKey: string, localFilePath: string) {
+  if (!fs.existsSync(localFilePath)) return 0;
+  const buf = fs.readFileSync(localFilePath);
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceKey) return buf.length;
+
+  try {
+    const res = await fetch(new URL(`/storage/v1/object/studio-images/${storageKey}`, supabaseUrl), {
+      method: 'POST',
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        'Content-Type': 'image/webp',
+        'x-upsert': 'true',
+      },
+      body: buf,
+    });
+    if (!res.ok) {
+      console.warn(`[Storage upload warning] ${storageKey}:`, res.status);
+    }
+  } catch (err) {
+    console.warn(`[Storage upload error] ${storageKey}:`, err);
+  }
+  return buf.length;
+}
+
+async function createAndUploadImageTriplet(
+  client: any,
+  opts: {
+    id: string;
+    studioId: string;
+    workshopId?: string | null;
+    uploadedBy: string;
+    baseName: string;
+    keyPrefix: string;
+  },
+) {
+  const imagesDir = path.resolve(process.cwd(), 'apps/web/public/images/workshops');
+  const origFile = path.join(imagesDir, `${opts.baseName}.webp`);
+  const medFile = path.join(imagesDir, `${opts.baseName}.medium.webp`);
+  const thumbFile = path.join(imagesDir, `${opts.baseName}.thumb.webp`);
+
+  const origKey = `${opts.keyPrefix}/${opts.id}.webp`;
+  const medKey = `${opts.keyPrefix}/${opts.id}.medium.webp`;
+  const thumbKey = `${opts.keyPrefix}/${opts.id}.thumb.webp`;
+
+  const [origSize, medSize, thumbSize] = await Promise.all([
+    uploadToStorage(origKey, origFile),
+    uploadToStorage(medKey, medFile),
+    uploadToStorage(thumbKey, thumbFile),
+  ]);
+
+  await client.query(
+    `INSERT INTO images (
+      id, studio_id, workshop_id, uploaded_by, key,
+      thumbnail_key, thumbnail_byte_size,
+      medium_key, medium_byte_size,
+      state, byte_size
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ready', $10)
+    ON CONFLICT (id) DO UPDATE SET
+      key = EXCLUDED.key, thumbnail_key = EXCLUDED.thumbnail_key,
+      medium_key = EXCLUDED.medium_key, state = 'ready'`,
+    [
+      opts.id,
+      opts.studioId,
+      opts.workshopId ?? null,
+      opts.uploadedBy,
+      origKey,
+      thumbKey,
+      thumbSize,
+      medKey,
+      medSize,
+      origSize,
+    ],
+  );
+}
 
 async function main() {
   console.log('--- BẮT ĐẦU TẠO DỮ LIỆU DEMO CHO BUỔI THI ---');
@@ -91,6 +171,7 @@ async function main() {
         status: 'approved',
         verified: true, // Bậc 2: Đã xác minh
         ownerId: hanoiOwnerId,
+        photoBases: ['craftPhoto', 'terrazzoPhoto', 'jewelryPhoto'],
         bank: {
           name: 'Ngân hàng TMCP Đầu tư và Phát triển Việt Nam',
           bin: '970418',
@@ -115,6 +196,7 @@ async function main() {
         status: 'approved',
         verified: false, // Bậc 1: Đã duyệt hồ sơ
         ownerId: hanoiOwnerId,
+        photoBases: ['candlePhoto', 'flowerPhoto', 'soapPhoto'],
         bank: {
           name: 'Ngân hàng TMCP Ngoại thương Việt Nam',
           bin: '970436',
@@ -139,6 +221,7 @@ async function main() {
         status: 'approved',
         verified: true, // Bậc 2: Đã xác minh
         ownerId: saigonOwnerId,
+        photoBases: ['artPhoto', 'flowerPhoto', 'stampPhoto'],
         bank: {
           name: 'Ngân hàng TMCP Kỹ Thương Việt Nam',
           bin: '970407',
@@ -163,11 +246,13 @@ async function main() {
         status: 'pending', // Chờ duyệt (để demo Admin duyệt)
         verified: false,
         ownerId: danangOwnerId,
+        photoBases: ['perfumePhoto', 'soapPhoto', 'candlePhoto'],
         bank: null,
       },
     ];
 
     const studioMap = new Map<string, string>();
+    const studioOwnerMap = new Map<string, string>();
 
     for (const s of studios) {
       // 3.1 Insert studio trước
@@ -193,16 +278,22 @@ async function main() {
       );
       const actualStudioId = studioRes.rows[0].id;
       studioMap.set(s.slug, actualStudioId);
+      studioOwnerMap.set(s.slug, s.ownerId);
 
-      // 3.2 Insert ảnh minh chứng cho studio
-      const photoIds = [randomUUID(), randomUUID(), randomUUID()];
-      for (const pid of photoIds) {
-        await client.query(
-          `INSERT INTO images (id, studio_id, uploaded_by, key, state, byte_size)
-           VALUES ($1, $2, $3, $4, 'ready', 102400)
-           ON CONFLICT (id) DO NOTHING`,
-          [pid, actualStudioId, s.ownerId, `studios/${actualStudioId}/profile/${pid}.webp`],
-        );
+      // 3.2 Insert ảnh thật và upload lên Supabase storage cho studio
+      await client.query(`DELETE FROM images WHERE studio_id = $1 AND workshop_id IS NULL`, [actualStudioId]);
+      const photoIds: string[] = [];
+      for (const baseName of s.photoBases) {
+        const pid = randomUUID();
+        photoIds.push(pid);
+        await createAndUploadImageTriplet(client, {
+          id: pid,
+          studioId: actualStudioId,
+          workshopId: null,
+          uploadedBy: s.ownerId,
+          baseName,
+          keyPrefix: `studios/${actualStudioId}/profile`,
+        });
       }
 
       // 3.3 Cập nhật photo_ids cho studio
@@ -265,6 +356,7 @@ async function main() {
         district: 'Tây Hồ',
         address: 'Số 18 Ngõ 45 Đường Quảng An, Phường Quảng An, Tây Hồ, Hà Nội',
         description: 'Trải nghiệm tự tay làm gốm từ khâu nhào đất, vuốt gốm trên bàn xoay điện chuyên nghiệp đến khắc họa tiết và tô men màu. Phù hợp cho cả các bạn mới bắt đầu muốn giải tỏa căng thẳng cuối tuần.',
+        photoBases: ['craftPhoto', 'terrazzoPhoto'],
         sessions: [
           { dayOffset: 1, startHour: 9, startMin: 0, duration: 120, capacity: 10, price: 350000 },
           { dayOffset: 1, startHour: 14, startMin: 30, duration: 120, capacity: 10, price: 350000 },
@@ -289,6 +381,7 @@ async function main() {
         district: 'Tây Hồ',
         address: 'Số 18 Ngõ 45 Đường Quảng An, Phường Quảng An, Tây Hồ, Hà Nội',
         description: 'Tự tay cán đất, in dấu hoa lá thiên nhiên lên bề mặt gốm để tạo nên những chiếc đĩa và đế lót ly mộc mạc, độc bản trang trí góc làm việc của bạn.',
+        photoBases: ['terrazzoPhoto', 'craftPhoto'],
         sessions: [
           { dayOffset: 1, startHour: 16, startMin: 30, duration: 90, capacity: 8, price: 280000 },
           { dayOffset: 2, startHour: 14, startMin: 0, duration: 90, capacity: 8, price: 280000 },
@@ -311,6 +404,7 @@ async function main() {
         district: 'Hoàn Kiếm',
         address: 'Tầng 2, 36 Phố Tràng Tiền, Phường Tràng Tiền, Hoàn Kiếm, Hà Nội',
         description: 'Khám phá thế giới mùi hương tự nhiên, phối trộn tinh dầu hoa cỏ yêu thích, đổ sáp đậu nành ấm và trang trí hoa khô botanical theo phong cách riêng của bạn.',
+        photoBases: ['candlePhoto', 'flowerPhoto'],
         sessions: [
           { dayOffset: 1, startHour: 10, startMin: 0, duration: 90, capacity: 8, price: 290000 },
           { dayOffset: 1, startHour: 15, startMin: 0, duration: 90, capacity: 8, price: 290000 },
@@ -334,6 +428,7 @@ async function main() {
         district: 'Hoàn Kiếm',
         address: 'Tầng 2, 36 Phố Tràng Tiền, Phường Tràng Tiền, Hoàn Kiếm, Hà Nội',
         description: 'Tạo nên những thanh sáp thơm trang trí tủ quần áo, bàn trang điểm và lọ tinh dầu tỏa hương dịu mát cho căn phòng của bạn.',
+        photoBases: ['soapPhoto', 'candlePhoto'],
         sessions: [
           { dayOffset: 1, startHour: 13, startMin: 30, duration: 75, capacity: 10, price: 220000 },
           { dayOffset: 2, startHour: 10, startMin: 0, duration: 75, capacity: 10, price: 220000 },
@@ -356,6 +451,7 @@ async function main() {
         district: 'Quận 1',
         address: '128/6 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
         description: 'Hòa mình vào không gian nghệ thuật êm dịu, học cách pha màu Acrylic, tạo hiệu ứng chuyển sắc hoàng hôn và ráng chiều trên sóng biển.',
+        photoBases: ['artPhoto', 'stampPhoto'],
         sessions: [
           { dayOffset: 1, startHour: 9, startMin: 30, duration: 150, capacity: 12, price: 320000 },
           { dayOffset: 1, startHour: 14, startMin: 0, duration: 150, capacity: 12, price: 320000 },
@@ -379,6 +475,7 @@ async function main() {
         district: 'Quận 1',
         address: '128/6 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
         description: 'Tự vẽ họa tiết hoa lá phong cách vintage lên chiếc túi vải đi học, đi làm hoặc đi dạo phố cực kỳ thời trang và mang đậm cá tính riêng.',
+        photoBases: ['flowerPhoto', 'artPhoto'],
         sessions: [
           { dayOffset: 1, startHour: 16, startMin: 30, duration: 120, capacity: 10, price: 250000 },
           { dayOffset: 2, startHour: 9, startMin: 30, duration: 120, capacity: 10, price: 250000 },
@@ -415,6 +512,23 @@ async function main() {
       );
 
       const actualWsId = wsRes.rows[0].id;
+
+      // Xóa ảnh cũ của workshop này nếu có
+      await client.query(`DELETE FROM images WHERE workshop_id = $1`, [actualWsId]);
+
+      // Tạo ảnh workshop và upload lên Supabase storage
+      const ownerId = studioOwnerMap.get(w.studioSlug)!;
+      for (const baseName of w.photoBases) {
+        const wid = randomUUID();
+        await createAndUploadImageTriplet(client, {
+          id: wid,
+          studioId,
+          workshopId: actualWsId,
+          uploadedBy: ownerId,
+          baseName,
+          keyPrefix: `workshops/${actualWsId}`,
+        });
+      }
 
       // Xóa các session cũ của workshop này nếu có để tạo lại lịch mới chuẩn ngày thi
       await client.query(`DELETE FROM sessions WHERE workshop_id = $1`, [actualWsId]);
