@@ -19,8 +19,29 @@ export const templateReset = z
 const columns =
   't.key,t.subject,t.body,t.updated_by AS "updatedBy",t.updated_at AS "updatedAt",u.full_name AS "updatedByName",t.xmin::text AS version';
 export async function listMessageTemplates() {
-  return {
-    templates: (
+  let rows = (
+    await query<{
+      key: MessageTemplateKey;
+      subject: string;
+      body: string;
+      updatedBy: string | null;
+      updatedByName: string | null;
+      updatedAt: Date;
+      version: string;
+    }>(
+      `SELECT ${columns} FROM message_templates t LEFT JOIN users u ON u.id=t.updated_by`,
+    )
+  ).rows;
+
+  if (rows.length === 0) {
+    await query(`
+      INSERT INTO message_templates(key, subject, body)
+      SELECT k.key, d.subject, d.body 
+      FROM unnest(ARRAY['studio_approved','studio_needs_changes','studio_rejected','studio_suspended','booking_success','booking_cancelled']) AS k(key)
+      CROSS JOIN LATERAL default_message_template(k.key) d
+      ON CONFLICT (key) DO NOTHING
+    `);
+    rows = (
       await query<{
         key: MessageTemplateKey;
         subject: string;
@@ -32,7 +53,11 @@ export async function listMessageTemplates() {
       }>(
         `SELECT ${columns} FROM message_templates t LEFT JOIN users u ON u.id=t.updated_by`,
       )
-    ).rows
+    ).rows;
+  }
+
+  return {
+    templates: rows
       .sort(
         (a, b) =>
           messageTemplateKeySchema.options.indexOf(a.key) -

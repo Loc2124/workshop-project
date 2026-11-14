@@ -68,8 +68,10 @@ export function AdminMessageTemplatesPage() {
   const subjectRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const field = useRef<'subject' | 'body'>('body');
-  const saved = templates.data?.find((t) => t.key === selected);
-  const draft = drafts[selected];
+  const saved =
+    templates.data?.find((t) => t.key === selected) ?? templates.data?.[0];
+  const activeKey = saved?.key ?? selected;
+  const draft = drafts[activeKey];
   const current = {
     subject: draft?.subject ?? saved?.subject ?? '',
     body: draft?.body ?? saved?.body ?? '',
@@ -83,13 +85,13 @@ export function AdminMessageTemplatesPage() {
     setActionError(false);
     setDrafts((old) => ({
       ...old,
-      [selected]: {
+      [activeKey]: {
         subject: saved.subject,
         body: saved.body,
         version: saved.version,
         baseSubject: saved.subject,
         baseBody: saved.body,
-        ...old[selected],
+        ...old[activeKey],
         ...partial,
       },
     }));
@@ -112,7 +114,7 @@ export function AdminMessageTemplatesPage() {
       if (!saved) throw new Error('Chưa tải được mẫu thông báo.');
       return response.parse(
         await apiFetch(
-          `/admin/mau-thong-bao/${selected}${action === 'reset' ? '/reset' : ''}`,
+          `/admin/mau-thong-bao/${activeKey}${action === 'reset' ? '/reset' : ''}`,
           {
             method: action === 'reset' ? 'POST' : 'PUT',
             body: JSON.stringify({
@@ -127,7 +129,7 @@ export function AdminMessageTemplatesPage() {
       client.setQueryData(queryKeys.templates.config(userId), data);
       setDrafts((old) => {
         const next = { ...old };
-        delete next[selected];
+        delete next[activeKey];
         return next;
       });
       setReset(false);
@@ -152,7 +154,7 @@ export function AdminMessageTemplatesPage() {
           sample: z.record(z.string(), z.string()),
         })
         .parse(
-          await apiFetch(`/admin/mau-thong-bao/${selected}/preview`, {
+          await apiFetch(`/admin/mau-thong-bao/${activeKey}/preview`, {
             method: 'POST',
             body: JSON.stringify(current),
           }),
