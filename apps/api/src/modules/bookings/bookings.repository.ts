@@ -488,6 +488,9 @@ export async function failCheckout(bookingId: string): Promise<void> {
        WHERE id = $1`,
       [bookingId],
     );
+    await client.query('DELETE FROM booking_requests WHERE booking_id = $1', [
+      bookingId,
+    ]);
   });
 }
 

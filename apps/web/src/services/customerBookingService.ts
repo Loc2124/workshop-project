@@ -182,7 +182,7 @@ export const customerBookingService = {
     } catch (error) {
       if (
         error instanceof ApiError &&
-        [400, 403, 404, 409, 422].includes(error.status)
+        [400, 403, 404, 409, 422, 503].includes(error.status)
       )
         clearBookingRequest(userId, intent, input);
       throw error;
