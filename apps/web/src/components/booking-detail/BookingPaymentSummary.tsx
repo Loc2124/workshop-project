@@ -371,8 +371,6 @@ export function BookingPaymentSummary({
           {state.deposit?.checkoutUrl && (
             <a
               href={state.deposit.checkoutUrl}
-              target="_blank"
-              rel="noreferrer"
               className={`${primary} mt-2.5`}
             >
               Mở trang thanh toán · Cọc {money(booking.depositAmount)}

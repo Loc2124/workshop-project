@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { notifyBookingUpdated } from '@/lib/booking-sync';
 import { customerBookingService } from '@/services/customerBookingService';
 
 export function PaymentReturnPage({
@@ -14,7 +15,12 @@ export function PaymentReturnPage({
   const cancelAttempted = useRef(false);
 
   useEffect(() => {
-    if (!cancelled || !bookingId || cancelAttempted.current) return;
+    if (!bookingId) return;
+    if (!cancelled) {
+      notifyBookingUpdated(bookingId, 'payment_returned');
+      return;
+    }
+    if (cancelAttempted.current) return;
     cancelAttempted.current = true;
 
     let active = true;
@@ -24,6 +30,7 @@ export function PaymentReturnPage({
         console.warn('Auto cancel booking on payOS cancel redirect:', err);
       })
       .finally(() => {
+        notifyBookingUpdated(bookingId, 'payment_cancelled');
         if (active) {
           setIsCancelling(false);
           navigate(

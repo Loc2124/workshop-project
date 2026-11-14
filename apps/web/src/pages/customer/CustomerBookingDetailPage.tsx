@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { queryKeys } from '@/lib/query-keys';
 import { formatPrice } from '@/lib/format';
 import { bookingDetailState } from '@/lib/booking-detail';
+import { subscribeBookingUpdates } from '@/lib/booking-sync';
 import { customerBookingService } from '@/services/customerBookingService';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { LoadingState } from '@/components/ui/LoadingState';
@@ -116,13 +117,26 @@ export function CustomerBookingDetailPage() {
     };
     const timer = window.setInterval(tick, 1000);
     window.addEventListener('focus', sync);
+    window.addEventListener('pageshow', sync);
     document.addEventListener('visibilitychange', sync);
     return () => {
       window.clearInterval(timer);
       window.removeEventListener('focus', sync);
+      window.removeEventListener('pageshow', sync);
       document.removeEventListener('visibilitychange', sync);
     };
   }, [refetch]);
+
+  useEffect(() => {
+    if (!id) return;
+    return subscribeBookingUpdates(id, () => {
+      void queryClient.invalidateQueries({ queryKey: detailKey });
+      void queryClient.invalidateQueries({ queryKey: listKey });
+      void queryClient.invalidateQueries({
+        queryKey: ['booking-seats', user?.id, id],
+      });
+    });
+  }, [id, queryClient, detailKey, listKey, user?.id]);
 
   const source = query.data?.booking;
 
