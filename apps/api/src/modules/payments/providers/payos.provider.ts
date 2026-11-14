@@ -56,7 +56,7 @@ export class PayOSProvider implements PaymentProvider {
             ? { expiredAt: Math.floor(Date.parse(input.expiresAt) / 1000) }
             : {}),
         }),
-        signal: AbortSignal.timeout(10_000),
+        signal: AbortSignal.timeout(20_000),
       },
     );
     const body: unknown = await response.json();
@@ -67,7 +67,10 @@ export class PayOSProvider implements PaymentProvider {
       parsed.data.code !== '00' ||
       !parsed.data.data
     ) {
-      throw new Error('PayOS did not create a payment link.');
+      const detail = parsed.success
+        ? `${parsed.data.code}: ${parsed.data.desc}`
+        : `HTTP ${response.status}`;
+      throw new Error(`PayOS did not create a payment link (${detail}).`);
     }
     return {
       checkoutUrl: parsed.data.data.checkoutUrl,

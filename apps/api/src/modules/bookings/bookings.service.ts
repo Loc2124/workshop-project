@@ -109,7 +109,12 @@ export async function createCustomerBooking(
       returnUrl: returnUrl.toString(),
       cancelUrl: cancelUrl.toString(),
     });
-  } catch {
+  } catch (error) {
+    console.error(
+      'Failed to create payment link for booking',
+      result.booking.id,
+      error,
+    );
     await failCheckout(result.booking.id);
     throw new AppError(
       503,
