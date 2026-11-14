@@ -1,41 +1,62 @@
 import {
   siteSettingsSchema,
   SETTINGS_KEY,
+  defaultSiteSettings,
   type SiteSettings,
 } from '@workshop/shared';
 import type { PoolClient } from 'pg';
 import { query, withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
 import { writeAuditLog } from '../admin/audit-log.js';
+
 export async function getSiteSettings(
   client?: PoolClient,
 ): Promise<SiteSettings> {
-  const result = client
-    ? await client.query('SELECT value FROM settings WHERE key=$1', [
-        SETTINGS_KEY,
-      ])
-    : await query('SELECT value FROM settings WHERE key=$1', [SETTINGS_KEY]);
-  if (!result.rows[0])
-    throw new AppError(
-      503,
-      'SERVICE_UNAVAILABLE',
-      'Chưa tải được cài đặt hệ thống.',
+  const q = client ? client.query.bind(client) : query;
+  let result = await q('SELECT value FROM settings WHERE key=$1', [SETTINGS_KEY]);
+  if (!result.rows[0]) {
+    await q(
+      `INSERT INTO settings (key, value, updated_at) 
+       VALUES ($1, $2, clock_timestamp()) 
+       ON CONFLICT (key) DO NOTHING`,
+      [SETTINGS_KEY, JSON.stringify(defaultSiteSettings)],
     );
+    result = await q('SELECT value FROM settings WHERE key=$1', [SETTINGS_KEY]);
+  }
+  if (!result.rows[0]) {
+    return defaultSiteSettings;
+  }
   return siteSettingsSchema.parse(result.rows[0].value);
 }
+
 export async function getAdminSettings() {
-  const row = (
+  let row = (
     await query(
       'SELECT value,xmin::text AS version,updated_at AS "updatedAt" FROM settings WHERE key=$1',
       [SETTINGS_KEY],
     )
   ).rows[0];
-  if (!row)
+  if (!row) {
+    await query(
+      `INSERT INTO settings (key, value, updated_at) 
+       VALUES ($1, $2, clock_timestamp()) 
+       ON CONFLICT (key) DO NOTHING`,
+      [SETTINGS_KEY, JSON.stringify(defaultSiteSettings)],
+    );
+    row = (
+      await query(
+        'SELECT value,xmin::text AS version,updated_at AS "updatedAt" FROM settings WHERE key=$1',
+        [SETTINGS_KEY],
+      )
+    ).rows[0];
+  }
+  if (!row) {
     throw new AppError(
       503,
       'SERVICE_UNAVAILABLE',
       'Chưa tải được cài đặt hệ thống.',
     );
+  }
   return {
     settings: siteSettingsSchema.parse(row.value),
     version: row.version,
