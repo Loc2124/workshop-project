@@ -1,16 +1,16 @@
-export { studioProvinces } from './provinces.js';
-import { studioTrustLevelSchema } from './studio-trust.js';
+export { studioProvinces } from './reference-data/provinces.js';
+import { studioTrustLevelSchema } from './studio/studio-trust.js';
 import { z } from 'zod';
 export {
   proposedCategoryNameSchema,
   validateCategoryProposal,
-} from './category-proposal.js';
-export { studioRegistrationSchema } from './studio-registration.js';
+} from './validation/category-proposal.js';
+export { studioRegistrationSchema } from './studio/studio-registration.js';
 export {
   splitSeatAmount,
   originalSeatAmounts,
   seatCancellationAmounts,
-} from './seat-allocation.js';
+} from './pricing/seat-allocation.js';
 export {
   studioEvidenceSchema,
   createStudioEvidenceSchema,
@@ -18,8 +18,8 @@ export {
   MIN_STUDIO_PHOTOS,
   MAX_STUDIO_PHOTOS,
   MAX_STUDIO_PHOTO_BYTES,
-} from './studio-evidence.js';
-export type { StudioEvidenceInput } from './studio-evidence.js';
+} from './studio/studio-evidence.js';
+export type { StudioEvidenceInput } from './studio/studio-evidence.js';
 export {
   depositPercentSchema,
   validateWorkshopDeposit,
@@ -33,22 +33,22 @@ export {
   MAX_DEPOSIT_PERCENT,
   effectiveDepositPercent,
   calculateDeposit,
-} from './deposit-policy.js';
+} from './pricing/deposit-policy.js';
 export {
   studioTrustLevelSchema,
   studioVerificationDecisionSchema,
   studioVerificationHistorySchema,
   verificationMethodSchema,
-} from './studio-trust.js';
+} from './studio/studio-trust.js';
 export type {
   StudioTrustLevel,
   StudioVerificationDecision,
-} from './studio-trust.js';
+} from './studio/studio-trust.js';
 export {
   newPasswordSchema,
   passwordRequirements,
   registrationInputSchema,
-} from './password-policy.js';
+} from './validation/password-policy.js';
 
 const isoDateTimeSchema = z.iso.datetime({ offset: true });
 
@@ -179,10 +179,11 @@ export type PublicStudioResponseDto = z.infer<
   typeof publicStudioResponseSchema
 >;
 export type WorkshopPolicyFields = z.infer<typeof workshopPolicyFieldsSchema>;
-export * from './studio-review.js';
-export * from './reports.js';
-export * from './message-templates.js';
-export * from './settings.js';
-export { createStudioRegistrationSchema } from './studio-registration.js';
-export * from './vietnam-banks.js';
-export * from './reviews.js';
+export * from './studio/studio-review.js';
+export * from './reports/reports.js';
+export * from './notifications/message-templates.js';
+export * from './constants/settings.js';
+export { createStudioRegistrationSchema } from './studio/studio-registration.js';
+export * from './reference-data/vietnam-banks.js';
+export * from './reviews/reviews.js';
+export * from './contracts/index.js';

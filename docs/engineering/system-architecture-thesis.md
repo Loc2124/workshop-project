@@ -346,7 +346,232 @@ sequenceDiagram
 
 ---
 
-## 4. Tối Ưu Hóa Frontend & Web Vitals (Performance Engineering)
+## 4. Phân Tích & Thiết Kế Phân Hệ Quản Trị Viên (Admin Subsystem Analysis & Design)
+
+Phân hệ Quản trị viên (Admin) đóng vai trò trung tâm điều phối dòng tiền, thẩm định đối tác và bảo vệ quyền lợi giữa Khách hàng và Studio. Nhằm đáp ứng tiêu chuẩn báo cáo Đồ án Tốt nghiệp / Thực tập, mục này đặc tả toàn diện kiến trúc phân hệ Admin qua hệ thống biểu đồ UML chuẩn mực.
+
+### 4.1. Biểu Đồ Use Case Tổng Thể Phân Hệ Admin (Admin Use Case Diagram)
+
+```mermaid
+graph LR
+    Admin([Quản Trị Viên / Admin])
+
+    subgraph FinancialLedger ["Phân hệ Tài chính & Đối soát"]
+        UC1(["UC-AD01: Đối soát & Hoàn cọc VietQR 247"])
+        UC2(["UC-AD02: Quyết toán & Chi trả Studio"])
+        UC3(["UC-AD03: Quản lý lịch ngày làm việc & đối soát"])
+        UC4(["UC-AD04: Tra cứu phí sàn & lịch sử giao dịch"])
+        UC_Crypto(["<<include>> Giải mã AES-256 STK ngân hàng"])
+        UC_Audit(["<<include>> Ghi nhật ký kiểm toán Audit Log"])
+        
+        UC1 -.-> UC_Crypto
+        UC1 -.-> UC_Audit
+        UC2 -.-> UC_Crypto
+        UC2 -.-> UC_Audit
+    end
+
+    subgraph ModerationSubsystem ["Phân hệ Kiểm duyệt & Thẩm định"]
+        UC5(["UC-AD05: Thẩm định hồ sơ & bằng chứng Studio"])
+        UC6(["UC-AD06: Duyệt nội dung & chính sách cọc Workshop"])
+        UC7(["UC-AD07: Xử lý khiếu nại & báo cáo vi phạm"])
+        UC5 -.-> UC_Audit
+        UC6 -.-> UC_Audit
+    end
+
+    subgraph OperationSubsystem ["Phân hệ Vận hành & Giám sát"]
+        UC8(["UC-AD08: Giám sát đặt chỗ & tra soát đơn hàng"])
+        UC9(["UC-AD09: Quản lý tài khoản & phân quyền người dùng"])
+        UC10(["UC-AD10: Xem bảng tổng quan chỉ số Dashboard"])
+    end
+
+    Admin --> UC1
+    Admin --> UC2
+    Admin --> UC3
+    Admin --> UC4
+    Admin --> UC5
+    Admin --> UC6
+    Admin --> UC7
+    Admin --> UC8
+    Admin --> UC9
+    Admin --> UC10
+```
+
+---
+
+### 4.2. Biểu Đồ Hoạt Động: Quy Trình Xử Lý Hoàn Cọc & Chi Trả (Activity Diagram)
+
+Quy trình khép kín đảm bảo tính toàn vẹn giao dịch và bảo mật tài khoản thụ hưởng:
+
+```mermaid
+flowchart TD
+    Start([Khách hủy chỗ / Đơn cần hoàn cọc]) --> A1[Hệ thống ghi nhận nghĩa vụ kind='customer_refund']
+    A1 --> A2[Khách cung cấp STK nhận hoàn]
+    A2 --> A3[Mã hóa đối xứng AES-256-GCM lưu DB]
+    A3 --> A4[Admin mở trang Quản lý Tài chính /admin/tai-chinh]
+    A4 --> A5[Admin chọn 'Chuyển khoản VietQR']
+    A5 --> A6[Backend giải mã STK & sinh mã 'OS HOAN orderCode']
+    A6 --> A7[Hiển thị ảnh VietQR động chuẩn Napas 247]
+    A7 --> A8[Admin quét mã QR qua App Ngân hàng]
+    A8 --> A9{Chuyển tiền thành công?}
+    A9 -- Không --> A10[Hủy bỏ thao tác hoặc chuyển sang manual_review]
+    A10 --> EndFail([Kết thúc: Giữ nguyên trạng thái chờ])
+    A9 -- Có --> A11[Admin nhập Mã giao dịch ngân hàng Reference]
+    A11 --> A12[Gửi xác nhận kèm Idempotency-Key chống trùng]
+    A12 --> A13[Tạo financial_transfers status='succeeded']
+    A13 --> A14[Cập nhật financial_obligations status='paid']
+    A14 --> A15[Cập nhật bookings refund_status='refunded']
+    A15 --> A16[Ghi Audit Log bất biến & Hàng đợi gửi Email biên nhận]
+    A16 --> EndSuccess([Kết thúc: Hoàn tất đối soát hoàn cọc])
+```
+
+---
+
+### 4.3. Biểu Đồ Tuần Tự: Admin Thực Hiện Đối Soát & Hoàn Cọc (Sequence Diagram)
+
+Quy trình tương tác chi tiết giữa các tầng kiến trúc trong hệ thống:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Quản Trị Viên (Admin)
+    participant UI as Admin Web (React SPA)
+    participant API as Backend (Ledger Router)
+    participant Crypto as Crypto Service (AES-256)
+    participant DB as PostgreSQL (ACID)
+    participant VietQR as Cổng VietQR (Napas 247)
+    participant Email as Email Outbox Queue
+
+    Admin->>UI: Mở tab Nghĩa vụ tài chính (/admin/tai-chinh)
+    UI->>API: GET /admin/tai-chinh/nghia-vu
+    API->>DB: Truy vấn financial_obligations (kind='customer_refund')
+    DB-->>API: Danh sách khoản hoàn cọc kèm hạn thanh toán
+    API-->>UI: Hiển thị danh sách nghĩa vụ
+
+    Admin->>UI: Bấm chọn "Chuyển khoản VietQR"
+    UI->>API: GET /admin/tai-chinh/nghia-vu/:id/vietqr
+    activate API
+    API->>DB: Đọc customer_refund_accounts (encrypted_number, iv, tag)
+    API->>Crypto: decryptFinancialAccount(encryptedNumber, iv, tag)
+    Crypto-->>API: Trả về số tài khoản giải mã
+    API->>DB: Ghi Audit Log: financial.customer_account.full_viewed
+    API->>API: Sinh nội dung chuyển khoản: "OS HOAN " + orderCode
+    API->>VietQR: Sinh link ảnh VietQR (BIN, STK, Số tiền, Nội dung)
+    VietQR-->>API: Image URL VietQR Napas 247
+    API-->>UI: Trả về preview (URL mã QR, STK, Số tiền, Nội dung)
+    deactivate API
+
+    UI-->>Admin: Hiển thị Modal VietQR chuyển khoản
+    Admin->>Admin: Dùng ứng dụng ngân hàng quét mã và thực hiện chuyển tiền
+    Admin->>UI: Nhập Mã đối chiếu giao dịch (Reference) & bấm Xác nhận
+    UI->>API: POST /admin/tai-chinh/nghia-vu/:id/chuyen-nhanh-vietqr (reference, idempotencyKey)
+    activate API
+    API->>DB: withTransaction(client)
+    activate DB
+    DB->>DB: Kiểm tra trùng lặp idempotency_key
+    DB->>DB: INSERT INTO financial_transfers (status='succeeded', direction='outbound')
+    DB->>DB: UPDATE financial_obligations SET status='paid'
+    DB->>DB: UPDATE bookings SET refund_status='refunded'
+    DB->>DB: Ghi Audit Log bất biến (actor_id, reference, reason)
+    DB-->>API: Xác nhận giao dịch ghi nhận thành công
+    deactivate DB
+    API->>Email: queueRefundEmail(bookingId, transferId, amount, reference)
+    API-->>UI: Phản hồi hoàn tất (HTTP 200 OK)
+    deactivate API
+    UI-->>Admin: Thông báo thành công & Tự động làm mới danh sách
+```
+
+---
+
+### 4.4. Biểu Đồ Tuần Tự: Admin Thẩm Định & Phê Duyệt Đối Tác Studio (Sequence Diagram)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Quản Trị Viên (Admin)
+    participant UI as Admin Web (React SPA)
+    participant API as Backend (Admin Studios)
+    participant DB as PostgreSQL (ACID)
+    participant Email as Email Outbox Queue
+
+    Admin->>UI: Mở danh sách hồ sơ Studio chờ duyệt (/admin/studios?status=pending)
+    UI->>API: GET /admin/studios?status=pending
+    API->>DB: SELECT * FROM studios WHERE verified_at IS NULL
+    DB-->>API: Danh sách hồ sơ kèm tài liệu pháp lý & bằng chứng
+    API-->>UI: Hiển thị chi tiết hồ sơ & chính sách cọc
+
+    Admin->>UI: Đánh giá hồ sơ & chọn hành động (Phê duyệt / Cần sửa đổi / Từ chối)
+    alt Phê duyệt hợp lệ
+        Admin->>UI: Bấm "Phê duyệt đối tác" (verified)
+        UI->>API: POST /admin/studios/:id/review (decision='verified')
+        activate API
+        API->>DB: withTransaction(client)
+        activate DB
+        DB->>DB: UPDATE studios SET verified_at=now()
+        DB->>DB: INSERT INTO admin_activity_log (action='studio.verified', target_id=studio_id)
+        DB-->>API: Xác nhận cập nhật
+        deactivate DB
+        API->>Email: Gửi email thông báo hồ sơ Studio đã được kích hoạt
+        API-->>UI: Thông báo phê duyệt thành công
+        deactivate API
+    else Cần bổ sung thông tin
+        Admin->>UI: Nhập lý do yêu cầu sửa đổi & gửi
+        UI->>API: POST /admin/studios/:id/review (decision='needs_changes', reason)
+        activate API
+        API->>DB: UPDATE studios SET review_status='needs_changes', review_feedback=reason
+        API->>Email: Gửi email yêu cầu Studio bổ sung tài liệu
+        API-->>UI: Đã gửi yêu cầu chỉnh sửa
+        deactivate API
+    end
+```
+
+---
+
+### 4.5. Biểu Đồ Trạng Thái: Quản Lý Nghĩa Vụ Tài Chính & Giao Dịch Chi (State Machine Diagram)
+
+```mermaid
+stateDiagram-v2
+    [*] --> awaiting_funds: Buổi học kết thúc / Đơn cần thu hồi tiền từ Studio
+    [*] --> pending: Đơn hủy hợp lệ / Đủ điều kiện hoàn cọc cho khách
+    
+    awaiting_funds --> pending: Studio đã chuyển hoàn tiền về sàn
+    
+    pending --> approved: Admin tạo lệnh chuyển tiền & được phê duyệt
+    pending --> cancelled: Hủy bỏ nghĩa vụ do sai lệch đơn hàng
+
+    approved --> processing: Gửi lệnh chi hộ qua cổng tự động
+    approved --> paid: Admin quét mã VietQR chuyển khoản thành công trực tiếp
+
+    processing --> paid: Cổng thanh toán phản hồi giao dịch thành công
+    processing --> manual_review: Cổng thanh toán timeout / Chờ tra soát đối chiếu
+    processing --> failed: Ngân hàng thụ hưởng báo từ chối lệnh chi
+
+    manual_review --> paid: Admin đối soát chứng từ khớp lệnh
+    manual_review --> failed: Xác nhận không thể thực hiện lệnh chi
+    
+    failed --> pending: Khởi tạo lại lệnh chuyển mới
+
+    paid --> [*]: Nghĩa vụ hoàn tất (Closed)
+    cancelled --> [*]: Hủy bỏ hoàn toàn
+```
+
+---
+
+### 4.6. Bảng Đặc Tả Use Case Mẫu (Use Case Specification)
+
+| Thuộc tính (Field) | Nội dung chi tiết (Specification) |
+| :--- | :--- |
+| **Mã Use Case** | **UC-AD01** |
+| **Tên Use Case** | Đối soát & Hoàn tiền cọc cho khách hàng qua VietQR 247 |
+| **Actor chính** | Quản trị viên sàn (Admin) |
+| **Mô tả tóm tắt** | Quản trị viên tra cứu các khoản cọc cần hoàn trả do khách hủy chỗ hợp lệ hoặc sự kiện bị hủy, xem thông tin tài khoản giải mã, quét mã VietQR chuẩn Napas 247 và ghi nhận mã đối chiếu để hoàn tất quy trình hoàn cọc. |
+| **Tiền điều kiện (Pre-condition)** | 1. Admin đã đăng nhập với vai trò `admin`.<br/>2. Đơn đặt chỗ ở trạng thái cần hoàn (`refund_needed` / `cancelled`).<br/>3. Khách hàng đã cập nhật thông tin tài khoản ngân hàng nhận hoàn tiền hợp lệ trong hệ thống. |
+| **Hậu điều kiện (Post-condition)** | 1. Nghĩa vụ tài chính chuyển sang trạng thái `paid`.<br/>2. Lệnh chuyển tiền `financial_transfers` được ghi nhận trạng thái `succeeded`.<br/>3. Ghi vết kiểm toán bất biến vào bảng `admin_audit_logs`.<br/>4. Email biên nhận hoàn tiền được đưa vào hàng đợi gửi cho khách hàng. |
+| **Luồng sự kiện chính (Main Flow)** | 1. Admin truy cập trang Quản lý Tài chính (`/admin/tai-chinh`).<br/>2. Hệ thống tải và hiển thị danh sách các khoản nghĩa vụ hoàn tiền (`kind = customer_refund`).<br/>3. Admin chọn khoản hoàn cọc cần thực hiện và bấm "Chuyển khoản VietQR".<br/>4. Hệ thống giải mã số tài khoản (AES-256), ghi vết audit log, sinh link ảnh mã VietQR có gắn sẵn nội dung `OS HOAN <orderCode>` và số tiền cần hoàn.<br/>5. Admin dùng ứng dụng ngân hàng quét mã QR và tiến hành chuyển khoản.<br/>6. Sau khi chuyển thành công, Admin nhập mã giao dịch ngân hàng (Reference Code) vào hệ thống và xác nhận.<br/>7. Hệ thống cập nhật trạng thái trong giao dịch cơ sở dữ liệu và gửi thông báo thành công cho Admin. |
+| **Luồng ngoại lệ (Alternative / Exception)** | - *3a. Khách chưa cập nhật STK:* Hệ thống cảnh báo "Chưa có tài khoản nhận hoàn tiền", chuyển trạng thái sang chờ khách bổ sung.<br/>- *6a. Trùng mã Idempotency:* Hệ thống từ chối yêu cầu để ngăn chặn việc ghi nhận lặp giao dịch. |
+
+---
+
+## 5. Tối Ưu Hóa Frontend & Web Vitals (Performance Engineering)
 
 ### Kết quả Tái cấu trúc Kiến trúc Codebase (Refactoring Highlights)
 

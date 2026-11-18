@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { defaultSiteSettings, type SiteSettings } from './settings.js';
+import { defaultSiteSettings, type SiteSettings } from '../constants/settings.js';
 
 export const MIN_STUDIO_PHOTOS = defaultSiteSettings.studio.minPhotos;
 export const MAX_STUDIO_PHOTOS = defaultSiteSettings.studio.maxPhotos;

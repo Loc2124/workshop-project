@@ -1,21 +1,19 @@
 import { createApp } from './app.js';
 import { loadConfig } from './config.js';
-import { startBookingExpiryJob } from './modules/bookings/booking-expiry-job.js';
-import { startAttendanceJob } from './modules/bookings/attendance-job.js';
-import { startFinancialObligationJob } from './modules/payments/financial-obligation-job.js';
+import { startAllJobs } from './jobs/index.js';
 
 const {
   API_PORT: port,
   TRUST_PROXY_HOPS: trustProxyHops,
-  EXPIRY_JOB_INTERVAL_SECONDS: expiryJobIntervalSeconds,
 } = loadConfig();
 const app = createApp();
 
 if (trustProxyHops > 0) app.set('trust proxy', trustProxyHops);
 
-startBookingExpiryJob(expiryJobIntervalSeconds);
-startAttendanceJob();
-startFinancialObligationJob();
+// Initialize background jobs (can be toggled if worker runs as separate process)
+if (process.env.RUN_BACKGROUND_JOBS !== 'false') {
+  startAllJobs();
+}
 
 app.listen(port, () => {
   console.log(`API listening on port ${port}`);
