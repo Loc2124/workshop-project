@@ -160,12 +160,13 @@ export function AdminFinancialPage() {
         throw new Error('Chưa chọn lệnh chuyển VietQR');
       }
       return apiFetch(
-        `/admin/tai-chinh/nghia-vu/${vietqrModal.obligationId}/vietqr-xac-nhan`,
+        `/admin/tai-chinh/nghia-vu/${vietqrModal.obligationId}/chuyen-nhanh-vietqr`,
         {
           method: 'POST',
           body: JSON.stringify({
             reference: vietqrReference.trim(),
             providerFee: Math.max(0, Number(vietqrFee) || 0),
+            idempotencyKey: `vietqr-${crypto.randomUUID()}`,
           }),
         },
       );

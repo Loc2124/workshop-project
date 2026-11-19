@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'node:crypto';
 import { z } from 'zod';
 import { formatBankDisplay } from '@workshop/shared';
 import { withTransaction } from '../../../db/pool.js';
@@ -409,7 +410,12 @@ const quickVietqrSettlementInput = z
     reference: z.string().trim().min(3).max(200),
     provider: z.string().trim().min(2).max(80).default('VietQR Napas 247'),
     providerFee: z.number().int().nonnegative().default(0),
-    idempotencyKey: z.string().trim().min(8).max(120),
+    idempotencyKey: z
+      .string()
+      .trim()
+      .min(8)
+      .max(120)
+      .default(() => `vietqr-${crypto.randomUUID()}`),
     reason: z
       .string()
       .trim()
@@ -420,7 +426,7 @@ const quickVietqrSettlementInput = z
   .strict();
 
 obligationsRouter.post(
-  '/nghia-vu/:id/chuyen-nhanh-vietqr',
+  ['/nghia-vu/:id/chuyen-nhanh-vietqr', '/nghia-vu/:id/vietqr-xac-nhan'],
   async (req, res) => {
     const id = z.uuid().parse(req.params.id);
     const input = quickVietqrSettlementInput.parse(req.body);
