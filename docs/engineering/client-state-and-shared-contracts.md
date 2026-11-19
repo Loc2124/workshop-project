@@ -1,6 +1,6 @@
 # Định hướng kiến trúc: Client State (Zustand) và Shared Contracts (Zod)
 
-> **Trạng thái tài liệu:** Tài liệu thiết kế & lộ trình kỹ thuật cho các giai đoạn mở rộng tiếp theo.  
+> **Trạng thái tài liệu:** **ĐÃ TRIỂN KHAI HOÀN TẤT (IMPLEMENTED)** (19/11/2026).  
 > **Áp dụng cho:** `apps/web`, `apps/api`, `packages/shared`.
 
 ---
