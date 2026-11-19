@@ -5,6 +5,11 @@ import { authQueryKey } from '../api/session-cache';
 import { queryKeys } from '../api/query-keys';
 import { catalogService } from '@/services/catalogService';
 
+vi.mock('@/pages/studio/StudioPage', () => ({ default: () => null }));
+vi.mock('@/pages/public/WorkshopPage', () => ({ default: () => null }));
+vi.mock('@/pages/public/HomePage', () => ({ default: () => null }));
+vi.mock('@/pages/public/ExplorePage', () => ({ default: () => null }));
+
 afterEach(() => vi.restoreAllMocks());
 
 it('does not warm private endpoints for guests or customers hovering admin links', async () => {

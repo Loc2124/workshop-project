@@ -165,12 +165,10 @@ export const publicStudioResponseSchema = z
   })
   .strict();
 
-export const workshopPolicyFieldsSchema = z
-  .object({
-    cancellationPolicy: z.string().trim().max(5000).nullable().optional(),
-    paymentPolicy: z.string().trim().max(5000).nullable().optional(),
-  })
-  .strict();
+export {
+  workshopPolicyFieldsSchema,
+  type WorkshopPolicyFields,
+} from './contracts/workshops.contract.js';
 
 export type WorkshopSessionDto = z.infer<typeof workshopSessionDtoSchema>;
 export type PublicWorkshopDto = z.infer<typeof publicWorkshopDtoSchema>;
@@ -178,7 +176,6 @@ export type CatalogResponseDto = z.infer<typeof catalogResponseSchema>;
 export type PublicStudioResponseDto = z.infer<
   typeof publicStudioResponseSchema
 >;
-export type WorkshopPolicyFields = z.infer<typeof workshopPolicyFieldsSchema>;
 export * from './studio/studio-review.js';
 export * from './reports/reports.js';
 export * from './notifications/message-templates.js';

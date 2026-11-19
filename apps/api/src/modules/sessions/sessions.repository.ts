@@ -8,7 +8,7 @@ import {
   cancelChangedScheduleBookings,
   expireScheduleResponses,
   scheduleResponseDeadline,
-} from '../bookings/schedule-changes.js';
+} from './schedule-changes/index.js';
 import type { SessionInput, SessionUpdate } from './sessions.schemas.js';
 
 export type SessionRow = {
