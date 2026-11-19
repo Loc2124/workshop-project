@@ -1,11 +1,11 @@
 ﻿import { useParams } from 'react-router-dom';
-import { DetailState } from '@/components/details/DetailPrimitives';
-import { WorkshopDetails } from '@/components/details/WorkshopDetails';
-import type { WorkshopBookingHandler } from '@/components/details/WorkshopSchedule';
 import {
+  DetailState,
+  WorkshopDetails,
+  type WorkshopBookingHandler,
   workshopSuggestions,
   workshopText,
-} from '@/components/details/workshopPresentation';
+} from '@/features/workshop';
 import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { ReportButton } from '@/components/reports/ReportButton';

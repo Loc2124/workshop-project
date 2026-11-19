@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import {
   DetailHero,
   DetailSection,
-} from '@/components/details/DetailPrimitives';
+} from '@/features/workshop';
 import { GreenSection } from '@/components/layout/GreenSection';
 import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
 import { PageContainer } from '@/components/layout/PageContainer';

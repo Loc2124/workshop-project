@@ -6,14 +6,12 @@ import { CategoryShortcuts } from '@/components/catalog/CategoryShortcuts';
 import {
   DetailSection,
   DetailState,
-} from '@/components/details/DetailPrimitives';
-import { StudioHero } from '@/components/details/StudioHero';
-import { StudioPhotoGrid } from '@/components/details/StudioPhotoGrid';
-import {
+  StudioHero,
+  StudioPhotoGrid,
   StudioArtists,
   StudioExtras,
   StudioSidebar,
-} from '@/components/details/StudioSections';
+} from '@/features/workshop';
 import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { ReportButton } from '@/components/reports/ReportButton';

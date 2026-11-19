@@ -1,5 +1,5 @@
 ﻿import { LoadingState } from '@/components/ui/LoadingState';
-import { CategoryShortcuts } from '@/components/catalog/CategoryShortcuts';
+import { CategoryShortcuts } from '@/features/catalog';
 import { HomeArtisanSection } from '@/components/home/HomeArtisanSection';
 import { HomeFeaturedStudios } from '@/components/home/HomeFeaturedStudios';
 import { HomeProcessSection } from '@/components/home/HomeProcessSection';

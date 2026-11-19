@@ -1,5 +1,5 @@
 ﻿import { useParams } from 'react-router-dom';
-import { StudioManagementContent } from '@/components/management/StudioManagementContent';
+import { StudioManagementContent } from '@/features/studio-management';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useMyStudios,

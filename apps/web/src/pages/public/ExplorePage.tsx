@@ -3,14 +3,17 @@ import { CalendarDays, ChevronDown } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
-import type { AreaOption } from '@/components/catalog/AreaMultiSelect';
-import { ExploreFilters } from '@/components/catalog/ExploreFilters';
-import { Pagination } from '@/components/catalog/Pagination';
-import type { ProvinceOption } from '@/components/catalog/ProvinceCombobox';
-import { ViewToggle, type CatalogView } from '@/components/catalog/ViewToggle';
-import { WorkshopGrid } from '@/components/catalog/WorkshopGrid';
-import { ActiveFilterChips } from '@/components/catalog/ActiveFilterChips';
-import { countActiveFilters } from '@/components/catalog/MobileFilterSheet';
+import {
+  type AreaOption,
+  ExploreFilters,
+  Pagination,
+  type ProvinceOption,
+  ViewToggle,
+  type CatalogView,
+  WorkshopGrid,
+  ActiveFilterChips,
+  countActiveFilters,
+} from '@/features/catalog';
 import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { categories, getCategoryMeta } from '@/constants/categories';

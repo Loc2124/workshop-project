@@ -1,4 +1,4 @@
-﻿import { StudioOverview } from '@/components/management/StudioOverview';
+﻿import { StudioOverview } from '@/features/studio-management';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyStudios } from '@/hooks/useManagement';
 

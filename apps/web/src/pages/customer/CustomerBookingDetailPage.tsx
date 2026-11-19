@@ -17,18 +17,17 @@ import { customerBookingService } from '@/services/customerBookingService';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { sessionLifecycleLabel } from './CustomerBookingsPage';
-import { BookingSeatCancellation } from '@/components/details/BookingSeatCancellation';
-import { CustomerRefundAccounts } from '@/components/management/CustomerRefundAccounts';
+import { CustomerRefundAccounts } from '@/features/studio-management';
 import { BookingReviewSection } from '@/components/reviews/BookingReviewSection';
-
 import {
   BookingHeroHeader,
   BookingLocationSection,
-} from '@/components/booking-detail/BookingHeroHeader';
-import { BookingTicketsSection } from '@/components/booking-detail/BookingTicketsSection';
-import { BookingRescheduleNotice } from '@/components/booking-detail/BookingRescheduleNotice';
-import { BookingCancellationDialog } from '@/components/booking-detail/BookingCancellationDialog';
-import { BookingPaymentSummary } from '@/components/booking-detail/BookingPaymentSummary';
+  BookingTicketsSection,
+  BookingRescheduleNotice,
+  BookingCancellationDialog,
+  BookingPaymentSummary,
+  BookingSeatCancellation,
+} from '@/features/booking';
 
 const primary =
   'inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-primary-hover disabled:cursor-wait disabled:opacity-60';

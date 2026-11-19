@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect } from 'vitest';
 import { WorkshopSchedule } from './WorkshopSchedule';
 import type { Workshop } from '@/types/workshop';
-import { mockWorkshops } from '../../test-fixtures/mockWorkshops';
+import { mockWorkshops } from '@/test-fixtures/mockWorkshops';
 const workshop: Workshop = {
   ...mockWorkshops[0],
   basePrice: 200000,

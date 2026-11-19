@@ -24,13 +24,13 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { StudioNotifications } from '@/components/management/StudioNotifications';
 import {
+  StudioNotifications,
   StudioBadge,
   StudioButton as Button,
   StudioCard,
   StudioSkeleton,
-} from '@/components/management/StudioPrimitives';
+} from '@/features/studio-management';
 import {
   useDeleteStudioDraft,
   useMyStudios,
