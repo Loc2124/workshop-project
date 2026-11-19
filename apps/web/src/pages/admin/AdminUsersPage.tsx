@@ -233,12 +233,12 @@ export function AdminUsersPage() {
     [current?.id, mutation.isPending],
   );
   return (
-    <div className="space-y-5">
-      <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+    <div className="space-y-studio-card">
+      <header className="border-b border-studio-border pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
           Quản lý Người dùng
         </h1>
-        <p className="mt-1 text-xs text-muted sm:text-sm">
+        <p className="mt-1 text-xs text-studio-muted sm:text-sm">
           Danh sách tài khoản khách hàng, chủ studio và quản trị viên trong hệ
           thống.
         </p>

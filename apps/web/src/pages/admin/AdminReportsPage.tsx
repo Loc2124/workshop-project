@@ -212,12 +212,12 @@ export function AdminReportsPage() {
   const closed =
     selected && ['resolved', 'dismissed'].includes(selected.status);
   return (
-    <div className="space-y-5">
-      <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+    <div className="space-y-studio-card">
+      <header className="border-b border-studio-border pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
           Báo cáo vi phạm &amp; khiếu nại
         </h1>
-        <p className="mt-1 text-xs text-muted sm:text-sm">
+        <p className="mt-1 text-xs text-studio-muted sm:text-sm">
           Tiếp nhận và xử lý các báo cáo vi phạm nội dung, workshop hoặc studio
           từ cộng đồng.
         </p>
@@ -268,11 +268,11 @@ export function AdminReportsPage() {
         >
           {selected && (
             <>
-              <header className="shrink-0 border-b border-line px-5 py-5 pr-16">
-                <SheetTitle className="font-heading text-xl font-semibold">
+              <header className="shrink-0 border-b border-studio-border px-5 py-5 pr-16">
+                <SheetTitle className="font-heading text-xl font-bold tracking-tight text-studio-ink">
                   {selected.targetName}
                 </SheetTitle>
-                <SheetDescription className="mt-1">
+                <SheetDescription className="mt-1 text-sm text-studio-muted">
                   {targets[selected.targetType]} ·{' '}
                   {formatReviewDate(selected.createdAt)}
                 </SheetDescription>
@@ -422,12 +422,13 @@ export function AdminReportsPage() {
                   </p>
                 )}
               </div>
-              <footer className="flex shrink-0 flex-wrap gap-2 border-t border-line p-5">
+              <footer className="flex shrink-0 flex-wrap gap-2 border-t border-studio-border p-5">
                 {!closed ? (
                   <>
                     {selected.status === 'new' && (
                       <Button
                         variant="outline"
+                        className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                         disabled={!ready}
                         onClick={() => setAction('start')}
                       >
@@ -436,6 +437,7 @@ export function AdminReportsPage() {
                     )}
                     <Button
                       variant="outline"
+                      className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                       disabled={!ready}
                       onClick={() => setAction('hide')}
                     >
@@ -443,6 +445,7 @@ export function AdminReportsPage() {
                     </Button>
                     <Button
                       variant="destructive"
+                      className="rounded-studio-control"
                       disabled={
                         !ready ||
                         !selected.studioId ||
@@ -456,12 +459,14 @@ export function AdminReportsPage() {
                     </Button>
                     <Button
                       variant="outline"
+                      className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                       disabled={!ready}
                       onClick={() => setAction('dismiss')}
                     >
                       Bỏ qua
                     </Button>
                     <Button
+                      className="rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
                       disabled={!ready}
                       onClick={() => setAction('resolve')}
                     >
@@ -469,7 +474,7 @@ export function AdminReportsPage() {
                     </Button>
                   </>
                 ) : (
-                  <p className="text-sm text-muted">
+                  <p className="text-sm text-studio-muted">
                     Báo cáo đã kết thúc. Có thể bổ sung ghi chú nội bộ.
                   </p>
                 )}

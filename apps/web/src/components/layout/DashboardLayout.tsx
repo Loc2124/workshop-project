@@ -1,5 +1,4 @@
 import { Img } from '../ui/Img';
-import { cn } from '@/lib/utils';
 import './studio-workspace.css';
 import { prefetchDashboardRoute } from '@/lib/dashboard-routes';
 import { DashboardSkeleton } from './DashboardSkeleton';
@@ -96,11 +95,7 @@ function DashboardSidebar({
   return (
     <Sidebar
       collapsible="icon"
-      mobileClassName={
-        roleLabel === 'Quản lý studio'
-          ? 'studio-shell studio-sidebar-drawer'
-          : undefined
-      }
+      mobileClassName="studio-shell studio-sidebar-drawer"
     >
       <DashboardBrand roleLabel={roleLabel} />
       {studioSwitcher}
@@ -253,12 +248,7 @@ export function DashboardLayout({
     }
   }
   return (
-    <SidebarProvider
-      className={cn(
-        'dashboard-shell text-sm text-ink [--loading-height:calc(100svh-5.5rem)] md:[--loading-height:calc(100svh-6.5rem)] lg:[--loading-height:calc(100svh-7rem)]',
-        roleLabel === 'Quản lý studio' ? 'studio-shell' : 'bg-[#f7f7f5]',
-      )}
-    >
+    <SidebarProvider className="dashboard-shell studio-shell text-sm text-ink [--loading-height:calc(100svh-5.5rem)] md:[--loading-height:calc(100svh-6.5rem)] lg:[--loading-height:calc(100svh-7rem)]">
       <a
         href="#dashboard-content"
         className="sr-only fixed left-20 top-2 z-60 rounded-sm bg-surface p-3 focus:not-sr-only"

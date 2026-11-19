@@ -75,11 +75,11 @@ export function AdminStudioDetailSheet({
       >
         {selected && (
           <>
-            <header className="shrink-0 border-b border-line px-5 py-5 pr-16">
-              <SheetTitle className="font-heading text-xl font-semibold">
+            <header className="shrink-0 border-b border-studio-border px-5 py-5 pr-16">
+              <SheetTitle className="font-heading text-xl font-bold tracking-tight text-studio-ink">
                 {selected.name}
               </SheetTitle>
-              <SheetDescription className="mt-1 text-sm text-muted">
+              <SheetDescription className="mt-1 text-sm text-studio-muted">
                 Chủ studio: {selected.ownerFullName} · Gửi{' '}
                 {formatReviewDate(selected.submittedAt ?? selected.createdAt)}
               </SheetDescription>
@@ -241,7 +241,7 @@ export function AdminStudioDetailSheet({
               )}
             </div>
 
-            <footer className="shrink-0 border-t border-line p-5">
+            <footer className="shrink-0 border-t border-studio-border p-5">
               <div className="flex flex-wrap gap-2">
                 {(selected.status === 'pending' ||
                   selected.status === 'suspended') &&
@@ -255,7 +255,7 @@ export function AdminStudioDetailSheet({
                                 pending || !canAct || missing.length > 0
                               }
                               onClick={onApprove}
-                              className="min-h-11"
+                              className="min-h-11 rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
                             >
                               {selected.status === 'suspended'
                                 ? 'Khôi phục'
@@ -272,7 +272,7 @@ export function AdminStudioDetailSheet({
                     <Button
                       disabled={pending || !canAct || missing.length > 0}
                       onClick={onApprove}
-                      className="min-h-11"
+                      className="min-h-11 rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
                     >
                       {selected.status === 'suspended' ? 'Khôi phục' : 'Duyệt'}
                     </Button>
@@ -281,7 +281,7 @@ export function AdminStudioDetailSheet({
                   <>
                     <Button
                       variant="outline"
-                      className="min-h-11"
+                      className="min-h-11 rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                       disabled={pending || !canAct}
                       onClick={() => onDecision('needs_changes')}
                     >
@@ -289,7 +289,7 @@ export function AdminStudioDetailSheet({
                     </Button>
                     <Button
                       variant="destructive"
-                      className="min-h-11"
+                      className="min-h-11 rounded-studio-control"
                       disabled={pending || !canAct}
                       onClick={() => onDecision('rejected')}
                     >
@@ -300,7 +300,7 @@ export function AdminStudioDetailSheet({
                 {selected.status === 'approved' && (
                   <Button
                     variant="destructive"
-                    className="min-h-11"
+                    className="min-h-11 rounded-studio-control"
                     disabled={pending || !canAct}
                     onClick={() => onDecision('suspended')}
                   >
@@ -308,7 +308,7 @@ export function AdminStudioDetailSheet({
                   </Button>
                 )}
                 {['needs_changes', 'rejected'].includes(selected.status) && (
-                  <p className="text-sm text-muted">
+                  <p className="text-sm text-studio-muted">
                     Hồ sơ đang ở chế độ chỉ xem.
                   </p>
                 )}

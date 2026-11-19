@@ -251,12 +251,12 @@ export function AdminWorkshopPage() {
     [categories.data],
   );
   return (
-    <div className="space-y-5">
-      <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+    <div className="space-y-studio-card">
+      <header className="border-b border-studio-border pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
           Quản lý Workshop
         </h1>
-        <p className="mt-1 text-xs text-muted sm:text-sm">
+        <p className="mt-1 text-xs text-studio-muted sm:text-sm">
           Studio đã duyệt tự đăng workshop. Admin thực hiện hậu kiểm chất lượng
           và xử lý khi có vi phạm.
         </p>
@@ -299,11 +299,11 @@ export function AdminWorkshopPage() {
         >
           {selected && (
             <>
-              <header className="shrink-0 border-b border-line px-5 py-5 pr-16">
-                <SheetTitle className="font-heading text-xl font-semibold">
+              <header className="shrink-0 border-b border-studio-border px-5 py-5 pr-16">
+                <SheetTitle className="font-heading text-xl font-bold tracking-tight text-studio-ink">
                   {selected.title}
                 </SheetTitle>
-                <SheetDescription className="mt-1">
+                <SheetDescription className="mt-1 text-sm text-studio-muted">
                   {selected.studioName} · {selected.categoryName}
                 </SheetDescription>
                 <div className="mt-3">
@@ -428,10 +428,11 @@ export function AdminWorkshopPage() {
                   )}
                 </section>
               </div>
-              <footer className="flex shrink-0 flex-wrap gap-2 border-t border-line p-5">
+              <footer className="flex shrink-0 flex-wrap gap-2 border-t border-studio-border p-5">
                 {selected.visibilityStatus === 'active' && (
                   <Button
                     variant="outline"
+                    className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                     disabled={
                       mutation.isPending || !detail.data || !!detail.error
                     }
@@ -443,6 +444,7 @@ export function AdminWorkshopPage() {
                 {selected.visibilityStatus !== 'removed' && (
                   <Button
                     variant="destructive"
+                    className="rounded-studio-control"
                     disabled={
                       mutation.isPending || !detail.data || !!detail.error
                     }
@@ -453,6 +455,7 @@ export function AdminWorkshopPage() {
                 )}
                 {selected.visibilityStatus !== 'active' && (
                   <Button
+                    className="rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
                     disabled={
                       mutation.isPending || !detail.data || !!detail.error
                     }

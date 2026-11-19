@@ -125,10 +125,12 @@ export function AdminRecordsPage({ kind }: { kind: AdminRecordKind }) {
     ];
   }, [kind]);
   return (
-    <div className="space-y-5">
-      <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-semibold">{title}</h1>
-        <p className="mt-1 text-xs text-muted">
+    <div className="space-y-studio-card">
+      <header className="border-b border-studio-border pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
+          {title}
+        </h1>
+        <p className="mt-1 text-xs text-studio-muted">
           Danh sách chỉ đọc · Giờ Việt Nam
         </p>
       </header>

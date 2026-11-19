@@ -257,12 +257,12 @@ export function AdminBookingsPage() {
   const available = selected ? transitions[selected.status] : [];
   const ready = !!detail.data && !detail.error && !mutation.isPending;
   return (
-    <div className="space-y-5">
-      <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+    <div className="space-y-studio-card">
+      <header className="border-b border-studio-border pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
           Quản lý Đặt chỗ
         </h1>
-        <p className="mt-1 text-xs text-muted sm:text-sm">
+        <p className="mt-1 text-xs text-studio-muted sm:text-sm">
           Tra cứu, quản lý trạng thái giữ chỗ, thanh toán và đối soát vé toàn
           sàn.
         </p>
@@ -299,11 +299,11 @@ export function AdminBookingsPage() {
         >
           {selected && (
             <>
-              <header className="shrink-0 border-b border-line px-5 py-5 pr-16">
-                <SheetTitle className="font-heading text-xl font-semibold">
+              <header className="shrink-0 border-b border-studio-border px-5 py-5 pr-16">
+                <SheetTitle className="font-heading text-xl font-bold tracking-tight text-studio-ink">
                   Đặt chỗ {selected.code}
                 </SheetTitle>
-                <SheetDescription className="mt-1">
+                <SheetDescription className="mt-1 text-sm text-studio-muted">
                   Tạo lúc {formatReviewDate(selected.createdAt)}
                 </SheetDescription>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -467,10 +467,11 @@ export function AdminBookingsPage() {
                   )}
                 </section>
               </div>
-              <footer className="flex shrink-0 flex-wrap gap-2 border-t border-line p-5">
+              <footer className="flex shrink-0 flex-wrap gap-2 border-t border-studio-border p-5">
                 {available.includes('cancelled') && (
                   <Button
                     variant="destructive"
+                    className="rounded-studio-control"
                     disabled={!ready}
                     onClick={() => start('cancel')}
                   >
@@ -480,6 +481,7 @@ export function AdminBookingsPage() {
                 {available.some((s) => s !== 'cancelled') && (
                   <Button
                     variant="outline"
+                    className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                     disabled={!ready}
                     onClick={() => start('change')}
                   >
@@ -487,7 +489,7 @@ export function AdminBookingsPage() {
                   </Button>
                 )}
                 {!available.length && (
-                  <p className="text-sm text-muted">
+                  <p className="text-sm text-studio-muted">
                     Đặt chỗ đã kết thúc, chỉ xem lịch sử.
                   </p>
                 )}

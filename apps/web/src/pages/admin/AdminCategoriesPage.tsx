@@ -190,18 +190,19 @@ export function AdminCategoriesPage() {
   if (query.isPending)
     return <LoadingState label="Đang tải danh mục…" variant="page" />;
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
+    <div className="space-y-studio-card">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-studio-border pb-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
             Danh mục Workshop
           </h1>
-          <p className="mt-1 text-xs text-muted sm:text-sm">
+          <p className="mt-1 text-xs text-studio-muted sm:text-sm">
             Kéo thả để sắp xếp thứ tự hiển thị ngoài trang khám phá. Loại "Khác"
             luôn nằm cuối.
           </p>
         </div>
         <Button
+          className="rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
           disabled={save.isPending || query.isPending || !!query.error}
           onClick={() => open('new')}
         >
@@ -232,53 +233,55 @@ export function AdminCategoriesPage() {
             items={rows.filter((c) => c.id !== 'other').map((c) => c.id)}
             strategy={verticalListSortingStrategy}
           >
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>
-                    <span className="sr-only">Sắp xếp</span>
-                  </TableHead>
-                  <TableHead>Tên</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>Số workshop</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Thứ tự</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Thao tác</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((c, i) => (
-                  <CategoryRow
-                    key={c.id}
-                    category={c}
-                    rank={i + 1}
-                    busy={save.isPending}
-                    onEdit={() => open(c)}
-                    onToggle={() =>
-                      void save
-                        .mutateAsync({
-                          path: `/admin/danh-muc/${encodeURIComponent(c.id)}/visibility`,
-                          method: 'PATCH',
-                          body: { visible: !c.isVisible },
-                        })
-                        .catch(() => undefined)
-                    }
-                  />
-                ))}
-                {!rows.length && (
+            <div className="overflow-hidden rounded-studio-card border border-studio-border bg-studio-surface shadow-studio-card">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={7}
-                      className="py-10 text-center text-muted"
-                    >
-                      Chưa có loại workshop.
-                    </TableCell>
+                    <TableHead>
+                      <span className="sr-only">Sắp xếp</span>
+                    </TableHead>
+                    <TableHead>Tên</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>Số workshop</TableHead>
+                    <TableHead>Trạng thái</TableHead>
+                    <TableHead>Thứ tự</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Thao tác</span>
+                    </TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((c, i) => (
+                    <CategoryRow
+                      key={c.id}
+                      category={c}
+                      rank={i + 1}
+                      busy={save.isPending}
+                      onEdit={() => open(c)}
+                      onToggle={() =>
+                        void save
+                          .mutateAsync({
+                            path: `/admin/danh-muc/${encodeURIComponent(c.id)}/visibility`,
+                            method: 'PATCH',
+                            body: { visible: !c.isVisible },
+                          })
+                          .catch(() => undefined)
+                      }
+                    />
+                  ))}
+                  {!rows.length && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="py-10 text-center text-studio-muted"
+                      >
+                        Chưa có loại workshop.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </SortableContext>
         </DndContext>
       )}
@@ -292,11 +295,14 @@ export function AdminCategoriesPage() {
           if (!open && !save.isPending) setEditor(null);
         }}
       >
-        <DialogContent closeDisabled={save.isPending} className="rounded-md">
-          <DialogTitle>
+        <DialogContent
+          closeDisabled={save.isPending}
+          className="rounded-studio-card border-studio-border bg-studio-surface text-studio-ink"
+        >
+          <DialogTitle className="font-heading text-xl font-bold tracking-tight text-studio-ink">
             {editor === 'new' ? 'Thêm loại workshop' : 'Sửa loại workshop'}
           </DialogTitle>
-          <DialogDescription className="mt-2">
+          <DialogDescription className="mt-2 text-sm text-studio-muted">
             Slug được tạo từ tên khi thêm mới; bạn có thể chỉnh lại.
           </DialogDescription>
           <form
@@ -304,7 +310,9 @@ export function AdminCategoriesPage() {
             className="mt-5 space-y-4"
           >
             <label className="block space-y-2 text-sm">
-              <span>Tên loại workshop</span>
+              <span className="font-medium text-studio-ink">
+                Tên loại workshop
+              </span>
               <input
                 autoFocus
                 required
@@ -318,11 +326,11 @@ export function AdminCategoriesPage() {
                   setName(event.target.value);
                   if (!slugEdited) setSlug(slugify(event.target.value));
                 }}
-                className="min-h-11 w-full rounded-sm border border-line px-3"
+                className="min-h-11 w-full rounded-studio-control border border-studio-border bg-studio-surface px-3 text-studio-ink"
               />
             </label>
             <label className="block space-y-2 text-sm">
-              <span>Slug</span>
+              <span className="font-medium text-studio-ink">Slug</span>
               <input
                 required
                 maxLength={100}
@@ -336,19 +344,24 @@ export function AdminCategoriesPage() {
                   setSlugEdited(true);
                   setSlug(event.target.value);
                 }}
-                className="min-h-11 w-full rounded-sm border border-line px-3"
+                className="min-h-11 w-full rounded-studio-control border border-studio-border bg-studio-surface px-3 text-studio-ink"
               />
             </label>
             <footer className="flex justify-end gap-2">
               <Button
                 variant="outline"
                 type="button"
+                className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                 disabled={save.isPending}
                 onClick={() => setEditor(null)}
               >
                 Hủy
               </Button>
-              <Button type="submit" disabled={save.isPending}>
+              <Button
+                type="submit"
+                className="rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
+                disabled={save.isPending}
+              >
                 {save.isPending ? 'Đang lưu…' : 'Lưu danh mục'}
               </Button>
             </footer>

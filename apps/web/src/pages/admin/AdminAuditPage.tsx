@@ -148,12 +148,12 @@ export function AdminAuditPage() {
   );
   const log = detail.data ?? selected;
   return (
-    <div className="space-y-5">
-      <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+    <div className="space-y-studio-card">
+      <header className="border-b border-studio-border pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
           Nhật ký hoạt động
         </h1>
-        <p className="mt-1 text-xs text-muted sm:text-sm">
+        <p className="mt-1 text-xs text-studio-muted sm:text-sm">
           Tra cứu ai đã thay đổi dữ liệu, khi nào và vì sao. Dữ liệu nhật ký chỉ
           đọc và bất biến.
         </p>
@@ -191,14 +191,14 @@ export function AdminAuditPage() {
           closeLabel="Đóng chi tiết nhật ký"
           className="w-full max-w-[640px] overflow-y-auto p-5 sm:p-6"
         >
-          <SheetTitle className="pr-10 font-heading text-xl font-semibold">
+          <SheetTitle className="pr-10 font-heading text-xl font-bold tracking-tight text-studio-ink">
             Chi tiết nhật ký
           </SheetTitle>
-          <SheetDescription className="mt-2 text-sm text-muted">
+          <SheetDescription className="mt-2 text-sm text-studio-muted">
             Bản ghi tại thời điểm thay đổi, không thể chỉnh sửa hoặc xóa.
           </SheetDescription>
           {log && (
-            <dl className="my-5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 border-y border-line py-4 text-sm">
+            <dl className="my-5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-3 border-y border-studio-border py-4 text-sm">
               <dt className="text-muted">Thời gian</dt>
               <dd>{formatReviewDate(log.createdAt)}</dd>
               <dt className="text-muted">Người thực hiện</dt>

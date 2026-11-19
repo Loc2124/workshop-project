@@ -220,11 +220,11 @@ export function DataTable<T, V = unknown>({
   const loading = result.isPending || (!!pageCount && query.page > pageCount);
   const tableBody = (
     <>
-      <div className="flex flex-wrap items-end gap-3 border-b border-line py-3">
+      <div className="flex flex-wrap items-end gap-3 border-b border-studio-border py-3">
         <div className="w-full min-w-0 sm:max-w-sm">
           <label
             htmlFor={`${id}-search`}
-            className="mb-1.5 block text-xs font-medium text-muted"
+            className="mb-1.5 block text-xs font-medium text-studio-muted"
           >
             Tìm kiếm
           </label>
@@ -232,7 +232,7 @@ export function DataTable<T, V = unknown>({
             <Search
               size={16}
               aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted"
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-studio-muted"
             />
             <input
               id={`${id}-search`}
@@ -241,14 +241,14 @@ export function DataTable<T, V = unknown>({
               onChange={(event) => setSearch(event.target.value)}
               maxLength={200}
               placeholder={searchPlaceholder}
-              className="min-h-11 w-full rounded-md border border-line bg-surface pl-9 pr-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="min-h-11 w-full rounded-studio-control border border-studio-border bg-studio-surface pl-9 pr-3 text-base text-studio-ink outline-none focus-visible:ring-2 focus-visible:ring-studio-primary"
             />
           </div>
         </div>
         {filters.map((filter) => (
           <label
             key={filter.id}
-            className="flex min-w-36 flex-col gap-1.5 text-xs font-medium text-muted"
+            className="flex min-w-36 flex-col gap-1.5 text-xs font-medium text-studio-muted"
           >
             {filter.label}
             {filter.inputType === 'date' ? (
@@ -259,7 +259,7 @@ export function DataTable<T, V = unknown>({
                 onChange={(event) =>
                   change(`filter.${filter.id}`, event.target.value)
                 }
-                className="min-h-11 max-w-full rounded-md border border-line bg-surface px-3 text-base text-ink"
+                className="min-h-11 max-w-full rounded-studio-control border border-studio-border bg-studio-surface px-3 text-base text-studio-ink"
               />
             ) : filter.loadOptions ? (
               <SearchableFilterSelect
@@ -274,7 +274,7 @@ export function DataTable<T, V = unknown>({
                 onChange={(event) =>
                   change(`filter.${filter.id}`, event.target.value)
                 }
-                className="min-h-11 max-w-full rounded-md border border-line bg-surface px-3 text-base text-ink"
+                className="min-h-11 max-w-full rounded-studio-control border border-studio-border bg-studio-surface px-3 text-base text-studio-ink"
               >
                 <option value="">Tất cả</option>
                 {filter.options.map((option) => (
@@ -288,14 +288,15 @@ export function DataTable<T, V = unknown>({
         ))}
       </div>
       {result.isError ? (
-        <div className="space-y-3 border-b border-line py-8">
-          <p role="alert" className="text-sm text-brick">
+        <div className="space-y-3 border-b border-studio-border py-8">
+          <p role="alert" className="text-sm text-studio-danger">
             {result.error instanceof Error
               ? result.error.message
               : 'Chưa tải được danh sách.'}
           </p>
           <Button
             variant="outline"
+            className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
             disabled={result.isFetching}
             onClick={() => void result.refetch()}
           >
@@ -428,12 +429,12 @@ export function DataTable<T, V = unknown>({
           </Table>
         </>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-3 py-3 text-xs text-muted">
+      <div className="flex flex-wrap items-center justify-between gap-3 py-3 text-xs text-studio-muted">
         <label className="flex items-center gap-2">
           Số dòng mỗi trang
           <select
             aria-label="Số dòng mỗi trang"
-            className="min-h-11 rounded-md border border-line bg-surface px-2 text-sm text-ink"
+            className="min-h-11 rounded-studio-control border border-studio-border bg-studio-surface px-2 text-sm text-studio-ink"
             value={query.pageSize}
             onChange={(event) => change('pageSize', event.target.value)}
           >
@@ -455,6 +456,7 @@ export function DataTable<T, V = unknown>({
           <Button
             variant="outline"
             size="sm"
+            className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
             disabled={query.page <= 1 || result.isFetching}
             onClick={() => change('page', String(query.page - 1), false)}
           >
@@ -463,6 +465,7 @@ export function DataTable<T, V = unknown>({
           <Button
             variant="outline"
             size="sm"
+            className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
             disabled={
               !pageCount ||
               query.page >= pageCount ||
@@ -481,12 +484,12 @@ export function DataTable<T, V = unknown>({
     <div className="min-w-0">
       {tabs.length ? (
         <Tabs value={query.tab} onValueChange={(value) => change('tab', value)}>
-          <div className="overflow-x-auto border-b border-line pb-3">
+          <div className="overflow-x-auto border-b border-studio-border pb-3">
             <TabsList aria-label="Trạng thái danh sách" className="min-w-max">
               {tabs.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}
-                  <span className="rounded-sm bg-black/5 px-1.5 py-0.5 text-xs tabular-nums">
+                  <span className="rounded-full bg-studio-subtle px-1.5 py-0.5 text-xs font-semibold tabular-nums text-studio-muted">
                     {counts.data?.[tab.value] ?? '—'}
                   </span>
                 </TabsTrigger>
@@ -495,12 +498,13 @@ export function DataTable<T, V = unknown>({
             {counts.isError && (
               <div
                 role="alert"
-                className="mt-2 flex items-center gap-3 text-xs text-brick"
+                className="mt-2 flex items-center gap-3 text-xs text-studio-danger"
               >
                 Chưa tải được số đếm.
                 <Button
                   size="sm"
                   variant="outline"
+                  className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                   disabled={counts.isFetching}
                   onClick={() => void counts.refetch()}
                 >

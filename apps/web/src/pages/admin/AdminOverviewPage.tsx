@@ -17,13 +17,6 @@ import {
   Users,
 } from 'lucide-react';
 import { getAdminOverview } from '@/services/adminOverviewService';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardDescription,
-} from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { Button } from '@/components/ui/button';
@@ -40,7 +33,6 @@ const metricLinks = [
     to: '/admin/ho-so-studio?tab=pending&page=1',
     note: 'Hồ sơ studio đã gửi',
     icon: ClipboardCheck,
-    color: 'amber',
   },
   {
     key: 'newWorkshops',
@@ -48,7 +40,6 @@ const metricLinks = [
     to: '/admin/workshop?tab=all&filter.period=7d&page=1',
     note: 'Được tạo trong 7 ngày qua',
     icon: Sparkles,
-    color: 'purple',
   },
   {
     key: 'todayBookings',
@@ -56,7 +47,6 @@ const metricLinks = [
     to: '/admin/dat-cho?tab=all&filter.period=today&page=1',
     note: 'Theo ngày tạo đơn',
     icon: Ticket,
-    color: 'emerald',
   },
   {
     key: 'newUsers',
@@ -64,7 +54,6 @@ const metricLinks = [
     to: '/admin/nguoi-dung?tab=all&filter.period=7d&page=1',
     note: 'Tài khoản mới trong 7 ngày',
     icon: Users,
-    color: 'blue',
   },
 ] as const;
 
@@ -74,21 +63,23 @@ const taskLinks = [
     label: 'Hồ sơ chờ duyệt quá 48 giờ',
     to: '/admin/ho-so-studio?tab=pending&filter.reviewQueue=overdue&page=1',
     icon: Clock,
-    urgentBg: 'bg-rose-50 text-rose-700 border-rose-200',
+    urgentBg:
+      'bg-studio-danger-soft text-studio-danger border-studio-danger/30',
   },
   {
     key: 'openReports',
     label: 'Báo cáo chưa xử lý',
     to: '/admin/bao-cao?tab=new&page=1',
     icon: AlertTriangle,
-    urgentBg: 'bg-amber-50 text-amber-800 border-amber-200',
+    urgentBg:
+      'bg-studio-warning-soft text-studio-warning border-studio-warning/30',
   },
   {
     key: 'resubmittedStudios',
     label: 'Studio cần bổ sung đã gửi lại',
     to: '/admin/ho-so-studio?tab=pending&filter.reviewQueue=resubmitted&page=1',
     icon: RotateCcw,
-    urgentBg: 'bg-blue-50 text-blue-800 border-blue-200',
+    urgentBg: 'bg-studio-selected text-studio-primary border-studio-primary/30',
   },
 ] as const;
 
@@ -142,13 +133,13 @@ export default function AdminOverviewPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
+    <div className="space-y-studio-card">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-studio-border pb-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
             Tổng quan quản trị
           </h1>
-          <p className="mt-1 text-xs text-muted sm:text-sm">
+          <p className="mt-1 text-xs text-studio-muted sm:text-sm">
             {data
               ? `Cập nhật lúc ${formatReviewDate(data.generatedAt)} · Giờ Việt Nam`
               : 'Hoạt động và hàng đợi kiểm duyệt Open Slot'}
@@ -158,7 +149,7 @@ export default function AdminOverviewPage() {
           variant="outline"
           disabled={overview.isFetching}
           onClick={() => void overview.refetch()}
-          className="gap-2 text-xs"
+          className="gap-2 rounded-studio-control border-studio-border bg-studio-surface text-xs font-semibold text-studio-ink hover:bg-studio-subtle"
         >
           <RefreshCw
             size={14}
@@ -169,16 +160,18 @@ export default function AdminOverviewPage() {
       </header>
 
       {overview.error ? (
-        <Card className="border-rose-200 bg-rose-50/40">
-          <CardContent className="space-y-3 pt-5">
-            <p role="alert" className="text-sm font-medium text-rose-800">
-              Chưa tải được Tổng quan. {overview.error.message}
-            </p>
-            <Button variant="outline" onClick={() => void overview.refetch()}>
-              Thử lại
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="rounded-studio-card border border-studio-danger/30 bg-studio-danger-soft p-5">
+          <p role="alert" className="text-sm font-medium text-studio-danger">
+            Chưa tải được Tổng quan. {overview.error.message}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => void overview.refetch()}
+            className="mt-3 rounded-studio-control border-studio-border bg-studio-surface"
+          >
+            Thử lại
+          </Button>
+        </div>
       ) : (
         data && (
           <>
@@ -191,98 +184,71 @@ export default function AdminOverviewPage() {
                 const Icon = metric.icon;
                 const value = data.metrics[metric.key];
 
-                const colorStyles = {
-                  amber: {
-                    border: 'hover:border-amber-400/60',
-                    bg: 'bg-amber-500/10 text-amber-700',
-                  },
-                  purple: {
-                    border: 'hover:border-purple-400/60',
-                    bg: 'bg-purple-500/10 text-purple-700',
-                  },
-                  emerald: {
-                    border: 'hover:border-emerald-400/60',
-                    bg: 'bg-emerald-500/10 text-emerald-700',
-                  },
-                  blue: {
-                    border: 'hover:border-blue-400/60',
-                    bg: 'bg-blue-500/10 text-blue-700',
-                  },
-                }[metric.color];
-
                 return (
-                  <Card
+                  <div
                     key={metric.key}
-                    className={`relative overflow-hidden transition-all duration-200 hover:shadow-md ${colorStyles.border}`}
+                    className="group rounded-studio-card border border-studio-border bg-studio-surface p-4 transition-all duration-200 hover:border-studio-primary/60 hover:shadow-md"
                   >
-                    <CardContent className="p-4 sm:p-5">
-                      <Link
-                        to={metric.to}
-                        className="group block outline-none after:absolute after:inset-0 after:rounded-md focus-visible:after:ring-2 focus-visible:after:ring-primary"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-xs font-semibold text-muted sm:text-sm">
-                            {metric.label}
-                          </span>
-                          <div
-                            className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${colorStyles.bg}`}
-                          >
-                            <Icon size={16} />
-                          </div>
+                    <Link to={metric.to} className="block outline-none">
+                      <div className="flex items-center justify-between text-studio-muted">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-studio-muted">
+                          {metric.label}
+                        </span>
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-studio-control bg-studio-selected/60 text-studio-primary transition-colors group-hover:bg-studio-primary group-hover:text-white">
+                          <Icon size={16} aria-hidden="true" />
                         </div>
-                        <div className="mt-3 font-heading text-2xl font-bold tabular-nums text-ink sm:text-3xl">
-                          {value.toLocaleString('vi-VN')}
-                        </div>
-                        <div className="mt-2 flex items-center justify-between text-xs text-muted">
-                          <span>{metric.note}</span>
-                          <ArrowUpRight
-                            size={14}
-                            className="transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-                          />
-                        </div>
-                      </Link>
-                    </CardContent>
-                  </Card>
+                      </div>
+                      <div className="mt-2 font-heading text-2xl font-bold tabular-nums text-studio-ink sm:text-3xl">
+                        {value.toLocaleString('vi-VN')}
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-xs text-studio-muted">
+                        <span className="truncate">{metric.note}</span>
+                        <ArrowUpRight
+                          size={14}
+                          className="shrink-0 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                        />
+                      </div>
+                    </Link>
+                  </div>
                 );
               })}
             </section>
 
             {/* Bookings Chart */}
-            <Card className="shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold">
+            <section className="rounded-studio-card border border-studio-border bg-studio-surface p-5 text-studio-ink shadow-studio-card sm:p-studio-card">
+              <div className="border-b border-studio-border pb-3">
+                <h2 className="font-heading text-lg font-bold text-studio-ink">
                   Đặt chỗ 30 ngày
-                </CardTitle>
-                <CardDescription className="text-xs">
+                </h2>
+                <p className="mt-1 text-xs text-studio-muted">
                   Số đơn theo ngày tạo, gồm mọi trạng thái · Giờ Việt Nam
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+                </p>
+              </div>
+              <div className="pt-4">
+                <Suspense
+                  fallback={
+                    <Skeleton className="h-64 w-full rounded-studio-control" />
+                  }
+                >
                   <BookingsChart data={data.bookingSeries} />
                 </Suspense>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
             {/* Two-Column: Tasks & Recent Activities */}
             <div className="grid items-start gap-5 lg:grid-cols-2">
               {/* Task Queue */}
-              <Card className="shadow-sm">
-                <CardHeader className="border-b border-line/60 pb-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg font-bold">
-                        Hàng đợi cần xử lý
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Các hồ sơ và nội dung cần admin phê duyệt hoặc can
-                        thiệp.
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-2">
-                  <ul className="divide-y divide-line/60">
+              <section className="rounded-studio-card border border-studio-border bg-studio-surface p-5 text-studio-ink shadow-studio-card sm:p-studio-card">
+                <div className="border-b border-studio-border pb-3">
+                  <h2 className="font-heading text-lg font-bold text-studio-ink">
+                    Hàng đợi cần xử lý
+                  </h2>
+                  <p className="mt-1 text-xs text-studio-muted">
+                    Các hồ sơ và nội dung cần admin phê duyệt hoặc can thiệp.
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <ul className="divide-y divide-studio-border/60">
                     {taskLinks.map((task) => {
                       const TaskIcon = task.icon;
                       const count = data.tasks[task.key];
@@ -292,19 +258,19 @@ export default function AdminOverviewPage() {
                         <li key={task.key}>
                           <Link
                             to={task.to}
-                            className="group flex min-h-14 items-center justify-between gap-3 py-3.5 text-sm transition-colors hover:bg-soft/40"
+                            className="group flex min-h-14 items-center justify-between gap-3 py-3.5 text-sm transition-colors hover:bg-studio-subtle/50"
                           >
                             <div className="flex items-center gap-3">
                               <div
-                                className={`flex size-8 shrink-0 items-center justify-center rounded-md ${
+                                className={`flex size-8 shrink-0 items-center justify-center rounded-studio-control ${
                                   isUrgent
                                     ? task.urgentBg
-                                    : 'bg-soft text-muted'
+                                    : 'bg-studio-subtle text-studio-muted'
                                 }`}
                               >
                                 <TaskIcon size={16} />
                               </div>
-                              <span className="font-medium text-ink group-hover:text-primary">
+                              <span className="font-medium text-studio-ink group-hover:text-studio-primary">
                                 {task.label}
                               </span>
                             </div>
@@ -317,17 +283,17 @@ export default function AdminOverviewPage() {
                                   {count}
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-soft px-2.5 py-0.5 text-xs text-muted">
+                                <span className="inline-flex items-center gap-1 rounded-full bg-studio-subtle px-2.5 py-0.5 text-xs text-studio-muted">
                                   <CheckCircle2
                                     size={12}
-                                    className="text-emerald-600"
+                                    className="text-studio-success"
                                   />
                                   0
                                 </span>
                               )}
                               <ArrowRight
                                 size={14}
-                                className="text-muted transition-transform duration-200 group-hover:translate-x-0.5"
+                                className="text-studio-muted transition-transform duration-200 group-hover:translate-x-0.5"
                               />
                             </div>
                           </Link>
@@ -336,45 +302,45 @@ export default function AdminOverviewPage() {
                     })}
                   </ul>
                   {Object.values(data.tasks).every((value) => value === 0) && (
-                    <div className="mt-4 flex items-center gap-2 rounded-md bg-emerald-50/70 p-3 text-xs font-medium text-emerald-800">
-                      <CheckCircle2 size={14} className="text-emerald-600" />
+                    <div className="mt-4 flex items-center gap-2 rounded-studio-control bg-studio-success-soft p-3 text-xs font-medium text-studio-success">
+                      <CheckCircle2 size={14} className="text-studio-success" />
                       Mọi hàng đợi kiểm duyệt hiện tại đều đã được xử lý xong.
                     </div>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
 
               {/* Recent Activities */}
-              <Card className="shadow-sm">
-                <CardHeader className="border-b border-line/60 pb-3">
-                  <CardTitle className="text-lg font-bold">
+              <section className="rounded-studio-card border border-studio-border bg-studio-surface p-5 text-studio-ink shadow-studio-card sm:p-studio-card">
+                <div className="border-b border-studio-border pb-3">
+                  <h2 className="font-heading text-lg font-bold text-studio-ink">
                     Nhật ký hoạt động gần đây
-                  </CardTitle>
-                  <CardDescription className="text-xs">
+                  </h2>
+                  <p className="mt-1 text-xs text-studio-muted">
                     10 hành động mới nhất được hệ thống ghi nhận.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-3">
+                  </p>
+                </div>
+                <div className="pt-3">
                   {data.activities.length ? (
-                    <ol className="divide-y divide-line/60">
+                    <ol className="divide-y divide-studio-border/60">
                       {data.activities.map((activity) => (
                         <li
                           key={activity.id}
                           className="flex items-start gap-3 py-3 first:pt-1"
                         >
-                          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-soft text-xs font-bold text-muted">
+                          <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-studio-subtle text-xs font-bold text-studio-muted">
                             {activity.actorName.charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1 space-y-0.5">
-                            <p className="text-sm leading-snug text-ink">
+                            <p className="text-sm leading-snug text-studio-ink">
                               <span className="font-semibold">
                                 {activity.actorName}
                               </span>{' '}
-                              <span className="text-muted">
+                              <span className="text-studio-muted">
                                 {actions[activity.action] ?? 'đã cập nhật'}
                               </span>{' '}
                               <Link
-                                className="font-semibold text-primary underline-offset-4 hover:underline"
+                                className="font-semibold text-studio-primary underline-offset-4 hover:underline"
                                 to={
                                   activity.entityType === 'settings'
                                     ? '/admin/cai-dat'
@@ -404,7 +370,7 @@ export default function AdminOverviewPage() {
                             </p>
                             <time
                               dateTime={activity.createdAt}
-                              className="flex items-center gap-1 text-[11px] text-muted"
+                              className="flex items-center gap-1 text-[11px] text-studio-muted"
                             >
                               <Clock size={11} />
                               {formatReviewDate(activity.createdAt)}
@@ -414,12 +380,12 @@ export default function AdminOverviewPage() {
                       ))}
                     </ol>
                   ) : (
-                    <p className="py-6 text-center text-sm text-muted">
+                    <p className="py-6 text-center text-sm text-studio-muted">
                       Chưa có hoạt động được ghi nhận.
                     </p>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </section>
             </div>
           </>
         )

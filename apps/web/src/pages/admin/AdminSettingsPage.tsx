@@ -200,17 +200,20 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
           {groups.map((group) => {
             const GroupIcon = group.icon;
             return (
-              <Card key={group.title} className="shadow-sm">
-                <CardHeader className="border-b border-line/60 pb-3.5">
+              <Card
+                key={group.title}
+                className="rounded-studio-card border border-studio-border bg-studio-surface shadow-studio-card text-studio-ink"
+              >
+                <CardHeader className="border-b border-studio-border pb-3.5">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-soft text-primary">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-studio-control bg-studio-selected/60 text-studio-primary">
                       <GroupIcon size={18} />
                     </div>
                     <div>
-                      <CardTitle className="text-base font-bold text-ink">
+                      <CardTitle className="font-heading text-base font-bold text-studio-ink">
                         {group.title}
                       </CardTitle>
-                      <CardDescription className="text-xs">
+                      <CardDescription className="text-xs text-studio-muted">
                         {group.description}
                       </CardDescription>
                     </div>
@@ -224,7 +227,7 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
                       name={input.name}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs font-semibold text-ink">
+                          <FormLabel className="text-xs font-semibold text-studio-ink">
                             {input.label}
                           </FormLabel>
                           <FormControl>
@@ -247,11 +250,11 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
                                     : e.target.value,
                                 )
                               }
-                              className="min-h-11 w-full rounded-md border border-line bg-surface px-3 text-sm text-ink transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                              className="min-h-11 w-full rounded-studio-control border border-studio-border bg-studio-surface px-3 text-sm text-studio-ink transition-colors focus:border-studio-primary focus:outline-none focus:ring-1 focus:ring-studio-primary"
                             />
                           </FormControl>
                           {input.hint && (
-                            <FormDescription className="text-xs">
+                            <FormDescription className="text-xs text-studio-muted">
                               {input.hint}
                             </FormDescription>
                           )}
@@ -307,6 +310,7 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
                 type="button"
                 variant="outline"
                 size="sm"
+                className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                 onClick={() => form.reset(snapshot.settings)}
                 disabled={busy}
               >
@@ -315,6 +319,7 @@ function SettingsEditor({ initial }: { initial: Snapshot }) {
             )}
             <Button
               type="submit"
+              className="rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
               disabled={
                 busy || !form.formState.isDirty || !form.formState.isValid
               }
@@ -338,10 +343,12 @@ export function AdminSettingsPage() {
   if (query.isPending)
     return <LoadingState label="Đang tải cài đặt…" variant="page" />;
   return (
-    <div className="space-y-5">
-      <header className="space-y-2">
-        <h1 className="font-heading text-2xl font-semibold">Cài đặt</h1>
-        <p className="text-sm text-muted">
+    <div className="space-y-studio-card">
+      <header className="border-b border-studio-border pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
+          Cài đặt hệ thống
+        </h1>
+        <p className="mt-1 text-xs text-studio-muted sm:text-sm">
           Quản lý yêu cầu hồ sơ studio, thông tin hỗ trợ và chính sách đặt lịch.
         </p>
       </header>

@@ -132,14 +132,21 @@ export function AdminContentPage() {
   }
   const ready = !!config.data && !config.error;
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-semibold">
-          Nội dung trang chủ
-        </h1>
+    <div className="space-y-studio-card">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-studio-border pb-4">
+        <div>
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
+            Nội dung trang chủ
+          </h1>
+          <p className="mt-1 text-xs text-studio-muted sm:text-sm">
+            Chọn và sắp xếp các studio, workshop xuất hiện nổi bật tại trang chủ
+            của Open Slot.
+          </p>
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
+            className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
             disabled={!ready || mutation.isPending}
             onClick={preview}
           >
@@ -147,6 +154,7 @@ export function AdminContentPage() {
             Xem trước trang chủ
           </Button>
           <Button
+            className="rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
             disabled={!ready || !dirty || mutation.isPending}
             onClick={() => mutation.mutate()}
           >

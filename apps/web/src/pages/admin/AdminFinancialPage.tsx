@@ -326,16 +326,16 @@ export function AdminFinancialPage() {
   });
 
   return (
-    <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-4">
+    <div className="space-y-studio-card">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-studio-border pb-4">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-[.14em] text-primary">
+          <span className="text-xs font-semibold uppercase tracking-[.14em] text-studio-primary">
             Vận hành
           </span>
-          <h1 className="mt-1 font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="mt-1 font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
             Tài chính &amp; quyết toán
           </h1>
-          <p className="mt-1 max-w-3xl text-xs text-muted sm:text-sm">
+          <p className="mt-1 max-w-3xl text-xs text-studio-muted sm:text-sm">
             Theo dõi hạn hoàn, khoản studio cần chuyển về Open Slot và từng lần
             chuyển. Mọi khoản chuyển cần duyệt; ghi nhận thành công phải có mã
             đối chiếu, nhà cung cấp và phí thực tế.
@@ -345,7 +345,7 @@ export function AdminFinancialPage() {
           type="button"
           variant="outline"
           onClick={() => void refresh()}
-          className="gap-2 text-xs"
+          className="gap-2 text-xs rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
         >
           <RefreshCw
             size={14}
@@ -361,7 +361,7 @@ export function AdminFinancialPage() {
 
       <nav
         aria-label="Các mục tài chính"
-        className="flex gap-1 overflow-x-auto border-b border-line pb-px"
+        className="flex gap-1 overflow-x-auto border-b border-studio-border pb-px"
       >
         {(
           [
@@ -380,15 +380,17 @@ export function AdminFinancialPage() {
             onClick={() => setTab(key)}
             className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 border-b-2 px-3.5 text-sm font-semibold transition-colors ${
               tab === key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted hover:text-ink'
+                ? 'border-studio-primary text-studio-primary'
+                : 'border-transparent text-studio-muted hover:text-studio-ink'
             }`}
           >
             {label}
             {count > 0 && (
               <span
                 className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                  tab === key ? 'bg-primary text-white' : 'bg-soft text-muted'
+                  tab === key
+                    ? 'bg-studio-primary text-white'
+                    : 'bg-studio-subtle text-studio-muted'
                 }`}
               >
                 {count}
@@ -401,7 +403,7 @@ export function AdminFinancialPage() {
       {feedback && (
         <p
           role="status"
-          className="rounded-lg bg-soft px-4 py-3 text-sm text-ink"
+          className="rounded-studio-card border border-studio-border bg-studio-surface px-4 py-3 text-sm text-studio-ink"
         >
           {feedback}
         </p>

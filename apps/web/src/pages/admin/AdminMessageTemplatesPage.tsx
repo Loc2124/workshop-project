@@ -165,12 +165,12 @@ export function AdminMessageTemplatesPage() {
   });
   const busy = mutation.isPending || previewMutation.isPending;
   return (
-    <div className="space-y-5">
-      <header className="border-b border-line pb-4">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+    <div className="space-y-studio-card">
+      <header className="border-b border-studio-border pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
           Mẫu thông báo hệ thống
         </h1>
-        <p className="mt-1 text-xs text-muted sm:text-sm">
+        <p className="mt-1 text-xs text-studio-muted sm:text-sm">
           Tùy chỉnh nội dung email và thông báo tự động gửi cho khách hàng và
           chủ studio.
         </p>
@@ -204,7 +204,7 @@ export function AdminMessageTemplatesPage() {
                     setSelected(key);
                     setActionError(false);
                   }}
-                  className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-sm px-3 py-2 text-left text-sm ${selected === key ? 'bg-soft font-semibold' : 'hover:bg-soft/60'}`}
+                  className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-studio-control px-3.5 py-2.5 text-left text-sm transition-colors ${selected === key ? 'bg-studio-selected font-semibold text-studio-primary' : 'text-studio-muted hover:bg-studio-subtle hover:text-studio-ink'}`}
                 >
                   {messageTemplateSpecs[key].label}
                   {changed && (
@@ -217,13 +217,14 @@ export function AdminMessageTemplatesPage() {
             })}
           </nav>
           {saved ? (
-            <section className="space-y-4 rounded-sm border border-line p-4">
+            <section className="space-y-4 rounded-studio-card border border-studio-border bg-studio-surface p-5 text-studio-ink shadow-studio-card sm:p-studio-card">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-heading text-xl font-semibold">
+                <h2 className="font-heading text-xl font-bold tracking-tight text-studio-ink">
                   {saved.label}
                 </h2>
                 <Button
                   variant="outline"
+                  className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                   disabled={busy}
                   onClick={() => setReset(true)}
                 >
@@ -232,7 +233,7 @@ export function AdminMessageTemplatesPage() {
                 </Button>
               </div>
               <label className="block space-y-2 text-sm">
-                <span>Tiêu đề</span>
+                <span className="font-medium text-studio-ink">Tiêu đề</span>
                 <input
                   ref={subjectRef}
                   required
@@ -243,11 +244,11 @@ export function AdminMessageTemplatesPage() {
                     field.current = 'subject';
                   }}
                   onChange={(event) => change({ subject: event.target.value })}
-                  className="min-h-11 w-full rounded-sm border border-line px-3"
+                  className="min-h-11 w-full rounded-studio-control border border-studio-border bg-studio-surface px-3 text-studio-ink"
                 />
               </label>
               <label className="block space-y-2 text-sm">
-                <span>Nội dung</span>
+                <span className="font-medium text-studio-ink">Nội dung</span>
                 <textarea
                   ref={bodyRef}
                   required
@@ -258,9 +259,9 @@ export function AdminMessageTemplatesPage() {
                     field.current = 'body';
                   }}
                   onChange={(event) => change({ body: event.target.value })}
-                  className="min-h-64 w-full rounded-sm border border-line p-3"
+                  className="min-h-64 w-full rounded-studio-control border border-studio-border bg-studio-surface p-3 text-studio-ink"
                 />
-                <span className="block text-xs text-muted">
+                <span className="block text-xs text-studio-muted">
                   {current.body.length}/5000 ký tự
                 </span>
               </label>
@@ -303,14 +304,15 @@ export function AdminMessageTemplatesPage() {
                   Bỏ bản sửa và tải lại mẫu
                 </Button>
               )}
-              <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-                <p className="text-xs text-muted">
+              <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-studio-border pt-4">
+                <p className="text-xs text-studio-muted">
                   Cập nhật: {formatReviewDate(saved.updatedAt)} ·{' '}
                   {saved.updatedByName ?? 'Mặc định hệ thống'}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
+                    className="rounded-studio-control border-studio-border bg-studio-surface text-studio-ink hover:bg-studio-selected/50"
                     disabled={busy || !valid}
                     onClick={() => previewMutation.mutate()}
                   >
@@ -318,6 +320,7 @@ export function AdminMessageTemplatesPage() {
                     Xem trước
                   </Button>
                   <Button
+                    className="rounded-studio-control bg-studio-primary text-white hover:bg-studio-primary-hover"
                     disabled={busy || !dirty || !valid}
                     onClick={() => mutation.mutate('save')}
                   >
