@@ -18,7 +18,10 @@ import {
   reportStatusSchema,
   reportTargetSchema,
 } from '@workshop/shared';
-import { DataTable, type DataTableFetcher } from '@/components/common/DataTable';
+import {
+  DataTable,
+  type DataTableFetcher,
+} from '@/components/common/DataTable';
 import { ConfirmReasonDialog } from '@/components/common/ConfirmReasonDialog';
 import { ImageGalleryDialog } from '@/components/common/ImageGalleryDialog';
 import { StatusBadge } from '@/components/ui/status-badge';

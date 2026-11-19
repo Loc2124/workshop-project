@@ -81,11 +81,12 @@ export function AdminFinancialPage() {
   const transfers = useQuery({
     queryKey: ['private', userId, 'financial-transfers'],
     queryFn: () =>
-      apiFetch<{ items: Transfer[] }>('/admin/tai-chinh/chuyen-tien').then((r) =>
-        (r.items ?? []).sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        ),
+      apiFetch<{ items: Transfer[] }>('/admin/tai-chinh/chuyen-tien').then(
+        (r) =>
+          (r.items ?? []).sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          ),
       ),
   });
 
@@ -312,7 +313,8 @@ export function AdminFinancialPage() {
           provider: draft.provider,
           providerReference: draft.reference,
           providerFee: Number(draft.fee),
-          reason: 'Đối chiếu phí thực tế với báo cáo giao dịch của nhà cung cấp.',
+          reason:
+            'Đối chiếu phí thực tế với báo cáo giao dịch của nhà cung cấp.',
         }),
       });
     },

@@ -117,7 +117,10 @@ const updateProfileSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(/^(0|\+84)[0-9]{9,10}$/, 'Số điện thoại không hợp lệ (ví dụ: 0912345678)')
+    .regex(
+      /^(0|\+84)[0-9]{9,10}$/,
+      'Số điện thoại không hợp lệ (ví dụ: 0912345678)',
+    )
     .optional()
     .or(z.literal(''))
     .nullable(),

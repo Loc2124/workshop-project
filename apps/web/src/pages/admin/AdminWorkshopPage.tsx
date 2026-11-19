@@ -13,7 +13,10 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { ImageIcon } from 'lucide-react';
-import { DataTable, type DataTableFetcher } from '@/components/common/DataTable';
+import {
+  DataTable,
+  type DataTableFetcher,
+} from '@/components/common/DataTable';
 import { ConfirmReasonDialog } from '@/components/common/ConfirmReasonDialog';
 import { ImageGalleryDialog } from '@/components/common/ImageGalleryDialog';
 import { StatusBadge } from '@/components/ui/status-badge';

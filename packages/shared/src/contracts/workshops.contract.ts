@@ -21,14 +21,26 @@ const postgresInteger = z.number().int().min(0).max(2_147_483_647);
 
 export const workshopInputContractSchema = z
   .object({
-    title: z.string().trim().min(1, 'Tiêu đề không được để trống').max(200, 'Tiêu đề tối đa 200 ký tự'),
-    description: z.string().trim().min(1, 'Mô tả không được để trống').max(10_000, 'Mô tả tối đa 10,000 ký tự'),
+    title: z
+      .string()
+      .trim()
+      .min(1, 'Tiêu đề không được để trống')
+      .max(200, 'Tiêu đề tối đa 200 ký tự'),
+    description: z
+      .string()
+      .trim()
+      .min(1, 'Mô tả không được để trống')
+      .max(10_000, 'Mô tả tối đa 10,000 ký tự'),
     categoryId: z.string().trim().min(1, 'Vui lòng chọn danh mục').max(100),
     proposedCategoryName: proposedCategoryNameSchema.optional(),
     level: z.enum(['beginner', 'intermediate', 'all']).default('beginner'),
     audience: z.array(z.string().trim().min(1).max(100)).max(20).default([]),
     takeaway: z.string().trim().max(5000).nullable().optional(),
-    durationMinutes: z.number().int().positive('Thời lượng phải là số dương').max(2_147_483_647),
+    durationMinutes: z
+      .number()
+      .int()
+      .positive('Thời lượng phải là số dương')
+      .max(2_147_483_647),
     basePrice: postgresInteger,
     depositPercent: depositPercentSchema.nullable().optional(),
     depositModeOverride: z
@@ -70,6 +82,12 @@ export const workshopFilterContractSchema = z
   .strict();
 
 export type WorkshopInputContract = z.infer<typeof workshopInputContractSchema>;
-export type CreateWorkshopContractInput = z.infer<typeof createWorkshopContractSchema>;
-export type UpdateWorkshopContractInput = z.infer<typeof updateWorkshopContractSchema>;
-export type WorkshopFilterContractInput = z.infer<typeof workshopFilterContractSchema>;
+export type CreateWorkshopContractInput = z.infer<
+  typeof createWorkshopContractSchema
+>;
+export type UpdateWorkshopContractInput = z.infer<
+  typeof updateWorkshopContractSchema
+>;
+export type WorkshopFilterContractInput = z.infer<
+  typeof workshopFilterContractSchema
+>;

@@ -41,14 +41,8 @@ export function renderCustomerRoutes() {
         path="/lich-dat-cua-toi"
         element={<Navigate to="/me/bookings" replace />}
       />
-      <Route
-        path="/me/refund-accounts"
-        element={<SavedRefundAccountsPage />}
-      />
-      <Route
-        path="/me/bookings/:id"
-        element={<CustomerBookingDetailPage />}
-      />
+      <Route path="/me/refund-accounts" element={<SavedRefundAccountsPage />} />
+      <Route path="/me/bookings/:id" element={<CustomerBookingDetailPage />} />
       <Route
         path="/payment/mock"
         element={

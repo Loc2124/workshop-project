@@ -108,7 +108,9 @@ export function BookingHeroHeader({
               {copied ? (
                 <>
                   <Check size={12} className="text-studio-success" />
-                  <span className="text-[11px] font-semibold text-studio-success">Đã chép</span>
+                  <span className="text-[11px] font-semibold text-studio-success">
+                    Đã chép
+                  </span>
                 </>
               ) : (
                 <>

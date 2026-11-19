@@ -7,19 +7,29 @@ const HomePage = lazy(() =>
   import('../../pages/public/HomePage').then((m) => ({ default: m.HomePage })),
 );
 const ExplorePage = lazy(() =>
-  import('../../pages/public/ExplorePage').then((m) => ({ default: m.ExplorePage })),
+  import('../../pages/public/ExplorePage').then((m) => ({
+    default: m.ExplorePage,
+  })),
 );
 const ArtisanPage = lazy(() =>
-  import('../../pages/public/ArtisanPage').then((m) => ({ default: m.ArtisanPage })),
+  import('../../pages/public/ArtisanPage').then((m) => ({
+    default: m.ArtisanPage,
+  })),
 );
 const AboutPage = lazy(() =>
-  import('../../pages/public/AboutPage').then((m) => ({ default: m.AboutPage })),
+  import('../../pages/public/AboutPage').then((m) => ({
+    default: m.AboutPage,
+  })),
 );
 const StudioPage = lazy(() =>
-  import('../../pages/studio/StudioPage').then((m) => ({ default: m.StudioPage })),
+  import('../../pages/studio/StudioPage').then((m) => ({
+    default: m.StudioPage,
+  })),
 );
 const WorkshopPage = lazy(() =>
-  import('../../pages/public/WorkshopPage').then((m) => ({ default: m.WorkshopPage })),
+  import('../../pages/public/WorkshopPage').then((m) => ({
+    default: m.WorkshopPage,
+  })),
 );
 const StudioRegistrationPage = lazy(() =>
   import('../../pages/studio/StudioRegistrationPage').then((m) => ({
@@ -27,16 +37,22 @@ const StudioRegistrationPage = lazy(() =>
   })),
 );
 const NotFoundPage = lazy(() =>
-  import('../../pages/public/NotFoundPage').then((m) => ({ default: m.NotFoundPage })),
+  import('../../pages/public/NotFoundPage').then((m) => ({
+    default: m.NotFoundPage,
+  })),
 );
 const ForbiddenPage = lazy(() =>
-  import('../../pages/public/ForbiddenPage').then((m) => ({ default: m.ForbiddenPage })),
+  import('../../pages/public/ForbiddenPage').then((m) => ({
+    default: m.ForbiddenPage,
+  })),
 );
 const FaqPage = lazy(() =>
   import('../../pages/public/FaqPage').then((m) => ({ default: m.FaqPage })),
 );
 const ContactPage = lazy(() =>
-  import('../../pages/public/ContactPage').then((m) => ({ default: m.ContactPage })),
+  import('../../pages/public/ContactPage').then((m) => ({
+    default: m.ContactPage,
+  })),
 );
 const AcceptInvitationPage = lazy(() =>
   import('../../pages/auth/AcceptInvitationPage').then((m) => ({

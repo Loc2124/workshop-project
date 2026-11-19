@@ -246,10 +246,11 @@ export function SavedRefundAccountsPage() {
         <div className="space-y-1">
           <p className="font-semibold">Bảo mật thông tin tài chính cá nhân</p>
           <p className="text-xs sm:text-sm leading-relaxed text-sky-800">
-            Số tài khoản của bạn được mã hóa an toàn theo tiêu chuẩn AES-256-GCM.
-            Ban quản trị Open Slot chỉ sử dụng thông tin này để kiểm tra đối soát
-            và thực hiện chuyển khoản hoàn tiền trực tiếp cho bạn khi có lịch hủy
-            hợp lệ. Hệ thống chỉ hiển thị 4 số cuối để bảo vệ quyền riêng tư.
+            Số tài khoản của bạn được mã hóa an toàn theo tiêu chuẩn
+            AES-256-GCM. Ban quản trị Open Slot chỉ sử dụng thông tin này để
+            kiểm tra đối soát và thực hiện chuyển khoản hoàn tiền trực tiếp cho
+            bạn khi có lịch hủy hợp lệ. Hệ thống chỉ hiển thị 4 số cuối để bảo
+            vệ quyền riêng tư.
           </p>
         </div>
       </div>
@@ -450,7 +451,10 @@ export function SavedRefundAccountsPage() {
 
         {isLoading ? (
           <div className="py-12">
-            <LoadingState label="Đang tải danh sách tài khoản…" variant="section" />
+            <LoadingState
+              label="Đang tải danh sách tài khoản…"
+              variant="section"
+            />
           </div>
         ) : isError ? (
           <div className="rounded-xl border border-brick/30 bg-brick/5 p-6 text-center">
@@ -518,7 +522,8 @@ export function SavedRefundAccountsPage() {
                         </div>
                         <div>
                           <h3 className="font-semibold text-ink">
-                            {bank?.shortName || formatBankDisplay(account.bankBin)}
+                            {bank?.shortName ||
+                              formatBankDisplay(account.bankBin)}
                           </h3>
                           <span className="inline-block rounded bg-soft px-1.5 py-0.5 text-[11px] font-semibold text-muted">
                             {bank?.code || account.bankBin}
@@ -541,7 +546,10 @@ export function SavedRefundAccountsPage() {
                     </div>
 
                     {bank?.name && (
-                      <p className="mt-2.5 line-clamp-1 text-xs text-muted" title={bank.name}>
+                      <p
+                        className="mt-2.5 line-clamp-1 text-xs text-muted"
+                        title={bank.name}
+                      >
                         {bank.name}
                       </p>
                     )}

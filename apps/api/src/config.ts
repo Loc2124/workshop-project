@@ -4,7 +4,9 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-const projectRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
+const projectRoot = resolve(
+  fileURLToPath(new URL('../../..', import.meta.url)),
+);
 const nodeEnv = process.env.NODE_ENV || 'development';
 
 const envFiles = [

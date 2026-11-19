@@ -67,10 +67,7 @@ export function UserAccountPage() {
 
   if (isLoading) {
     return (
-      <LoadingState
-        label="Đang tải thông tin tài khoản…"
-        variant="page"
-      />
+      <LoadingState label="Đang tải thông tin tài khoản…" variant="page" />
     );
   }
 
@@ -208,7 +205,8 @@ export function UserAccountPage() {
               {user.createdAt && (
                 <p className="text-xs text-muted flex items-center gap-1.5 pt-0.5">
                   <Clock className="size-3 text-muted shrink-0" />
-                  Tham gia từ {new Date(user.createdAt).toLocaleDateString('vi-VN')}
+                  Tham gia từ{' '}
+                  {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                 </p>
               )}
             </div>
@@ -291,7 +289,8 @@ export function UserAccountPage() {
                   Hồ sơ cá nhân
                 </h2>
                 <p className="text-xs text-muted mt-1">
-                  Cập nhật thông tin để studio và hệ thống tiện liên lạc khi cần xác nhận đặt chỗ.
+                  Cập nhật thông tin để studio và hệ thống tiện liên lạc khi cần
+                  xác nhận đặt chỗ.
                 </p>
               </div>
 
@@ -358,7 +357,8 @@ export function UserAccountPage() {
                     />
                   </div>
                   <p className="text-[11px] text-muted">
-                    Dùng để nhận cuộc gọi xác nhận lịch học từ studio khi tham gia workshop.
+                    Dùng để nhận cuộc gọi xác nhận lịch học từ studio khi tham
+                    gia workshop.
                   </p>
                 </div>
 
@@ -395,7 +395,8 @@ export function UserAccountPage() {
                   Đơn đặt chỗ & Vé tham dự
                 </h3>
                 <p className="text-xs text-muted leading-relaxed">
-                  Xem lại danh sách tất cả các buổi workshop bạn đã đặt hoặc lưu giữ mã QR vé vào cổng.
+                  Xem lại danh sách tất cả các buổi workshop bạn đã đặt hoặc lưu
+                  giữ mã QR vé vào cổng.
                 </p>
                 <Button asChild variant="outline" size="sm" className="w-full">
                   <Link to="/me/bookings">
@@ -416,7 +417,8 @@ export function UserAccountPage() {
                 Đổi mật khẩu
               </h2>
               <p className="text-xs text-muted mt-1">
-                Hãy sử dụng mật khẩu an toàn gồm ít nhất 8 ký tự, kết hợp chữ và số để bảo vệ tài khoản.
+                Hãy sử dụng mật khẩu an toàn gồm ít nhất 8 ký tự, kết hợp chữ và
+                số để bảo vệ tài khoản.
               </p>
             </div>
 
@@ -496,7 +498,8 @@ export function UserAccountPage() {
                   Studio & Xưởng sáng tạo
                 </h2>
                 <p className="text-xs text-muted mt-0.5">
-                  Các studio bạn đang sở hữu hoặc tham gia làm việc với tư cách nhân viên.
+                  Các studio bạn đang sở hữu hoặc tham gia làm việc với tư cách
+                  nhân viên.
                 </p>
               </div>
               <Button asChild size="sm">
@@ -517,7 +520,9 @@ export function UserAccountPage() {
                     Bạn chưa có studio nào
                   </h3>
                   <p className="text-xs text-muted leading-relaxed">
-                    Bạn có một không gian làm đồ thủ công, vẽ tranh, gốm sứ hay làm bánh? Hãy mở studio trên Open Slot để bắt đầu tiếp cận hàng nghìn học viên yêu thích trải nghiệm.
+                    Bạn có một không gian làm đồ thủ công, vẽ tranh, gốm sứ hay
+                    làm bánh? Hãy mở studio trên Open Slot để bắt đầu tiếp cận
+                    hàng nghìn học viên yêu thích trải nghiệm.
                   </p>
                 </div>
                 <div className="pt-2">
@@ -547,7 +552,9 @@ export function UserAccountPage() {
                               {st.isDraft ? 'Hồ sơ nháp studio' : st.name}
                             </h3>
                             <span className="text-xs text-muted">
-                              {st.province || st.address || 'Chưa cập nhật địa chỉ'}
+                              {st.province ||
+                                st.address ||
+                                'Chưa cập nhật địa chỉ'}
                             </span>
                           </div>
                         </div>

@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import { proposedCategoryNameSchema } from '../validation/category-proposal.js';
 import { createStudioEvidenceSchema } from './studio-evidence.js';
-import { defaultSiteSettings, type SiteSettings } from '../constants/settings.js';
+import {
+  defaultSiteSettings,
+  type SiteSettings,
+} from '../constants/settings.js';
 
 export const createStudioRegistrationSchema = (
   policy: SiteSettings['studio'] = defaultSiteSettings.studio,

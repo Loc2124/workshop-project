@@ -19,17 +19,48 @@ export const studioTrustLevelContractSchema = studioTrustLevelSchema;
 export const updateStudioContactContractSchema = z
   .object({
     contactPhone: z.string().trim().max(50).nullable().optional(),
-    contactEmail: z.string().trim().email('Email không hợp lệ').nullable().optional(),
-    facebookUrl: z.string().trim().url('URL Facebook không hợp lệ').nullable().optional(),
-    instagramUrl: z.string().trim().url('URL Instagram không hợp lệ').nullable().optional(),
-    googleMapsUrl: z.string().trim().url('URL Google Maps không hợp lệ').nullable().optional(),
+    contactEmail: z
+      .string()
+      .trim()
+      .email('Email không hợp lệ')
+      .nullable()
+      .optional(),
+    facebookUrl: z
+      .string()
+      .trim()
+      .url('URL Facebook không hợp lệ')
+      .nullable()
+      .optional(),
+    instagramUrl: z
+      .string()
+      .trim()
+      .url('URL Instagram không hợp lệ')
+      .nullable()
+      .optional(),
+    googleMapsUrl: z
+      .string()
+      .trim()
+      .url('URL Google Maps không hợp lệ')
+      .nullable()
+      .optional(),
   })
   .strict();
 
-export const studioVerificationDecisionContractSchema = studioVerificationDecisionSchema;
+export const studioVerificationDecisionContractSchema =
+  studioVerificationDecisionSchema;
 
-export type StudioProfileContractInput = z.infer<typeof studioProfileContractSchema>;
-export type StudioDepositSettingsContractInput = z.infer<typeof studioDepositSettingsContractSchema>;
-export type StudioTrustLevelContract = z.infer<typeof studioTrustLevelContractSchema>;
-export type UpdateStudioContactContractInput = z.infer<typeof updateStudioContactContractSchema>;
-export type StudioVerificationDecisionContractInput = z.infer<typeof studioVerificationDecisionContractSchema>;
+export type StudioProfileContractInput = z.infer<
+  typeof studioProfileContractSchema
+>;
+export type StudioDepositSettingsContractInput = z.infer<
+  typeof studioDepositSettingsContractSchema
+>;
+export type StudioTrustLevelContract = z.infer<
+  typeof studioTrustLevelContractSchema
+>;
+export type UpdateStudioContactContractInput = z.infer<
+  typeof updateStudioContactContractSchema
+>;
+export type StudioVerificationDecisionContractInput = z.infer<
+  typeof studioVerificationDecisionContractSchema
+>;

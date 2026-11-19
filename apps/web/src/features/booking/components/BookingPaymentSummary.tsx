@@ -369,10 +369,7 @@ export function BookingPaymentSummary({
             </button>
           )}
           {state.deposit?.checkoutUrl && (
-            <a
-              href={state.deposit.checkoutUrl}
-              className={`${primary} mt-2.5`}
-            >
+            <a href={state.deposit.checkoutUrl} className={`${primary} mt-2.5`}>
               Mở trang thanh toán · Cọc {money(booking.depositAmount)}
               <ExternalLink size={15} aria-hidden="true" />
             </a>

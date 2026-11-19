@@ -124,8 +124,8 @@ export function TicketCheckInCard({
         ['confirmed', 'completed'].includes(ticket.reservationStatus) && (
           <div className="mt-5 border-t border-line pt-4">
             <p className="mb-3 text-sm text-muted">
-              Chỉ ghi nhận thanh toán sau khi thực sự nhận đủ tiền. Thao tác
-              này không check-in vé.
+              Chỉ ghi nhận thanh toán sau khi thực sự nhận đủ tiền. Thao tác này
+              không check-in vé.
             </p>
             <Button
               type="button"
@@ -146,11 +146,7 @@ export function TicketCheckInCard({
             Đối chiếu khách và giờ học trước khi xác nhận. Check-in không thay
             đổi thanh toán.
           </p>
-          <Button
-            type="button"
-            disabled={busy !== null}
-            onClick={onConfirm}
-          >
+          <Button type="button" disabled={busy !== null} onClick={onConfirm}>
             {busy === 'check-in' ? 'Đang xác nhận…' : 'Xác nhận check-in'}
           </Button>
         </div>

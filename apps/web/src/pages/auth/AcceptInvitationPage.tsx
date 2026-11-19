@@ -265,9 +265,9 @@ export function AcceptInvitationPage() {
                     invitation.email.toLowerCase() && (
                     <p className="text-xs text-amber-700 bg-amber-50 p-2.5 rounded border border-amber-200">
                       * Lưu ý: Lời mời này ban đầu gửi đến{' '}
-                      <strong>{invitation.email}</strong>. Bạn đang đăng nhập bằng{' '}
-                      <strong>{user.email}</strong>, bạn vẫn có thể nhấn tham gia
-                      bằng tài khoản hiện tại.
+                      <strong>{invitation.email}</strong>. Bạn đang đăng nhập
+                      bằng <strong>{user.email}</strong>, bạn vẫn có thể nhấn
+                      tham gia bằng tài khoản hiện tại.
                     </p>
                   )}
 

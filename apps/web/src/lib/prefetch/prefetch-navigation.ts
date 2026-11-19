@@ -193,11 +193,17 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
     prefetchDashboardRoute(url.pathname);
     const tasks: Promise<unknown>[] = [];
     if (section === 'workshops')
-      tasks.push(import('@/features/studio-management/components/StudioWorkshopManager'));
+      tasks.push(
+        import('@/features/studio-management/components/StudioWorkshopManager'),
+      );
     if (section === 'sessions')
-      tasks.push(import('@/features/studio-management/components/StudioSessionManager'));
+      tasks.push(
+        import('@/features/studio-management/components/StudioSessionManager'),
+      );
     if (section === 'profile')
-      tasks.push(import('@/features/studio-management/components/StudioEvidenceEditor'));
+      tasks.push(
+        import('@/features/studio-management/components/StudioEvidenceEditor'),
+      );
     if (!section || section === 'workshops' || section === 'sessions')
       tasks.push(
         client.prefetchQuery({

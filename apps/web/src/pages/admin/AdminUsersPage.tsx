@@ -8,7 +8,10 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { z } from 'zod';
 import { MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
-import { DataTable, type DataTableFetcher } from '@/components/common/DataTable';
+import {
+  DataTable,
+  type DataTableFetcher,
+} from '@/components/common/DataTable';
 import { ConfirmReasonDialog } from '@/components/common/ConfirmReasonDialog';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';

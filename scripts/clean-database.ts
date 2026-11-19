@@ -58,7 +58,9 @@ async function main() {
     if (tablesToTruncate.length > 0) {
       console.log('Temporarily disabling immutable trigger on audit_logs...');
       try {
-        await client.query('ALTER TABLE audit_logs DISABLE TRIGGER audit_logs_immutable;');
+        await client.query(
+          'ALTER TABLE audit_logs DISABLE TRIGGER audit_logs_immutable;',
+        );
       } catch (e) {
         console.warn('Could not disable audit_logs trigger, continuing:', e);
       }
@@ -68,13 +70,17 @@ async function main() {
       await client.query(truncateSql);
 
       try {
-        await client.query('ALTER TABLE audit_logs ENABLE TRIGGER audit_logs_immutable;');
+        await client.query(
+          'ALTER TABLE audit_logs ENABLE TRIGGER audit_logs_immutable;',
+        );
         console.log('Re-enabled immutable trigger on audit_logs.');
       } catch (e) {
         console.warn('Could not re-enable audit_logs trigger:', e);
       }
 
-      console.log('All transactional, user, and studio data truncated successfully!');
+      console.log(
+        'All transactional, user, and studio data truncated successfully!',
+      );
     }
 
     // Now insert the fresh Admin account requested by user
@@ -84,7 +90,12 @@ async function main() {
     const passwordHash = await argon2.hash(adminPassword);
 
     console.log('Inserting fresh Admin account...');
-    const insertRes = await client.query<{ id: string; email: string; role: string; fullName: string }>(
+    const insertRes = await client.query<{
+      id: string;
+      email: string;
+      role: string;
+      fullName: string;
+    }>(
       `INSERT INTO users (email, password_hash, full_name, role)
        VALUES ($1, $2, 'Quản Trị Viên Hệ Thống', 'admin')
        RETURNING id, email, role, full_name AS "fullName"`,
@@ -96,7 +107,9 @@ async function main() {
     console.log('DATABASE CLEANUP & RESET COMPLETE!');
     console.log('Admin Email:    ' + adminEmail);
     console.log('Admin Password: ' + adminPassword);
-    console.log('Database is completely clean and ready for registration/demo!');
+    console.log(
+      'Database is completely clean and ready for registration/demo!',
+    );
     console.log('=============================================\n');
   } finally {
     client.release();

@@ -45,7 +45,11 @@ export function imageStorageConfig() {
 }
 
 export function imagePublicUrl(key: string): string {
-  if (key.startsWith('/') || key.startsWith('http://') || key.startsWith('https://')) {
+  if (
+    key.startsWith('/') ||
+    key.startsWith('http://') ||
+    key.startsWith('https://')
+  ) {
     return key;
   }
   const { SUPABASE_URL, STUDIO_IMAGE_BUCKET } = imageStorageConfig();

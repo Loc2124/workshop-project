@@ -196,8 +196,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
                 Liên kết mời nhân viên
               </h2>
               <p className="text-xs text-muted mt-0.5">
-                Tạo liên kết chia sẻ để gửi cho nhân viên. Nhân viên mở liên kết này
-                có thể đăng ký tài khoản mới hoặc đăng nhập để tham gia studio ngay lập tức mà không cần chỉ định email trước.
+                Tạo liên kết chia sẻ để gửi cho nhân viên. Nhân viên mở liên kết
+                này có thể đăng ký tài khoản mới hoặc đăng nhập để tham gia
+                studio ngay lập tức mà không cần chỉ định email trước.
               </p>
             </div>
           </div>
@@ -224,7 +225,8 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
             <div className="flex items-center gap-2 text-emerald-800 font-medium text-sm">
               <Check className="size-4 text-emerald-600" />
               <span>
-                Đã tạo liên kết mời thành công! Hãy sao chép và gửi cho nhân viên:
+                Đã tạo liên kết mời thành công! Hãy sao chép và gửi cho nhân
+                viên:
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -256,8 +258,9 @@ export function StudioMembersManager({ studio }: { studio: MemberStudio }) {
               </Button>
             </div>
             <p className="text-xs text-emerald-700">
-              * Liên kết có hiệu lực trong 7 ngày. Nhân viên chỉ cần mở liên kết,
-              đăng ký tài khoản (nếu chưa có) hoặc đăng nhập để vào làm việc tại studio.
+              * Liên kết có hiệu lực trong 7 ngày. Nhân viên chỉ cần mở liên
+              kết, đăng ký tài khoản (nếu chưa có) hoặc đăng nhập để vào làm
+              việc tại studio.
             </p>
           </div>
         )}

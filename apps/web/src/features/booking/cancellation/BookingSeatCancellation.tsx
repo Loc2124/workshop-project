@@ -185,7 +185,8 @@ export function BookingSeatCancellation({
                 Hủy từng chỗ đã đặt
               </DialogTitle>
               <DialogDescription className="mt-0.5 text-xs text-muted sm:text-sm">
-                Chọn các chỗ muốn hủy. Các chỗ còn lại vẫn giữ nguyên lịch tham gia.
+                Chọn các chỗ muốn hủy. Các chỗ còn lại vẫn giữ nguyên lịch tham
+                gia.
               </DialogDescription>
             </div>
           </div>
@@ -336,7 +337,10 @@ export function BookingSeatCancellation({
 
                 {quote.isFetching ? (
                   <div className="flex items-center gap-2 py-2 text-muted">
-                    <LoaderCircle size={14} className="animate-spin text-primary" />
+                    <LoaderCircle
+                      size={14}
+                      className="animate-spin text-primary"
+                    />
                     Đang tính toán khoản tiền hoàn…
                   </div>
                 ) : quote.data ? (
@@ -344,7 +348,9 @@ export function BookingSeatCancellation({
                     {quote.data.paidAmount > 0 ? (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="text-muted">Khoản cần hoàn lại:</span>
+                          <span className="text-muted">
+                            Khoản cần hoàn lại:
+                          </span>
                           <span className="font-bold text-studio-success tabular-nums">
                             {money(quote.data.refundDueAmount)}
                           </span>
@@ -441,7 +447,8 @@ export function BookingSeatCancellation({
                 </>
               ) : (
                 <span>
-                  Xác nhận hủy {sequences.length ? `${sequences.length} chỗ` : ''}
+                  Xác nhận hủy{' '}
+                  {sequences.length ? `${sequences.length} chỗ` : ''}
                 </span>
               )}
             </button>

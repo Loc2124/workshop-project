@@ -6,7 +6,11 @@ const sessionFields = {
   startsAt: isoDateTimeSchema,
   endsAt: isoDateTimeSchema,
   price: z.number().int().min(0).max(2_147_483_647).optional(),
-  capacity: z.number().int().positive('Số chỗ phải lớn hơn 0').max(2_147_483_647),
+  capacity: z
+    .number()
+    .int()
+    .positive('Số chỗ phải lớn hơn 0')
+    .max(2_147_483_647),
   registrationDeadline: isoDateTimeSchema.nullable().optional(),
 };
 
@@ -44,14 +48,26 @@ export const sessionAttendanceCheckInContractSchema = z
 export const sessionScheduleChangeContractSchema = z
   .object({
     sessionId: z.string().uuid('Mã buổi học không đúng định dạng'),
-    reason: z.string().trim().min(5, 'Lý do phải có ít nhất 5 ký tự').max(1000, 'Lý do tối đa 1000 ký tự'),
+    reason: z
+      .string()
+      .trim()
+      .min(5, 'Lý do phải có ít nhất 5 ký tự')
+      .max(1000, 'Lý do tối đa 1000 ký tự'),
     newStartsAt: isoDateTimeSchema.optional(),
     newEndsAt: isoDateTimeSchema.optional(),
     notifyCustomers: z.boolean().default(true),
   })
   .strict();
 
-export type CreateSessionContractInput = z.infer<typeof createSessionContractSchema>;
-export type UpdateSessionContractInput = z.infer<typeof updateSessionContractSchema>;
-export type SessionAttendanceCheckInContractInput = z.infer<typeof sessionAttendanceCheckInContractSchema>;
-export type SessionScheduleChangeContractInput = z.infer<typeof sessionScheduleChangeContractSchema>;
+export type CreateSessionContractInput = z.infer<
+  typeof createSessionContractSchema
+>;
+export type UpdateSessionContractInput = z.infer<
+  typeof updateSessionContractSchema
+>;
+export type SessionAttendanceCheckInContractInput = z.infer<
+  typeof sessionAttendanceCheckInContractSchema
+>;
+export type SessionScheduleChangeContractInput = z.infer<
+  typeof sessionScheduleChangeContractSchema
+>;

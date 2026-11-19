@@ -7,13 +7,19 @@ const LoginPage = lazy(() =>
   import('../../pages/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
 );
 const RegisterPage = lazy(() =>
-  import('../../pages/auth/RegisterPage').then((m) => ({ default: m.RegisterPage })),
+  import('../../pages/auth/RegisterPage').then((m) => ({
+    default: m.RegisterPage,
+  })),
 );
 const ForgotPasswordPage = lazy(() =>
-  import('../../pages/auth/ForgotPasswordPage').then((m) => ({ default: m.ForgotPasswordPage })),
+  import('../../pages/auth/ForgotPasswordPage').then((m) => ({
+    default: m.ForgotPasswordPage,
+  })),
 );
 const ResetPasswordPage = lazy(() =>
-  import('../../pages/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+  import('../../pages/auth/ResetPasswordPage').then((m) => ({
+    default: m.ResetPasswordPage,
+  })),
 );
 
 function AuthFallback() {

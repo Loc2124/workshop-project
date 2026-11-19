@@ -20,7 +20,9 @@ export interface DatabaseTarget {
   username: string;
 }
 
-export function parseDatabaseUrl(value: string | undefined): DatabaseTarget | undefined {
+export function parseDatabaseUrl(
+  value: string | undefined,
+): DatabaseTarget | undefined {
   if (!value) return undefined;
   try {
     const url = new URL(value);
@@ -46,7 +48,9 @@ export function assertSafeDatabaseOperation(options: SafetyCheckOptions): void {
   const dbUrl = env.DATABASE_URL;
 
   if (!dbUrl) {
-    throw new Error(`[DB Guard] DATABASE_URL is required to run '${options.operationName}'.`);
+    throw new Error(
+      `[DB Guard] DATABASE_URL is required to run '${options.operationName}'.`,
+    );
   }
 
   const target = parseDatabaseUrl(dbUrl);
@@ -67,12 +71,18 @@ export function assertSafeDatabaseOperation(options: SafetyCheckOptions): void {
   }
 
   // Safety confirmation for destructive operations
-  if (!isDestructiveAllowed && !target.hostname.includes('localhost') && target.hostname !== '127.0.0.1') {
+  if (
+    !isDestructiveAllowed &&
+    !target.hostname.includes('localhost') &&
+    target.hostname !== '127.0.0.1'
+  ) {
     throw new Error(
       `[DB Guard] Refusing to run destructive operation '${options.operationName}' on remote database '${target.hostname}/${target.database}'.\n` +
-      `To proceed, pass --force argument or set ALLOW_DESTRUCTIVE_OPERATIONS=true in your environment.`,
+        `To proceed, pass --force argument or set ALLOW_DESTRUCTIVE_OPERATIONS=true in your environment.`,
     );
   }
 
-  console.log(`[DB Guard] Target verified: ${target.username}@${target.hostname}/${target.database} for '${options.operationName}'`);
+  console.log(
+    `[DB Guard] Target verified: ${target.username}@${target.hostname}/${target.database} for '${options.operationName}'`,
+  );
 }

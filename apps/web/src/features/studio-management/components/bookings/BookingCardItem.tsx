@@ -168,7 +168,9 @@ export function BookingCardItem({
               </div>
             ) : (
               <div className="col-span-2 rounded-md bg-amber-50/70 p-2 border border-amber-200/60 flex items-center justify-between text-xs">
-                <span className="text-amber-900 font-medium">Còn lại thu tại studio:</span>
+                <span className="text-amber-900 font-medium">
+                  Còn lại thu tại studio:
+                </span>
                 <span className="font-bold tabular-nums text-amber-900 text-sm">
                   {formatPrice(remainingBalance)} đ
                 </span>

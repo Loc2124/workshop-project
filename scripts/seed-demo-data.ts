@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import argon2 from 'argon2';
-import { query, closePool, withTransaction } from '../apps/api/src/db/pool.js';
+import type { PoolClient } from 'pg';
+import { closePool, withTransaction } from '../apps/api/src/db/pool.js';
 import { encryptFinancialAccount } from '../apps/api/src/modules/payments/financial-account-crypto.js';
 import { assertSafeDatabaseOperation } from './assert-safe-db.js';
 
@@ -14,16 +15,19 @@ async function uploadToStorage(storageKey: string, localFilePath: string) {
   if (!supabaseUrl || !serviceKey) return buf.length;
 
   try {
-    const res = await fetch(new URL(`/storage/v1/object/studio-images/${storageKey}`, supabaseUrl), {
-      method: 'POST',
-      headers: {
-        apikey: serviceKey,
-        Authorization: `Bearer ${serviceKey}`,
-        'Content-Type': 'image/webp',
-        'x-upsert': 'true',
+    const res = await fetch(
+      new URL(`/storage/v1/object/studio-images/${storageKey}`, supabaseUrl),
+      {
+        method: 'POST',
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          'Content-Type': 'image/webp',
+          'x-upsert': 'true',
+        },
+        body: buf,
       },
-      body: buf,
-    });
+    );
     if (!res.ok) {
       console.warn(`[Storage upload warning] ${storageKey}:`, res.status);
     }
@@ -34,7 +38,7 @@ async function uploadToStorage(storageKey: string, localFilePath: string) {
 }
 
 async function createAndUploadImageTriplet(
-  client: any,
+  client: PoolClient,
   opts: {
     id: string;
     studioId: string;
@@ -44,7 +48,10 @@ async function createAndUploadImageTriplet(
     keyPrefix: string;
   },
 ) {
-  const imagesDir = path.resolve(process.cwd(), 'apps/web/public/images/workshops');
+  const imagesDir = path.resolve(
+    process.cwd(),
+    'apps/web/public/images/workshops',
+  );
   const origFile = path.join(imagesDir, `${opts.baseName}.webp`);
   const medFile = path.join(imagesDir, `${opts.baseName}.medium.webp`);
   const thumbFile = path.join(imagesDir, `${opts.baseName}.thumb.webp`);
@@ -144,7 +151,9 @@ async function main() {
         [u.id, u.email, passwordHash, u.fullName, u.phone, u.role],
       );
       userMap.set(u.email, res.rows[0].id);
-      console.log(`✓ Đã tạo/cập nhật tài khoản: ${u.email} (Mật khẩu: openslot123)`);
+      console.log(
+        `✓ Đã tạo/cập nhật tài khoản: ${u.email} (Mật khẩu: openslot123)`,
+      );
     }
 
     // Lấy ID admin hiện tại
@@ -167,7 +176,8 @@ async function main() {
         province_id: 'ha-noi',
         district: 'Tây Hồ',
         address: 'Số 18 Ngõ 45 Đường Quảng An, Phường Quảng An, Tây Hồ, Hà Nội',
-        description: 'Không gian trải nghiệm làm gốm thủ công phong cách mộc mạc bên hồ Tây. Nơi bạn tự tay vuốt nặn, tạo hình và trang trí những chiếc cốc, đĩa mang dấu ấn cá nhân cùng sự hướng dẫn tỉ mỉ của nghệ nhân.',
+        description:
+          'Không gian trải nghiệm làm gốm thủ công phong cách mộc mạc bên hồ Tây. Nơi bạn tự tay vuốt nặn, tạo hình và trang trí những chiếc cốc, đĩa mang dấu ấn cá nhân cùng sự hướng dẫn tỉ mỉ của nghệ nhân.',
         contact_phone: '0912345678',
         contact_email: 'gommoc.hanoi@gmail.com',
         facebook_url: 'https://facebook.com/gommoc.hanoi',
@@ -191,8 +201,10 @@ async function main() {
         category_id: 'candles',
         province_id: 'ha-noi',
         district: 'Hoàn Kiếm',
-        address: 'Tầng 2, 36 Phố Tràng Tiền, Phường Tràng Tiền, Hoàn Kiếm, Hà Nội',
-        description: 'Workshop làm nến thơm tự nhiên từ sáp đậu nành, tinh dầu thực vật cao cấp và hoa khô trang trí nghệ thuật. Tận hưởng không gian ấm cúng, thư giãn và mang về hũ nến mang hương sắc của riêng bạn.',
+        address:
+          'Tầng 2, 36 Phố Tràng Tiền, Phường Tràng Tiền, Hoàn Kiếm, Hà Nội',
+        description:
+          'Workshop làm nến thơm tự nhiên từ sáp đậu nành, tinh dầu thực vật cao cấp và hoa khô trang trí nghệ thuật. Tận hưởng không gian ấm cúng, thư giãn và mang về hũ nến mang hương sắc của riêng bạn.',
         contact_phone: '0912345679',
         contact_email: 'nenthom.muathu@gmail.com',
         facebook_url: 'https://facebook.com/nenthom.muathu',
@@ -216,8 +228,10 @@ async function main() {
         category_id: 'painting',
         province_id: 'ho-chi-minh',
         district: 'Quận 1',
-        address: '128/6 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
-        description: 'Lớp vẽ tranh thư giãn phong cách Canvas Acrylic dành cho người chưa từng cầm cọ. Cùng nhâm nhi trà hoa, nghe nhạc acoustic và sáng tác tác phẩm hội họa mang về treo phòng khách.',
+        address:
+          '128/6 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
+        description:
+          'Lớp vẽ tranh thư giãn phong cách Canvas Acrylic dành cho người chưa từng cầm cọ. Cùng nhâm nhi trà hoa, nghe nhạc acoustic và sáng tác tác phẩm hội họa mang về treo phòng khách.',
         contact_phone: '0987654321',
         contact_email: 'artsoul.saigon@gmail.com',
         facebook_url: 'https://facebook.com/artsoul.saigon',
@@ -242,7 +256,8 @@ async function main() {
         province_id: 'da-nang',
         district: 'Sơn Trà',
         address: '45 Đường Võ Văn Kiệt, Phường An Hải Đông, Sơn Trà, Đà Nẵng',
-        description: 'Trải nghiệm sáng tạo hương thơm cá nhân với hơn 50 nốt hương tinh dầu hữu cơ. Tự pha chế chai nước hoa cao cấp 30ml mang dấu ấn riêng biệt.',
+        description:
+          'Trải nghiệm sáng tạo hương thơm cá nhân với hơn 50 nốt hương tinh dầu hữu cơ. Tự pha chế chai nước hoa cao cấp 30ml mang dấu ấn riêng biệt.',
         contact_phone: '0905123456',
         contact_email: 'scentlab.danang@gmail.com',
         facebook_url: 'https://facebook.com/scentlab.danang',
@@ -276,9 +291,22 @@ async function main() {
           status = EXCLUDED.status, verified_at = EXCLUDED.verified_at, verified_by = EXCLUDED.verified_by
         RETURNING id`,
         [
-          s.id, s.name, s.slug, s.category_id, s.province_id, s.district, s.address, s.description,
-          s.contact_phone, s.contact_email, s.facebook_url, s.instagram_url, s.google_maps_url,
-          s.status, s.verified, adminId,
+          s.id,
+          s.name,
+          s.slug,
+          s.category_id,
+          s.province_id,
+          s.district,
+          s.address,
+          s.description,
+          s.contact_phone,
+          s.contact_email,
+          s.facebook_url,
+          s.instagram_url,
+          s.google_maps_url,
+          s.status,
+          s.verified,
+          adminId,
         ],
       );
       const actualStudioId = studioRes.rows[0].id;
@@ -286,7 +314,10 @@ async function main() {
       studioOwnerMap.set(s.slug, s.ownerId);
 
       // 3.2 Insert ảnh thật và upload lên Supabase storage cho studio
-      await client.query(`DELETE FROM images WHERE studio_id = $1 AND workshop_id IS NULL`, [actualStudioId]);
+      await client.query(
+        `DELETE FROM images WHERE studio_id = $1 AND workshop_id IS NULL`,
+        [actualStudioId],
+      );
       const photoIds: string[] = [];
       for (const baseName of s.photoBases) {
         const pid = randomUUID();
@@ -302,10 +333,10 @@ async function main() {
       }
 
       // 3.3 Cập nhật photo_ids cho studio
-      await client.query(
-        `UPDATE studios SET photo_ids = $1 WHERE id = $2`,
-        [photoIds, actualStudioId],
-      );
+      await client.query(`UPDATE studios SET photo_ids = $1 WHERE id = $2`, [
+        photoIds,
+        actualStudioId,
+      ]);
 
       // 3.4 Thêm thành viên owner
       await client.query(
@@ -340,7 +371,9 @@ async function main() {
         );
       }
 
-      console.log(`✓ Đã tạo Studio: ${s.name} (${s.status}${s.verified ? ' - Đã xác minh' : ''})`);
+      console.log(
+        `✓ Đã tạo Studio: ${s.name} (${s.status}${s.verified ? ' - Đã xác minh' : ''})`,
+      );
     }
 
     // 4. Tạo các Workshop & Sessions
@@ -352,22 +385,62 @@ async function main() {
         category_id: 'ceramics',
         level: 'beginner',
         audience: ['cặp đôi', 'nhóm bạn', 'một mình'],
-        takeaway: '1 sản phẩm cốc hoặc đĩa gốm nung men bóng cao cấp nhận sau 7-10 ngày',
+        takeaway:
+          '1 sản phẩm cốc hoặc đĩa gốm nung men bóng cao cấp nhận sau 7-10 ngày',
         duration_minutes: 120,
         base_price: 350000,
-        requirements: 'Không cần kinh nghiệm, xưởng trang bị sẵn tạp dề và nguyên liệu trọn gói',
-        cancellation_policy: 'Hoàn 100% tiền khi hủy trước thời gian bắt đầu tối thiểu 24 giờ',
-        payment_policy: 'Thanh toán trực tuyến VietQR qua cổng PayOS hoặc quét mã tại xưởng',
+        requirements:
+          'Không cần kinh nghiệm, xưởng trang bị sẵn tạp dề và nguyên liệu trọn gói',
+        cancellation_policy:
+          'Hoàn 100% tiền khi hủy trước thời gian bắt đầu tối thiểu 24 giờ',
+        payment_policy:
+          'Thanh toán trực tuyến VietQR qua cổng PayOS hoặc quét mã tại xưởng',
         district: 'Tây Hồ',
         address: 'Số 18 Ngõ 45 Đường Quảng An, Phường Quảng An, Tây Hồ, Hà Nội',
-        description: 'Trải nghiệm tự tay làm gốm từ khâu nhào đất, vuốt gốm trên bàn xoay điện chuyên nghiệp đến khắc họa tiết và tô men màu. Phù hợp cho cả các bạn mới bắt đầu muốn giải tỏa căng thẳng cuối tuần.',
+        description:
+          'Trải nghiệm tự tay làm gốm từ khâu nhào đất, vuốt gốm trên bàn xoay điện chuyên nghiệp đến khắc họa tiết và tô men màu. Phù hợp cho cả các bạn mới bắt đầu muốn giải tỏa căng thẳng cuối tuần.',
         photoBases: ['craftPhoto', 'terrazzoPhoto'],
         sessions: [
-          { dayOffset: 1, startHour: 9, startMin: 0, duration: 120, capacity: 10, price: 350000 },
-          { dayOffset: 1, startHour: 14, startMin: 30, duration: 120, capacity: 10, price: 350000 },
-          { dayOffset: 2, startHour: 10, startMin: 0, duration: 120, capacity: 10, price: 350000 },
-          { dayOffset: 3, startHour: 15, startMin: 0, duration: 120, capacity: 12, price: 350000 },
-          { dayOffset: 5, startHour: 9, startMin: 30, duration: 120, capacity: 12, price: 350000 },
+          {
+            dayOffset: 1,
+            startHour: 9,
+            startMin: 0,
+            duration: 120,
+            capacity: 10,
+            price: 350000,
+          },
+          {
+            dayOffset: 1,
+            startHour: 14,
+            startMin: 30,
+            duration: 120,
+            capacity: 10,
+            price: 350000,
+          },
+          {
+            dayOffset: 2,
+            startHour: 10,
+            startMin: 0,
+            duration: 120,
+            capacity: 10,
+            price: 350000,
+          },
+          {
+            dayOffset: 3,
+            startHour: 15,
+            startMin: 0,
+            duration: 120,
+            capacity: 12,
+            price: 350000,
+          },
+          {
+            dayOffset: 5,
+            startHour: 9,
+            startMin: 30,
+            duration: 120,
+            capacity: 12,
+            price: 350000,
+          },
         ],
       },
       {
@@ -385,12 +458,34 @@ async function main() {
         payment_policy: 'Thanh toán quét mã VietQR PayOS',
         district: 'Tây Hồ',
         address: 'Số 18 Ngõ 45 Đường Quảng An, Phường Quảng An, Tây Hồ, Hà Nội',
-        description: 'Tự tay cán đất, in dấu hoa lá thiên nhiên lên bề mặt gốm để tạo nên những chiếc đĩa và đế lót ly mộc mạc, độc bản trang trí góc làm việc của bạn.',
+        description:
+          'Tự tay cán đất, in dấu hoa lá thiên nhiên lên bề mặt gốm để tạo nên những chiếc đĩa và đế lót ly mộc mạc, độc bản trang trí góc làm việc của bạn.',
         photoBases: ['terrazzoPhoto', 'craftPhoto'],
         sessions: [
-          { dayOffset: 1, startHour: 16, startMin: 30, duration: 90, capacity: 8, price: 280000 },
-          { dayOffset: 2, startHour: 14, startMin: 0, duration: 90, capacity: 8, price: 280000 },
-          { dayOffset: 4, startHour: 10, startMin: 0, duration: 90, capacity: 8, price: 280000 },
+          {
+            dayOffset: 1,
+            startHour: 16,
+            startMin: 30,
+            duration: 90,
+            capacity: 8,
+            price: 280000,
+          },
+          {
+            dayOffset: 2,
+            startHour: 14,
+            startMin: 0,
+            duration: 90,
+            capacity: 8,
+            price: 280000,
+          },
+          {
+            dayOffset: 4,
+            startHour: 10,
+            startMin: 0,
+            duration: 90,
+            capacity: 8,
+            price: 280000,
+          },
         ],
       },
       {
@@ -400,21 +495,53 @@ async function main() {
         category_id: 'candles',
         level: 'beginner',
         audience: ['cặp đôi', 'nhóm bạn', 'một mình'],
-        takeaway: '1 hũ nến thơm 200g đóng hộp quà cao cấp mang về sử dụng ngay',
+        takeaway:
+          '1 hũ nến thơm 200g đóng hộp quà cao cấp mang về sử dụng ngay',
         duration_minutes: 90,
         base_price: 290000,
-        requirements: 'Không cần kinh nghiệm, đầy đủ nguyên liệu sáp và tinh dầu cao cấp',
+        requirements:
+          'Không cần kinh nghiệm, đầy đủ nguyên liệu sáp và tinh dầu cao cấp',
         cancellation_policy: 'Hủy trước 24 giờ hoàn 100% tiền cọc',
         payment_policy: 'Hỗ trợ thanh toán VietQR chuyển khoản nhanh 24/7',
         district: 'Hoàn Kiếm',
-        address: 'Tầng 2, 36 Phố Tràng Tiền, Phường Tràng Tiền, Hoàn Kiếm, Hà Nội',
-        description: 'Khám phá thế giới mùi hương tự nhiên, phối trộn tinh dầu hoa cỏ yêu thích, đổ sáp đậu nành ấm và trang trí hoa khô botanical theo phong cách riêng của bạn.',
+        address:
+          'Tầng 2, 36 Phố Tràng Tiền, Phường Tràng Tiền, Hoàn Kiếm, Hà Nội',
+        description:
+          'Khám phá thế giới mùi hương tự nhiên, phối trộn tinh dầu hoa cỏ yêu thích, đổ sáp đậu nành ấm và trang trí hoa khô botanical theo phong cách riêng của bạn.',
         photoBases: ['candlePhoto', 'flowerPhoto'],
         sessions: [
-          { dayOffset: 1, startHour: 10, startMin: 0, duration: 90, capacity: 8, price: 290000 },
-          { dayOffset: 1, startHour: 15, startMin: 0, duration: 90, capacity: 8, price: 290000 },
-          { dayOffset: 2, startHour: 15, startMin: 30, duration: 90, capacity: 8, price: 290000 },
-          { dayOffset: 3, startHour: 10, startMin: 0, duration: 90, capacity: 10, price: 290000 },
+          {
+            dayOffset: 1,
+            startHour: 10,
+            startMin: 0,
+            duration: 90,
+            capacity: 8,
+            price: 290000,
+          },
+          {
+            dayOffset: 1,
+            startHour: 15,
+            startMin: 0,
+            duration: 90,
+            capacity: 8,
+            price: 290000,
+          },
+          {
+            dayOffset: 2,
+            startHour: 15,
+            startMin: 30,
+            duration: 90,
+            capacity: 8,
+            price: 290000,
+          },
+          {
+            dayOffset: 3,
+            startHour: 10,
+            startMin: 0,
+            duration: 90,
+            capacity: 10,
+            price: 290000,
+          },
         ],
       },
       {
@@ -424,20 +551,44 @@ async function main() {
         category_id: 'candles',
         level: 'all',
         audience: ['nhóm bạn', 'một mình'],
-        takeaway: '2 thanh sáp thơm hoa khô + 1 lọ tinh dầu khuếch tán 50ml kèm que mây',
+        takeaway:
+          '2 thanh sáp thơm hoa khô + 1 lọ tinh dầu khuếch tán 50ml kèm que mây',
         duration_minutes: 75,
         base_price: 220000,
         requirements: 'Thích hợp cho cả người mới bắt đầu',
         cancellation_policy: 'Hủy trước 24 giờ miễn phí',
         payment_policy: 'Quét mã VietQR PayOS xác nhận tức thì',
         district: 'Hoàn Kiếm',
-        address: 'Tầng 2, 36 Phố Tràng Tiền, Phường Tràng Tiền, Hoàn Kiếm, Hà Nội',
-        description: 'Tạo nên những thanh sáp thơm trang trí tủ quần áo, bàn trang điểm và lọ tinh dầu tỏa hương dịu mát cho căn phòng của bạn.',
+        address:
+          'Tầng 2, 36 Phố Tràng Tiền, Phường Tràng Tiền, Hoàn Kiếm, Hà Nội',
+        description:
+          'Tạo nên những thanh sáp thơm trang trí tủ quần áo, bàn trang điểm và lọ tinh dầu tỏa hương dịu mát cho căn phòng của bạn.',
         photoBases: ['soapPhoto', 'candlePhoto'],
         sessions: [
-          { dayOffset: 1, startHour: 13, startMin: 30, duration: 75, capacity: 10, price: 220000 },
-          { dayOffset: 2, startHour: 10, startMin: 0, duration: 75, capacity: 10, price: 220000 },
-          { dayOffset: 4, startHour: 14, startMin: 0, duration: 75, capacity: 10, price: 220000 },
+          {
+            dayOffset: 1,
+            startHour: 13,
+            startMin: 30,
+            duration: 75,
+            capacity: 10,
+            price: 220000,
+          },
+          {
+            dayOffset: 2,
+            startHour: 10,
+            startMin: 0,
+            duration: 75,
+            capacity: 10,
+            price: 220000,
+          },
+          {
+            dayOffset: 4,
+            startHour: 14,
+            startMin: 0,
+            duration: 75,
+            capacity: 10,
+            price: 220000,
+          },
         ],
       },
       {
@@ -447,21 +598,53 @@ async function main() {
         category_id: 'painting',
         level: 'beginner',
         audience: ['cặp đôi', 'nhóm bạn', 'một mình'],
-        takeaway: '1 bức tranh Canvas kích thước 30x40cm có khung kèm túi quà xách về',
+        takeaway:
+          '1 bức tranh Canvas kích thước 30x40cm có khung kèm túi quà xách về',
         duration_minutes: 150,
         base_price: 320000,
-        requirements: 'Không yêu cầu năng khiếu, giảng viên hướng dẫn từng nét cọ cơ bản',
+        requirements:
+          'Không yêu cầu năng khiếu, giảng viên hướng dẫn từng nét cọ cơ bản',
         cancellation_policy: 'Hủy trước 24 giờ hoàn 100% tiền cọc',
         payment_policy: 'Quét mã VietQR chuyển khoản nhanh hoặc tiền mặt',
         district: 'Quận 1',
-        address: '128/6 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
-        description: 'Hòa mình vào không gian nghệ thuật êm dịu, học cách pha màu Acrylic, tạo hiệu ứng chuyển sắc hoàng hôn và ráng chiều trên sóng biển.',
+        address:
+          '128/6 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
+        description:
+          'Hòa mình vào không gian nghệ thuật êm dịu, học cách pha màu Acrylic, tạo hiệu ứng chuyển sắc hoàng hôn và ráng chiều trên sóng biển.',
         photoBases: ['artPhoto', 'stampPhoto'],
         sessions: [
-          { dayOffset: 1, startHour: 9, startMin: 30, duration: 150, capacity: 12, price: 320000 },
-          { dayOffset: 1, startHour: 14, startMin: 0, duration: 150, capacity: 12, price: 320000 },
-          { dayOffset: 2, startHour: 14, startMin: 0, duration: 150, capacity: 12, price: 320000 },
-          { dayOffset: 3, startHour: 18, startMin: 0, duration: 150, capacity: 12, price: 320000 },
+          {
+            dayOffset: 1,
+            startHour: 9,
+            startMin: 30,
+            duration: 150,
+            capacity: 12,
+            price: 320000,
+          },
+          {
+            dayOffset: 1,
+            startHour: 14,
+            startMin: 0,
+            duration: 150,
+            capacity: 12,
+            price: 320000,
+          },
+          {
+            dayOffset: 2,
+            startHour: 14,
+            startMin: 0,
+            duration: 150,
+            capacity: 12,
+            price: 320000,
+          },
+          {
+            dayOffset: 3,
+            startHour: 18,
+            startMin: 0,
+            duration: 150,
+            capacity: 12,
+            price: 320000,
+          },
         ],
       },
       {
@@ -474,17 +657,41 @@ async function main() {
         takeaway: '1 túi Tote vải Canvas bền chắc do chính tay bạn trang trí',
         duration_minutes: 120,
         base_price: 250000,
-        requirements: 'Bao gồm trọn gói màu chuyên dụng cho vải không phai khi giặt',
+        requirements:
+          'Bao gồm trọn gói màu chuyên dụng cho vải không phai khi giặt',
         cancellation_policy: 'Hủy trước 24 giờ hoàn 100% cọc',
         payment_policy: 'Thanh toán PayOS VietQR tự động',
         district: 'Quận 1',
-        address: '128/6 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
-        description: 'Tự vẽ họa tiết hoa lá phong cách vintage lên chiếc túi vải đi học, đi làm hoặc đi dạo phố cực kỳ thời trang và mang đậm cá tính riêng.',
+        address:
+          '128/6 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
+        description:
+          'Tự vẽ họa tiết hoa lá phong cách vintage lên chiếc túi vải đi học, đi làm hoặc đi dạo phố cực kỳ thời trang và mang đậm cá tính riêng.',
         photoBases: ['flowerPhoto', 'artPhoto'],
         sessions: [
-          { dayOffset: 1, startHour: 16, startMin: 30, duration: 120, capacity: 10, price: 250000 },
-          { dayOffset: 2, startHour: 9, startMin: 30, duration: 120, capacity: 10, price: 250000 },
-          { dayOffset: 4, startHour: 15, startMin: 0, duration: 120, capacity: 10, price: 250000 },
+          {
+            dayOffset: 1,
+            startHour: 16,
+            startMin: 30,
+            duration: 120,
+            capacity: 10,
+            price: 250000,
+          },
+          {
+            dayOffset: 2,
+            startHour: 9,
+            startMin: 30,
+            duration: 120,
+            capacity: 10,
+            price: 250000,
+          },
+          {
+            dayOffset: 4,
+            startHour: 15,
+            startMin: 0,
+            duration: 120,
+            capacity: 10,
+            price: 250000,
+          },
         ],
       },
     ];
@@ -510,16 +717,31 @@ async function main() {
           status = 'approved', publication_status = 'published', visibility_status = 'active'
         RETURNING id`,
         [
-          workshopId, studioId, w.title, w.slug, w.category_id, w.level, w.audience, w.takeaway,
-          w.duration_minutes, w.base_price, w.requirements, w.cancellation_policy, w.payment_policy,
-          w.district, w.address, w.description,
+          workshopId,
+          studioId,
+          w.title,
+          w.slug,
+          w.category_id,
+          w.level,
+          w.audience,
+          w.takeaway,
+          w.duration_minutes,
+          w.base_price,
+          w.requirements,
+          w.cancellation_policy,
+          w.payment_policy,
+          w.district,
+          w.address,
+          w.description,
         ],
       );
 
       const actualWsId = wsRes.rows[0].id;
 
       // Xóa ảnh cũ của workshop này nếu có
-      await client.query(`DELETE FROM images WHERE workshop_id = $1`, [actualWsId]);
+      await client.query(`DELETE FROM images WHERE workshop_id = $1`, [
+        actualWsId,
+      ]);
 
       // Tạo ảnh workshop và upload lên Supabase storage
       const ownerId = studioOwnerMap.get(w.studioSlug)!;
@@ -536,7 +758,9 @@ async function main() {
       }
 
       // Xóa các session cũ của workshop này nếu có để tạo lại lịch mới chuẩn ngày thi
-      await client.query(`DELETE FROM sessions WHERE workshop_id = $1`, [actualWsId]);
+      await client.query(`DELETE FROM sessions WHERE workshop_id = $1`, [
+        actualWsId,
+      ]);
 
       // Tạo các Session
       const now = new Date();
@@ -551,11 +775,19 @@ async function main() {
           `INSERT INTO sessions (
             workshop_id, starts_at, ends_at, price, capacity, seats_held, seats_sold, status
           ) VALUES ($1, $2, $3, $4, $5, 0, 0, 'scheduled')`,
-          [actualWsId, start.toISOString(), end.toISOString(), s.price, s.capacity],
+          [
+            actualWsId,
+            start.toISOString(),
+            end.toISOString(),
+            s.price,
+            s.capacity,
+          ],
         );
       }
 
-      console.log(`✓ Đã tạo Workshop: ${w.title} (${w.sessions.length} suất học)`);
+      console.log(
+        `✓ Đã tạo Workshop: ${w.title} (${w.sessions.length} suất học)`,
+      );
     }
   });
 

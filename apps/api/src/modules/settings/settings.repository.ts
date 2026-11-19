@@ -13,7 +13,9 @@ export async function getSiteSettings(
   client?: PoolClient,
 ): Promise<SiteSettings> {
   const q = client ? client.query.bind(client) : query;
-  let result = await q('SELECT value FROM settings WHERE key=$1', [SETTINGS_KEY]);
+  let result = await q('SELECT value FROM settings WHERE key=$1', [
+    SETTINGS_KEY,
+  ]);
   if (!result.rows[0]) {
     await q(
       `INSERT INTO settings (key, value, updated_at) 

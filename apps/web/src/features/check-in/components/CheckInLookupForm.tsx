@@ -55,11 +55,7 @@ export function CheckInLookupForm({
         <Button type="submit" disabled={!code.trim() || busy !== null}>
           <Search className="size-4" aria-hidden="true" /> Tra cứu
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onToggleScanning}
-        >
+        <Button type="button" variant="outline" onClick={onToggleScanning}>
           {scanning ? (
             <CameraOff className="size-4" aria-hidden="true" />
           ) : (

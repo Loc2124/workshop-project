@@ -15,39 +15,53 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 
 const StudioWorkshopManager = lazy(() =>
-  import('@/features/studio-management/components/StudioWorkshopManager').then((module) => ({
-    default: module.StudioWorkshopManager,
-  })),
+  import('@/features/studio-management/components/StudioWorkshopManager').then(
+    (module) => ({
+      default: module.StudioWorkshopManager,
+    }),
+  ),
 );
 const StudioSessionManager = lazy(() =>
-  import('@/features/studio-management/components/StudioSessionManager').then((module) => ({
-    default: module.StudioSessionManager,
-  })),
+  import('@/features/studio-management/components/StudioSessionManager').then(
+    (module) => ({
+      default: module.StudioSessionManager,
+    }),
+  ),
 );
 const StudioBookingManager = lazy(() =>
-  import('@/features/studio-management/components/StudioBookingManager').then((module) => ({
-    default: module.StudioBookingManager,
-  })),
+  import('@/features/studio-management/components/StudioBookingManager').then(
+    (module) => ({
+      default: module.StudioBookingManager,
+    }),
+  ),
 );
 const StudioProfileManager = lazy(() =>
-  import('@/features/studio-management/components/StudioProfileManager').then((module) => ({
-    default: module.StudioProfileManager,
-  })),
+  import('@/features/studio-management/components/StudioProfileManager').then(
+    (module) => ({
+      default: module.StudioProfileManager,
+    }),
+  ),
 );
 const StudioMembersManager = lazy(() =>
-  import('@/features/studio-management/components/StudioMembersManager').then((module) => ({
-    default: module.StudioMembersManager,
-  })),
+  import('@/features/studio-management/components/StudioMembersManager').then(
+    (module) => ({
+      default: module.StudioMembersManager,
+    }),
+  ),
 );
 const StudioFinancesManager = lazy(() =>
-  import('@/features/studio-management/components/StudioFinancesManager').then((module) => ({
-    default: module.StudioFinancesManager,
-  })),
+  import('@/features/studio-management/components/StudioFinancesManager').then(
+    (module) => ({
+      default: module.StudioFinancesManager,
+    }),
+  ),
 );
 const StudioReviewsManager = lazy(() =>
-  import('@/features/studio-management/components/StudioReviewsManager').then((module) => ({
-    default: module.StudioReviewsManager,
-  })),
+  import('@/features/studio-management/components/StudioReviewsManager').then(
+    (module) => ({
+      default: module.StudioReviewsManager,
+    }),
+  ),
 );
 
 type Section =

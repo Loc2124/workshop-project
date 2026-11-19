@@ -194,11 +194,13 @@ export function BookingTableView({
                         {booking.paymentStatus === 'paid' ? (
                           <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
                             <Check className="size-3 text-emerald-600" />
-                            Đã thu tại studio: {formatPrice(booking.totalAmount)} đ
+                            Đã thu tại studio:{' '}
+                            {formatPrice(booking.totalAmount)} đ
                           </span>
                         ) : (
                           <span className="text-studio-muted">
-                            Thu toàn bộ tại studio ({formatPrice(booking.totalAmount)} đ)
+                            Thu toàn bộ tại studio (
+                            {formatPrice(booking.totalAmount)} đ)
                           </span>
                         )}
                       </div>
