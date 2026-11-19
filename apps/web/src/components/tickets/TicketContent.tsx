@@ -6,7 +6,7 @@ import {
   formatSessionDate,
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { SeatsBadge } from '@/features/catalog';
+import { SeatsBadge } from '@/features/catalog/components/SeatsBadge';
 import { MediaImage } from '../ui/MediaImage';
 import { TicketAction } from './TicketPrimitives';
 import { TicketInfoBox } from './TicketInfoBox';

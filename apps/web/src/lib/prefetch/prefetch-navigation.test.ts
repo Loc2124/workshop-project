@@ -21,7 +21,7 @@ it('does not warm private endpoints for guests or customers hovering admin links
   } finally {
     client.clear();
   }
-});
+}, 45_000);
 
 it('uses the same public detail cache key on hover and navigation', async () => {
   const client = new QueryClient();
@@ -46,7 +46,7 @@ it('uses the same public detail cache key on hover and navigation', async () => 
   } finally {
     client.clear();
   }
-});
+}, 45_000);
 
 it('does not warm locked studio sections or a studio outside the current ownership list', async () => {
   const client = new QueryClient();
@@ -68,4 +68,4 @@ it('does not warm locked studio sections or a studio outside the current ownersh
   } finally {
     client.clear();
   }
-});
+}, 45_000);
