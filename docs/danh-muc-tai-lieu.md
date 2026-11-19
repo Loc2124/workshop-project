@@ -71,6 +71,7 @@ Kết quả lần đồng bộ: 61 file Markdown, toàn bộ liên kết nội b
 | [engineering/performance.md](engineering/performance.md)                                             | Hiện hành; xem nhãn trong file     | Giữ nguyên hoặc tài liệu chỉ mục mới      |
 | [engineering/ticket-components.md](engineering/ticket-components.md)                                 | Hiện hành; xem nhãn trong file     | apps/web/src/components/tickets/README.md |
 | [engineering/system-architecture-thesis.md](engineering/system-architecture-thesis.md)               | Hiện hành; xem nhãn trong file     | Báo cáo kiến trúc đồ án tốt nghiệp        |
+| [engineering/adr-001-feature-driven-architecture.md](engineering/adr-001-feature-driven-architecture.md) | Quyết định kiến trúc (ADR)         | Tái cấu trúc Feature-Driven Architecture   |
 | [engineering/client-state-and-shared-contracts.md](engineering/client-state-and-shared-contracts.md)   | Đề xuất kỹ thuật; xem nhãn trong file | Thiết kế mở rộng Client State và Contracts |
 | [features/admin-audit.md](features/admin-audit.md)                                                   | Hiện hành; xem nhãn trong file     | docs/admin-audit.md                       |
 | [features/admin-bookings.md](features/admin-bookings.md)                                             | Hiện hành; xem nhãn trong file     | docs/admin-bookings.md                    |

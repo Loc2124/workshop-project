@@ -1,13 +1,29 @@
 # Cấu trúc frontend
 
-> Đồng bộ tài liệu: 07/11/2026. [Mục lục](../README.md) · [Trạng thái mã nguồn](../project/current-status.md) · [Chính sách và mục còn chờ](../policy/README.md). Mô tả hiện có và mục tiêu phải đọc theo nhãn; số đo/kết quả cũ chỉ đúng ở lần ghi nhận.
+> Đồng bộ tài liệu: 19/11/2026. [Mục lục](../README.md) · [Trạng thái mã nguồn](../project/current-status.md) · [Chính sách và mục còn chờ](../policy/README.md) · [ADR 001](adr-001-feature-driven-architecture.md).
+
+## Kiến trúc Hướng tính năng (Feature-Driven Architecture)
+
+Frontend được tổ chức theo ranh giới tính năng rõ ràng (`apps/web/src/features/`), cô lập hoàn toàn logic nghiệp vụ khỏi các thành phần UI dùng chung (`apps/web/src/components/`):
+
+- **`features/catalog/`**: Khám phá workshop, trang chủ (`home/`), thẻ danh mục và bộ lọc tìm kiếm.
+- **`features/workshop/`**: Chi tiết workshop, lịch học, đánh giá nhận xét và báo cáo vi phạm.
+- **`features/booking/`**: Chi tiết đơn đặt, quy trình thanh toán/đặt cọc, hủy vé và chính sách hoàn tiền.
+- **`features/studio-management/`**: Không gian quản lý studio, đăng ký thông tin, danh sách học viên và điểm danh.
+- **`features/admin-finance/`**: Nghiệp vụ quản trị hệ thống, duyệt hồ sơ, sổ cái tài chính và đối soát hoàn tiền.
+
+Thư mục `apps/web/src/components/` thuần túy là Generic UI:
+- `components/ui/`: Các UI primitives cơ sở (Button, Input, Card, Badge, Tooltip...).
+- `components/layout/`: Layout shell chung (Header, Footer, Navigation, PageContainer).
+- `components/common/`: Các component tiện ích chung (`DataTable`, `ConfirmReasonDialog`, `ImageGalleryDialog`, `SearchableFilterSelect`).
+- `components/tickets/`: Khung và thành phần dựng vé (`TicketShell`, `TicketContent`, `TicketPrimitives`).
 
 ## Các lớp chính
 
 | Thư mục/file                              | Trách nhiệm                                                                                                                                         |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pages/HomePage.tsx`                      | Ghép các section của trang chủ; không chứa truy vấn, định vị hay CSS layout riêng.                                                                  |
-| `components/home/`                        | Hero/tìm kiếm, danh sách workshop, ba bước trải nghiệm, giới thiệu dành cho nghệ nhân.                                                              |
+| `features/catalog/components/home/`       | Hero/tìm kiếm, danh sách workshop, ba bước trải nghiệm, giới thiệu dành cho nghệ nhân.                                                              |
 | `hooks/useHomeCatalog.ts`                 | Bộ lọc trang chủ, lưu lựa chọn tỉnh, định vị tự động/thử lại, điều hướng URL, dữ liệu workshop nổi bật theo API, tối đa tám, chỉ các buổi đặt được. |
 | `hooks/useProvinces.ts`                   | Danh mục tỉnh có studio, loading/error và hủy request; dùng chung cho trang chủ và khám phá.                                                        |
 | `hooks/useBookingTicketActions.ts`        | Lưu PNG và in vé; tách khỏi phần trình bày booking.                                                                                                 |
