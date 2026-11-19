@@ -18,7 +18,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { sessionLifecycleLabel } from './CustomerBookingsPage';
 import { CustomerRefundAccounts } from '@/features/studio-management';
-import { BookingReviewSection } from '@/components/reviews/BookingReviewSection';
+import { BookingReviewSection } from '@/features/workshop/components/reviews/BookingReviewSection';
 import {
   BookingHeroHeader,
   BookingLocationSection,

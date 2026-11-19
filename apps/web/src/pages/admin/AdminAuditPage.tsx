@@ -11,7 +11,7 @@ import {
   DataTable,
   type DataTableFetcher,
   type DataTableFilter,
-} from '@/components/admin/DataTable';
+} from '@/components/common/DataTable';
 import {
   Sheet,
   SheetContent,

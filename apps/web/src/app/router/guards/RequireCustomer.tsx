@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { LoadingState } from '../ui/LoadingState';
-import { Button } from '../ui/button';
+import { LoadingState } from '@/components/ui/LoadingState';
+import { Button } from '@/components/ui/button';
 
 export function RequireCustomer() {
   const { user, isLoading, authError, retryAuth } = useAuth();

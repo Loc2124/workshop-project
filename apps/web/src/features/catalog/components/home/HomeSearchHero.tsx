@@ -1,11 +1,11 @@
-import { MediaImage } from '../ui/MediaImage';
+import { MediaImage } from '@/components/ui/MediaImage';
 import { ArrowRight, Search, LocateFixed } from 'lucide-react';
 import type { useHomeCatalog } from '@/hooks/useHomeCatalog';
-import { PageContainer } from '../layout/PageContainer';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { ProvinceCombobox } from '@/features/catalog';
-import { SingleDatePicker } from '../ui/single-date-picker';
-import { Input } from '../ui/input';
-import { Button } from '../ui/button';
+import { SingleDatePicker } from '@/components/ui/single-date-picker';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 type Props = Pick<
   ReturnType<typeof useHomeCatalog>,

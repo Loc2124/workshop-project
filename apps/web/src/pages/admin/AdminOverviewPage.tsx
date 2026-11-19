@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 import { formatReviewDate } from '@/lib/studio-review';
 
 const BookingsChart = lazy(
-  () => import('@/components/admin/AdminBookingsChart'),
+  () => import('@/features/admin-finance/components/AdminBookingsChart'),
 );
 
 const metricLinks = [

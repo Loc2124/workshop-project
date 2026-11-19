@@ -1,5 +1,5 @@
 import { ArrowLeft } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 
 export interface RegistrationReviewSummaryProps {
   summaryItems: Array<[string, string]>;

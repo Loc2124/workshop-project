@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { Route, Navigate } from 'react-router-dom';
-import { RequireRole } from '../../components/auth/RequireRole';
+import { RequireRole } from './guards/RequireRole';
 import { DashboardSkeleton } from '../../components/layout/DashboardSkeleton';
 import {
   AdminSettingsPage,

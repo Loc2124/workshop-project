@@ -8,7 +8,7 @@ import {
 } from '@/features/workshop';
 import { PageBreadcrumb } from '@/components/layout/PageBreadcrumb';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { ReportButton } from '@/components/reports/ReportButton';
+import { ReportButton } from '@/features/workshop/components/reports/ReportButton';
 import {
   useCatalog,
   useWorkshop,

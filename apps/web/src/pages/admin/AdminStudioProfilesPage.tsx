@@ -21,16 +21,16 @@ import {
 } from '@/hooks/useManagement';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import type { AdminStudio } from '@/types/management';
-import { DataTable } from '@/components/admin/DataTable';
-import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
-import { ImageGalleryDialog } from '@/components/admin/ImageGalleryDialog';
+import { DataTable } from '@/components/common/DataTable';
+import { ConfirmReasonDialog } from '@/components/common/ConfirmReasonDialog';
+import { ImageGalleryDialog } from '@/components/common/ImageGalleryDialog';
 import { fetchAdminStudios } from '@/services/adminTableService';
 import {
   buildStudioColumns,
   studioFilters,
   studioTabs,
-} from '@/components/admin/studios/AdminStudioTableColumns';
-import { AdminStudioDetailSheet } from '@/components/admin/studios/AdminStudioDetailSheet';
+} from '@/features/admin-finance/components/studios/AdminStudioTableColumns';
+import { AdminStudioDetailSheet } from '@/features/admin-finance/components/studios/AdminStudioDetailSheet';
 
 export function AdminStudioProfilesPage({
   showAllTab = false,

@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import type { useHomeCatalog } from '@/hooks/useHomeCatalog';
-import { PageContainer } from '../layout/PageContainer';
-import { SectionHeading } from '../layout/SectionHeading';
-import { Button } from '../ui/button';
-import { TicketRow, toTicketProps } from '../tickets';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { SectionHeading } from '@/components/layout/SectionHeading';
+import { Button } from '@/components/ui/button';
+import { TicketRow, toTicketProps } from '@/components/tickets';
 import type { Workshop } from '@/types/workshop';
 import { useSessionClock } from '@/hooks/useSessionClock';
 import { sessionStatus } from '@/lib/sessionStatus';

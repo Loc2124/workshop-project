@@ -8,19 +8,19 @@ vi.mock('@/hooks/useCategories', () => ({
 vi.mock('@/hooks/useHomeCatalog', () => ({
   useHomeCatalog: () => ({ featuredWorkshops: [], featuredStudios: [] }),
 }));
-vi.mock('@/components/home/HomeSearchHero', () => ({
+vi.mock('@/features/catalog/components/home/HomeSearchHero', () => ({
   HomeSearchHero: () => null,
 }));
-vi.mock('@/components/home/HomeWorkshopSection', () => ({
+vi.mock('@/features/catalog/components/home/HomeWorkshopSection', () => ({
   HomeWorkshopSection: () => null,
 }));
-vi.mock('@/components/home/HomeFeaturedStudios', () => ({
+vi.mock('@/features/catalog/components/home/HomeFeaturedStudios', () => ({
   HomeFeaturedStudios: () => null,
 }));
-vi.mock('@/components/home/HomeProcessSection', () => ({
+vi.mock('@/features/catalog/components/home/HomeProcessSection', () => ({
   HomeProcessSection: () => null,
 }));
-vi.mock('@/components/home/HomeArtisanSection', () => ({
+vi.mock('@/features/catalog/components/home/HomeArtisanSection', () => ({
   HomeArtisanSection: () => null,
 }));
 import { HomePage } from './HomePage';

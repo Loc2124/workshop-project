@@ -4,8 +4,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { studioProvinces } from '@workshop/shared';
 import { toast } from 'sonner';
-import { DataTable } from '@/components/admin/DataTable';
-import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { DataTable } from '@/components/common/DataTable';
+import { ConfirmReasonDialog } from '@/components/common/ConfirmReasonDialog';
 import { StatusBadge } from '@/components/ui/status-badge';
 import {
   Sheet,

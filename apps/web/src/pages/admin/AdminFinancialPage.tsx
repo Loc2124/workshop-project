@@ -15,15 +15,15 @@ import {
   type PaymentFee,
   type Transfer,
   type VietqrPreview,
-} from '@/components/admin/financial/financialTypes';
-import { FinancialObligationsTab } from '@/components/admin/financial/FinancialObligationsTab';
+} from '@/features/admin-finance/components/financial/financialTypes';
+import { FinancialObligationsTab } from '@/features/admin-finance/components/financial/FinancialObligationsTab';
 import {
   FinancialTransfersTab,
   type QueueFilter,
-} from '@/components/admin/financial/FinancialTransfersTab';
-import { FinancialFeesTab } from '@/components/admin/financial/FinancialFeesTab';
-import { FinancialCalendarTab } from '@/components/admin/financial/FinancialCalendarTab';
-import { VietqrTransferModal } from '@/components/admin/financial/VietqrTransferModal';
+} from '@/features/admin-finance/components/financial/FinancialTransfersTab';
+import { FinancialFeesTab } from '@/features/admin-finance/components/financial/FinancialFeesTab';
+import { FinancialCalendarTab } from '@/features/admin-finance/components/financial/FinancialCalendarTab';
+import { VietqrTransferModal } from '@/features/admin-finance/components/financial/VietqrTransferModal';
 
 export function AdminFinancialPage() {
   const userId = useAuth().user?.id;

@@ -15,8 +15,8 @@ import {
   DataTable,
   type DataTableFetcher,
   type DataTableFilter,
-} from '@/components/admin/DataTable';
-import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+} from '@/components/common/DataTable';
+import { ConfirmReasonDialog } from '@/components/common/ConfirmReasonDialog';
 import { StatusBadge } from '@/components/ui/status-badge';
 import {
   Sheet,

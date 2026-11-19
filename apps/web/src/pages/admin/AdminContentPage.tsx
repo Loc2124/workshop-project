@@ -30,8 +30,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MediaImage } from '@/components/ui/MediaImage';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { SearchableFilterSelect } from '@/components/admin/SearchableFilterSelect';
-import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { SearchableFilterSelect } from '@/components/common/SearchableFilterSelect';
+import { ConfirmReasonDialog } from '@/components/common/ConfirmReasonDialog';
 import { apiFetch } from '@/lib/api-client';
 import {
   featuredConfigSchema,

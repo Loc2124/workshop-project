@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { ConfirmReasonDialog } from '@/components/admin/ConfirmReasonDialog';
+import { ConfirmReasonDialog } from '@/components/common/ConfirmReasonDialog';
 import { apiFetch } from '@/lib/api-client';
 import { formatReviewDate } from '@/lib/studio-review';
 const schema = z.object({

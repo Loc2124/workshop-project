@@ -1,8 +1,8 @@
 import type { ColumnDef } from '@tanstack/react-table';
 import { Store } from 'lucide-react';
 import { studioProvinces, type SiteSettings } from '@workshop/shared';
-import { Img } from '../../ui/Img';
-import { StatusBadge } from '../../ui/status-badge';
+import { Img } from '@/components/ui/Img';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { formatReviewDate, studioReviewMissing } from '@/lib/studio-review';
 import {
   type AdminStudio,

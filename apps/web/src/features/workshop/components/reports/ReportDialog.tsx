@@ -1,4 +1,4 @@
-import { Img } from '../ui/Img';
+import { Img } from '@/components/ui/Img';
 import {
   useEffect,
   useRef,
@@ -21,8 +21,8 @@ import {
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 export function ReportButton({
   targetType,

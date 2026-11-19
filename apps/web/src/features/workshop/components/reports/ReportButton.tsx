@@ -3,7 +3,7 @@ import { Flag } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { authHref } from '@/lib/auth-navigation';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 const ReportDialog = lazy(() =>
   import('./ReportDialog').then((module) => ({ default: module.ReportButton })),
 );

@@ -1,10 +1,10 @@
 ﻿import { LoadingState } from '@/components/ui/LoadingState';
 import { CategoryShortcuts } from '@/features/catalog';
-import { HomeArtisanSection } from '@/components/home/HomeArtisanSection';
-import { HomeFeaturedStudios } from '@/components/home/HomeFeaturedStudios';
-import { HomeProcessSection } from '@/components/home/HomeProcessSection';
-import { HomeSearchHero } from '@/components/home/HomeSearchHero';
-import { HomeWorkshopSection } from '@/components/home/HomeWorkshopSection';
+import { HomeArtisanSection } from '@/features/catalog/components/home/HomeArtisanSection';
+import { HomeFeaturedStudios } from '@/features/catalog/components/home/HomeFeaturedStudios';
+import { HomeProcessSection } from '@/features/catalog/components/home/HomeProcessSection';
+import { HomeSearchHero } from '@/features/catalog/components/home/HomeSearchHero';
+import { HomeWorkshopSection } from '@/features/catalog/components/home/HomeWorkshopSection';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { SectionHeading } from '@/components/layout/SectionHeading';
 import { Button } from '@/components/ui/button';

@@ -2,7 +2,7 @@
 import { queryKeys } from '@/lib/query-keys';
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
-import { DataTable } from '@/components/admin/DataTable';
+import { DataTable } from '@/components/common/DataTable';
 import { StatusBadge } from '@/components/ui/status-badge';
 import {
   adminRecordsFetchers,

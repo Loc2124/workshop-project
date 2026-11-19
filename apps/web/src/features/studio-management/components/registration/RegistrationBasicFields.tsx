@@ -1,9 +1,9 @@
 import { Check } from 'lucide-react';
 import { studioProvinces } from '@workshop/shared';
 import { getCategoryIcon } from '@/constants/categories';
-import { AuthField } from '../ui/auth-field';
-import { Button } from '../ui/button';
-import { LoadingState } from '../ui/LoadingState';
+import { AuthField } from '@/components/ui/auth-field';
+import { Button } from '@/components/ui/button';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { StudioEvidenceFields } from '@/features/studio-management';
 import { imageService } from '@/services/imageService';
 import type { useStudioRegistrationDraft } from '@/hooks/useStudioRegistrationDraft';

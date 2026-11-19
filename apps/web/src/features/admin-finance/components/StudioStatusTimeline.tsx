@@ -1,4 +1,4 @@
-import { StatusBadge } from '../ui/status-badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { formatReviewDate } from '@/lib/studio-review';
 import { studioStates } from '@/lib/studio-dashboard';
 type Entry = {

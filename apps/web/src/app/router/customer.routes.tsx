@@ -1,6 +1,6 @@
 import { lazy } from 'react';
 import { Route, Navigate } from 'react-router-dom';
-import { RequireCustomer } from '../../components/auth/RequireCustomer';
+import { RequireCustomer } from './guards/RequireCustomer';
 
 const CustomerBookingsPage = lazy(() =>
   import('../../pages/customer/CustomerBookingsPage').then((m) => ({

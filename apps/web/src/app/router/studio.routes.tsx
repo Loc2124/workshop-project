@@ -1,5 +1,5 @@
 import { Route, Navigate, useParams } from 'react-router-dom';
-import { RequireRole } from '../../components/auth/RequireRole';
+import { RequireRole } from './guards/RequireRole';
 import {
   StudioOverviewPage,
   StudioWorkspacePage,

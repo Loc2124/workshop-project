@@ -2,22 +2,22 @@ import { ExternalLink } from 'lucide-react';
 import { getCategoryMeta } from '@/constants/categories';
 import { formatReviewDate } from '@/lib/studio-review';
 import type { AdminStudio } from '@/types/management';
-import { Button } from '../../ui/button';
-import { Img } from '../../ui/Img';
+import { Button } from '@/components/ui/button';
+import { Img } from '@/components/ui/Img';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetTitle,
-} from '../../ui/sheet';
-import { Skeleton } from '../../ui/skeleton';
-import { StatusBadge } from '../../ui/status-badge';
+} from '@/components/ui/sheet';
+import { Skeleton } from '@/components/ui/skeleton';
+import { StatusBadge } from '@/components/ui/status-badge';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '../../ui/tooltip';
+} from '@/components/ui/tooltip';
 import { StudioStatusTimeline } from '../StudioStatusTimeline';
 import { StudioVerificationPanel } from '@/features/studio-management';
 

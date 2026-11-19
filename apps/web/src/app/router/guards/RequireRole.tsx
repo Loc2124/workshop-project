@@ -1,10 +1,10 @@
-import { LoadingState } from '../ui/LoadingState';
+import { LoadingState } from '@/components/ui/LoadingState';
 import { Fragment, type ReactNode } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyStudios } from '@/hooks/useOwnedStudios';
 import { hasDashboardRole, type DashboardRole } from '@/lib/dashboard-access';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 
 function StudioMembershipGate({
   role,

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { GreenSection } from '../layout/GreenSection';
+import { GreenSection } from '@/components/layout/GreenSection';
 
 const steps = [
   {

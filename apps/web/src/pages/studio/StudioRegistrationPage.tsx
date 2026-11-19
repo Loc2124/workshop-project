@@ -32,11 +32,11 @@ import { authHref } from '@/lib/auth-navigation';
 import { authFieldErrors } from '@/lib/auth-validation';
 import { studioMissingFields } from '@/lib/studio-missing-fields';
 import type { CreatedStudio } from '@/services/managementService';
-import { RegistrationProgress } from '@/components/registration/RegistrationProgress';
-import { RegistrationReceipt } from '@/components/registration/RegistrationReceipt';
-import { RegistrationBasicFields } from '@/components/registration/RegistrationBasicFields';
-import { RegistrationReviewSummary } from '@/components/registration/RegistrationReviewSummary';
-import { RegistrationSidebar } from '@/components/registration/RegistrationSidebar';
+import { RegistrationProgress } from '@/features/studio-management/components/registration/RegistrationProgress';
+import { RegistrationReceipt } from '@/features/studio-management/components/registration/RegistrationReceipt';
+import { RegistrationBasicFields } from '@/features/studio-management/components/registration/RegistrationBasicFields';
+import { RegistrationReviewSummary } from '@/features/studio-management/components/registration/RegistrationReviewSummary';
+import { RegistrationSidebar } from '@/features/studio-management/components/registration/RegistrationSidebar';
 
 function StudioRegistrationForm() {
   const settingsQuery = useSiteSettings();

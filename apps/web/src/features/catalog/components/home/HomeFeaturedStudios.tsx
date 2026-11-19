@@ -1,9 +1,9 @@
 import type { FeaturedStudio } from '@/services/featuredService';
-import { PageContainer } from '../layout/PageContainer';
-import { SectionHeading } from '../layout/SectionHeading';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { SectionHeading } from '@/components/layout/SectionHeading';
 import { StudioCard } from '@/features/catalog';
-import { Skeleton } from '../ui/skeleton';
-import { Button } from '../ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 export function HomeFeaturedStudios({
   studios,
   loading,

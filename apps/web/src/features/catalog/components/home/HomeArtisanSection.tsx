@@ -1,8 +1,8 @@
-import { MediaImage } from '../ui/MediaImage';
+import { MediaImage } from '@/components/ui/MediaImage';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { PageContainer } from '../layout/PageContainer';
-import { Button } from '../ui/button';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Button } from '@/components/ui/button';
 
 export function HomeArtisanSection() {
   return (
