@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { z } from 'zod';
-import { createReportSchema } from '@workshop/shared';
+import {
+  createReportSchema,
+  reportAttachmentUploadUrlContractSchema,
+} from '@workshop/shared';
 import { requireAuth } from '../../middleware/auth.js';
 import { validateBody } from '../../middleware/validate-body.js';
 import { validateUuidParam } from '../../middleware/validate-uuid-param.js';
@@ -31,9 +33,7 @@ router.post('/', validateBody(createReportSchema), async (req, res) =>
 );
 router.post(
   '/attachments/upload-url',
-  validateBody(
-    z.object({ byteSize: z.number().int().min(30).max(1048576) }).strict(),
-  ),
+  validateBody(reportAttachmentUploadUrlContractSchema),
   async (req, res) =>
     res.json(await reserveReportImage(req.user!.sub, req.body.byteSize)),
 );

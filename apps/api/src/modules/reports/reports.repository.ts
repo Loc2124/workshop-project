@@ -5,6 +5,7 @@ import {
   createReportSchema,
   reportStatusSchema,
   reportTargetSchema,
+  reportDecisionContractSchema,
 } from '@workshop/shared';
 import { query, withTransaction } from '../../db/pool.js';
 import { AppError } from '../../errors/app-error.js';
@@ -37,13 +38,7 @@ export const reportsQuery = z
       .default('createdAt:desc'),
   })
   .strict();
-export const reportDecision = z
-  .object({
-    action: z.enum(['start', 'hide', 'suspend', 'dismiss', 'resolve']),
-    expectedStatus: reportStatusSchema,
-    reason: z.string().trim().min(10).max(1000),
-  })
-  .strict();
+export const reportDecision = reportDecisionContractSchema;
 const joins = `FROM reports r LEFT JOIN users u ON u.id=r.reporter_id LEFT JOIN reviews rev ON r.target_type='review' AND rev.id=r.target_id LEFT JOIN workshops w ON (r.target_type='workshop' AND w.id=r.target_id) OR (r.target_type='review' AND w.id=rev.workshop_id) LEFT JOIN studios st ON r.target_type='studio' AND st.id=r.target_id LEFT JOIN studios ws ON ws.id=w.studio_id`;
 const targetName =
   "CASE WHEN r.target_type='review' THEN 'Đánh giá về '||coalesce(w.title,'workshop đã xóa') ELSE coalesce(st.name,w.title,'Đối tượng đã xóa') END";

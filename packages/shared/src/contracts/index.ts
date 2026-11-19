@@ -4,3 +4,6 @@ export * from './workshops.contract.js';
 export * from './sessions.contract.js';
 export * from './studios.contract.js';
 export * from './finance.contract.js';
+export * from './reviews.contract.js';
+export * from './reports.contract.js';
+export * from './settings.contract.js';
