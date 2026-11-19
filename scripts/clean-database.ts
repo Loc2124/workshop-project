@@ -3,9 +3,15 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Pool } from 'pg';
 import * as argon2 from 'argon2';
+import { assertSafeDatabaseOperation } from './assert-safe-db.js';
 
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 loadDotenv({ path: resolve(projectRoot, '.env') });
+
+assertSafeDatabaseOperation({
+  operationName: 'clean-database (TRUNCATE all transactional tables)',
+  allowProduction: false,
+});
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {

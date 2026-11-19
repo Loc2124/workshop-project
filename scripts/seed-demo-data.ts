@@ -4,6 +4,7 @@ import path from 'node:path';
 import argon2 from 'argon2';
 import { query, closePool, withTransaction } from '../apps/api/src/db/pool.js';
 import { encryptFinancialAccount } from '../apps/api/src/modules/payments/financial-account-crypto.js';
+import { assertSafeDatabaseOperation } from './assert-safe-db.js';
 
 async function uploadToStorage(storageKey: string, localFilePath: string) {
   if (!fs.existsSync(localFilePath)) return 0;
@@ -84,6 +85,10 @@ async function createAndUploadImageTriplet(
 }
 
 async function main() {
+  assertSafeDatabaseOperation({
+    operationName: 'seed-demo-data',
+    allowProduction: false,
+  });
   console.log('--- BẮT ĐẦU TẠO DỮ LIỆU DEMO CHO BUỔI THI ---');
 
   await withTransaction(async (client) => {
