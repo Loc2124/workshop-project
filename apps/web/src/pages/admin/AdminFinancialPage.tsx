@@ -4,8 +4,10 @@ import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { apiFetch } from '@/lib/api-client';
-import { AdminSettlementPanel } from '@/components/management/AdminSettlementPanel';
-import { AdminAccountVerificationPanel } from '@/components/management/AdminAccountVerificationPanel';
+import {
+  AdminSettlementPanel,
+  AdminAccountVerificationPanel,
+} from '@/features/studio-management';
 import {
   type CalendarDay,
   errorMessage,

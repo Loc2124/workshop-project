@@ -193,11 +193,11 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
     prefetchDashboardRoute(url.pathname);
     const tasks: Promise<unknown>[] = [];
     if (section === 'workshops')
-      tasks.push(import('@/components/management/StudioWorkshopManager'));
+      tasks.push(import('@/features/studio-management/components/StudioWorkshopManager'));
     if (section === 'sessions')
-      tasks.push(import('@/components/management/StudioSessionManager'));
+      tasks.push(import('@/features/studio-management/components/StudioSessionManager'));
     if (section === 'profile')
-      tasks.push(import('@/components/management/StudioEvidenceEditor'));
+      tasks.push(import('@/features/studio-management/components/StudioEvidenceEditor'));
     if (!section || section === 'workshops' || section === 'sessions')
       tasks.push(
         client.prefetchQuery({
@@ -218,7 +218,7 @@ export async function prefetchNavigation(client: QueryClient, url: URL) {
       );
     if (section === 'bookings') {
       const module =
-        await import('@/components/management/StudioBookingManager');
+        await import('@/features/studio-management/components/StudioBookingManager');
       if (current())
         tasks.push(module.prefetchData(client, user.id, studio.id));
     }

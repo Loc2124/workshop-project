@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ProvinceOption } from '../components/catalog/ProvinceCombobox';
+import type { ProvinceOption } from '@/features/catalog';
 import { geographyQueries } from '../lib/geography-queries';
 
 const emptyProvinces: ProvinceOption[] = [];

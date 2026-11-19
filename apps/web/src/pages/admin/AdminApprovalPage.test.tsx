@@ -25,7 +25,7 @@ vi.mock('@/components/layout/SiteHeader', () => ({
 }));
 
 import { AdminApprovalPage } from './AdminApprovalPage';
-import { StudioVerificationPanel } from '@/components/management/StudioVerificationPanel';
+import { StudioVerificationPanel } from '@/features/studio-management';
 import { StudioTrustBadge } from '@/components/ui/StudioTrustBadge';
 
 const admin = {

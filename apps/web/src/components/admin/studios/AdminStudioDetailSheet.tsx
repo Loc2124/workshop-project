@@ -19,7 +19,7 @@ import {
   TooltipTrigger,
 } from '../../ui/tooltip';
 import { StudioStatusTimeline } from '../StudioStatusTimeline';
-import { StudioVerificationPanel } from '../../management/StudioVerificationPanel';
+import { StudioVerificationPanel } from '@/features/studio-management';
 
 export interface AdminStudioDetailSheetProps {
   selected: AdminStudio | null;

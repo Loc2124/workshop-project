@@ -4,7 +4,7 @@ import { getCategoryIcon } from '@/constants/categories';
 import { AuthField } from '../ui/auth-field';
 import { Button } from '../ui/button';
 import { LoadingState } from '../ui/LoadingState';
-import { StudioEvidenceFields } from '../management/StudioEvidenceFields';
+import { StudioEvidenceFields } from '@/features/studio-management';
 import { imageService } from '@/services/imageService';
 import type { useStudioRegistrationDraft } from '@/hooks/useStudioRegistrationDraft';
 

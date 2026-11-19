@@ -1,4 +1,4 @@
-import type { ProvinceOption } from '../components/catalog/ProvinceCombobox';
+import type { ProvinceOption } from '@/features/catalog';
 
 type GeocodeResponse = {
   address?: Record<string, string>;

@@ -30,7 +30,7 @@ import { apiFetch } from '@/lib/api-client';
 import { createAdminTableFetcher } from '@/services/adminTableService';
 import { formatReviewDate } from '@/lib/studio-review';
 import { formatPrice } from '@/lib/format';
-import { TicketAttendanceEditor } from '@/components/management/TicketAttendanceEditor';
+import { TicketAttendanceEditor } from '@/features/studio-management';
 
 const status = z.enum(['pending', 'confirmed', 'cancelled', 'completed']);
 type Status = z.infer<typeof status>;

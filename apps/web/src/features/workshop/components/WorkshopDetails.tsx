@@ -4,7 +4,7 @@ import { getCategoryMeta } from '@/constants/categories';
 import { Link } from 'react-router-dom';
 import type { Workshop } from '@/types/workshop';
 import { workshopLevel } from '@/lib/workshopDetails';
-import { WorkshopCard } from '@/components/catalog/WorkshopCard';
+import { WorkshopCard } from '@/features/catalog';
 import { MediaImage } from '@/components/ui/MediaImage';
 import { DetailSection } from './DetailPrimitives';
 import type { WorkshopBookingHandler } from './WorkshopSchedule';

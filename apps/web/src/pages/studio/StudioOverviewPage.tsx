@@ -43,18 +43,18 @@ import {
   studioState,
   studioStates,
 } from '@/lib/studio-dashboard';
-import { OverviewMetricsCards } from '@/components/management/overview/OverviewMetricsCards';
+import { OverviewMetricsCards } from '@/features/studio-management/components/overview/OverviewMetricsCards';
 import {
   OverviewChecklistCard,
   type ChecklistItem,
-} from '@/components/management/overview/OverviewChecklistCard';
-import { OverviewQuickActions } from '@/components/management/overview/OverviewQuickActions';
-import { OverviewNextSessionCard } from '@/components/management/overview/OverviewNextSessionCard';
-import { OverviewUpcomingSessionsList } from '@/components/management/overview/OverviewUpcomingSessionsList';
+} from '@/features/studio-management/components/overview/OverviewChecklistCard';
+import { OverviewQuickActions } from '@/features/studio-management/components/overview/OverviewQuickActions';
+import { OverviewNextSessionCard } from '@/features/studio-management/components/overview/OverviewNextSessionCard';
+import { OverviewUpcomingSessionsList } from '@/features/studio-management/components/overview/OverviewUpcomingSessionsList';
 import {
   OverviewFinancesCard,
   type StudioFinancesData,
-} from '@/components/management/overview/OverviewFinancesCard';
+} from '@/features/studio-management/components/overview/OverviewFinancesCard';
 
 export function StudioOverviewPage() {
   const { studioId } = useParams();

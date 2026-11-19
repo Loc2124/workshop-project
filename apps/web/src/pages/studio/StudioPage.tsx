@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useSessionClock } from '@/hooks/useSessionClock';
 import { useParams } from 'react-router-dom';
-import { CategoryShortcuts } from '@/components/catalog/CategoryShortcuts';
+import { CategoryShortcuts } from '@/features/catalog';
 import {
   DetailSection,
   DetailState,

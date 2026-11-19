@@ -2,7 +2,7 @@ import { MediaImage } from '../ui/MediaImage';
 import { ArrowRight, Search, LocateFixed } from 'lucide-react';
 import type { useHomeCatalog } from '@/hooks/useHomeCatalog';
 import { PageContainer } from '../layout/PageContainer';
-import { ProvinceCombobox } from '../catalog/ProvinceCombobox';
+import { ProvinceCombobox } from '@/features/catalog';
 import { SingleDatePicker } from '../ui/single-date-picker';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
