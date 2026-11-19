@@ -9,6 +9,7 @@ Frontend được tổ chức theo ranh giới tính năng rõ ràng (`apps/web/
 - **`features/catalog/`**: Khám phá workshop, trang chủ (`home/`), thẻ danh mục và bộ lọc tìm kiếm.
 - **`features/workshop/`**: Chi tiết workshop, lịch học, đánh giá nhận xét và báo cáo vi phạm.
 - **`features/booking/`**: Chi tiết đơn đặt, quy trình thanh toán/đặt cọc, hủy vé và chính sách hoàn tiền.
+- **`features/check-in/`**: Quét mã QR (`QrScanner`), tra cứu vé (`CheckInLookupForm`), xác nhận điểm danh và ghi nhận thu tiền tại xưởng (`TicketCheckInCard`).
 - **`features/studio-management/`**: Không gian quản lý studio, đăng ký thông tin, danh sách học viên và điểm danh.
 - **`features/admin-finance/`**: Nghiệp vụ quản trị hệ thống, duyệt hồ sơ, sổ cái tài chính và đối soát hoàn tiền.
 

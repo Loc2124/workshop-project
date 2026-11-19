@@ -32,6 +32,7 @@ Toàn bộ mã nguồn liên quan đến nghiệp vụ được tổ chức đ�
 - **`features/catalog/`**: Khám phá workshop, trang chủ, danh mục sản phẩm, bộ lọc, thẻ workshop.
 - **`features/workshop/`**: Chi tiết workshop, lịch học, chính sách hủy/đặt cọc, đánh giá và báo cáo vi phạm.
 - **`features/booking/`**: Chi tiết đơn đặt chỗ, thanh toán cọc, hoàn tiền và hủy vé.
+- **`features/check-in/`**: Quét mã QR (`QrScanner`), tra cứu mã vé (`CheckInLookupForm`), xác nhận điểm danh và thu tiền tại xưởng (`TicketCheckInCard`).
 - **`features/studio-management/`**: Không gian làm việc của chủ xưởng, hồ sơ studio, danh sách học viên, điểm danh và mời hội viên.
 - **`features/admin-finance/`**: Sổ cái tài chính, hoàn tiền nghĩa vụ, duyệt studio/workshop và đối soát chuyển khoản.
 
