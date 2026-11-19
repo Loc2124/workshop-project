@@ -20,6 +20,7 @@ import {
   type CheckInBusyState,
   CheckInLookupForm,
   TicketCheckInCard,
+  useOfflineCheckInStore,
 } from '@/features/check-in';
 
 export function StudioCheckInPage() {
@@ -50,6 +51,45 @@ export function StudioCheckInPage() {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState<CheckInBusyState>(null);
   const [scanning, setScanning] = useState(false);
+  const [syncingOffline, setSyncingOffline] = useState(false);
+
+  const { pendingQueue, enqueueTicket, dequeueTicket } =
+    useOfflineCheckInStore();
+  const studioPendingQueue = pendingQueue.filter(
+    (item) => item.studioId === studio?.id,
+  );
+
+  const syncPendingQueue = useCallback(async () => {
+    if (!studio || studioPendingQueue.length === 0 || syncingOffline) return;
+    setSyncingOffline(true);
+    let synced = 0;
+    for (const item of [...studioPendingQueue]) {
+      try {
+        await apiFetch(`/studios/${studio.id}/check-in/confirm`, {
+          method: 'POST',
+          body: JSON.stringify({ code: item.ticketCode }),
+        });
+        dequeueTicket(item.ticketCode);
+        synced++;
+      } catch {
+        // Keep in offline queue if it still fails
+      }
+    }
+    setSyncingOffline(false);
+    if (synced > 0) {
+      setMessage(
+        `Đã đồng bộ thành công ${synced} vé từ hàng đợi ngoại tuyến.`,
+      );
+    }
+  }, [studio, studioPendingQueue, syncingOffline, dequeueTicket]);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      void syncPendingQueue();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [syncPendingQueue]);
 
   const lookup = useCallback(
     async (value: string) => {
@@ -94,6 +134,21 @@ export function StudioCheckInPage() {
     if (!studio || !ticket || busy) return;
     setBusy('check-in');
     setMessage('');
+
+    // If device is offline, store in offline queue directly
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      enqueueTicket({
+        ticketCode: code.trim(),
+        studioId: studio.id,
+        scannedAt: new Date().toISOString(),
+      });
+      setBusy(null);
+      setMessage(
+        'Thiết bị đang ngoại tuyến. Vé đã được lưu vào hàng đợi và sẽ tự động đồng bộ khi có kết nối mạng.',
+      );
+      return;
+    }
+
     try {
       const response = await apiFetch<unknown>(
         `/studios/${studio.id}/check-in/confirm`,
@@ -109,12 +164,24 @@ export function StudioCheckInPage() {
         },
       );
       setTicket(z.object({ ticket: ticketSchema }).parse(response).ticket);
+      dequeueTicket(code.trim());
       setMessage('Đã xác nhận check-in cho vé này.');
     } catch (error) {
-      const explanation =
-        error instanceof Error ? error.message : 'Không thể check-in.';
-      await lookup(code);
-      setMessage(explanation);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        enqueueTicket({
+          ticketCode: code.trim(),
+          studioId: studio.id,
+          scannedAt: new Date().toISOString(),
+        });
+        setMessage(
+          'Mất kết nối mạng trong lúc check-in. Vé đã được lưu an toàn vào hàng đợi ngoại tuyến.',
+        );
+      } else {
+        const explanation =
+          error instanceof Error ? error.message : 'Không thể check-in.';
+        await lookup(code);
+        setMessage(explanation);
+      }
     } finally {
       setBusy(null);
     }
@@ -198,22 +265,48 @@ export function StudioCheckInPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl space-y-5 px-4 py-8 sm:px-6">
-      <header className="border-b border-line pb-5">
-        <p className="text-sm text-muted">Open Slot · {studio.name}</p>
-        <h1 className="mt-1 font-heading text-2xl font-semibold">
+    <main className="mx-auto w-full max-w-3xl space-y-studio-card px-4 py-8 sm:px-6">
+      <header className="border-b border-studio-border pb-5">
+        <p className="text-sm text-studio-muted">Open Slot · {studio.name}</p>
+        <h1 className="mt-1 font-heading text-2xl font-bold tracking-tight text-studio-ink sm:text-3xl">
           Check-in vé tham gia
         </h1>
-        <p className="mt-2 text-sm text-muted">
+        <p className="mt-2 text-sm text-studio-muted">
           Quét mã để xem vé. Chỉ nút xác nhận mới ghi nhận khách đã đến.
         </p>
       </header>
 
+      {studioPendingQueue.length > 0 && (
+        <section
+          aria-label="Hàng đợi ngoại tuyến"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-studio-card border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm"
+        >
+          <div className="flex items-center gap-2.5">
+            <span
+              aria-hidden="true"
+              className="size-2.5 rounded-full bg-amber-600 motion-safe:animate-pulse"
+            />
+            <span>
+              <strong>{studioPendingQueue.length} vé</strong> đang lưu ngoại
+              tuyến chờ đồng bộ.
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={syncingOffline}
+            onClick={() => void syncPendingQueue()}
+            className="rounded-studio-control bg-amber-800 px-3.5 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-amber-900 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {syncingOffline ? 'Đang đồng bộ…' : 'Đồng bộ ngay'}
+          </button>
+        </section>
+      )}
+
       {available.length > 1 && (
-        <label className="block text-sm font-medium">
+        <label className="block text-sm font-medium text-studio-ink">
           Studio
           <select
-            className="mt-2 min-h-11 w-full rounded-lg border border-line bg-surface px-3"
+            className="mt-2 min-h-11 w-full rounded-studio-control border border-studio-border bg-studio-surface px-3 text-studio-ink"
             value={studio.id}
             onChange={(event) => {
               const nextId = event.target.value;
@@ -252,7 +345,7 @@ export function StudioCheckInPage() {
       {message && (
         <p
           role="status"
-          className="rounded-lg border border-line bg-paper p-3 text-sm"
+          className="rounded-studio-card border border-studio-border bg-studio-surface p-4 text-sm text-studio-ink shadow-sm"
         >
           {message}
         </p>

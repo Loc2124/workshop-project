@@ -12,6 +12,7 @@ import { workshopText } from './workshopPresentation';
 import { bookingFormSchema } from '@/lib/core/form-validation';
 import { toast } from 'sonner';
 import { calculateDeposit } from '@workshop/shared';
+import { useBookingFlowStore } from '@/features/booking';
 import { ScheduleSessionPicker } from './ScheduleSessionPicker';
 import { SchedulePriceBreakdown } from './SchedulePriceBreakdown';
 import { ScheduleStickyBar } from './ScheduleStickyBar';
@@ -51,6 +52,7 @@ export function WorkshopSchedule({
   onBook?: WorkshopBookingHandler;
 }) {
   const now = useSessionClock(workshop.sessions);
+  const bookingFlow = useBookingFlowStore();
   const [showOtherSessions, setShowOtherSessions] = useState(false);
   const [choice, setChoice] = useState<'deposit' | 'in_studio'>('in_studio');
   const depositMode = workshop.depositMode ?? 'none';
@@ -163,6 +165,7 @@ export function WorkshopSchedule({
         window.location.assign(checkout.toString());
         return;
       }
+      bookingFlow.resetFlow();
       setConfirmed({ id: result.id, session: snapshot, quantity: seats });
       setNotice('Đã nhận đặt chỗ. Mở lịch sử đặt chỗ để xem vé và thanh toán.');
     } catch (cause) {
@@ -241,6 +244,8 @@ export function WorkshopSchedule({
               setSelectedId(id);
               setQuantity(1);
               setError('');
+              bookingFlow.setSession(workshop.id, id);
+              bookingFlow.setTickets(1);
             }}
             onShowOtherSessions={() => setShowOtherSessions(true)}
           />
@@ -263,7 +268,9 @@ export function WorkshopSchedule({
                     aria-controls="booking-quantity"
                     disabled={locked || seats <= 1}
                     onClick={() => {
-                      setQuantity(Math.max(1, seats - 1));
+                      const nextSeats = Math.max(1, seats - 1);
+                      setQuantity(nextSeats);
+                      bookingFlow.setTickets(nextSeats);
                       setError('');
                     }}
                     className="grid size-11 place-items-center rounded-md text-primary hover:bg-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:text-stone-400 disabled:hover:bg-transparent"
@@ -288,12 +295,12 @@ export function WorkshopSchedule({
                       seats >= bookingQuantityLimit(selected.availableSeats)
                     }
                     onClick={() => {
-                      setQuantity(
-                        clampBookingQuantity(
-                          seats + 1,
-                          selected.availableSeats,
-                        ),
+                      const nextSeats = clampBookingQuantity(
+                        seats + 1,
+                        selected.availableSeats,
                       );
+                      setQuantity(nextSeats);
+                      bookingFlow.setTickets(nextSeats);
                       setError('');
                     }}
                     className="grid size-11 place-items-center rounded-md text-primary hover:bg-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:text-stone-400 disabled:hover:bg-transparent"
@@ -314,7 +321,10 @@ export function WorkshopSchedule({
                         type="radio"
                         name="payment-choice"
                         checked={paymentChoice === value}
-                        onChange={() => setChoice(value)}
+                        onChange={() => {
+                          setChoice(value);
+                          bookingFlow.setPaymentChoice(value);
+                        }}
                         className="accent-primary"
                       />
                       {value === 'deposit' ? 'Cọc trước' : 'Trả tại studio'}
